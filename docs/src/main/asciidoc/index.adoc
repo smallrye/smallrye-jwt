@@ -1,0 +1,16 @@
+[[index]]
+= SmallRye JWT Documentation
+:microprofile-jwt: https://github.com/eclipse/microprofile-jwt-auth/
+:mp-jwt-name: Eclipse MicroProfile JWT RBAC
+:ext-relative: {outfilesuffix}
+:toc!:
+
+Welcome to the Documentation for SmallRye JWT.
+
+SmallRye Config is an implementation of https://github.com/eclipse/microprofile-jwt-auth/[{mp-jwt-name}].
+
+[[more-resources]]
+== More Resources
+
+* https://github.com/smallrye/smallrye-jwt/[GitHub project repository]
+* https://github.com/eclipse/microprofile-jwt-auth/[{mp-jwt-name}]

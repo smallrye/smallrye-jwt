@@ -1,0 +1,31 @@
+
+// Variables
+:microprofile-jwt: https://github.com/eclipse/microprofile-jwt-auth/
+:mp-jwt-name: Eclipse MicroProfile JWT RBAC
+
+image:https://img.shields.io/github/license/thorntail/thorntail.svg["License", link="http://www.apache.org/licenses/LICENSE-2.0"]
+
+= SmallRye JWT
+
+SmallRye JWT is a library for implementing the {microprofile-jwt}[{mp-jwt-name}].
+
+== Instructions
+
+Compile and install this project:
+
+[source,bash]
+----
+mvn clean install
+----
+
+=== Project structure
+
+* link:implementation[] - Implementation of the {mp-jwt-name}.
+* link:tck[] - Test suite to run the implementation against the {mp-jwt-name} TCK.
+* link:docs[] - Project documentation.
+
+=== Links
+
+* http://github.com/smallrye/smallrye-jwt/[Project Homepage]
+* {microprofile-jwt}[{mp-jwt-name}]
+
