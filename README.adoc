@@ -3,6 +3,7 @@
 :microprofile-jwt: https://github.com/eclipse/microprofile-jwt-auth/
 :mp-jwt-name: Eclipse MicroProfile JWT RBAC
 
+image:https://semaphoreci.com/api/v1/smallrye/smallrye-jwt/branches/master/badge.svg["Semaphore CI", link="https://semaphoreci.com/smallrye/smallrye-jwt"]
 image:https://img.shields.io/github/license/thorntail/thorntail.svg["License", link="http://www.apache.org/licenses/LICENSE-2.0"]
 
 = SmallRye JWT
