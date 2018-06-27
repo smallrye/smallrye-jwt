@@ -126,8 +126,24 @@ public class JWTAuthContextInfoProvider {
         return Optional.of(contextInfo);
     }
 
+    public Optional<String> getMpJwtublicKey() {
+        return mpJwtublicKey;
+    }
+
+    public String getMpJwtIssuer() {
+        return mpJwtIssuer;
+    }
+
+    public Optional<String> getMpJwtLocation() {
+        return mpJwtLocation;
+    }
+
+    public Optional<Boolean> getMpJwtRequireIss() {
+        return mpJwtRequireIss;
+    }
+
     @Produces
-    JWTAuthContextInfo getContextInfo() {
+    public JWTAuthContextInfo getContextInfo() {
         return getOptionalContextInfo().get();
     }
 }
