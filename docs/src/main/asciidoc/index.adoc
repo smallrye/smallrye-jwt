@@ -7,8 +7,39 @@
 
 Welcome to the Documentation for SmallRye JWT.
 
-SmallRye Config is an implementation of https://github.com/eclipse/microprofile-jwt-auth/[{mp-jwt-name}].
+SmallRye JWT is a library for implementing the {microprofile-jwt}[{mp-jwt-name}]. Currently it is focused on supporting the MP-JWT 1.1 spec, and primarily deals with the parsing of the JWT string into a JsonWebToken implementation.
 
+== Parsing JWTs
+The entry point into converting a JWT bearer token string into a JsonWebToken is the `io.smallrye.jwt.auth.principal.JWTCallerPrincipalFactory` class. It's parse method takes the token string along with the authentication context information in the form of a  `io.smallrye.jwt.auth.principal.JWTAuthContextInfo`. This may be either created directly, or injected by registering the `io.smallrye.jwt.config.JWTAuthContextInfoProvider` class. The JWTAuthContextInfoProvider class can be configured using the following MP-Config properties:
+
+* mp.jwt.verify.publickey - public key contents
+* mp.jwt.verify.issuer - token issuer URI
+* mp.jwt.verify.publickey.location - public key classpath or URI location
+* mp.jwt.verify.requireiss - require issuer validation flag
+
+[source,java]
+----
+    /**
+     * Parse the given bearer token string into a JWTCallerPrincipal instance.
+     *
+     * @param token - the bearer token provided for authorization
+     * @return A JWTCallerPrincipal representation for the token.
+     * @throws ParseException on parse or verification failure.
+     */
+    public abstract JWTCallerPrincipal parse(String token, JWTAuthContextInfo authContextInfo)
+        throws ParseException;
+----
+
+A minimum code snippet for parsing a bearer token string into a JsonWebToken is: 
+
+[source,java]
+----
+    RSAPublicKey publicKey = ...;
+    JWTAuthContextInfo contextInfo = new JWTAuthContextInfo(publicKey, "https://server.example.com");
+    contextInfo.setExpGracePeriodSecs(60);
+    JWTCallerPrincipalFactory factory = JWTCallerPrincipalFactory.instance();
+    JsonWebToken jwt = factory.parse(token, contextInfo);
+----
 [[more-resources]]
 == More Resources
 
