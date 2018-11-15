@@ -35,7 +35,7 @@
     <version.asciidoctor.plugin>1.5.6</version.asciidoctor.plugin>
     <version.eclipse.microprofile.jwt>1.1</version.eclipse.microprofile.jwt>
     <version.javax.javaee-api>7.0</version.javax.javaee-api>
-    <version.javax.enterprise.cdi-api>1.2</version.javax.enterprise.cdi-api>
+    <version.javax.enterprise.cdi-api>2.0</version.javax.enterprise.cdi-api>
     <version.javax.annotation-api>1.2</version.javax.annotation-api>
     <version.junit>4.11</version.junit>
     <version.org.jboss.arquillian>1.1.13.Final</version.org.jboss.arquillian>
