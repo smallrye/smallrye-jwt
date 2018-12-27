@@ -31,7 +31,8 @@ public abstract class JWTCallerPrincipal implements JsonWebToken {
     /**
      * Create a JWTCallerPrincipal with the caller's name
      *
-     * @param name - caller's name
+     * @param rawToken - raw token value
+     * @param tokenType - token type
      */
     public JWTCallerPrincipal(String rawToken, String tokenType) {
         this.rawToken = rawToken;

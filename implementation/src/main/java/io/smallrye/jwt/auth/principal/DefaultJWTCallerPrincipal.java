@@ -44,11 +44,12 @@ public class DefaultJWTCallerPrincipal extends JWTCallerPrincipal {
     /**
      * Create the DefaultJWTCallerPrincipal from the parsed JWT token and the extracted principal name
      *
-     * @param jwt  - the parsed JWT token representation
-     * @param name - the extracted unqiue name to use as the principal name; from "upn", "preferred_username" or "sub" claim
+     * @param rawToken - raw token value
+     * @param tokenType - token type
+     * @param claimsSet - Jose4J claims set
      */
-    public DefaultJWTCallerPrincipal(String rawToken, String type, JwtClaims claimsSet) {
-        super(rawToken, type);
+    public DefaultJWTCallerPrincipal(String rawToken, String tokenType, JwtClaims claimsSet) {
+        super(rawToken, tokenType);
         this.claimsSet = claimsSet;
         fixJoseTypes();
     }
