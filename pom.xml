@@ -22,7 +22,7 @@
   <parent>
     <groupId>io.smallrye</groupId>
     <artifactId>smallrye-parent</artifactId>
-    <version>1</version>
+    <version>2</version>
   </parent>
 
   <artifactId>smallrye-jwt-parent</artifactId>
@@ -35,7 +35,7 @@
     <version.asciidoctor.plugin>1.5.6</version.asciidoctor.plugin>
     <version.eclipse.microprofile.jwt>1.1.1</version.eclipse.microprofile.jwt>
     <version.javax.javaee-api>8.0</version.javax.javaee-api>
-    <version.javax.enterprise.cdi-api>1.2</version.javax.enterprise.cdi-api>
+    <version.javax.enterprise.cdi-api>2.0</version.javax.enterprise.cdi-api>
     <version.javax.annotation-api>1.2</version.javax.annotation-api>
     <version.junit>4.12</version.junit>
     <version.org.jboss.arquillian>1.1.13.Final</version.org.jboss.arquillian>
@@ -43,7 +43,7 @@
     <version.org.jboss.logging>3.3.1.Final</version.org.jboss.logging>
     <version.org.jboss.logging-processor>2.0.1.Final</version.org.jboss.logging-processor>
     <version.org.jboss.weld>2.3.SP2</version.org.jboss.weld>
-    <version.org.jboss.weld.core.impl>2.3.5.Final</version.org.jboss.weld.core.impl>
+    <version.org.jboss.weld.core.impl>3.0.5.Final</version.org.jboss.weld.core.impl>
   </properties>
 
   <scm>
