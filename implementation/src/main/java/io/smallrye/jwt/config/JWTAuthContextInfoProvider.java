@@ -71,7 +71,7 @@ public class JWTAuthContextInfoProvider {
     @Produces
     Optional<JWTAuthContextInfo> getOptionalContextInfo() {
         // Log the config values
-        log.debugf("init, mpJwtublicKey=%s, mpJwtIssuer=%s, mpJwtLocation=%s",
+        log.debugf("init, mpJwtPublicKey=%s, mpJwtIssuer=%s, mpJwtLocation=%s",
                    mpJwtPublicKey.orElse("missing"), mpJwtIssuer, mpJwtLocation.orElse("missing"));
 
         /*
@@ -89,14 +89,14 @@ public class JWTAuthContextInfoProvider {
             try {
                 RSAPublicKey pk = (RSAPublicKey) KeyUtils.decodeJWKSPublicKey(mpJwtPublicKey.get());
                 contextInfo.setSignerKey(pk);
-                log.debugf("mpJwtublicKey parsed as JWK(S)");
+                log.debugf("mpJwtPublicKey parsed as JWK(S)");
             } catch (Exception e) {
                 // Try as PEM key value
-                log.debugf("mpJwtublicKey failed as JWK(S), %s", e.getMessage());
+                log.debugf("mpJwtPublicKey failed as JWK(S), %s", e.getMessage());
                 try {
                     RSAPublicKey pk = (RSAPublicKey) KeyUtils.decodePublicKey(mpJwtPublicKey.get());
                     contextInfo.setSignerKey(pk);
-                    log.debugf("mpJwtublicKey parsed as PEM");
+                    log.debugf("mpJwtPublicKey parsed as PEM");
                 } catch (Exception e1) {
                     throw new DeploymentException(e1);
                 }
