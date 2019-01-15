@@ -17,14 +17,7 @@
 package io.smallrye.jwt.auth.principal;
 
 
-import java.io.IOException;
 import java.security.interfaces.RSAPublicKey;
-import java.util.Collections;
-import java.util.List;
-import java.util.stream.Collectors;
-import org.jose4j.jwk.HttpsJwks;
-import org.jose4j.jwk.JsonWebKey;
-import org.jose4j.lang.JoseException;
 
 /**
  * The public key and expected issuer needed to validate a token.
@@ -35,8 +28,7 @@ public class JWTAuthContextInfo {
     private int expGracePeriodSecs = 60;
     private String jwksUri;
     private Integer jwksRefreshInterval;
-    private HttpsJwks httpsJwks;
-
+    
     /**
      * Flag that indicates whether the issuer is required and validated, or ignored, new in MP-JWT 1.1.
      */
@@ -70,34 +62,6 @@ public class JWTAuthContextInfo {
 
     public RSAPublicKey getSignerKey() {
         return signerKey;
-    }
-
-    /**
-     * Called to load the JWKs from the jwksURI
-     * @return possibly empty list of JWK objects
-     */
-    public List<JsonWebKey> loadJsonWebKeys() {
-        synchronized (this) {
-            if (jwksUri == null) {
-                return Collections.emptyList();
-            }
-
-            if (httpsJwks == null) {
-                httpsJwks = new HttpsJwks(jwksUri);
-                httpsJwks.setDefaultCacheDuration(jwksRefreshInterval.longValue() * 60L);
-            }
-        }
-
-        try {
-            return httpsJwks.getJsonWebKeys().stream()
-                    .filter(jsonWebKey -> "sig".equals(jsonWebKey.getUse())) // only signing keys are relevant
-                    .filter(jsonWebKey -> "RS256".equals(jsonWebKey.getAlgorithm())) // MP-JWT dictates RS256 only
-                    .collect(Collectors.toList());
-        } catch (IOException e) {
-            throw new IllegalStateException(String.format("Unable to fetch JWKS from %s.", jwksUri), e);
-        } catch (JoseException e) {
-            throw new IllegalStateException(String.format("Unable to parse JWKS from %s.", jwksUri), e);
-        }
     }
 
     public void setSignerKey(RSAPublicKey signerKey) {
