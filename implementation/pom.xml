@@ -30,7 +30,7 @@
   <name>SmallRye: MicroProfile JWT Implementation</name>
 
   <properties>
-    <version.jose4j>0.6.4</version.jose4j>
+    <version.jose4j>0.6.5</version.jose4j>
   </properties>
 
   <dependencies>
