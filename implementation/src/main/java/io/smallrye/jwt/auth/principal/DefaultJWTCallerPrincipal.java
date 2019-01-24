@@ -16,25 +16,20 @@
  */
 package io.smallrye.jwt.auth.principal;
 
-import org.eclipse.microprofile.jwt.Claims;
-import org.jboss.logging.Logger;
-import org.jose4j.jwt.JwtClaims;
-import org.jose4j.jwt.MalformedClaimException;
-
-import javax.json.Json;
-import javax.json.JsonArray;
-import javax.json.JsonArrayBuilder;
-import javax.json.JsonNumber;
-import javax.json.JsonObject;
-import javax.json.JsonObjectBuilder;
-import javax.json.JsonValue;
-import javax.security.auth.Subject;
-
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import javax.json.JsonArray;
+import javax.json.JsonNumber;
+import javax.json.JsonObject;
+
+import org.eclipse.microprofile.jwt.Claims;
+import org.jboss.logging.Logger;
+import org.jose4j.jwt.JwtClaims;
+import org.jose4j.jwt.MalformedClaimException;
 
 /**
  * A default implementation of JWTCallerPrincipal that wraps the jose4j JwtClaims.
@@ -42,29 +37,23 @@ import java.util.Set;
  * @see JwtClaims
  */
 public class DefaultJWTCallerPrincipal extends JWTCallerPrincipal {
-    private static final String TMP = "tmp";
     private static Logger logger = Logger.getLogger(DefaultJWTCallerPrincipal.class);
-
-    private String jwt;
-
-    private String type;
 
     private JwtClaims claimsSet;
 
     /**
      * Create the DefaultJWTCallerPrincipal from the parsed JWT token and the extracted principal name
      *
-     * @param jwt  - the parsed JWT token representation
-     * @param name - the extracted unqiue name to use as the principal name; from "upn", "preferred_username" or "sub" claim
+     * @param rawToken - raw token value
+     * @param tokenType - token type
+     * @param claimsSet - Jose4J claims set
      */
-    public DefaultJWTCallerPrincipal(String jwt, String type, JwtClaims claimsSet, String name) {
-        super(name);
-        this.jwt = jwt;
-        this.type = type;
+    public DefaultJWTCallerPrincipal(String rawToken, String tokenType, JwtClaims claimsSet) {
+        super(rawToken, tokenType);
         this.claimsSet = claimsSet;
         fixJoseTypes();
     }
-
+    
     @Override
     public Set<String> getAudience() {
         Set<String> audSet = null;
@@ -99,14 +88,13 @@ public class DefaultJWTCallerPrincipal extends JWTCallerPrincipal {
         return groups;
     }
 
-
     @Override
-    public Set<String> getClaimNames() {
-        return new HashSet<>(claimsSet.getClaimNames());
+    protected Collection<String> doGetClaimNames() {
+        return claimsSet.getClaimNames();
     }
-
+    
     @Override
-    public Object getClaim(String claimName) {
+    protected Object getClaimValue(String claimName) {
         Claims claimType = Claims.UNKNOWN;
         Object claim = null;
         try {
@@ -143,57 +131,6 @@ public class DefaultJWTCallerPrincipal extends JWTCallerPrincipal {
         return claim;
     }
 
-    @Override
-    public boolean implies(Subject subject) {
-        return false;
-    }
-
-    public String toString() {
-        return toString(false);
-    }
-
-    /**
-     * TODO: showAll is ignored and currently assumed true
-     *
-     * @param showAll - should all claims associated with the JWT be displayed or should only those defined in the
-     *                JsonWebToken interface be displayed.
-     * @return JWTCallerPrincipal string view
-     */
-    @Override
-    public String toString(boolean showAll) {
-        String toString = "DefaultJWTCallerPrincipal{" +
-                "id='" + getTokenID() + '\'' +
-                ", name='" + getName() + '\'' +
-                ", expiration=" + getExpirationTime() +
-                ", notBefore=" + getClaim(Claims.nbf.name()) +
-                ", issuedAt=" + getIssuedAtTime() +
-                ", issuer='" + getIssuer() + '\'' +
-                ", audience=" + getAudience() +
-                ", subject='" + getSubject() + '\'' +
-                ", type='" + type + '\'' +
-                ", issuedFor='" + getClaim("azp") + '\'' +
-                ", authTime=" + getClaim("auth_time") +
-                ", givenName='" + getClaim("given_name") + '\'' +
-                ", familyName='" + getClaim("family_name") + '\'' +
-                ", middleName='" + getClaim("middle_name") + '\'' +
-                ", nickName='" + getClaim("nickname") + '\'' +
-                ", preferredUsername='" + getClaim("preferred_username") + '\'' +
-                ", email='" + getClaim("email") + '\'' +
-                ", emailVerified=" + getClaim(Claims.email_verified.name()) +
-                ", allowedOrigins=" + getClaim("allowedOrigins") +
-                ", updatedAt=" + getClaim("updated_at") +
-                ", acr='" + getClaim("acr") + '\'';
-        StringBuilder tmp = new StringBuilder(toString);
-        tmp.append(", groups=[");
-        for (String group : getGroups()) {
-            tmp.append(group);
-            tmp.append(',');
-        }
-        tmp.setLength(tmp.length() - 1);
-        tmp.append("]}");
-        return tmp.toString();
-    }
-
     /**
      * Convert the types jose4j uses for address, sub_jwk, and jwk
      */
@@ -211,7 +148,6 @@ public class DefaultJWTCallerPrincipal extends JWTCallerPrincipal {
         Set<String> customClaimNames = filterCustomClaimNames(claimsSet.getClaimNames());
         for (String name : customClaimNames) {
             Object claimValue = claimsSet.getClaimValue(name);
-            Class claimType = claimValue.getClass();
             if (claimValue instanceof List) {
                 replaceList(name);
             } else if (claimValue instanceof Map) {
@@ -243,6 +179,7 @@ public class DefaultJWTCallerPrincipal extends JWTCallerPrincipal {
      */
     private void replaceMap(String name) {
         try {
+            @SuppressWarnings("unchecked")
             Map<String, Object> map = claimsSet.getClaimValue(name, Map.class);
             JsonObject jsonObject = replaceMap(map);
             claimsSet.setClaim(name, jsonObject);
@@ -251,67 +188,6 @@ public class DefaultJWTCallerPrincipal extends JWTCallerPrincipal {
         }
     }
 
-    private JsonObject replaceMap(Map<String, Object> map) {
-        JsonObjectBuilder builder = Json.createObjectBuilder();
-        for (Map.Entry<String, Object> entry : map.entrySet()) {
-            Object entryValue = entry.getValue();
-            if (entryValue instanceof Map) {
-                JsonObject entryJsonObject = replaceMap((Map<String, Object>) entryValue);
-                builder.add(entry.getKey(), entryJsonObject);
-            } else if (entryValue instanceof List) {
-                JsonArray array = (JsonArray) wrapValue(entryValue);
-                builder.add(entry.getKey(), array);
-            } else if (entryValue instanceof Long || entryValue instanceof Integer) {
-                long lvalue = ((Number) entryValue).longValue();
-                builder.add(entry.getKey(), lvalue);
-            } else if (entryValue instanceof Double || entryValue instanceof Float) {
-                double dvalue = ((Number) entryValue).doubleValue();
-                builder.add(entry.getKey(), dvalue);
-            } else if (entryValue instanceof Boolean) {
-                boolean flag = ((Boolean) entryValue).booleanValue();
-                builder.add(entry.getKey(), flag);
-            } else if (entryValue instanceof String) {
-                builder.add(entry.getKey(), entryValue.toString());
-            }
-        }
-        return builder.build();
-    }
-
-    private JsonValue wrapValue(Object value) {
-        JsonValue jsonValue = null;
-        if (value instanceof Number) {
-            Number number = (Number) value;
-            if ((number instanceof Long) || (number instanceof Integer)) {
-                jsonValue = Json.createObjectBuilder()
-                        .add(TMP, number.longValue())
-                        .build()
-                        .getJsonNumber(TMP);
-            } else {
-                jsonValue = Json.createObjectBuilder()
-                        .add(TMP, number.doubleValue())
-                        .build()
-                        .getJsonNumber(TMP);
-            }
-        } else if (value instanceof Boolean) {
-            Boolean flag = (Boolean) value;
-            jsonValue = flag ? JsonValue.TRUE : JsonValue.FALSE;
-        } else if (value instanceof List) {
-            JsonArrayBuilder arrayBuilder = Json.createArrayBuilder();
-            List list = (List) value;
-            for (Object element : list) {
-                if (element instanceof String) {
-                    arrayBuilder.add(element.toString());
-                } else {
-                    JsonValue jvalue = wrapValue(element);
-                    arrayBuilder.add(jvalue);
-                }
-            }
-            jsonValue = arrayBuilder.build();
-        }
-        return jsonValue;
-    }
-
-
     /**
      * Replace the jose4j List<?> with a JsonArray
      *
@@ -319,8 +195,7 @@ public class DefaultJWTCallerPrincipal extends JWTCallerPrincipal {
      */
     private void replaceList(String name) {
         try {
-            List list = claimsSet.getClaimValue(name, List.class);
-            JsonArray array = (JsonArray) wrapValue(list);
+            JsonArray array = (JsonArray) wrapValue(claimsSet.getClaimValue(name, List.class));
             claimsSet.setClaim(name, array);
         } catch (MalformedClaimException e) {
             logger.warn("replaceList failure for: " + name, e);
