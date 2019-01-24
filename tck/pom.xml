@@ -45,7 +45,7 @@
           <dependency>
             <groupId>org.jboss.arquillian</groupId>
             <artifactId>arquillian-bom</artifactId>
-            <version>1.1.13.Final</version>
+            <version>1.4.1.Final</version>
             <scope>import</scope>
             <type>pom</type>
           </dependency>
@@ -79,20 +79,20 @@
         <dependency>
           <groupId>org.eclipse.microprofile.jwt</groupId>
           <artifactId>microprofile-jwt-auth-tck</artifactId>
-          <version>1.1</version>
+          <version>1.1.1</version>
           <scope>test</scope>
         </dependency>
         <dependency>
           <groupId>org.eclipse.microprofile.jwt</groupId>
           <artifactId>microprofile-jwt-auth-tck</artifactId>
-          <version>1.1</version>
+          <version>1.1.1</version>
           <type>test-jar</type>
           <scope>test</scope>
         </dependency>
         <dependency>
           <groupId>org.jboss.weld</groupId>
           <artifactId>weld-core-impl</artifactId>
-          <version>2.4.3.Final</version>
+          <version>3.0.5.Final</version>
           <scope>test</scope>
         </dependency>
       </dependencies>
