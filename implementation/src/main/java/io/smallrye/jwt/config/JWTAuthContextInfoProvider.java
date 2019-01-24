@@ -45,7 +45,7 @@ public class JWTAuthContextInfoProvider {
      */
     @Inject
     @ConfigProperty(name = "mp.jwt.verify.publickey", defaultValue = NONE)
-    private Optional<String> mpJwtublicKey;
+    private Optional<String> mpJwtPublicKey;
     /**
      * @since 1.1
      */
@@ -71,32 +71,32 @@ public class JWTAuthContextInfoProvider {
     @Produces
     Optional<JWTAuthContextInfo> getOptionalContextInfo() {
         // Log the config values
-        log.debugf("init, mpJwtublicKey=%s, mpJwtIssuer=%s, mpJwtLocation=%s",
-                   mpJwtublicKey.orElse("missing"), mpJwtIssuer, mpJwtLocation.orElse("missing"));
+        log.debugf("init, mpJwtPublicKey=%s, mpJwtIssuer=%s, mpJwtLocation=%s",
+                   mpJwtPublicKey.orElse("missing"), mpJwtIssuer, mpJwtLocation.orElse("missing"));
 
         /*
         FIXME Due to a bug in MP-Config (https://github.com/wildfly-extras/wildfly-microprofile-config/issues/43) we need to set all
         values to "NONE" as Optional Strings are populated with a ConfigProperty.defaultValue if they are absent. Fix this when MP-Config
         is repaired.
          */
-        if (NONE.equals(mpJwtublicKey.get()) && NONE.equals(mpJwtLocation.get())) {
+        if (NONE.equals(mpJwtPublicKey.get()) && NONE.equals(mpJwtLocation.get())) {
             return Optional.empty();
         }
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo();
         // Look to MP-JWT values first
-        if (mpJwtublicKey.isPresent() && !NONE.equals(mpJwtublicKey.get())) {
+        if (mpJwtPublicKey.isPresent() && !NONE.equals(mpJwtPublicKey.get())) {
             // Need to decode what this is...
             try {
-                RSAPublicKey pk = (RSAPublicKey) KeyUtils.decodeJWKSPublicKey(mpJwtublicKey.get());
+                RSAPublicKey pk = (RSAPublicKey) KeyUtils.decodeJWKSPublicKey(mpJwtPublicKey.get());
                 contextInfo.setSignerKey(pk);
-                log.debugf("mpJwtublicKey parsed as JWK(S)");
+                log.debugf("mpJwtPublicKey parsed as JWK(S)");
             } catch (Exception e) {
                 // Try as PEM key value
-                log.debugf("mpJwtublicKey failed as JWK(S), %s", e.getMessage());
+                log.debugf("mpJwtPublicKey failed as JWK(S), %s", e.getMessage());
                 try {
-                    RSAPublicKey pk = (RSAPublicKey) KeyUtils.decodePublicKey(mpJwtublicKey.get());
+                    RSAPublicKey pk = (RSAPublicKey) KeyUtils.decodePublicKey(mpJwtPublicKey.get());
                     contextInfo.setSignerKey(pk);
-                    log.debugf("mpJwtublicKey parsed as PEM");
+                    log.debugf("mpJwtPublicKey parsed as PEM");
                 } catch (Exception e1) {
                     throw new DeploymentException(e1);
                 }
@@ -126,8 +126,8 @@ public class JWTAuthContextInfoProvider {
         return Optional.of(contextInfo);
     }
 
-    public Optional<String> getMpJwtublicKey() {
-        return mpJwtublicKey;
+    public Optional<String> getMpJwtPublicKey() {
+        return mpJwtPublicKey;
     }
 
     public String getMpJwtIssuer() {
