@@ -41,7 +41,7 @@
     <version.org.jboss.arquillian>1.4.1.Final</version.org.jboss.arquillian>
     <version.org.jboss.arquillian.container.weld-embedded>2.0.0.Final</version.org.jboss.arquillian.container.weld-embedded>
     <version.org.jboss.logging>3.3.2.Final</version.org.jboss.logging>
-    <version.org.jboss.logging-processor>2.0.1.Final</version.org.jboss.logging-processor>
+    <version.org.jboss.logging-processor>2.1.0.Final</version.org.jboss.logging-processor>
     <version.org.jboss.weld>3.0.Final</version.org.jboss.weld>
     <version.org.jboss.weld.core.impl>3.0.5.Final</version.org.jboss.weld.core.impl>
   </properties>
