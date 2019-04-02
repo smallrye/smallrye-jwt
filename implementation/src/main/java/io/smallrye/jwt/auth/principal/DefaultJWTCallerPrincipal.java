@@ -48,10 +48,15 @@ public class DefaultJWTCallerPrincipal extends JWTCallerPrincipal {
      * @param tokenType - token type
      * @param claimsSet - Jose4J claims set
      */
-    public DefaultJWTCallerPrincipal(String rawToken, String tokenType, JwtClaims claimsSet) {
-        super(rawToken, tokenType);
+    public DefaultJWTCallerPrincipal(String tokenType, JwtClaims claimsSet) {
+        super(getRawToken(claimsSet), tokenType);
         this.claimsSet = claimsSet;
         fixJoseTypes();
+    }
+    
+    private static String getRawToken(JwtClaims claimsSet) {
+        Object rawToken = claimsSet.getClaimValue(Claims.raw_token.name());
+        return rawToken != null ? rawToken.toString() : null;
     }
     
     @Override
