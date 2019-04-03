@@ -184,7 +184,7 @@ public class DefaultJWTCallerPrincipal extends JWTCallerPrincipal {
     }
 
     /**
-     * Replace the jose4j Map<String,Object> with a JsonObject
+     * Replace the jose4j Map with a JsonObject
      *
      * @param name - claim name
      */
@@ -200,7 +200,7 @@ public class DefaultJWTCallerPrincipal extends JWTCallerPrincipal {
     }
 
     /**
-     * Replace the jose4j List<?> with a JsonArray
+     * Replace the jose4j List with a JsonArray
      *
      * @param name - claim name
      */
