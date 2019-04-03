@@ -119,17 +119,15 @@ public abstract class JWTCallerPrincipal implements JsonWebToken {
         return tmp.toString();
     }
     
-    protected static JsonObject replaceMap(Map<String, Object> map) {
+    protected JsonObject replaceMapClaims(Map<String, Object> map) {
         JsonObjectBuilder builder = Json.createObjectBuilder();
         for (Map.Entry<String, Object> entry : map.entrySet()) {
             Object entryValue = entry.getValue();
             if (entryValue instanceof Map) {
-                @SuppressWarnings("unchecked")
-                Map<String, Object> mapValue = (Map<String, Object>) entryValue;
-                JsonObject entryJsonObject = replaceMap(mapValue);
+                JsonObject entryJsonObject = replaceMapClaims((Map<String, Object>) entryValue);
                 builder.add(entry.getKey(), entryJsonObject);
             } else if (entryValue instanceof List) {
-                JsonArray array = (JsonArray) wrapValue(entryValue);
+                JsonArray array = (JsonArray) wrapClaimValue(entryValue);
                 builder.add(entry.getKey(), array);
             } else if (entryValue instanceof Long || entryValue instanceof Integer) {
                 long lvalue = ((Number) entryValue).longValue();
@@ -147,9 +145,17 @@ public abstract class JWTCallerPrincipal implements JsonWebToken {
         return builder.build();
     }
 
-    protected static JsonValue wrapValue(Object value) {
+    protected JsonValue wrapClaimValue(Object value) {
         JsonValue jsonValue = null;
-        if (value instanceof Number) {
+        if (value instanceof JsonValue) {
+            // This may already be a JsonValue
+            jsonValue = (JsonValue) value;
+        } else if (value instanceof String) {
+            jsonValue = Json.createObjectBuilder()
+                    .add(TMP, value.toString())
+                    .build()
+                    .getJsonString(TMP);
+        } else if (value instanceof Number) {
             Number number = (Number) value;
             if ((number instanceof Long) || (number instanceof Integer)) {
                 jsonValue = Json.createObjectBuilder()
@@ -165,20 +171,30 @@ public abstract class JWTCallerPrincipal implements JsonWebToken {
         } else if (value instanceof Boolean) {
             Boolean flag = (Boolean) value;
             jsonValue = flag ? JsonValue.TRUE : JsonValue.FALSE;
-        } else if (value instanceof List) {
+        } else if (value instanceof Collection) {
             JsonArrayBuilder arrayBuilder = Json.createArrayBuilder();
-            @SuppressWarnings("unchecked")
-            List<Object> list = (List<Object>) value;
+            Collection list = (Collection) value;
             for (Object element : list) {
                 if (element instanceof String) {
                     arrayBuilder.add(element.toString());
                 } else {
-                    JsonValue jvalue = wrapValue(element);
+                    JsonValue jvalue = wrapClaimValue(element);
                     arrayBuilder.add(jvalue);
                 }
             }
             jsonValue = arrayBuilder.build();
+        } else if (value instanceof Map) {
+            jsonValue = replaceMapClaims((Map) value);
         }
         return jsonValue;
     }
+    
+    protected Claims getClaimType(String claimName) {
+    	Claims claimType = Claims.UNKNOWN;
+        try {
+            claimType = Claims.valueOf(claimName);
+        } catch (IllegalArgumentException e) {
+        }
+        return claimType;
+	}
 }

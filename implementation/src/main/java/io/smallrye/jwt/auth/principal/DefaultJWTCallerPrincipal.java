@@ -48,13 +48,21 @@ public class DefaultJWTCallerPrincipal extends JWTCallerPrincipal {
      * @param tokenType - token type
      * @param claimsSet - Jose4J claims set
      */
-    public DefaultJWTCallerPrincipal(String tokenType, JwtClaims claimsSet) {
-        super(getRawToken(claimsSet), tokenType);
+    public DefaultJWTCallerPrincipal(String rawToken, String tokenType, JwtClaims claimsSet) {
+        super(rawToken, tokenType);
         this.claimsSet = claimsSet;
         fixJoseTypes();
     }
     
-    private static String getRawToken(JwtClaims claimsSet) {
+    public DefaultJWTCallerPrincipal(String tokenType, JwtClaims claimsSet) {
+        this(getRawToken(claimsSet), tokenType, claimsSet);
+    }
+    
+    public DefaultJWTCallerPrincipal(JwtClaims claimsSet) {
+        this("JWT", claimsSet);
+    }
+    
+    protected static String getRawToken(JwtClaims claimsSet) {
         Object rawToken = claimsSet.getClaimValue(Claims.raw_token.name());
         return rawToken != null ? rawToken.toString() : null;
     }
@@ -74,6 +82,7 @@ public class DefaultJWTCallerPrincipal extends JWTCallerPrincipal {
                 audSet = new HashSet<>();
                 audSet.add(aud);
             } catch (MalformedClaimException e1) {
+            	logger.warn("getAudience failure: ", e);
             }
         }
         return audSet;
@@ -88,7 +97,7 @@ public class DefaultJWTCallerPrincipal extends JWTCallerPrincipal {
                 groups.addAll(globalGroups);
             }
         } catch (MalformedClaimException e) {
-            e.printStackTrace();
+        	logger.warn("getGroups failure: ", e);
         }
         return groups;
     }
@@ -100,12 +109,9 @@ public class DefaultJWTCallerPrincipal extends JWTCallerPrincipal {
     
     @Override
     protected Object getClaimValue(String claimName) {
-        Claims claimType = Claims.UNKNOWN;
+        Claims claimType = getClaimType(claimName);
         Object claim = null;
-        try {
-            claimType = Claims.valueOf(claimName);
-        } catch (IllegalArgumentException e) {
-        }
+        
         // Handle the jose4j NumericDate types and
         switch (claimType) {
             case exp:
@@ -135,7 +141,7 @@ public class DefaultJWTCallerPrincipal extends JWTCallerPrincipal {
         }
         return claim;
     }
-
+    
     /**
      * Convert the types jose4j uses for address, sub_jwk, and jwk
      */
@@ -169,7 +175,7 @@ public class DefaultJWTCallerPrincipal extends JWTCallerPrincipal {
      * @param claimNames - the current set of claim names in this token
      * @return the possibly empty set of names for non-Claims claims
      */
-    private Set<String> filterCustomClaimNames(Collection<String> claimNames) {
+    protected Set<String> filterCustomClaimNames(Collection<String> claimNames) {
         HashSet<String> customNames = new HashSet<>(claimNames);
         for (Claims claim : Claims.values()) {
             customNames.remove(claim.name());
@@ -182,11 +188,11 @@ public class DefaultJWTCallerPrincipal extends JWTCallerPrincipal {
      *
      * @param name - claim name
      */
-    private void replaceMap(String name) {
+    protected void replaceMap(String name) {
         try {
             @SuppressWarnings("unchecked")
             Map<String, Object> map = claimsSet.getClaimValue(name, Map.class);
-            JsonObject jsonObject = replaceMap(map);
+            JsonObject jsonObject = replaceMapClaims(map);
             claimsSet.setClaim(name, jsonObject);
         } catch (MalformedClaimException e) {
             logger.warn("replaceMap failure for: " + name, e);
@@ -198,19 +204,19 @@ public class DefaultJWTCallerPrincipal extends JWTCallerPrincipal {
      *
      * @param name - claim name
      */
-    private void replaceList(String name) {
+    protected void replaceList(String name) {
         try {
-            JsonArray array = (JsonArray) wrapValue(claimsSet.getClaimValue(name, List.class));
+            JsonArray array = (JsonArray) wrapClaimValue(claimsSet.getClaimValue(name, List.class));
             claimsSet.setClaim(name, array);
         } catch (MalformedClaimException e) {
             logger.warn("replaceList failure for: " + name, e);
         }
     }
 
-    private void replaceNumber(String name) {
+    protected void replaceNumber(String name) {
         try {
             Number number = claimsSet.getClaimValue(name, Number.class);
-            JsonNumber jsonNumber = (JsonNumber) wrapValue(number);
+            JsonNumber jsonNumber = (JsonNumber) wrapClaimValue(number);
             claimsSet.setClaim(name, jsonNumber);
         } catch (MalformedClaimException e) {
             logger.warn("replaceNumber failure for: " + name, e);
