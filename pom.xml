@@ -32,7 +32,7 @@
   <name>SmallRye: MicroProfile JWT Parent</name>
 
   <properties>
-    <version.asciidoctor.plugin>1.5.7.1</version.asciidoctor.plugin>
+    <version.asciidoctor.plugin>1.6.0</version.asciidoctor.plugin>
     <version.eclipse.microprofile.jwt>1.1.1</version.eclipse.microprofile.jwt>
     <version.javax.javaee-api>8.0</version.javax.javaee-api>
     <version.javax.enterprise.cdi-api>2.0</version.javax.enterprise.cdi-api>
