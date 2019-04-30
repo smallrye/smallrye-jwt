@@ -54,7 +54,7 @@ public class CommonJwtProducer {
     JsonWebToken currentToken;
 
     /**
-     * A utility method for accessing a claim from the current JsonWebToken as a ClaimValue<Optional<T>> object.
+     * A utility method for accessing a claim from the current JsonWebToken as a ClaimValue Optional object.
      *
      * @param ip - injection point of the claim
      * @param <T> expected actual type of the claim
