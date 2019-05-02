@@ -95,7 +95,7 @@ public class DefaultJWTTokenParser {
             
             return jwtContext;
         } catch (InvalidJwtException e) {
-        	logger.warnf("Token is invalid: %s", e.getMessage());
+            logger.warnf("Token is invalid: %s", e.getMessage());
             throw new ParseException("Failed to verify token", e);
         }
 
