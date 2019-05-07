@@ -30,7 +30,7 @@ public class JWTAuthContextInfo {
     private Integer jwksRefreshInterval;
     private String tokenHeader = "Authorization";
     private String tokenCookie;
-    private String defaultGroups;
+    private String defaultGroupsClaim;
     /**
      * Flag that indicates whether the issuer is required and validated, or ignored, new in MP-JWT 1.1.
      */
@@ -131,19 +131,19 @@ public class JWTAuthContextInfo {
         this.tokenHeader = tokenHeader;
     }
 
-    public String getDefaultGroups() {
-        return defaultGroups;
-    }
-
-    public void setDefaultGroups(String defaultGroups) {
-        this.defaultGroups = defaultGroups;
-    }
-
     public String getTokenCookie() {
         return tokenCookie;
     }
 
     public void setTokenCookie(String tokenCookie) {
         this.tokenCookie = tokenCookie;
+    }
+
+    public String getDefaultGroupsClaim() {
+        return defaultGroupsClaim;
+    }
+
+    public void setDefaultGroupsClaim(String defaultGroupsClaim) {
+        this.defaultGroupsClaim = defaultGroupsClaim;
     }
 }

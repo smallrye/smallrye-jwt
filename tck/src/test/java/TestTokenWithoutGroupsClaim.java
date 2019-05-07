@@ -60,7 +60,7 @@ public class TestTokenWithoutGroupsClaim extends Arquillian {
     public void defaultGroupsClaimIsAvailable() throws Exception {
         
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo((RSAPublicKey) publicKey, TEST_ISSUER);
-        contextInfo.setDefaultGroups("microprofile_jwt_user");
+        contextInfo.setDefaultGroupsClaim("microprofile_jwt_user");
         JWTCallerPrincipalFactory factory = JWTCallerPrincipalFactory.instance();
         JsonWebToken jwt = factory.parse(token, contextInfo);
         Set<String> groups = jwt.getGroups();

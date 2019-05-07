@@ -92,11 +92,11 @@ public class JWTAuthContextInfoProvider {
      */
     @Inject
     @ConfigProperty(name = "smallrye.jwt.claims.groups")
-    private Optional<String> defaultGroups;
+    private Optional<String> defaultGroupsClaim;
     
     @Produces
     Optional<JWTAuthContextInfo> getOptionalContextInfo() {
-     // Log the config values
+        // Log the config values
         log.debugf("init, mpJwtPublicKey=%s, mpJwtIssuer=%s, mpJwtLocation=%s",
                    mpJwtPublicKey.orElse("missing"), mpJwtIssuer, mpJwtLocation.orElse("missing"));
 
@@ -174,8 +174,8 @@ public class JWTAuthContextInfoProvider {
             }
         }
         
-        if (defaultGroups.isPresent()) {
-            contextInfo.setDefaultGroups(defaultGroups.get());
+        if (defaultGroupsClaim.isPresent()) {
+            contextInfo.setDefaultGroupsClaim(defaultGroupsClaim.get());
         }
     }
 
