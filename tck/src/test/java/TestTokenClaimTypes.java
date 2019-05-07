@@ -138,6 +138,13 @@ public class TestTokenClaimTypes extends Arquillian {
         long iat = jwt.getClaim(Claims.iat.name());
         Assert.assertEquals(iatClaim.longValue(), iat);
     }
+    
+    @Test(groups = TEST_GROUP_JWT,
+            description = "validate the auth_time claim")
+    public void validateAuthTime() {
+        long authTime = jwt.getClaim(Claims.auth_time.name());
+        Assert.assertEquals(authTimeClaim.longValue(), authTime);
+    }
 
     @Test(groups = TEST_GROUP_JWT,
             description = "validate the claim names")

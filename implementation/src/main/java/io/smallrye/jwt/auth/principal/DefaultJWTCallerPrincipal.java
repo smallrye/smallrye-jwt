@@ -72,13 +72,13 @@ public class DefaultJWTCallerPrincipal extends JWTCallerPrincipal {
         Set<String> audSet = null;
         try {
             if (claimsSet.hasClaim(Claims.aud.name())) {
-                List<String> audList = claimsSet.getStringListClaimValue("aud");
+                List<String> audList = claimsSet.getStringListClaimValue(Claims.aud.name());
                 audSet = new HashSet<>(audList);
             }
         } catch (MalformedClaimException e) {
             try {
                 // Not sent as an array, try a single value
-                String aud = claimsSet.getStringClaimValue("aud");
+                String aud = claimsSet.getStringClaimValue(Claims.aud.name());
                 audSet = new HashSet<>();
                 audSet.add(aud);
             } catch (MalformedClaimException e1) {
@@ -92,7 +92,7 @@ public class DefaultJWTCallerPrincipal extends JWTCallerPrincipal {
     public Set<String> getGroups() {
         HashSet<String> groups = new HashSet<>();
         try {
-            List<String> globalGroups = claimsSet.getStringListClaimValue("groups");
+            List<String> globalGroups = claimsSet.getStringListClaimValue(Claims.groups.name());
             if (globalGroups != null) {
                 groups.addAll(globalGroups);
             }
