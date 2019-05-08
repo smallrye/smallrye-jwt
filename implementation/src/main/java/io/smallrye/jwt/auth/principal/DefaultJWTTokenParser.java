@@ -71,10 +71,13 @@ public class DefaultJWTTokenParser {
             
             JwtClaims claimsSet = jwtContext.getJwtClaims();
             claimsSet.setClaim(Claims.raw_token.name(), token);
-
+            if (!claimsSet.hasClaim(Claims.groups.name()) && authContextInfo.getDefaultGroupsClaim() != null) {
+                claimsSet.setClaim(Claims.groups.name(), Collections.singletonList(authContextInfo.getDefaultGroupsClaim()));
+            }
             // Process the rolesMapping claim
             if (claimsSet.hasClaim(ROLE_MAPPINGS)) {
                 try {
+                    @SuppressWarnings("unchecked")
                     Map<String, String> rolesMapping = claimsSet.getClaimValue(ROLE_MAPPINGS, Map.class);
                     List<String> groups = claimsSet.getStringListClaimValue(Claims.groups.name());
                     List<String> allGroups = new ArrayList<>(groups);

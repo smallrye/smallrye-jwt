@@ -28,7 +28,9 @@ public class JWTAuthContextInfo {
     private int expGracePeriodSecs = 60;
     private String jwksUri;
     private Integer jwksRefreshInterval;
-    
+    private String tokenHeader = "Authorization";
+    private String tokenCookie;
+    private String defaultGroupsClaim;
     /**
      * Flag that indicates whether the issuer is required and validated, or ignored, new in MP-JWT 1.1.
      */
@@ -119,5 +121,29 @@ public class JWTAuthContextInfo {
 
     public void setFollowMpJwt11Rules(boolean followMpJwt11Rules) {
         this.followMpJwt11Rules = followMpJwt11Rules;
+    }
+
+    public String getTokenHeader() {
+        return tokenHeader;
+    }
+
+    public void setTokenHeader(String tokenHeader) {
+        this.tokenHeader = tokenHeader;
+    }
+
+    public String getTokenCookie() {
+        return tokenCookie;
+    }
+
+    public void setTokenCookie(String tokenCookie) {
+        this.tokenCookie = tokenCookie;
+    }
+
+    public String getDefaultGroupsClaim() {
+        return defaultGroupsClaim;
+    }
+
+    public void setDefaultGroupsClaim(String defaultGroupsClaim) {
+        this.defaultGroupsClaim = defaultGroupsClaim;
     }
 }
