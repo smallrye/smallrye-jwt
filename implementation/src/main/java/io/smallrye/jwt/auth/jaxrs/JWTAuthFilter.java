@@ -24,9 +24,13 @@ import javax.inject.Inject;
 import javax.ws.rs.Priorities;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
+import javax.ws.rs.core.Cookie;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.SecurityContext;
 import javax.ws.rs.ext.Provider;
+
+import org.jboss.logging.Logger;
+
 import java.io.IOException;
 
 import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
@@ -42,33 +46,79 @@ import io.smallrye.jwt.auth.principal.ParseException;
 @Priority(Priorities.AUTHENTICATION)
 @Provider
 public class JWTAuthFilter implements ContainerRequestFilter {
+
+    private static Logger logger = Logger.getLogger(JWTAuthFilter.class);
+
     @Inject
     private JWTAuthContextInfo authContextInfo;
 
     @Override
     public void filter(ContainerRequestContext requestContext) throws IOException {
-        String authHeaderVal = requestContext.getHeaderString("Authorization");
-        System.err.printf("JWTAuthFilter.authHeaderVal: %s\n", authHeaderVal);
-        if (authHeaderVal.startsWith("Bearer")) {
+        String bearerToken = getBearerToken(requestContext);
+
+        if (bearerToken != null) {
             try {
-                String bearerToken = authHeaderVal.substring(7);
                 JWTCallerPrincipal jwtPrincipal = validate(bearerToken);
                 // Install the JWT principal as the caller
                 final SecurityContext securityContext = requestContext.getSecurityContext();
                 JWTSecurityContext jwtSecurityContext = new JWTSecurityContext(securityContext, jwtPrincipal);
                 requestContext.setSecurityContext(jwtSecurityContext);
-                System.out.printf("Success\n");
+                logger.debugf("Success");
             }
             catch (Exception ex) {
-                System.err.printf("Failed with ex=%s\n", ex.getMessage());
-                ex.printStackTrace();
+                logger.warnf(ex, "Failed with ex=%s", ex.getMessage());
                 requestContext.abortWith(Response.status(Response.Status.UNAUTHORIZED).build());
             }
         }
         else {
-            System.err.printf("Failed due to missing Authorization bearer token\n");
+            logger.debug("Failed due to missing Authorization bearer token");
             requestContext.abortWith(Response.status(Response.Status.UNAUTHORIZED).build());
         }
+    }
+
+    /**
+     * Find a JWT Bearer token in the request by referencing the configurations found
+     * in the {@link JWTAuthContextInfo}. The resulting token may be found in a cookie
+     * or another HTTP header, either explicitly configured or the default 'Authorization'
+     * header.
+     *
+     * @param requestContext current request
+     * @return a JWT Bearer token or null if not found
+     */
+    String getBearerToken(ContainerRequestContext requestContext) {
+        final String tokenHeaderName = authContextInfo.getTokenHeader();
+        final String bearerValue;
+
+        if ("Cookie".equals(tokenHeaderName)) {
+            String tokenCookieName = authContextInfo.getTokenCookie();
+
+            if (tokenCookieName == null) {
+                tokenCookieName = "Bearer";
+            }
+
+            logger.debugf("tokenCookieName = %s", tokenCookieName);
+
+            final Cookie tokenCookie = requestContext.getCookies().get(tokenCookieName);
+
+            if (tokenCookie != null) {
+                bearerValue = tokenCookie.getValue();
+            } else {
+                logger.debugf("tokenCookie %s was null", tokenCookieName);
+                bearerValue = null;
+            }
+        } else {
+            final String tokenHeader = requestContext.getHeaderString(tokenHeaderName);
+            logger.debugf("tokenHeaderName = %s", tokenHeaderName);
+
+            if (tokenHeader != null && tokenHeader.startsWith("Bearer ")) {
+                bearerValue = tokenHeader.substring("Bearer ".length());
+            } else {
+                logger.debugf("tokenHeader %s was null", tokenHeaderName);
+                bearerValue = null;
+            }
+        }
+
+        return bearerValue;
     }
 
     protected JWTCallerPrincipal validate(String bearerToken) throws ParseException {
