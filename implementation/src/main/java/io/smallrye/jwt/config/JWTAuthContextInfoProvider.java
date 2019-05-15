@@ -21,6 +21,7 @@ import java.security.interfaces.RSAPublicKey;
 import java.util.Optional;
 
 import javax.enterprise.context.Dependent;
+import javax.enterprise.context.RequestScoped;
 import javax.enterprise.inject.Produces;
 import javax.enterprise.inject.spi.DeploymentException;
 import javax.inject.Inject;
@@ -108,6 +109,7 @@ public class JWTAuthContextInfoProvider {
     private Optional<String> defaultGroupsClaim;
     
     @Produces
+    @RequestScoped
     Optional<JWTAuthContextInfo> getOptionalContextInfo() {
         // Log the config values
         log.debugf("init, mpJwtPublicKey=%s, mpJwtIssuer=%s, mpJwtLocation=%s",
@@ -209,6 +211,7 @@ public class JWTAuthContextInfoProvider {
     }
 
     @Produces
+    @RequestScoped
     public JWTAuthContextInfo getContextInfo() {
         return getOptionalContextInfo().get();
     }

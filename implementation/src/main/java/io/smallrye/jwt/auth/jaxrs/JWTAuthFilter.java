@@ -19,20 +19,30 @@
  */
 package io.smallrye.jwt.auth.jaxrs;
 
+import java.io.IOException;
+import java.lang.reflect.Method;
+import java.security.Principal;
+import java.util.Arrays;
+import java.util.Set;
+
 import javax.annotation.Priority;
+import javax.annotation.security.DenyAll;
+import javax.annotation.security.PermitAll;
+import javax.annotation.security.RolesAllowed;
 import javax.inject.Inject;
 import javax.ws.rs.Priorities;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
+import javax.ws.rs.container.ResourceInfo;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Cookie;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.SecurityContext;
-import javax.ws.rs.ext.Provider;
 
+import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.jboss.logging.Logger;
 
-import java.io.IOException;
-
+import io.smallrye.jwt.auth.cdi.PrincipalProducer;
 import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
 import io.smallrye.jwt.auth.principal.JWTCallerPrincipal;
 import io.smallrye.jwt.auth.principal.JWTCallerPrincipalFactory;
@@ -41,39 +51,57 @@ import io.smallrye.jwt.auth.principal.ParseException;
 
 /**
  * A JAX-RS ContainerRequestFilter prototype
- * TODO
+ * TODO - JavaDoc and tests
  */
 @Priority(Priorities.AUTHENTICATION)
-@Provider
 public class JWTAuthFilter implements ContainerRequestFilter {
 
     private static Logger logger = Logger.getLogger(JWTAuthFilter.class);
 
+    @Context
+    private ResourceInfo resourceInfo;
+
     @Inject
     private JWTAuthContextInfo authContextInfo;
 
+    @Inject
+    private PrincipalProducer producer;
+
     @Override
     public void filter(ContainerRequestContext requestContext) throws IOException {
-        String bearerToken = getBearerToken(requestContext);
+        JsonWebToken jwtPrincipal = getJsonWebToken(requestContext);
 
-        if (bearerToken != null) {
-            try {
-                JWTCallerPrincipal jwtPrincipal = validate(bearerToken);
-                // Install the JWT principal as the caller
-                final SecurityContext securityContext = requestContext.getSecurityContext();
-                JWTSecurityContext jwtSecurityContext = new JWTSecurityContext(securityContext, jwtPrincipal);
-                requestContext.setSecurityContext(jwtSecurityContext);
-                logger.debugf("Success");
-            }
-            catch (Exception ex) {
-                logger.warnf(ex, "Failed with ex=%s", ex.getMessage());
-                requestContext.abortWith(Response.status(Response.Status.UNAUTHORIZED).build());
-            }
-        }
-        else {
-            logger.debug("Failed due to missing Authorization bearer token");
+        if (!isPermitted(resourceInfo, jwtPrincipal)) {
+            // TODO: throw NotAuthorizedException to allow client to handle?
             requestContext.abortWith(Response.status(Response.Status.UNAUTHORIZED).build());
         }
+    }
+
+    JsonWebToken getJsonWebToken(ContainerRequestContext requestContext) {
+        final SecurityContext securityContext = requestContext.getSecurityContext();
+        final Principal principal = securityContext.getUserPrincipal();
+        JsonWebToken jwtPrincipal = null;
+
+        if (principal instanceof JsonWebToken) {
+            jwtPrincipal = (JsonWebToken) principal;
+        } else {
+            String bearerToken = getBearerToken(requestContext);
+
+            if (bearerToken != null) {
+                try {
+                    jwtPrincipal = validate(bearerToken);
+                    producer.setJsonWebToken(jwtPrincipal);
+                    // Install the JWT principal as the caller
+                    JWTSecurityContext jwtSecurityContext = new JWTSecurityContext(securityContext, jwtPrincipal);
+                    requestContext.setSecurityContext(jwtSecurityContext);
+                    logger.debugf("Success");
+                } catch (Exception e) {
+                    logger.warnf(e, "Unable to parse/validate JWT: %s", e.getMessage());
+                }
+            }
+        }
+
+        return jwtPrincipal;
     }
 
     /**
@@ -85,6 +113,7 @@ public class JWTAuthFilter implements ContainerRequestFilter {
      * @param requestContext current request
      * @return a JWT Bearer token or null if not found
      */
+    //TODO: consolidate with common logic found in JWTHttpAuthenticationMechanism#getBearerToken if possible
     String getBearerToken(ContainerRequestContext requestContext) {
         final String tokenHeaderName = authContextInfo.getTokenHeader();
         final String bearerValue;
@@ -125,5 +154,58 @@ public class JWTAuthFilter implements ContainerRequestFilter {
         JWTCallerPrincipalFactory factory = JWTCallerPrincipalFactory.instance();
         JWTCallerPrincipal callerPrincipal = factory.parse(bearerToken, authContextInfo);
         return callerPrincipal;
+    }
+
+    /**
+     * MP-JWT Specification 1.1.1, Section 7.3
+     *
+     * Determine if access to the currently requested resource is permitted to
+     * principal.
+     *
+     * @param resourceInfo
+     * @param principal
+     */
+    boolean isPermitted(ResourceInfo resourceInfo, JsonWebToken principal) {
+        Class<?> resourceClass = resourceInfo.getResourceClass();
+        Method resourceMethod = resourceInfo.getResourceMethod();
+        boolean permitted;
+
+        // TODO: Check for EJB annotations and defer check to EJB container in that case?
+
+        if (resourceMethod.isAnnotationPresent(PermitAll.class)) {
+            permitted = true;
+        } else if (resourceMethod.isAnnotationPresent(DenyAll.class)) {
+            permitted = false;
+        } else if (resourceMethod.isAnnotationPresent(RolesAllowed.class)) {
+            permitted = groupsAllowed(resourceMethod.getAnnotation(RolesAllowed.class), principal);
+        } else if (resourceClass.isAnnotationPresent(PermitAll.class)) {
+            permitted = true;
+        } else if (resourceClass.isAnnotationPresent(DenyAll.class)) {
+            permitted = false;
+        } else if (resourceClass.isAnnotationPresent(RolesAllowed.class)) {
+            permitted = groupsAllowed(resourceClass.getAnnotation(RolesAllowed.class), principal);
+        } else {
+            permitted = true;
+        }
+
+        return permitted;
+    }
+
+    boolean groupsAllowed(RolesAllowed annotation, JsonWebToken principal) {
+        boolean allowed;
+
+        if (principal != null) {
+            final Set<String> groups = principal.getGroups();
+
+            allowed = Arrays.stream(annotation.value())
+                            .filter(role -> groups.contains(role))
+                            .map(role -> Boolean.TRUE)
+                            .findFirst()
+                            .orElse(Boolean.FALSE);
+        } else {
+            allowed = false;
+        }
+
+        return allowed;
     }
 }
