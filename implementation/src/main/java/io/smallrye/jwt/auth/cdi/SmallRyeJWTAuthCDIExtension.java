@@ -24,6 +24,7 @@ import javax.enterprise.inject.spi.Extension;
 import org.jboss.logging.Logger;
 
 import io.smallrye.jwt.auth.jaxrs.JWTAuthFilter;
+import io.smallrye.jwt.auth.mechanism.JWTHttpAuthenticationMechanism;
 import io.smallrye.jwt.config.JWTAuthContextInfoProvider;
 
 public class SmallRyeJWTAuthCDIExtension implements Extension {

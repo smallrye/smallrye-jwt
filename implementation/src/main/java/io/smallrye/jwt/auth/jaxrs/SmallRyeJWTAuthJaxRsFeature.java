@@ -36,6 +36,7 @@ public class SmallRyeJWTAuthJaxRsFeature implements Feature {
 
         if (enabled) {
             context.register(JWTAuthFilter.class);
+            context.register(JWTAuthzFilterRegistrar.class);
         }
 
         return enabled;
