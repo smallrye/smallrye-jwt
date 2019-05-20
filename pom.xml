@@ -22,17 +22,20 @@
   <parent>
     <groupId>io.smallrye</groupId>
     <artifactId>smallrye-parent</artifactId>
-    <version>4</version>
+    <version>6</version>
   </parent>
 
-  <artifactId>smallrye-jwt-parent</artifactId>
-  <version>1.1.5-SNAPSHOT</version>
+  <artifactId>smallrye-jwt-parent-1.1</artifactId>
+  <version>1.0.0-SNAPSHOT</version>
 
   <packaging>pom</packaging>
   <name>SmallRye: MicroProfile JWT Parent</name>
 
   <properties>
     <version.eclipse.microprofile.jwt>1.1.1</version.eclipse.microprofile.jwt>
+
+    <!-- Used by release plugin to define git tag -->
+    <tagNameFormat>smallrye-jwt-1.1-@{project.version}</tagNameFormat>
   </properties>
 
   <scm>
@@ -64,7 +67,7 @@
       <!-- Dependencies provided by the project -->
       <dependency>
         <groupId>io.smallrye</groupId>
-        <artifactId>smallrye-jwt</artifactId>
+        <artifactId>smallrye-jwt-1.1</artifactId>
         <version>${project.version}</version>
       </dependency>
     </dependencies>
@@ -94,4 +97,18 @@
       </plugins>
     </pluginManagement>
   </build>
+
+  <profiles>
+    <profile>
+      <id>release</id>
+      <activation>
+        <property>
+          <name>!release.maven.bug.always.be.active</name>
+        </property>
+      </activation>
+      <modules>
+        <module>release</module>
+      </modules>
+    </profile>
+  </profiles>
 </project>
