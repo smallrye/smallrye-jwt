@@ -65,11 +65,11 @@ public class DefaultJWTTokenParser {
             }
 
             JwtConsumer jwtConsumer = builder.build();
-            JwtContext jwtContext = jwtConsumer.process(token);
-            //  Validate the JWT and process it to the Claims
-            jwtConsumer.processContext(jwtContext);
             
+            //  Validate the JWT and process it to the Claims
+            JwtContext jwtContext = jwtConsumer.process(token);
             JwtClaims claimsSet = jwtContext.getJwtClaims();
+            
             claimsSet.setClaim(Claims.raw_token.name(), token);
             if (!claimsSet.hasClaim(Claims.groups.name()) && authContextInfo.getDefaultGroupsClaim() != null) {
                 claimsSet.setClaim(Claims.groups.name(), Collections.singletonList(authContextInfo.getDefaultGroupsClaim()));
