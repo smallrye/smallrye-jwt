@@ -21,18 +21,13 @@
 
   <parent>
     <groupId>io.smallrye</groupId>
-    <artifactId>smallrye-jwt-parent</artifactId>
-    <version>1.1.5-SNAPSHOT</version>
+    <artifactId>smallrye-jwt-parent-1.1</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>smallrye-jwt-tck</artifactId>
 
   <name>SmallRye: MicroProfile JWT TCK</name>
-
-    <properties>
-        <maven.compiler.source>1.8</maven.compiler.source>
-        <maven.compiler.target>1.8</maven.compiler.target>
-    </properties>
 
   <profiles>
     <profile>
@@ -107,6 +102,21 @@
             -->
             </configuration>
           </plugin>
+
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-install-plugin</artifactId>
+            <configuration>
+              <skip>true</skip>
+            </configuration>
+          </plugin>
+          <plugin>
+            <groupId>org.sonatype.plugins</groupId>
+            <artifactId>nexus-staging-maven-plugin</artifactId>
+            <configuration>
+              <skipNexusStagingDeployMojo>true</skipNexusStagingDeployMojo>
+            </configuration>
+          </plugin>
         </plugins>
       </build>
     </profile>
@@ -115,7 +125,7 @@
   <dependencies>
     <dependency>
       <groupId>io.smallrye</groupId>
-      <artifactId>smallrye-jwt</artifactId>
+      <artifactId>smallrye-jwt-1.1</artifactId>
       <scope>test</scope>
     </dependency>
 
