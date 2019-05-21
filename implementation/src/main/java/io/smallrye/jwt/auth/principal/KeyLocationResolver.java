@@ -36,12 +36,13 @@ import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
 
-import io.smallrye.jwt.KeyUtils;
 import org.jboss.logging.Logger;
 import org.jose4j.jws.JsonWebSignature;
 import org.jose4j.jwx.JsonWebStructure;
 import org.jose4j.keys.resolvers.VerificationKeyResolver;
 import org.jose4j.lang.UnresolvableKeyException;
+
+import io.smallrye.jwt.KeyUtils;
 
 /**
  * This implements the MP-JWT 1.1 mp.jwt.verify.publickey.location config property resolution logic
@@ -57,15 +58,14 @@ public class KeyLocationResolver implements VerificationKeyResolver {
     }
     @Override
     public Key resolveKey(JsonWebSignature jws, List<JsonWebStructure> nestingContext) throws UnresolvableKeyException {
-        PublicKey key = null;
-        String kid = jws.getHeaders().getStringHeaderValue("kid");
         try {
             loadContents();
         } catch (IOException e) {
             throw new UnresolvableKeyException("Failed to load key from: " + location, e);
         }
-        // Determine what the contents are...
-        key = tryAsJWKx(kid);
+        String kid = jws.getHeaders().getStringHeaderValue("kid");
+        
+        PublicKey key = tryAsJWK(kid);
         if (key == null) {
             key = tryAsPEM();
         }
@@ -85,7 +85,7 @@ public class KeyLocationResolver implements VerificationKeyResolver {
         return publicKey;
     }
 
-    private PublicKey tryAsJWKx(String kid) {
+    private PublicKey tryAsJWK(String kid) {
         PublicKey publicKey = null;
         try {
             log.debugf("Trying location as JWK(S)...");
@@ -95,24 +95,37 @@ public class KeyLocationResolver implements VerificationKeyResolver {
             } else {
                 json = contents.toString();
             }
+            JsonObject jwk = null;
+            
             JsonObject jwks = Json.createReader(new StringReader(json)).readObject();
             JsonArray keys = jwks.getJsonArray("keys");
-            JsonObject jwk;
             if (keys != null) {
-                jwk = keys.getJsonObject(0);
+                if (kid != null) {
+                    for (int i = 0; i < keys.size(); i++) {
+                        JsonObject currentJwk = keys.getJsonObject(i);
+                        if (currentJwk.containsKey("kid") && kid.equals(currentJwk.getString("kid"))) {
+                            jwk = currentJwk;
+                            break;
+                        }
+                    }
+                } else if (keys.size() == 1) {
+                    jwk = keys.getJsonObject(0);
+                }
             } else {
                 jwk = jwks;
             }
-            String e = jwk.getString("e");
-            String n = jwk.getString("n");
-
-            byte[] ebytes = Base64.getUrlDecoder().decode(e);
-            BigInteger publicExponent = new BigInteger(1, ebytes);
-            byte[] nbytes = Base64.getUrlDecoder().decode(n);
-            BigInteger modulus = new BigInteger(1, nbytes);
-            KeyFactory kf = KeyFactory.getInstance("RSA");
-            RSAPublicKeySpec rsaPublicKeySpec = new RSAPublicKeySpec(modulus, publicExponent);
-            publicKey = kf.generatePublic(rsaPublicKeySpec);
+            if (jwk != null) {
+                String e = jwk.getString("e");
+                String n = jwk.getString("n");
+    
+                byte[] ebytes = Base64.getUrlDecoder().decode(e);
+                BigInteger publicExponent = new BigInteger(1, ebytes);
+                byte[] nbytes = Base64.getUrlDecoder().decode(n);
+                BigInteger modulus = new BigInteger(1, nbytes);
+                KeyFactory kf = KeyFactory.getInstance("RSA");
+                RSAPublicKeySpec rsaPublicKeySpec = new RSAPublicKeySpec(modulus, publicExponent);
+                publicKey = kf.generatePublic(rsaPublicKeySpec);
+            }
         } catch (Exception e) {
             log.debug("Failed to read location as JWK(S)", e);
         }
