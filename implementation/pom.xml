@@ -31,6 +31,7 @@
 
   <properties>
     <version.jose4j>0.6.5</version.jose4j>
+    <version.mokito>2.27.0</version.mokito>
   </properties>
 
   <dependencies>
@@ -80,13 +81,7 @@
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-core</artifactId>
-      <version>2.27.0</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.glassfish.jersey.core</groupId>
-      <artifactId>jersey-common</artifactId>
-      <version>2.27</version>
+      <version>${version.mokito}</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
