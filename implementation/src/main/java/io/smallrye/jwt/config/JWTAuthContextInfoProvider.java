@@ -42,6 +42,19 @@ public class JWTAuthContextInfoProvider {
     private static final String NONE = "NONE";
     private static final Logger log = Logger.getLogger(JWTAuthContextInfoProvider.class);
 
+    public JWTAuthContextInfoProvider() {
+        
+    }
+    
+    public JWTAuthContextInfoProvider(String mpJwtPublicKey,
+                                      String mpJwtLocation,
+                                      String mpJwtIssuer) {
+        this.mpJwtPublicKey = Optional.of(mpJwtPublicKey);
+        this.mpJwtLocation = Optional.of(mpJwtLocation);
+        this.mpJwtIssuer = mpJwtIssuer;
+        
+    }
+        
     // The MP-JWT spec defined configuration properties
 
     /**
@@ -166,7 +179,7 @@ public class JWTAuthContextInfoProvider {
         if (tokenHeader != null) {
             contextInfo.setTokenHeader(tokenHeader);
         }
-        if (tokenCookie.isPresent()) {
+        if (tokenCookie != null && tokenCookie.isPresent()) {
             if (!COOKIE_HEADER.equals(tokenHeader)) {
                 log.warn("Token header is not 'Cookie', the cookie name value will be ignored");
             } else {
@@ -174,7 +187,7 @@ public class JWTAuthContextInfoProvider {
             }
         }
         
-        if (defaultGroupsClaim.isPresent()) {
+        if (defaultGroupsClaim != null && defaultGroupsClaim.isPresent()) {
             contextInfo.setDefaultGroupsClaim(defaultGroupsClaim.get());
         }
     }
