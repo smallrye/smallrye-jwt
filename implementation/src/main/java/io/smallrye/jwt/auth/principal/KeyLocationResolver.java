@@ -50,7 +50,7 @@ public class KeyLocationResolver implements VerificationKeyResolver {
     private static final Logger log = Logger.getLogger(KeyLocationResolver.class);
     private String location;
     private String json;
-    
+
     public KeyLocationResolver(String location) {
         this.location = location;
     }
