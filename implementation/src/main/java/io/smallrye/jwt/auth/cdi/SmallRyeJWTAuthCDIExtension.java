@@ -27,6 +27,19 @@ import io.smallrye.jwt.auth.jaxrs.JWTAuthFilter;
 import io.smallrye.jwt.auth.mechanism.JWTHttpAuthenticationMechanism;
 import io.smallrye.jwt.config.JWTAuthContextInfoProvider;
 
+/**
+ * Extension to support JWT producers as well as the internal
+ * components of SmallRye JWT in a CDI environment. Applications wishing
+ * to use MP-JWT with SmallRye should enable this extension by adding
+ * a file named META-INF/services/javax.enterprise.inject.spi.Extension
+ * to their project with a line giving the fully qualified class name of
+ * this class.
+ *
+ * Note, this extension is not enabled by default.
+ *
+ *
+ * @author Michael Edgar {@literal <michael@xlate.io>}
+ */
 public class SmallRyeJWTAuthCDIExtension implements Extension {
 
     private static Logger logger = Logger.getLogger(SmallRyeJWTAuthCDIExtension.class);
