@@ -33,7 +33,6 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.security.PublicKey;
-import java.util.Base64;
 import java.util.List;
 
 /**
@@ -131,12 +130,6 @@ public class KeyLocationResolver implements VerificationKeyResolver {
             }
         }
         json = contents.toString();
-        try {
-            // Determine if this is base64
-            json = new String(Base64.getDecoder().decode(json), StandardCharsets.UTF_8);
-        } catch (Exception e) {
-            log.debug("contents does not appear to be base64 encoded");
-        }
     }
 
     private static InputStream getAsResource(String location) throws IOException {
