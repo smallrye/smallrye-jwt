@@ -23,7 +23,7 @@ import javax.enterprise.inject.spi.Extension;
 
 import org.jboss.logging.Logger;
 
-import io.smallrye.jwt.auth.jaxrs.JWTAuthFilter;
+import io.smallrye.jwt.auth.jaxrs.JWTAuthenticationFilter;
 import io.smallrye.jwt.auth.mechanism.JWTHttpAuthenticationMechanism;
 import io.smallrye.jwt.config.JWTAuthContextInfoProvider;
 
@@ -52,7 +52,7 @@ public class SmallRyeJWTAuthCDIExtension implements Extension {
         addAnnotatedType(event, beanManager, CommonJwtProducer.class);
         addAnnotatedType(event, beanManager, JsonValueProducer.class);
         addAnnotatedType(event, beanManager, JWTAuthContextInfoProvider.class);
-        addAnnotatedType(event, beanManager, JWTAuthFilter.class);
+        addAnnotatedType(event, beanManager, JWTAuthenticationFilter.class);
         addAnnotatedType(event, beanManager, PrincipalProducer.class);
         addAnnotatedType(event, beanManager, RawClaimTypeProducer.class);
 

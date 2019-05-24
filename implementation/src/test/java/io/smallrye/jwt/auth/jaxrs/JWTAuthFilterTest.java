@@ -32,11 +32,11 @@ public class JWTAuthFilterTest {
     JWTAuthContextInfo authContextInfo;
 
     @InjectMocks
-    JWTAuthFilter target;
+    JWTAuthenticationFilter target;
 
     @Before
     public void setUp() {
-        target = Mockito.spy(new JWTAuthFilter());
+        target = Mockito.spy(new JWTAuthenticationFilter());
         MockitoAnnotations.initMocks(this);
     }
 

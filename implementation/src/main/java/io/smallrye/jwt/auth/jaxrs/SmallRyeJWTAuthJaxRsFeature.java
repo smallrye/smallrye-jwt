@@ -35,8 +35,8 @@ public class SmallRyeJWTAuthJaxRsFeature implements Feature {
         boolean enabled = mpJwtEnabled();
 
         if (enabled) {
-            context.register(JWTAuthFilter.class);
-            context.register(JWTAuthzFilterRegistrar.class);
+            context.register(JWTAuthenticationFilter.class);
+            context.register(JWTAuthorizationFilterRegistrar.class);
         }
 
         return enabled;

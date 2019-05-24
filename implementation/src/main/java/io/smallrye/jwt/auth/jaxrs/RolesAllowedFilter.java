@@ -18,6 +18,8 @@
 package io.smallrye.jwt.auth.jaxrs;
 
 import javax.annotation.Priority;
+import javax.ws.rs.ForbiddenException;
+import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.Priorities;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
@@ -53,7 +55,11 @@ public class RolesAllowedFilter implements ContainerRequestFilter {
             isForbidden = allowedRoles.stream().noneMatch(securityContext::isUserInRole);
         }
         if (isForbidden) {
-            JWTAuthRequestFailer.fail(requestContext);
+            if (requestContext.getSecurityContext().getUserPrincipal() == null) {
+                throw new NotAuthorizedException("Bearer");
+            } else {
+                throw new ForbiddenException();
+            }
         }
     }
 }

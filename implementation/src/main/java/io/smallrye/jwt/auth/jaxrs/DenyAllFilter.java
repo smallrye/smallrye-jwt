@@ -34,6 +34,5 @@ public class DenyAllFilter implements ContainerRequestFilter {
     @Override
     public void filter(ContainerRequestContext requestContext) {
         throw new ForbiddenException();
-        //JWTAuthRequestFailer.fail(requestContext);
     }
 }

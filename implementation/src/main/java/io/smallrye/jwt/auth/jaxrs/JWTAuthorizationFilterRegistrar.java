@@ -39,7 +39,7 @@ import static java.util.Arrays.asList;
  * <br>
  * Date: 5/30/18
  */
-public class JWTAuthzFilterRegistrar implements DynamicFeature {
+public class JWTAuthorizationFilterRegistrar implements DynamicFeature {
 
     private static final DenyAllFilter denyAllFilter = new DenyAllFilter();
     private final Set<Class<? extends Annotation>> mpJwtAnnotations =

@@ -27,8 +27,7 @@ import javax.inject.Inject;
 import javax.ws.rs.Priorities;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
-import javax.ws.rs.container.ResourceInfo;
-import javax.ws.rs.core.Context;
+import javax.ws.rs.container.PreMatching;
 import javax.ws.rs.core.Cookie;
 import javax.ws.rs.core.SecurityContext;
 
@@ -46,13 +45,11 @@ import io.smallrye.jwt.auth.principal.ParseException;
  * A JAX-RS ContainerRequestFilter prototype
  * TODO - JavaDoc and tests
  */
+@PreMatching
 @Priority(Priorities.AUTHENTICATION)
-public class JWTAuthFilter implements ContainerRequestFilter {
+public class JWTAuthenticationFilter implements ContainerRequestFilter {
 
-    private static Logger logger = Logger.getLogger(JWTAuthFilter.class);
-
-    @Context
-    private ResourceInfo resourceInfo;
+    private static Logger logger = Logger.getLogger(JWTAuthenticationFilter.class);
 
     @Inject
     private JWTAuthContextInfo authContextInfo;
