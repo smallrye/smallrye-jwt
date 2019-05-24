@@ -1,4 +1,4 @@
-package io.smallrye.jwt.auth.jaxrs;
+package io.smallrye.jwt.auth;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -10,6 +10,8 @@ import java.util.Map;
 
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Cookie;
+import javax.ws.rs.ext.RuntimeDelegate;
+import javax.ws.rs.ext.RuntimeDelegate.HeaderDelegate;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -20,10 +22,16 @@ import org.mockito.MockitoAnnotations;
 
 import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
 
-public class JWTAuthenticationFilterTest {
+public class AbstractBearerTokenExtractorTest {
 
     private static final String AUTHORIZATION = "Authorization";
     private static final String COOKIE = "Cookie";
+
+    @Mock
+    RuntimeDelegate jaxRsRuntimeDelegate;
+
+    @Mock
+    HeaderDelegate<Cookie> jaxRsCookieHeaderDelegate;
 
     @Mock
     ContainerRequestContext requestContext;
@@ -32,19 +40,33 @@ public class JWTAuthenticationFilterTest {
     JWTAuthContextInfo authContextInfo;
 
     @InjectMocks
-    JWTAuthenticationFilter target;
+    AbstractBearerTokenExtractor target;
 
     @Before
     public void setUp() {
-        target = Mockito.spy(new JWTAuthenticationFilter());
+        target = Mockito.spy(new AbstractBearerTokenExtractor() {});
         MockitoAnnotations.initMocks(this);
+
+        when(jaxRsRuntimeDelegate.createHeaderDelegate(Cookie.class))
+                                 .thenReturn(jaxRsCookieHeaderDelegate);
+
+        RuntimeDelegate.setInstance(jaxRsRuntimeDelegate);
+    }
+
+    private String getCookieValue(String cookieName) {
+        Cookie tokenCookie = requestContext.getCookies().get(cookieName);
+
+        if (tokenCookie != null) {
+            return tokenCookie.getValue();
+        }
+        return null;
     }
 
     @Test
     public void testGetBearerTokenAuthorizationHeader() {
         when(authContextInfo.getTokenHeader()).thenReturn(AUTHORIZATION);
         when(requestContext.getHeaderString(AUTHORIZATION)).thenReturn("Bearer THE_TOKEN");
-        String bearerToken = target.getBearerToken(requestContext);
+        String bearerToken = target.getBearerToken(requestContext::getHeaderString, cookieName -> null);
         assertEquals("THE_TOKEN", bearerToken);
     }
 
@@ -52,7 +74,7 @@ public class JWTAuthenticationFilterTest {
     public void testGetBearerTokenMissingAuthorizationHeader() {
         when(authContextInfo.getTokenHeader()).thenReturn(AUTHORIZATION);
         when(requestContext.getHeaderString(AUTHORIZATION)).thenReturn(null);
-        String bearerToken = target.getBearerToken(requestContext);
+        String bearerToken = target.getBearerToken(requestContext::getHeaderString, cookieName -> null);
         assertNull(bearerToken);
     }
 
@@ -60,7 +82,7 @@ public class JWTAuthenticationFilterTest {
     public void testGetBearerTokenOtherSchemeAuthorizationHeader() {
         when(authContextInfo.getTokenHeader()).thenReturn(AUTHORIZATION);
         when(requestContext.getHeaderString(AUTHORIZATION)).thenReturn("Basic Not_a_JWT");
-        String bearerToken = target.getBearerToken(requestContext);
+        String bearerToken = target.getBearerToken(requestContext::getHeaderString, cookieName -> null);
         assertNull(bearerToken);
     }
 
@@ -72,7 +94,7 @@ public class JWTAuthenticationFilterTest {
 
         when(authContextInfo.getTokenHeader()).thenReturn(COOKIE);
         when(requestContext.getCookies()).thenReturn(cookieMap);
-        String bearerToken = target.getBearerToken(requestContext);
+        String bearerToken = target.getBearerToken(requestContext::getHeaderString, this::getCookieValue);
         assertEquals("THE_TOKEN", bearerToken);
     }
 
@@ -85,7 +107,7 @@ public class JWTAuthenticationFilterTest {
         when(authContextInfo.getTokenHeader()).thenReturn(COOKIE);
         when(authContextInfo.getTokenCookie()).thenReturn("CustomCookie");
         when(requestContext.getCookies()).thenReturn(cookieMap);
-        String bearerToken = target.getBearerToken(requestContext);
+        String bearerToken = target.getBearerToken(requestContext::getHeaderString, this::getCookieValue);
         assertEquals("THE_TOKEN", bearerToken);
     }
 
@@ -93,7 +115,7 @@ public class JWTAuthenticationFilterTest {
     public void testGetBearerTokenMissingCookieHeader() {
         when(authContextInfo.getTokenHeader()).thenReturn(COOKIE);
         when(requestContext.getCookies()).thenReturn(Collections.emptyMap());
-        String bearerToken = target.getBearerToken(requestContext);
+        String bearerToken = target.getBearerToken(requestContext::getHeaderString, this::getCookieValue);
         assertNull(bearerToken);
     }
 }

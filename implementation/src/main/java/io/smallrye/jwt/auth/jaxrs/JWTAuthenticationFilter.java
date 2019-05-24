@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.security.Principal;
 
 import javax.annotation.Priority;
-import javax.inject.Inject;
 import javax.ws.rs.Priorities;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
@@ -34,28 +33,16 @@ import javax.ws.rs.core.SecurityContext;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.jboss.logging.Logger;
 
-import io.smallrye.jwt.auth.cdi.PrincipalProducer;
-import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
-import io.smallrye.jwt.auth.principal.JWTCallerPrincipal;
-import io.smallrye.jwt.auth.principal.JWTCallerPrincipalFactory;
-import io.smallrye.jwt.auth.principal.ParseException;
-
+import io.smallrye.jwt.auth.AbstractBearerTokenExtractor;
 
 /**
  * A JAX-RS ContainerRequestFilter prototype
- * TODO - JavaDoc and tests
  */
 @PreMatching
 @Priority(Priorities.AUTHENTICATION)
-public class JWTAuthenticationFilter implements ContainerRequestFilter {
+public class JWTAuthenticationFilter extends AbstractBearerTokenExtractor implements ContainerRequestFilter {
 
     private static Logger logger = Logger.getLogger(JWTAuthenticationFilter.class);
-
-    @Inject
-    private JWTAuthContextInfo authContextInfo;
-
-    @Inject
-    private PrincipalProducer producer;
 
     @Override
     public void filter(ContainerRequestContext requestContext) throws IOException {
@@ -63,12 +50,20 @@ public class JWTAuthenticationFilter implements ContainerRequestFilter {
         final Principal principal = securityContext.getUserPrincipal();
 
         if (!(principal instanceof JsonWebToken)) {
-            String bearerToken = getBearerToken(requestContext);
+            String bearerToken = getBearerToken(requestContext::getHeaderString,
+                                                cookieName -> {
+                Cookie tokenCookie = requestContext.getCookies().get(cookieName);
+
+                if (tokenCookie != null) {
+                    return tokenCookie.getValue();
+                }
+                return null;
+            });
 
             if (bearerToken != null) {
                 try {
-                    JsonWebToken jwtPrincipal = validate(bearerToken);
-                    producer.setJsonWebToken(jwtPrincipal);
+                    JsonWebToken jwtPrincipal = parseToken(bearerToken);
+
                     // Install the JWT principal as the caller
                     JWTSecurityContext jwtSecurityContext = new JWTSecurityContext(securityContext, jwtPrincipal);
                     requestContext.setSecurityContext(jwtSecurityContext);
@@ -78,57 +73,5 @@ public class JWTAuthenticationFilter implements ContainerRequestFilter {
                 }
             }
         }
-    }
-
-    /**
-     * Find a JWT Bearer token in the request by referencing the configurations found
-     * in the {@link JWTAuthContextInfo}. The resulting token may be found in a cookie
-     * or another HTTP header, either explicitly configured or the default 'Authorization'
-     * header.
-     *
-     * @param requestContext current request
-     * @return a JWT Bearer token or null if not found
-     */
-    //TODO: consolidate with common logic found in JWTHttpAuthenticationMechanism#getBearerToken if possible
-    String getBearerToken(ContainerRequestContext requestContext) {
-        final String tokenHeaderName = authContextInfo.getTokenHeader();
-        final String bearerValue;
-
-        if ("Cookie".equals(tokenHeaderName)) {
-            String tokenCookieName = authContextInfo.getTokenCookie();
-
-            if (tokenCookieName == null) {
-                tokenCookieName = "Bearer";
-            }
-
-            logger.debugf("tokenCookieName = %s", tokenCookieName);
-
-            final Cookie tokenCookie = requestContext.getCookies().get(tokenCookieName);
-
-            if (tokenCookie != null) {
-                bearerValue = tokenCookie.getValue();
-            } else {
-                logger.debugf("tokenCookie %s was null", tokenCookieName);
-                bearerValue = null;
-            }
-        } else {
-            final String tokenHeader = requestContext.getHeaderString(tokenHeaderName);
-            logger.debugf("tokenHeaderName = %s", tokenHeaderName);
-
-            if (tokenHeader != null && tokenHeader.startsWith("Bearer ")) {
-                bearerValue = tokenHeader.substring("Bearer ".length());
-            } else {
-                logger.debugf("tokenHeader %s was null", tokenHeaderName);
-                bearerValue = null;
-            }
-        }
-
-        return bearerValue;
-    }
-
-    protected JWTCallerPrincipal validate(String bearerToken) throws ParseException {
-        JWTCallerPrincipalFactory factory = JWTCallerPrincipalFactory.instance();
-        JWTCallerPrincipal callerPrincipal = factory.parse(bearerToken, authContextInfo);
-        return callerPrincipal;
     }
 }

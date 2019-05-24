@@ -17,8 +17,10 @@
 package io.smallrye.jwt.auth.cdi;
 
 import javax.enterprise.event.Observes;
+import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.spi.BeanManager;
 import javax.enterprise.inject.spi.BeforeBeanDiscovery;
+import javax.enterprise.inject.spi.CDI;
 import javax.enterprise.inject.spi.Extension;
 
 import org.jboss.logging.Logger;
@@ -44,6 +46,31 @@ public class SmallRyeJWTAuthCDIExtension implements Extension {
 
     private static Logger logger = Logger.getLogger(SmallRyeJWTAuthCDIExtension.class);
 
+    public static boolean isHttpAuthMechanismEnabled() {
+        boolean enabled = false;
+
+        if (isEESecurityAvailable()) {
+            Instance<JWTHttpAuthenticationMechanism> instance;
+
+            try {
+                instance = CDI.current().select(JWTHttpAuthenticationMechanism.class);
+                enabled = instance.isResolvable();
+            } catch (@SuppressWarnings("unused") Throwable e) {
+            }
+        }
+
+        return enabled;
+    }
+
+    private static boolean isEESecurityAvailable() {
+        try {
+            Class.forName("javax.security.enterprise.authentication.mechanism.http.HttpAuthenticationMechanism");
+            return true;
+        } catch (@SuppressWarnings("unused") ClassNotFoundException e) {
+            return false;
+        }
+    }
+
     void beforeBeanDiscovery(@Observes BeforeBeanDiscovery event, BeanManager beanManager) {
         logger.debugf("beanManager = %s", beanManager);
 
@@ -56,11 +83,10 @@ public class SmallRyeJWTAuthCDIExtension implements Extension {
         addAnnotatedType(event, beanManager, PrincipalProducer.class);
         addAnnotatedType(event, beanManager, RawClaimTypeProducer.class);
 
-        try {
-            Class.forName("javax.security.enterprise.authentication.mechanism.http.HttpAuthenticationMechanism");
+        if (isEESecurityAvailable()) {
             addAnnotatedType(event, beanManager, JWTHttpAuthenticationMechanism.class);
             logger.debugf("EE Security is available, JWTHttpAuthenticationMechanism has been registered");
-        } catch (@SuppressWarnings("unused") ClassNotFoundException e) {
+        } else {
             // EE Security is not available, register the JAX-RS authentication filter.
             logger.infof("EE Security is not available, JWTHttpAuthenticationMechanism will not be registered");
         }
