@@ -17,23 +17,7 @@
  */
 package io.smallrye.jwt.auth.principal;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.StringReader;
-import java.io.StringWriter;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
-import java.security.Key;
-import java.security.PublicKey;
-import java.util.Base64;
-import java.util.List;
-
-import javax.json.Json;
-import javax.json.JsonArray;
-import javax.json.JsonObject;
-
+import io.smallrye.jwt.KeyUtils;
 import org.jboss.logging.Logger;
 import org.jose4j.jwk.PublicJsonWebKey;
 import org.jose4j.jws.JsonWebSignature;
@@ -41,7 +25,16 @@ import org.jose4j.jwx.JsonWebStructure;
 import org.jose4j.keys.resolvers.VerificationKeyResolver;
 import org.jose4j.lang.UnresolvableKeyException;
 
-import io.smallrye.jwt.KeyUtils;
+import javax.json.Json;
+import javax.json.JsonArray;
+import javax.json.JsonObject;
+import java.io.*;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.security.Key;
+import java.security.PublicKey;
+import java.util.Base64;
+import java.util.List;
 
 /**
  * This implements the MP-JWT 1.1 mp.jwt.verify.publickey.location config property resolution logic
@@ -54,6 +47,7 @@ public class KeyLocationResolver implements VerificationKeyResolver {
     public KeyLocationResolver(String location) {
         this.location = location;
     }
+
     @Override
     public Key resolveKey(JsonWebSignature jws, List<JsonWebStructure> nestingContext) throws UnresolvableKeyException {
         try {
@@ -62,7 +56,7 @@ public class KeyLocationResolver implements VerificationKeyResolver {
             throw new UnresolvableKeyException("Failed to load a key from: " + location, e);
         }
         String kid = jws.getHeaders().getStringHeaderValue("kid");
-        
+
         PublicKey key = tryAsJWK(kid);
         if (key == null) {
             key = tryAsPEM();
@@ -87,9 +81,9 @@ public class KeyLocationResolver implements VerificationKeyResolver {
         PublicKey publicKey = null;
         try {
             log.debugf("Trying location as JWK(S)...");
-            
+
             JsonObject jwk = null;
-            
+
             JsonObject jwks = Json.createReader(new StringReader(json)).readObject();
             JsonArray keys = jwks.getJsonArray("keys");
             if (keys != null) {
@@ -119,16 +113,9 @@ public class KeyLocationResolver implements VerificationKeyResolver {
 
     private void loadContents() throws IOException {
         StringWriter contents = new StringWriter();
-        InputStream is;
+        final InputStream is;
         if (location.startsWith("classpath:") || location.indexOf(':') < 0) {
-            String path;
-            if (location.startsWith("classpath:")) {
-                path = location.substring(10);
-            } else {
-                path = location;
-            }
-            ClassLoader loader = Thread.currentThread().getContextClassLoader();
-            is = loader.getResourceAsStream(path);
+            is = getAsResource(location);
         } else {
             URL locationURL = new URL(location);
             is = locationURL.openStream();
@@ -150,5 +137,22 @@ public class KeyLocationResolver implements VerificationKeyResolver {
         } catch (Exception e) {
             log.debug("contents does not appear to be base64 encoded");
         }
+    }
+
+    private static InputStream getAsResource(String location) throws IOException {
+
+        final String path;
+        if (location.startsWith("classpath:")) {
+            path = location.substring(10);
+        } else {
+            path = location;
+        }
+        ClassLoader loader = Thread.currentThread().getContextClassLoader();
+        final InputStream is = loader.getResourceAsStream(path);
+        if (is == null) {
+            throw new IOException("No resource with named " + location + " exists");
+        }
+
+        return is;
     }
 }
