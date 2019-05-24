@@ -20,7 +20,7 @@ import org.mockito.MockitoAnnotations;
 
 import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
 
-public class JWTAuthFilterTest {
+public class JWTAuthenticationFilterTest {
 
     private static final String AUTHORIZATION = "Authorization";
     private static final String COOKIE = "Cookie";
