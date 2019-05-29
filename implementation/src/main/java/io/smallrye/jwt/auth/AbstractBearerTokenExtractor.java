@@ -1,13 +1,23 @@
+/**
+ * Copyright 2019 Red Hat, Inc, and individual contributors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
 package io.smallrye.jwt.auth;
-
-import java.util.function.Function;
-
-import javax.inject.Inject;
 
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.jboss.logging.Logger;
 
-import io.smallrye.jwt.auth.cdi.PrincipalProducer;
 import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
 import io.smallrye.jwt.auth.principal.JWTCallerPrincipal;
 import io.smallrye.jwt.auth.principal.JWTCallerPrincipalFactory;
@@ -25,16 +35,10 @@ public abstract class AbstractBearerTokenExtractor {
 
     private static Logger logger = Logger.getLogger(AbstractBearerTokenExtractor.class);
 
-    @Inject
-    private JWTAuthContextInfo authContextInfo;
+    private final JWTAuthContextInfo authContextInfo;
 
-    @Inject
-    private PrincipalProducer producer;
-
-    protected JsonWebToken parseToken(String bearerToken) throws ParseException {
-        JsonWebToken jwtPrincipal = validate(bearerToken);
-        producer.setJsonWebToken(jwtPrincipal);
-        return jwtPrincipal;
+    protected AbstractBearerTokenExtractor(JWTAuthContextInfo authContextInfo) {
+        this.authContextInfo = authContextInfo;
     }
 
     /**
@@ -43,16 +47,9 @@ public abstract class AbstractBearerTokenExtractor {
      * in a cookie or another HTTP header, either explicitly configured or the
      * default 'Authorization' header.
      *
-     * @param headerExtractor
-     *            function to retrieve an HTTP header by name
-     * @param cookieValueExtractor
-     *            function to retrieve an HTTP cookie value provided the name of
-     *            the cookie
      * @return a JWT Bearer token or null if not found
      */
-    protected String getBearerToken(Function<String, String> headerExtractor,
-                                    Function<String, String> cookieValueExtractor) {
-
+    public String getBearerToken() {
         final String tokenHeaderName = authContextInfo.getTokenHeader();
         final String bearerValue;
 
@@ -65,13 +62,13 @@ public abstract class AbstractBearerTokenExtractor {
 
             logger.debugf("tokenCookieName = %s", tokenCookieName);
 
-            bearerValue = cookieValueExtractor.apply(tokenCookieName);
+            bearerValue = getCookieValue(tokenCookieName);
 
             if (bearerValue == null) {
                 logger.debugf("Cookie %s was null", tokenCookieName);
             }
         } else {
-            final String tokenHeader = headerExtractor.apply(tokenHeaderName);
+            final String tokenHeader = getHeaderValue(tokenHeaderName);
             logger.debugf("tokenHeaderName = %s", tokenHeaderName);
 
             if (tokenHeader != null && tokenHeader.startsWith("Bearer ")) {
@@ -85,9 +82,26 @@ public abstract class AbstractBearerTokenExtractor {
         return bearerValue;
     }
 
-    private JsonWebToken validate(String bearerToken) throws ParseException {
+    public JsonWebToken validate(String bearerToken) throws ParseException {
         JWTCallerPrincipalFactory factory = JWTCallerPrincipalFactory.instance();
         JWTCallerPrincipal callerPrincipal = factory.parse(bearerToken, authContextInfo);
         return callerPrincipal;
     }
+
+    /**
+     * Retrieve an HTTP request header by name.
+     *
+     * @param headerName name of the header
+     * @return value of the header
+     */
+    protected abstract String getHeaderValue(String headerName);
+
+    /**
+     * Retrieve an HTTP request cookie value by name.
+     *
+     * @param cookieName name of the cookie
+     * @return value of the cookie
+     */
+    protected abstract String getCookieValue(String cookieName);
+
 }

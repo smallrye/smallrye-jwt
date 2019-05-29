@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.security.Principal;
 
 import javax.annotation.Priority;
+import javax.inject.Inject;
 import javax.ws.rs.Priorities;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
@@ -34,15 +35,23 @@ import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.jboss.logging.Logger;
 
 import io.smallrye.jwt.auth.AbstractBearerTokenExtractor;
+import io.smallrye.jwt.auth.cdi.PrincipalProducer;
+import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
 
 /**
  * A JAX-RS ContainerRequestFilter prototype
  */
 @PreMatching
 @Priority(Priorities.AUTHENTICATION)
-public class JWTAuthenticationFilter extends AbstractBearerTokenExtractor implements ContainerRequestFilter {
+public class JWTAuthenticationFilter implements ContainerRequestFilter {
 
     private static Logger logger = Logger.getLogger(JWTAuthenticationFilter.class);
+
+    @Inject
+    private JWTAuthContextInfo authContextInfo;
+
+    @Inject
+    private PrincipalProducer producer;
 
     @Override
     public void filter(ContainerRequestContext requestContext) throws IOException {
@@ -50,19 +59,13 @@ public class JWTAuthenticationFilter extends AbstractBearerTokenExtractor implem
         final Principal principal = securityContext.getUserPrincipal();
 
         if (!(principal instanceof JsonWebToken)) {
-            String bearerToken = getBearerToken(requestContext::getHeaderString,
-                                                cookieName -> {
-                Cookie tokenCookie = requestContext.getCookies().get(cookieName);
-
-                if (tokenCookie != null) {
-                    return tokenCookie.getValue();
-                }
-                return null;
-            });
+            AbstractBearerTokenExtractor extractor = new BearerTokenExtractor(requestContext, authContextInfo);
+            String bearerToken = extractor.getBearerToken();
 
             if (bearerToken != null) {
                 try {
-                    JsonWebToken jwtPrincipal = parseToken(bearerToken);
+                    JsonWebToken jwtPrincipal = extractor.validate(bearerToken);
+                    producer.setJsonWebToken(jwtPrincipal);
 
                     // Install the JWT principal as the caller
                     JWTSecurityContext jwtSecurityContext = new JWTSecurityContext(securityContext, jwtPrincipal);
@@ -72,6 +75,30 @@ public class JWTAuthenticationFilter extends AbstractBearerTokenExtractor implem
                     logger.warnf(e, "Unable to parse/validate JWT: %s", e.getMessage());
                 }
             }
+        }
+    }
+
+    private static class BearerTokenExtractor extends AbstractBearerTokenExtractor {
+        private final ContainerRequestContext requestContext;
+
+        BearerTokenExtractor(ContainerRequestContext requestContext, JWTAuthContextInfo authContextInfo) {
+            super(authContextInfo);
+            this.requestContext = requestContext;
+        }
+
+        @Override
+        protected String getHeaderValue(String headerName) {
+            return requestContext.getHeaderString(headerName);
+        }
+
+        @Override
+        protected String getCookieValue(String cookieName) {
+            Cookie tokenCookie = requestContext.getCookies().get(cookieName);
+
+            if (tokenCookie != null) {
+                return tokenCookie.getValue();
+            }
+            return null;
         }
     }
 }

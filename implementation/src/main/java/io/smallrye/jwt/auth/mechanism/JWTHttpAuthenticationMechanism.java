@@ -18,6 +18,7 @@ package io.smallrye.jwt.auth.mechanism;
 import java.util.Set;
 
 import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
 import javax.security.enterprise.AuthenticationException;
 import javax.security.enterprise.AuthenticationStatus;
 import javax.security.enterprise.authentication.mechanism.http.HttpAuthenticationMechanism;
@@ -30,15 +31,23 @@ import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.jboss.logging.Logger;
 
 import io.smallrye.jwt.auth.AbstractBearerTokenExtractor;
+import io.smallrye.jwt.auth.cdi.PrincipalProducer;
+import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
 
 /**
  * A JAX-RS HttpAuthenticationMechanism prototype
  * TODO - JavaDoc and tests
  */
 @ApplicationScoped
-public class JWTHttpAuthenticationMechanism extends AbstractBearerTokenExtractor implements HttpAuthenticationMechanism {
+public class JWTHttpAuthenticationMechanism implements HttpAuthenticationMechanism {
 
     private static Logger logger = Logger.getLogger(JWTHttpAuthenticationMechanism.class);
+
+    @Inject
+    private JWTAuthContextInfo authContextInfo;
+
+    @Inject
+    private PrincipalProducer producer;
 
     @Override
     public AuthenticationStatus validateRequest(HttpServletRequest request,
@@ -46,8 +55,41 @@ public class JWTHttpAuthenticationMechanism extends AbstractBearerTokenExtractor
                                                 HttpMessageContext httpMessageContext)
                                             throws AuthenticationException {
 
-        String bearerToken = getBearerToken(request::getHeader,
-                                            cookieName -> {
+        AbstractBearerTokenExtractor extractor = new BearerTokenExtractor(request, authContextInfo);
+        String bearerToken = extractor.getBearerToken();
+
+        if (bearerToken != null) {
+            try {
+                JsonWebToken jwtPrincipal = extractor.validate(bearerToken);
+                producer.setJsonWebToken(jwtPrincipal);
+                Set<String> groups = jwtPrincipal.getGroups();
+                logger.debugf("Success");
+                return httpMessageContext.notifyContainerAboutLogin(jwtPrincipal, groups);
+            } catch (Exception e) {
+                logger.warnf(e, "Unable to validate bearer token: %s", e.getMessage());
+                return httpMessageContext.responseUnauthorized();
+            }
+        } else {
+            logger.debug("No usable bearer token was found in the request, continuing unauthenticated");
+            return httpMessageContext.doNothing();
+        }
+    }
+
+    private static class BearerTokenExtractor extends AbstractBearerTokenExtractor {
+        private final HttpServletRequest request;
+
+        BearerTokenExtractor(HttpServletRequest request, JWTAuthContextInfo authContextInfo) {
+            super(authContextInfo);
+            this.request = request;
+        }
+
+        @Override
+        protected String getHeaderValue(String headerName) {
+            return request.getHeader(headerName);
+        }
+
+        @Override
+        protected String getCookieValue(String cookieName) {
             Cookie[] cookies = request.getCookies();
             Cookie tokenCookie = null;
 
@@ -65,21 +107,6 @@ public class JWTHttpAuthenticationMechanism extends AbstractBearerTokenExtractor
             }
 
             return null;
-        });
-
-        if (bearerToken != null) {
-            try {
-                JsonWebToken jwtPrincipal = parseToken(bearerToken);
-                Set<String> groups = jwtPrincipal.getGroups();
-                logger.debugf("Success");
-                return httpMessageContext.notifyContainerAboutLogin(jwtPrincipal, groups);
-            } catch (Exception e) {
-                logger.warnf(e, "Unable to validate bearer token: %s", e.getMessage());
-                return httpMessageContext.responseUnauthorized();
-            }
-        } else {
-            logger.debug("No usable bearer token was found in the request, continuing unauthenticated");
-            return httpMessageContext.doNothing();
         }
     }
 }
