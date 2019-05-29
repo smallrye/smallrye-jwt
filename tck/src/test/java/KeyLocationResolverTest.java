@@ -30,13 +30,13 @@ import io.smallrye.jwt.config.JWTAuthContextInfoProvider;
 
 public class KeyLocationResolverTest {
     @Test
-    public void testLoadJwkKeyWithMatchingKid() throws Exception {
-        verifyTokenWithJwkKey("key1", "publicKey.jwk");
+    public void testVerifyWithJwkKeyWithMatchingKid() throws Exception {
+        verifyToken("key1", "publicKey.jwk");
     }
     @Test
-    public void testLoadJwkKeyWithNonMatchingKid() throws Exception {
+    public void testVerifyWithJwkKeyWithNonMatchingKid() throws Exception {
         try {
-            verifyTokenWithJwkKey("key2", "publicKey.jwk");
+            verifyToken("key2", "publicKey.jwk");
             Assert.fail("ParseException is expected");
         } catch (ParseException ex) {
             Assert.assertTrue(ex.getCause().getCause() instanceof UnresolvableKeyException);
@@ -44,23 +44,28 @@ public class KeyLocationResolverTest {
     }
     
     @Test
-    public void testLoadJwkKeyWithMatchingKidFromSet() throws Exception {
-        verifyTokenWithJwkKey("key1", "publicKeySet.jwk");
+    public void testVerifyWithJwkKeyWithMatchingKidFromSet() throws Exception {
+        verifyToken("key1", "publicKeySet.jwk");
     }
     @Test
-    public void testLoadJwkKeyWithNonMatchingKidFromSet() throws Exception {
+    public void testVerifyWithJwkKeyWithNonMatchingKidFromSet() throws Exception {
         try {
-            verifyTokenWithJwkKey("key3", "publicKeySet.jwk");
+            verifyToken("key3", "publicKeySet.jwk");
             Assert.fail("ParseException is expected");
         } catch (ParseException ex) {
             Assert.assertTrue(ex.getCause().getCause() instanceof UnresolvableKeyException);
         }
     }
+    
+    @Test
+    public void testVerifyWithPemKey() throws Exception {
+        verifyToken("key3", "publicKey.pem");
+    }
 
-    private static void verifyTokenWithJwkKey(String kid, String jwkResource) throws Exception {
+    private static void verifyToken(String kid, String publicKeyLocation) throws Exception {
         PrivateKey privateKey = TokenUtils.readPrivateKey("/privateKey.pem");
         String token = TokenUtils.generateTokenString(privateKey, kid, "/Token1.json", null, null);
-        JWTAuthContextInfoProvider provider = new JWTAuthContextInfoProvider("NONE", jwkResource, "https://server.example.com");
+        JWTAuthContextInfoProvider provider = new JWTAuthContextInfoProvider("NONE", publicKeyLocation, "https://server.example.com");
         Assert.assertNotNull(new DefaultJWTTokenParser().parse(token, provider.getContextInfo()));
     }
 }

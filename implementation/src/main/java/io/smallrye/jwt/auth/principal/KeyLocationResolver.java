@@ -17,7 +17,21 @@
  */
 package io.smallrye.jwt.auth.principal;
 
-import io.smallrye.jwt.KeyUtils;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.StringReader;
+import java.io.StringWriter;
+import java.net.URL;
+import java.security.Key;
+import java.security.PublicKey;
+import java.util.List;
+
+import javax.json.Json;
+import javax.json.JsonArray;
+import javax.json.JsonObject;
+
 import org.jboss.logging.Logger;
 import org.jose4j.jwk.PublicJsonWebKey;
 import org.jose4j.jws.JsonWebSignature;
@@ -25,16 +39,7 @@ import org.jose4j.jwx.JsonWebStructure;
 import org.jose4j.keys.resolvers.VerificationKeyResolver;
 import org.jose4j.lang.UnresolvableKeyException;
 
-import javax.json.Json;
-import javax.json.JsonArray;
-import javax.json.JsonObject;
-import java.io.*;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
-import java.security.Key;
-import java.security.PublicKey;
-import java.util.Base64;
-import java.util.List;
+import io.smallrye.jwt.KeyUtils;
 
 /**
  * This implements the MP-JWT 1.1 mp.jwt.verify.publickey.location config property resolution logic
@@ -42,7 +47,7 @@ import java.util.List;
 public class KeyLocationResolver implements VerificationKeyResolver {
     private static final Logger log = Logger.getLogger(KeyLocationResolver.class);
     private String location;
-    private String json;
+    private String content;
 
     public KeyLocationResolver(String location) {
         this.location = location;
@@ -70,7 +75,7 @@ public class KeyLocationResolver implements VerificationKeyResolver {
     private PublicKey tryAsPEM() {
         PublicKey publicKey = null;
         try {
-            publicKey = KeyUtils.decodePublicKey(json);
+            publicKey = KeyUtils.decodePublicKey(content);
         } catch (Exception e) {
             log.debug("Failed to read location as PEM", e);
         }
@@ -84,7 +89,7 @@ public class KeyLocationResolver implements VerificationKeyResolver {
 
             JsonObject jwk = null;
 
-            JsonObject jwks = Json.createReader(new StringReader(json)).readObject();
+            JsonObject jwks = Json.createReader(new StringReader(content)).readObject();
             JsonArray keys = jwks.getJsonArray("keys");
             if (keys != null) {
                 if (kid != null) {
@@ -130,13 +135,7 @@ public class KeyLocationResolver implements VerificationKeyResolver {
                 line = reader.readLine();
             }
         }
-        json = contents.toString();
-        try {
-            // Determine if this is base64
-            json = new String(Base64.getDecoder().decode(json), StandardCharsets.UTF_8);
-        } catch (Exception e) {
-            log.debug("contents does not appear to be base64 encoded");
-        }
+        content = contents.toString();
     }
 
     private static InputStream getAsResource(String location) throws IOException {
