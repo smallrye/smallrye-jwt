@@ -33,6 +33,10 @@ import io.smallrye.jwt.auth.principal.ParseException;
  */
 public abstract class AbstractBearerTokenExtractor {
 
+    protected final static String AUTHORIZATION_HEADER = "Authorization";
+    protected final static String COOKIE_HEADER = "Cookie";
+    protected final static String BEARER = "Bearer";
+    protected final static String BEARER_SCHEME_PREFIX = BEARER + ' ';
     private static Logger logger = Logger.getLogger(AbstractBearerTokenExtractor.class);
 
     private final JWTAuthContextInfo authContextInfo;
@@ -51,13 +55,15 @@ public abstract class AbstractBearerTokenExtractor {
      */
     public String getBearerToken() {
         final String tokenHeaderName = authContextInfo.getTokenHeader();
+        logger.debugf("tokenHeaderName = %s", tokenHeaderName);
+
         final String bearerValue;
 
-        if ("Cookie".equals(tokenHeaderName)) {
+        if (COOKIE_HEADER.equals(tokenHeaderName)) {
             String tokenCookieName = authContextInfo.getTokenCookie();
 
             if (tokenCookieName == null) {
-                tokenCookieName = "Bearer";
+                tokenCookieName = BEARER;
             }
 
             logger.debugf("tokenCookieName = %s", tokenCookieName);
@@ -67,19 +73,39 @@ public abstract class AbstractBearerTokenExtractor {
             if (bearerValue == null) {
                 logger.debugf("Cookie %s was null", tokenCookieName);
             }
-        } else {
+        } else if (AUTHORIZATION_HEADER.equals(tokenHeaderName)) {
             final String tokenHeader = getHeaderValue(tokenHeaderName);
-            logger.debugf("tokenHeaderName = %s", tokenHeaderName);
 
-            if (tokenHeader != null && tokenHeader.startsWith("Bearer ")) {
-                bearerValue = tokenHeader.substring("Bearer ".length());
+            if (tokenHeader != null) {
+                if (isBearerScheme(tokenHeader)) {
+                    bearerValue = tokenHeader.substring(BEARER_SCHEME_PREFIX.length());
+                } else {
+                    logger.debugf("Authorization header does not contain a Bearer prefix");
+                    bearerValue = null;
+                }
             } else {
-                logger.debugf("Header %s was null", tokenHeaderName);
+                logger.debugf("Authorization header was null");
                 bearerValue = null;
+            }
+        } else {
+            bearerValue = getHeaderValue(tokenHeaderName);
+
+            if (bearerValue == null) {
+                logger.debugf("Header %s was null", tokenHeaderName);
             }
         }
 
         return bearerValue;
+    }
+
+    private static boolean isBearerScheme(String authorizationHeader) {
+        if (authorizationHeader.length() < BEARER_SCHEME_PREFIX.length()) {
+            return false;
+        }
+
+        String scheme = authorizationHeader.substring(0, BEARER_SCHEME_PREFIX.length());
+
+        return BEARER_SCHEME_PREFIX.equalsIgnoreCase(scheme);
     }
 
     public JsonWebToken validate(String bearerToken) throws ParseException {

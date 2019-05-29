@@ -51,6 +51,30 @@ public class AbstractBearerTokenExtractorTest {
     }
 
     @Test
+    public void testGetBearerTokenAuthorizationHeaderMixedCase() {
+        when(authContextInfo.getTokenHeader()).thenReturn(AUTHORIZATION);
+        AbstractBearerTokenExtractor target = newTarget(h ->"bEaReR THE_TOKEN", c -> null);
+        String bearerToken = target.getBearerToken();
+        assertEquals("THE_TOKEN", bearerToken);
+    }
+
+    @Test
+    public void testGetBearerTokenAuthorizationHeaderBlank() {
+        when(authContextInfo.getTokenHeader()).thenReturn(AUTHORIZATION);
+        AbstractBearerTokenExtractor target = newTarget(h ->"BEARER ", c -> null);
+        String bearerToken = target.getBearerToken();
+        assertEquals("", bearerToken);
+    }
+
+    @Test
+    public void testGetBearerTokenAuthorizationHeaderInvalidSchemePrefix() {
+        when(authContextInfo.getTokenHeader()).thenReturn(AUTHORIZATION);
+        AbstractBearerTokenExtractor target = newTarget(h ->"BEARER", c -> null);
+        String bearerToken = target.getBearerToken();
+        assertNull(bearerToken);
+    }
+
+    @Test
     public void testGetBearerTokenMissingAuthorizationHeader() {
         when(authContextInfo.getTokenHeader()).thenReturn(AUTHORIZATION);
         AbstractBearerTokenExtractor target = newTarget(h -> null, c -> null);
@@ -64,6 +88,19 @@ public class AbstractBearerTokenExtractorTest {
         AbstractBearerTokenExtractor target = newTarget(h -> "Basic Not_a_JWT", c -> null);
         String bearerToken = target.getBearerToken();
         assertNull(bearerToken);
+    }
+
+    @Test
+    public void testGetBearerTokenCustomHeader() {
+        when(authContextInfo.getTokenHeader()).thenReturn("MyHeader");
+        AbstractBearerTokenExtractor target = newTarget(h -> {
+            if ("MyHeader".equals(h)) {
+                return "THE_CUSTOM_TOKEN";
+            }
+            return null;
+        }, c -> null);
+        String bearerToken = target.getBearerToken();
+        assertEquals("THE_CUSTOM_TOKEN", bearerToken);
     }
 
     @Test
