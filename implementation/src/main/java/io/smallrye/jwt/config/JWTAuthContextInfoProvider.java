@@ -47,15 +47,33 @@ public class JWTAuthContextInfoProvider {
 
     }
 
-    public JWTAuthContextInfoProvider(String mpJwtPublicKey,
-                                      String mpJwtLocation,
-                                      String mpJwtIssuer) {
-        this.mpJwtPublicKey = Optional.of(mpJwtPublicKey);
-        this.mpJwtLocation = Optional.of(mpJwtLocation);
-        this.mpJwtIssuer = mpJwtIssuer;
-
+    /**
+     * Create JWTAuthContextInfoProvider with the public key and issuer
+     * @param publicKey the public key value
+     * @param issuer the issuer
+     * @return
+     */
+    public static JWTAuthContextInfoProvider createWithKey(String publicKey, String issuer) {
+        return create(publicKey, NONE, issuer);
     }
 
+    /**
+     * Create JWTAuthContextInfoProvider with the public key location and issuer
+     * @param publicKeyLocation the public key location
+     * @param issuer the issuer
+     * @return
+     */
+    public static JWTAuthContextInfoProvider createWithKeyLocation(String publicKeyLocation, String issuer) {
+        return create(NONE, publicKeyLocation, issuer);
+    }
+
+    private static JWTAuthContextInfoProvider create(String publicKey, String publicKeyLocation, String issuer) {
+        JWTAuthContextInfoProvider provider = new JWTAuthContextInfoProvider();
+        provider.mpJwtPublicKey = Optional.of(publicKey);
+        provider.mpJwtLocation = Optional.of(publicKeyLocation);
+        provider.mpJwtIssuer = issuer;
+        return provider;
+    }
     // The MP-JWT spec defined configuration properties
 
     /**
