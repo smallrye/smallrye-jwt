@@ -45,6 +45,34 @@ public class JWTAuthContextInfoProvider {
     public JWTAuthContextInfoProvider() {
         
     }
+
+    /**
+     * Create JWTAuthContextInfoProvider with the public key and issuer
+     * @param publicKey the public key value
+     * @param issuer the issuer
+     * @return
+     */
+    public static JWTAuthContextInfoProvider createWithKey(String publicKey, String issuer) {
+        return create(publicKey, NONE, issuer);
+    }
+
+    /**
+     * Create JWTAuthContextInfoProvider with the public key location and issuer
+     * @param publicKeyLocation the public key location
+     * @param issuer the issuer
+     * @return
+     */
+    public static JWTAuthContextInfoProvider createWithKeyLocation(String publicKeyLocation, String issuer) {
+        return create(NONE, publicKeyLocation, issuer);
+    }
+
+    private static JWTAuthContextInfoProvider create(String publicKey, String publicKeyLocation, String issuer) {
+        JWTAuthContextInfoProvider provider = new JWTAuthContextInfoProvider();
+        provider.mpJwtPublicKey = Optional.of(publicKey);
+        provider.mpJwtLocation = Optional.of(publicKeyLocation);
+        provider.mpJwtIssuer = issuer;
+        return provider;
+    }
     // The MP-JWT spec defined configuration properties
 
     /**
@@ -186,32 +214,16 @@ public class JWTAuthContextInfoProvider {
         return mpJwtPublicKey;
     }
 
-    public void setMpJwtPublicKey(Optional<String> mpJwtPublicKey) {
-        this.mpJwtPublicKey = mpJwtPublicKey;
-    }
-
     public String getMpJwtIssuer() {
         return mpJwtIssuer;
-    }
-
-    public void setMpJwtIssuer(String mpJwtIssuer) {
-        this.mpJwtIssuer = mpJwtIssuer;
     }
 
     public Optional<String> getMpJwtLocation() {
         return mpJwtLocation;
     }
 
-    public void setMpJwtLocation(Optional<String> mpJwtLocation) {
-        this.mpJwtLocation = mpJwtLocation;
-    }
-
     public Optional<Boolean> getMpJwtRequireIss() {
         return mpJwtRequireIss;
-    }
-
-    public void setMpJwtRequireIss(Optional<Boolean> mpJwtRequireIss) {
-        this.mpJwtRequireIss = mpJwtRequireIss;
     }
 
     @Produces

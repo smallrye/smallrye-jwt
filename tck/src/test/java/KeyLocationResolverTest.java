@@ -18,7 +18,6 @@
 
 
 import java.security.PrivateKey;
-import java.util.Optional;
 
 import org.eclipse.microprofile.jwt.tck.util.TokenUtils;
 import org.jose4j.lang.UnresolvableKeyException;
@@ -66,10 +65,8 @@ public class KeyLocationResolverTest {
     private static void verifyToken(String kid, String publicKeyLocation) throws Exception {
         PrivateKey privateKey = TokenUtils.readPrivateKey("/privateKey.pem");
         String token = TokenUtils.generateTokenString(privateKey, kid, "/Token1.json", null, null);
-        JWTAuthContextInfoProvider provider = new JWTAuthContextInfoProvider();
-        provider.setMpJwtIssuer("https://server.example.com");
-        provider.setMpJwtLocation(Optional.of(publicKeyLocation));
-        provider.setMpJwtPublicKey(Optional.of("NONE"));
+        JWTAuthContextInfoProvider provider =
+            JWTAuthContextInfoProvider.createWithKeyLocation(publicKeyLocation, "https://server.example.com");
         Assert.assertNotNull(new DefaultJWTTokenParser().parse(token, provider.getContextInfo()));
     }
 }
