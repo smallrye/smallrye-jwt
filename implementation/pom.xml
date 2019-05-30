@@ -31,7 +31,7 @@
 
   <properties>
     <version.jose4j>0.6.5</version.jose4j>
-    <version.mokito>2.27.0</version.mokito>
+    <version.mokito>2.28.2</version.mokito>
   </properties>
 
   <dependencies>
