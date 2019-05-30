@@ -20,6 +20,7 @@ package io.smallrye.jwt.config;
 import java.security.interfaces.RSAPublicKey;
 import java.util.Optional;
 
+import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.Dependent;
 import javax.enterprise.inject.Produces;
 import javax.enterprise.inject.spi.DeploymentException;
@@ -43,7 +44,7 @@ public class JWTAuthContextInfoProvider {
     private static final Logger log = Logger.getLogger(JWTAuthContextInfoProvider.class);
 
     public JWTAuthContextInfoProvider() {
-        
+
     }
     // The MP-JWT spec defined configuration properties
 
@@ -77,27 +78,28 @@ public class JWTAuthContextInfoProvider {
 
     // SmallRye JWT specific properties
     /**
-     * HTTP header which is expected to contain a JWT token, default value is 'Authorization' 
+     * HTTP header which is expected to contain a JWT token, default value is 'Authorization'
      */
     @Inject
     @ConfigProperty(name = "smallrye.jwt.token.header", defaultValue = AUTHORIZATION_HEADER)
     private String tokenHeader;
-    
+
     /**
      * Cookie name containing a JWT token. This property is ignored unless the "smallrye.jwt.token.header" is set to 'Cookie'
      */
     @Inject
     @ConfigProperty(name = "smallrye.jwt.token.cookie")
     private Optional<String> tokenCookie;
-    
+
     /**
-     * Default group name. This property can be used to support the JWT tokens without a 'groups' claim. 
+     * Default group name. This property can be used to support the JWT tokens without a 'groups' claim.
      */
     @Inject
     @ConfigProperty(name = "smallrye.jwt.claims.groups")
     private Optional<String> defaultGroupsClaim;
-    
+
     @Produces
+    @ApplicationScoped
     Optional<JWTAuthContextInfo> getOptionalContextInfo() {
         // Log the config values
         log.debugf("init, mpJwtPublicKey=%s, mpJwtIssuer=%s, mpJwtLocation=%s",
@@ -137,7 +139,7 @@ public class JWTAuthContextInfoProvider {
         }
         setTokenHeadersAndGroups(contextInfo);
         return Optional.of(contextInfo);
-        
+
     }
 
     protected void setMpJwtLocation(JWTAuthContextInfo contextInfo) {
@@ -162,7 +164,7 @@ public class JWTAuthContextInfoProvider {
                 throw new DeploymentException(e1);
             }
         }
-        
+
     }
 
     protected void setTokenHeadersAndGroups(JWTAuthContextInfo contextInfo) {
@@ -176,7 +178,7 @@ public class JWTAuthContextInfoProvider {
                 contextInfo.setTokenCookie(tokenCookie.get());
             }
         }
-        
+
         if (defaultGroupsClaim != null && defaultGroupsClaim.isPresent()) {
             contextInfo.setDefaultGroupsClaim(defaultGroupsClaim.get());
         }
@@ -215,6 +217,7 @@ public class JWTAuthContextInfoProvider {
     }
 
     @Produces
+    @ApplicationScoped
     public JWTAuthContextInfo getContextInfo() {
         return getOptionalContextInfo().get();
     }
