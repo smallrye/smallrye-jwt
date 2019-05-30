@@ -45,16 +45,6 @@ public class JWTAuthContextInfoProvider {
     public JWTAuthContextInfoProvider() {
         
     }
-    
-    public JWTAuthContextInfoProvider(String mpJwtPublicKey,
-                                      String mpJwtLocation,
-                                      String mpJwtIssuer) {
-        this.mpJwtPublicKey = Optional.of(mpJwtPublicKey);
-        this.mpJwtLocation = Optional.of(mpJwtLocation);
-        this.mpJwtIssuer = mpJwtIssuer;
-        
-    }
-        
     // The MP-JWT spec defined configuration properties
 
     /**
@@ -196,16 +186,32 @@ public class JWTAuthContextInfoProvider {
         return mpJwtPublicKey;
     }
 
+    public void setMpJwtPublicKey(Optional<String> mpJwtPublicKey) {
+        this.mpJwtPublicKey = mpJwtPublicKey;
+    }
+
     public String getMpJwtIssuer() {
         return mpJwtIssuer;
+    }
+
+    public void setMpJwtIssuer(String mpJwtIssuer) {
+        this.mpJwtIssuer = mpJwtIssuer;
     }
 
     public Optional<String> getMpJwtLocation() {
         return mpJwtLocation;
     }
 
+    public void setMpJwtLocation(Optional<String> mpJwtLocation) {
+        this.mpJwtLocation = mpJwtLocation;
+    }
+
     public Optional<Boolean> getMpJwtRequireIss() {
         return mpJwtRequireIss;
+    }
+
+    public void setMpJwtRequireIss(Optional<Boolean> mpJwtRequireIss) {
+        this.mpJwtRequireIss = mpJwtRequireIss;
     }
 
     @Produces
