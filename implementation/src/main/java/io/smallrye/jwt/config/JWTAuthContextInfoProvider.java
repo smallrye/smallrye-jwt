@@ -182,7 +182,7 @@ public class JWTAuthContextInfoProvider {
         contextInfo.setJwksUri(mpJwtLocation.get());
         contextInfo.setFollowMpJwt11Rules(true);
     }
-    
+
     protected void decodeMpJwtPublicKey(JWTAuthContextInfo contextInfo) {
         // Need to decode what this is...
         try {
@@ -249,7 +249,7 @@ public class JWTAuthContextInfoProvider {
 
     private static Supplier<IllegalStateException> throwException() {
         final String error = "JWTAuthContextInfo has not been initialized. Please make sure that either "
-                + "public key or public key location properties are set.";
+                + "'mp.jwt.verify.publickey' or 'mp.jwt.verify.publickey.location' properties are set.";
         return () -> new IllegalStateException(error);
     }
 }
