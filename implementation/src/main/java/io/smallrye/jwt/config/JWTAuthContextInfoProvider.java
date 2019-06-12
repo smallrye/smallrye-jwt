@@ -168,16 +168,21 @@ public class JWTAuthContextInfoProvider {
         if (mpJwtLocation.isPresent() && !NONE.equals(mpJwtLocation.get())) {
             setMpJwtLocation(contextInfo);
         }
-        setTokenHeadersAndGroups(contextInfo);
+        if (tokenHeader != null) {
+            contextInfo.setTokenHeader(tokenHeader);
+        }
+        setTokenCookie(contextInfo, tokenCookie);
+        if (defaultGroupsClaim != null && defaultGroupsClaim.isPresent()) {
+            contextInfo.setDefaultGroupsClaim(defaultGroupsClaim.get());
+        }
         return Optional.of(contextInfo);
-
     }
 
     protected void setMpJwtLocation(JWTAuthContextInfo contextInfo) {
         contextInfo.setJwksUri(mpJwtLocation.get());
         contextInfo.setFollowMpJwt11Rules(true);
     }
-
+    
     protected void decodeMpJwtPublicKey(JWTAuthContextInfo contextInfo) {
         // Need to decode what this is...
         try {
@@ -198,20 +203,13 @@ public class JWTAuthContextInfoProvider {
 
     }
 
-    protected void setTokenHeadersAndGroups(JWTAuthContextInfo contextInfo) {
-        if (tokenHeader != null) {
-            contextInfo.setTokenHeader(tokenHeader);
-        }
-        if (tokenCookie != null && tokenCookie.isPresent()) {
-            if (!COOKIE_HEADER.equals(tokenHeader)) {
+    protected static void setTokenCookie(JWTAuthContextInfo contextInfo, Optional<String> cookieName) {
+        if (cookieName != null && cookieName.isPresent()) {
+            if (!COOKIE_HEADER.equals(contextInfo.getTokenHeader())) {
                 log.warn("Token header is not 'Cookie', the cookie name value will be ignored");
             } else {
-                contextInfo.setTokenCookie(tokenCookie.get());
+                contextInfo.setTokenCookie(cookieName.get());
             }
-        }
-
-        if (defaultGroupsClaim != null && defaultGroupsClaim.isPresent()) {
-            contextInfo.setDefaultGroupsClaim(defaultGroupsClaim.get());
         }
     }
 
@@ -229,6 +227,18 @@ public class JWTAuthContextInfoProvider {
 
     public Optional<Boolean> getMpJwtRequireIss() {
         return mpJwtRequireIss;
+    }
+
+    public String getTokenHeader() {
+        return tokenHeader;
+    }
+    
+    public Optional<String> getTokenCookie() {
+        return tokenCookie;
+    }
+    
+    public Optional<String> getDefaultGroupsClaim() {
+        return defaultGroupsClaim;
     }
 
     @Produces
