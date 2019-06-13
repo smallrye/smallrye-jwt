@@ -138,7 +138,7 @@ public class DefaultJWTTokenParser {
                 int nextStep = step + 1;
                 return findGroups(authContextInfo, nextMap, pathArray, nextStep);
             } else {
-                logger.warnf("Claim value at the path %s is not a json onject", authContextInfo.getGroupsPath());
+                logger.warnf("Claim value at the path %s is not a json object", authContextInfo.getGroupsPath());
             }
         } else if (claimValue instanceof List) {
             // last segment
