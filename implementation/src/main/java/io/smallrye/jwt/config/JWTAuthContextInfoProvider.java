@@ -31,6 +31,7 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
 import io.smallrye.jwt.KeyUtils;
+import io.smallrye.jwt.SmallryeJwtUtils;
 import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
 
 /**
@@ -179,13 +180,11 @@ public class JWTAuthContextInfoProvider {
         if (tokenHeader != null) {
             contextInfo.setTokenHeader(tokenHeader);
         }
-        setTokenCookie(contextInfo, tokenCookie);
+        SmallryeJwtUtils.setContextTokenCookie(contextInfo, tokenCookie);
         if (defaultGroupsClaim != null && defaultGroupsClaim.isPresent()) {
             contextInfo.setDefaultGroupsClaim(defaultGroupsClaim.get());
         }
-        if (groupsPath != null && groupsPath.isPresent()) {
-            contextInfo.setGroupsPath(groupsPath.get());
-        }
+        SmallryeJwtUtils.setContextGroupsPath(contextInfo, groupsPath);
 
         return Optional.of(contextInfo);
     }
@@ -213,16 +212,6 @@ public class JWTAuthContextInfoProvider {
             }
         }
 
-    }
-
-    protected static void setTokenCookie(JWTAuthContextInfo contextInfo, Optional<String> cookieName) {
-        if (cookieName != null && cookieName.isPresent()) {
-            if (!COOKIE_HEADER.equals(contextInfo.getTokenHeader())) {
-                log.warn("Token header is not 'Cookie', the cookie name value will be ignored");
-            } else {
-                contextInfo.setTokenCookie(cookieName.get());
-            }
-        }
     }
 
     public Optional<String> getMpJwtPublicKey() {

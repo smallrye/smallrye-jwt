@@ -30,8 +30,7 @@ import org.jose4j.lang.JoseException;
 public class DefaultJWTTokenParser {
 	private static Logger logger = Logger.getLogger(DefaultJWTTokenParser.class);
 	private static final String ROLE_MAPPINGS = "roleMappings";
-	private static final Integer MAX_ROLES_PATH_DEPTH = 4;
-	
+
     private HttpsJwks httpsJwks;
 
     public JwtContext parse(final String token, final JWTAuthContextInfo authContextInfo) throws ParseException {
@@ -111,13 +110,8 @@ public class DefaultJWTTokenParser {
     
     private List<String> checkGroupsPath(JWTAuthContextInfo authContextInfo, JwtClaims claimsSet) {
         if (authContextInfo.getGroupsPath() != null) {
-            String[] pathSegments = authContextInfo.getGroupsPath().split("/");
-            if (MAX_ROLES_PATH_DEPTH < pathSegments.length) {
-                logger.warnf("Roles path depth is too large: %d, maximum depth is %d",
-                             pathSegments.length, MAX_ROLES_PATH_DEPTH);
-            } else {
-                return findGroups(authContextInfo, claimsSet.getClaimsMap(), pathSegments, 0);
-            }
+            final String[] pathSegments = authContextInfo.getGroupsPath().split("/");
+            return findGroups(authContextInfo, claimsSet.getClaimsMap(), pathSegments, 0);
         }
         return null;
     }
