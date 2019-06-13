@@ -30,6 +30,7 @@ import org.jose4j.lang.JoseException;
 public class DefaultJWTTokenParser {
 	private static Logger logger = Logger.getLogger(DefaultJWTTokenParser.class);
 	private static final String ROLE_MAPPINGS = "roleMappings";
+	private static final Integer MAX_ROLES_PATH_DEPTH = 4;
 	
     private HttpsJwks httpsJwks;
 
@@ -71,8 +72,12 @@ public class DefaultJWTTokenParser {
             JwtClaims claimsSet = jwtContext.getJwtClaims();
             
             claimsSet.setClaim(Claims.raw_token.name(), token);
-            if (!claimsSet.hasClaim(Claims.groups.name()) && authContextInfo.getDefaultGroupsClaim() != null) {
-                claimsSet.setClaim(Claims.groups.name(), Collections.singletonList(authContextInfo.getDefaultGroupsClaim()));
+            if (!claimsSet.hasClaim(Claims.groups.name())) {
+                List<String> groups = checkGroupsPath(authContextInfo, claimsSet);
+                if (groups == null && authContextInfo.getDefaultGroupsClaim() != null) {
+                    groups = Collections.singletonList(authContextInfo.getDefaultGroupsClaim());
+                }
+                claimsSet.setClaim(Claims.groups.name(), groups);
             }
             // Process the rolesMapping claim
             if (claimsSet.hasClaim(ROLE_MAPPINGS)) {
@@ -104,6 +109,53 @@ public class DefaultJWTTokenParser {
 
     }
     
+    private List<String> checkGroupsPath(JWTAuthContextInfo authContextInfo, JwtClaims claimsSet) {
+        if (authContextInfo.getGroupsPath() != null) {
+            String[] pathSegments = authContextInfo.getGroupsPath().split("/");
+            if (MAX_ROLES_PATH_DEPTH < pathSegments.length) {
+                logger.warnf("Roles path depth is too large: %d, maximum depth is %d",
+                             pathSegments.length, MAX_ROLES_PATH_DEPTH);
+            } else {
+                return findGroups(authContextInfo, claimsSet.getClaimsMap(), pathSegments, 0);
+            }
+        }
+        return null;
+    }
+
+    private List<String> findGroups(JWTAuthContextInfo authContextInfo,
+                                    Map<String, Object> claimsMap,
+                                    String[] pathArray,
+                                    int step) {
+
+        Object claimValue = claimsMap.get(pathArray[step]);
+        if (claimValue == null) {
+            logger.warnf("No claim exists at the path %s at segment %s",
+                         authContextInfo.getGroupsPath(), pathArray[step]);
+        } else if (step + 1 < pathArray.length) {
+            if (claimValue instanceof Map) {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> nextMap = (Map<String, Object>)claimValue;
+                int nextStep = step + 1;
+                return findGroups(authContextInfo, nextMap, pathArray, nextStep);
+            } else {
+                logger.warnf("Claim value at the path %s is not a json onject", authContextInfo.getGroupsPath());
+            }
+        } else if (claimValue instanceof List) {
+            // last segment
+            try {
+                @SuppressWarnings("unchecked")
+                List<String> groups = (List<String>)claimValue;
+                return groups;
+            } catch (ClassCastException e) {
+                logger.warnf("Claim value at the path %s is not an array of strings", authContextInfo.getGroupsPath());
+            }
+        } else {
+            // last segment
+            logger.warnf("Claim value at the path %s is not an array", authContextInfo.getGroupsPath());
+        }
+        return null;
+    }
+
     protected List<JsonWebKey> loadJsonWebKeys(JWTAuthContextInfo authContextInfo) {
         synchronized (this) {
             if (authContextInfo.getJwksUri() == null) {

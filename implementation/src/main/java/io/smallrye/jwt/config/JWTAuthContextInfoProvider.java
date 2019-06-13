@@ -126,6 +126,14 @@ public class JWTAuthContextInfoProvider {
     @Inject
     @ConfigProperty(name = "smallrye.jwt.claims.groups")
     private Optional<String> defaultGroupsClaim;
+    /**
+     * JSON path to the claim containing an array of groups. It starts from the top level JSON object and
+     * can contains multiple segments where each segment represents a JSON object name only, example: "realm/groups".
+     * This property can be used if a token has no 'groups' claim but has the groups set in a different claim.
+     */
+    @Inject
+    @ConfigProperty(name = "smallrye.jwt.groups.path")
+    private Optional<String> groupsPath;
 
     @Produces
     @ApplicationScoped
@@ -175,6 +183,10 @@ public class JWTAuthContextInfoProvider {
         if (defaultGroupsClaim != null && defaultGroupsClaim.isPresent()) {
             contextInfo.setDefaultGroupsClaim(defaultGroupsClaim.get());
         }
+        if (groupsPath != null && groupsPath.isPresent()) {
+            contextInfo.setGroupsPath(groupsPath.get());
+        }
+
         return Optional.of(contextInfo);
     }
 
@@ -239,6 +251,10 @@ public class JWTAuthContextInfoProvider {
     
     public Optional<String> getDefaultGroupsClaim() {
         return defaultGroupsClaim;
+    }
+
+    public Optional<String> getGroupsPath() {
+        return groupsPath;
     }
 
     @Produces
