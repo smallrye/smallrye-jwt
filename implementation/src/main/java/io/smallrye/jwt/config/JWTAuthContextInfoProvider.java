@@ -40,8 +40,7 @@ import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
  */
 @Dependent
 public class JWTAuthContextInfoProvider {
-    protected final static String AUTHORIZATION_HEADER = "Authorization";
-    protected final static String COOKIE_HEADER = "Cookie";
+    protected static final String AUTHORIZATION_HEADER = "Authorization";
     private static final String NONE = "NONE";
     private static final Logger log = Logger.getLogger(JWTAuthContextInfoProvider.class);
 

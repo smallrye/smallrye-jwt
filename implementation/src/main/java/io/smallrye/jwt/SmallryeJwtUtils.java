@@ -27,8 +27,8 @@ import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
  * Utility methods for dealing with decoding public and private keys resources
  */
 public class SmallryeJwtUtils {
-    public static final Integer MAX_GROUPS_PATH_DEPTH = 4;
-    public final static String COOKIE_HEADER = "Cookie";
+    private static final Integer MAX_GROUPS_PATH_DEPTH = 4;
+    private static final String COOKIE_HEADER = "Cookie";
     
     private static final Logger log = Logger.getLogger(SmallryeJwtUtils.class);
     private SmallryeJwtUtils() {
