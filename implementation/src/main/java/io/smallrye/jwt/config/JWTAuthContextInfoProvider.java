@@ -31,6 +31,7 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
 import io.smallrye.jwt.KeyUtils;
+import io.smallrye.jwt.SmallryeJwtUtils;
 import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
 
 /**
@@ -39,8 +40,7 @@ import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
  */
 @Dependent
 public class JWTAuthContextInfoProvider {
-    protected final static String AUTHORIZATION_HEADER = "Authorization";
-    protected final static String COOKIE_HEADER = "Cookie";
+    private static final String AUTHORIZATION_HEADER = "Authorization";
     private static final String NONE = "NONE";
     private static final Logger log = Logger.getLogger(JWTAuthContextInfoProvider.class);
 
@@ -126,6 +126,14 @@ public class JWTAuthContextInfoProvider {
     @Inject
     @ConfigProperty(name = "smallrye.jwt.claims.groups")
     private Optional<String> defaultGroupsClaim;
+    /**
+     * JSON path to the claim containing an array of groups. It starts from the top level JSON object and
+     * can contain multiple segments where each segment represents a JSON object name only, example: "realm/groups".
+     * This property can be used if a token has no 'groups' claim but has the groups set in a different claim.
+     */
+    @Inject
+    @ConfigProperty(name = "smallrye.jwt.groups.path")
+    private Optional<String> groupsPath;
 
     @Produces
     @ApplicationScoped
@@ -171,10 +179,12 @@ public class JWTAuthContextInfoProvider {
         if (tokenHeader != null) {
             contextInfo.setTokenHeader(tokenHeader);
         }
-        setTokenCookie(contextInfo, tokenCookie);
+        SmallryeJwtUtils.setContextTokenCookie(contextInfo, tokenCookie);
         if (defaultGroupsClaim != null && defaultGroupsClaim.isPresent()) {
             contextInfo.setDefaultGroupsClaim(defaultGroupsClaim.get());
         }
+        SmallryeJwtUtils.setContextGroupsPath(contextInfo, groupsPath);
+
         return Optional.of(contextInfo);
     }
 
@@ -203,16 +213,6 @@ public class JWTAuthContextInfoProvider {
 
     }
 
-    protected static void setTokenCookie(JWTAuthContextInfo contextInfo, Optional<String> cookieName) {
-        if (cookieName != null && cookieName.isPresent()) {
-            if (!COOKIE_HEADER.equals(contextInfo.getTokenHeader())) {
-                log.warn("Token header is not 'Cookie', the cookie name value will be ignored");
-            } else {
-                contextInfo.setTokenCookie(cookieName.get());
-            }
-        }
-    }
-
     public Optional<String> getMpJwtPublicKey() {
         return mpJwtPublicKey;
     }
@@ -239,6 +239,10 @@ public class JWTAuthContextInfoProvider {
     
     public Optional<String> getDefaultGroupsClaim() {
         return defaultGroupsClaim;
+    }
+
+    public Optional<String> getGroupsPath() {
+        return groupsPath;
     }
 
     @Produces

@@ -31,6 +31,7 @@ public class JWTAuthContextInfo {
     private String tokenHeader = "Authorization";
     private String tokenCookie;
     private String defaultGroupsClaim;
+    private String groupsPath;
     /**
      * Flag that indicates whether the issuer is required and validated, or ignored, new in MP-JWT 1.1.
      */
@@ -145,5 +146,13 @@ public class JWTAuthContextInfo {
 
     public void setDefaultGroupsClaim(String defaultGroupsClaim) {
         this.defaultGroupsClaim = defaultGroupsClaim;
+    }
+
+    public String getGroupsPath() {
+        return groupsPath;
+    }
+
+    public void setGroupsPath(String groupsPath) {
+        this.groupsPath = groupsPath;
     }
 }
