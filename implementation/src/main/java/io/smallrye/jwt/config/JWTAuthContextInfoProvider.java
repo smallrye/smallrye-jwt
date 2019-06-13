@@ -128,7 +128,7 @@ public class JWTAuthContextInfoProvider {
     private Optional<String> defaultGroupsClaim;
     /**
      * JSON path to the claim containing an array of groups. It starts from the top level JSON object and
-     * can contains multiple segments where each segment represents a JSON object name only, example: "realm/groups".
+     * can contain multiple segments where each segment represents a JSON object name only, example: "realm/groups".
      * This property can be used if a token has no 'groups' claim but has the groups set in a different claim.
      */
     @Inject
