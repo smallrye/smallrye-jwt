@@ -168,9 +168,14 @@ public class JWTAuthContextInfoProvider {
         if (mpJwtLocation.isPresent() && !NONE.equals(mpJwtLocation.get())) {
             setMpJwtLocation(contextInfo);
         }
-        setTokenHeadersAndGroups(contextInfo);
+        if (tokenHeader != null) {
+            contextInfo.setTokenHeader(tokenHeader);
+        }
+        setTokenCookie(contextInfo, tokenCookie);
+        if (defaultGroupsClaim != null && defaultGroupsClaim.isPresent()) {
+            contextInfo.setDefaultGroupsClaim(defaultGroupsClaim.get());
+        }
         return Optional.of(contextInfo);
-
     }
 
     protected void setMpJwtLocation(JWTAuthContextInfo contextInfo) {
@@ -198,20 +203,13 @@ public class JWTAuthContextInfoProvider {
 
     }
 
-    protected void setTokenHeadersAndGroups(JWTAuthContextInfo contextInfo) {
-        if (tokenHeader != null) {
-            contextInfo.setTokenHeader(tokenHeader);
-        }
-        if (tokenCookie != null && tokenCookie.isPresent()) {
-            if (!COOKIE_HEADER.equals(tokenHeader)) {
+    protected static void setTokenCookie(JWTAuthContextInfo contextInfo, Optional<String> cookieName) {
+        if (cookieName != null && cookieName.isPresent()) {
+            if (!COOKIE_HEADER.equals(contextInfo.getTokenHeader())) {
                 log.warn("Token header is not 'Cookie', the cookie name value will be ignored");
             } else {
-                contextInfo.setTokenCookie(tokenCookie.get());
+                contextInfo.setTokenCookie(cookieName.get());
             }
-        }
-
-        if (defaultGroupsClaim != null && defaultGroupsClaim.isPresent()) {
-            contextInfo.setDefaultGroupsClaim(defaultGroupsClaim.get());
         }
     }
 
@@ -231,6 +229,18 @@ public class JWTAuthContextInfoProvider {
         return mpJwtRequireIss;
     }
 
+    public String getTokenHeader() {
+        return tokenHeader;
+    }
+    
+    public Optional<String> getTokenCookie() {
+        return tokenCookie;
+    }
+    
+    public Optional<String> getDefaultGroupsClaim() {
+        return defaultGroupsClaim;
+    }
+
     @Produces
     @ApplicationScoped
     public JWTAuthContextInfo getContextInfo() {
@@ -239,7 +249,7 @@ public class JWTAuthContextInfoProvider {
 
     private static Supplier<IllegalStateException> throwException() {
         final String error = "JWTAuthContextInfo has not been initialized. Please make sure that either "
-                + "public key or public key location properties are set.";
+                + "'mp.jwt.verify.publickey' or 'mp.jwt.verify.publickey.location' properties are set.";
         return () -> new IllegalStateException(error);
     }
 }
