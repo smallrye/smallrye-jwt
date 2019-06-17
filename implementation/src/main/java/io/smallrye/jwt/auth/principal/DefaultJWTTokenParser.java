@@ -1,6 +1,5 @@
 package io.smallrye.jwt.auth.principal;
 
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -24,12 +23,12 @@ import org.jose4j.keys.resolvers.JwksVerificationKeyResolver;
 import org.jose4j.lang.JoseException;
 
 /**
- * Default JWT token validator 
+ * Default JWT token validator
  *
  */
 public class DefaultJWTTokenParser {
-	private static Logger logger = Logger.getLogger(DefaultJWTTokenParser.class);
-	private static final String ROLE_MAPPINGS = "roleMappings";
+    private static Logger logger = Logger.getLogger(DefaultJWTTokenParser.class);
+    private static final String ROLE_MAPPINGS = "roleMappings";
 
     private HttpsJwks httpsJwks;
 
@@ -42,7 +41,7 @@ public class DefaultJWTTokenParser {
                     .setSkipDefaultAudienceValidation()
                     .setJwsAlgorithmConstraints(
                             new AlgorithmConstraints(AlgorithmConstraints.ConstraintType.WHITELIST,
-                                                     AlgorithmIdentifiers.RSA_USING_SHA256));
+                                    AlgorithmIdentifiers.RSA_USING_SHA256));
 
             if (authContextInfo.isRequireIssuer()) {
                 builder.setExpectedIssuer(true, authContextInfo.getIssuedBy());
@@ -65,11 +64,11 @@ public class DefaultJWTTokenParser {
             }
 
             JwtConsumer jwtConsumer = builder.build();
-            
+
             //  Validate the JWT and process it to the Claims
             JwtContext jwtContext = jwtConsumer.process(token);
             JwtClaims claimsSet = jwtContext.getJwtClaims();
-            
+
             claimsSet.setClaim(Claims.raw_token.name(), token);
             if (!claimsSet.hasClaim(Claims.groups.name())) {
                 List<String> groups = checkGroupsPath(authContextInfo, claimsSet);
@@ -99,7 +98,7 @@ public class DefaultJWTTokenParser {
                     logger.warnf(e, "Failed to access rolesMapping claim");
                 }
             }
-            
+
             return jwtContext;
         } catch (InvalidJwtException e) {
             logger.warnf("Token is invalid: %s", e.getMessage());
@@ -107,7 +106,7 @@ public class DefaultJWTTokenParser {
         }
 
     }
-    
+
     private List<String> checkGroupsPath(JWTAuthContextInfo authContextInfo, JwtClaims claimsSet) {
         if (authContextInfo.getGroupsPath() != null) {
             final String[] pathSegments = authContextInfo.getGroupsPath().split("/");
@@ -117,18 +116,18 @@ public class DefaultJWTTokenParser {
     }
 
     private List<String> findGroups(JWTAuthContextInfo authContextInfo,
-                                    Map<String, Object> claimsMap,
-                                    String[] pathArray,
-                                    int step) {
+            Map<String, Object> claimsMap,
+            String[] pathArray,
+            int step) {
 
         Object claimValue = claimsMap.get(pathArray[step]);
         if (claimValue == null) {
             logger.warnf("No claim exists at the path %s at segment %s",
-                         authContextInfo.getGroupsPath(), pathArray[step]);
+                    authContextInfo.getGroupsPath(), pathArray[step]);
         } else if (step + 1 < pathArray.length) {
             if (claimValue instanceof Map) {
                 @SuppressWarnings("unchecked")
-                Map<String, Object> nextMap = (Map<String, Object>)claimValue;
+                Map<String, Object> nextMap = (Map<String, Object>) claimValue;
                 int nextStep = step + 1;
                 return findGroups(authContextInfo, nextMap, pathArray, nextStep);
             } else {
@@ -138,7 +137,7 @@ public class DefaultJWTTokenParser {
             // last segment
             try {
                 @SuppressWarnings("unchecked")
-                List<String> groups = (List<String>)claimValue;
+                List<String> groups = (List<String>) claimValue;
                 return groups;
             } catch (ClassCastException e) {
                 logger.warnf("Claim value at the path %s is not an array of strings", authContextInfo.getGroupsPath());
@@ -169,7 +168,7 @@ public class DefaultJWTTokenParser {
                     .collect(Collectors.toList());
         } catch (IOException | JoseException e) {
             throw new IllegalStateException(String.format("Unable to fetch JWKS from %s.",
-                authContextInfo.getJwksUri()), e);
+                    authContextInfo.getJwksUri()), e);
         }
     }
 }

@@ -2,14 +2,15 @@ import java.security.interfaces.RSAPublicKey;
 import java.util.HashMap;
 import java.util.HashSet;
 
-import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
-import io.smallrye.jwt.auth.principal.JWTCallerPrincipal;
-import io.smallrye.jwt.auth.principal.JWTCallerPrincipalFactory;
-import io.smallrye.jwt.auth.principal.ParseException;
 import org.eclipse.microprofile.jwt.Claims;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.eclipse.microprofile.jwt.tck.util.TokenUtils;
 import org.testng.annotations.Test;
+
+import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
+import io.smallrye.jwt.auth.principal.JWTCallerPrincipal;
+import io.smallrye.jwt.auth.principal.JWTCallerPrincipalFactory;
+import io.smallrye.jwt.auth.principal.ParseException;
 
 /**
  * Test various parsing expectations of a JWT string into a JsonWebToken
@@ -24,8 +25,7 @@ public class TestJsonWebToken {
         JsonWebToken jwt = validateToken(token, contextInfo);
     }
 
-    @Test(expectedExceptions = {ParseException.class},
-            description = "Illustrate validation of issuer")
+    @Test(expectedExceptions = { ParseException.class }, description = "Illustrate validation of issuer")
     public void testFailIssuer() throws Exception {
         HashSet<TokenUtils.InvalidClaims> invalidFields = new HashSet<>();
         invalidFields.add(TokenUtils.InvalidClaims.ISSUER);
@@ -36,8 +36,7 @@ public class TestJsonWebToken {
         JsonWebToken jwt = validateToken(token, contextInfo);
     }
 
-    @Test(expectedExceptions = {ParseException.class},
-            description = "Illustrate validation of signer")
+    @Test(expectedExceptions = { ParseException.class }, description = "Illustrate validation of signer")
     public void testNimbusFailSignature() throws Exception {
         HashSet<TokenUtils.InvalidClaims> invalidFields = new HashSet<>();
         invalidFields.add(TokenUtils.InvalidClaims.SIGNER);
@@ -48,8 +47,7 @@ public class TestJsonWebToken {
         JsonWebToken jwt = validateToken(token, contextInfo);
     }
 
-    @Test(expectedExceptions = {ParseException.class},
-            description = "Illustrate validation of exp")
+    @Test(expectedExceptions = { ParseException.class }, description = "Illustrate validation of exp")
     public void testNimbusFailExpired() throws Exception {
         HashMap<String, Long> timeClaims = new HashMap<>();
         HashSet<TokenUtils.InvalidClaims> invalidFields = new HashSet<>();
@@ -61,8 +59,7 @@ public class TestJsonWebToken {
         JsonWebToken jwt = validateToken(token, contextInfo);
     }
 
-    @Test(expectedExceptions = {ParseException.class},
-            description = "Illustrate validation of exp that has just expired")
+    @Test(expectedExceptions = { ParseException.class }, description = "Illustrate validation of exp that has just expired")
     public void testNimbusFailJustExpired() throws Exception {
         HashMap<String, Long> timeClaims = new HashMap<>();
         // Set exp to 61 seconds in past
@@ -87,6 +84,7 @@ public class TestJsonWebToken {
         contextInfo.setExpGracePeriodSecs(60);
         JsonWebToken jwt = validateToken(token, contextInfo);
     }
+
     private JsonWebToken validateToken(String token, JWTAuthContextInfo contextInfo) throws ParseException {
         JWTCallerPrincipalFactory factory = JWTCallerPrincipalFactory.instance();
         JWTCallerPrincipal callerPrincipal = factory.parse(token, contextInfo);

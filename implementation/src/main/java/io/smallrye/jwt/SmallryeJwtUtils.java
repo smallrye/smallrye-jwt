@@ -29,24 +29,25 @@ import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
 public class SmallryeJwtUtils {
     private static final Integer MAX_GROUPS_PATH_DEPTH = 4;
     private static final String COOKIE_HEADER = "Cookie";
-    
+
     private static final Logger log = Logger.getLogger(SmallryeJwtUtils.class);
+
     private SmallryeJwtUtils() {
     }
 
     public static void setContextGroupsPath(JWTAuthContextInfo contextInfo,
-                                            Optional<String> groupsPath) {
+            Optional<String> groupsPath) {
         if (groupsPath != null && groupsPath.isPresent()) {
             final String[] pathSegments = groupsPath.get().split("/");
             if (MAX_GROUPS_PATH_DEPTH < pathSegments.length) {
                 log.errorf("Groups path configuration will be ignored because its depth is too large:"
-                           + " %d, maximum depth is %d.", pathSegments.length, MAX_GROUPS_PATH_DEPTH);
-            } else {            
+                        + " %d, maximum depth is %d.", pathSegments.length, MAX_GROUPS_PATH_DEPTH);
+            } else {
                 contextInfo.setGroupsPath(groupsPath.get());
             }
         }
     }
-    
+
     public static void setContextTokenCookie(JWTAuthContextInfo contextInfo, Optional<String> cookieName) {
         if (cookieName != null && cookieName.isPresent()) {
             if (!COOKIE_HEADER.equals(contextInfo.getTokenHeader())) {

@@ -53,20 +53,20 @@ public class DefaultJWTCallerPrincipal extends JWTCallerPrincipal {
         this.claimsSet = claimsSet;
         fixJoseTypes();
     }
-    
+
     public DefaultJWTCallerPrincipal(String tokenType, JwtClaims claimsSet) {
         this(getRawToken(claimsSet), tokenType, claimsSet);
     }
-    
+
     public DefaultJWTCallerPrincipal(JwtClaims claimsSet) {
         this("JWT", claimsSet);
     }
-    
+
     protected static String getRawToken(JwtClaims claimsSet) {
         Object rawToken = claimsSet.getClaimValue(Claims.raw_token.name());
         return rawToken != null ? rawToken.toString() : null;
     }
-    
+
     @Override
     public Set<String> getAudience() {
         Set<String> audSet = null;
@@ -82,7 +82,7 @@ public class DefaultJWTCallerPrincipal extends JWTCallerPrincipal {
                 audSet = new HashSet<>();
                 audSet.add(aud);
             } catch (MalformedClaimException e1) {
-            	logger.warn("getAudience failure: ", e);
+                logger.warn("getAudience failure: ", e);
             }
         }
         return audSet;
@@ -97,7 +97,7 @@ public class DefaultJWTCallerPrincipal extends JWTCallerPrincipal {
                 groups.addAll(globalGroups);
             }
         } catch (MalformedClaimException e) {
-        	logger.warn("getGroups failure: ", e);
+            logger.warn("getGroups failure: ", e);
         }
         return groups;
     }
@@ -106,12 +106,12 @@ public class DefaultJWTCallerPrincipal extends JWTCallerPrincipal {
     protected Collection<String> doGetClaimNames() {
         return claimsSet.getClaimNames();
     }
-    
+
     @Override
     protected Object getClaimValue(String claimName) {
         Claims claimType = getClaimType(claimName);
         Object claim = null;
-        
+
         // Handle the jose4j NumericDate types and
         switch (claimType) {
             case exp:
@@ -141,7 +141,7 @@ public class DefaultJWTCallerPrincipal extends JWTCallerPrincipal {
         }
         return claim;
     }
-    
+
     /**
      * Convert the types jose4j uses for address, sub_jwk, and jwk
      */

@@ -16,7 +16,6 @@
  */
 package io.smallrye.jwt.auth.principal;
 
-
 import java.security.interfaces.RSAPublicKey;
 
 /**
@@ -43,6 +42,7 @@ public class JWTAuthContextInfo {
 
     /**
      * Create an auth context from the token signer public key and issuer
+     * 
      * @param signerKey
      * @param issuedBy
      */
@@ -53,6 +53,7 @@ public class JWTAuthContextInfo {
 
     /**
      * Create an auth context from an {@linkplain JWTAuthContextInfo} instance
+     * 
      * @param orig
      */
     public JWTAuthContextInfo(JWTAuthContextInfo orig) {
@@ -114,6 +115,7 @@ public class JWTAuthContextInfo {
     /**
      * Is the {@linkplain #jwksUri} a location that follows the MP-JWT 1.1 rules for the mp.jwt.verify.publickey.location
      * property? These rules allow for any URL type to one of PEM, JWK or JWKS contents.
+     * 
      * @return true if jwksUri was set from the mp.jwt.verify.publickey.location, false otherwise
      */
     public boolean isFollowMpJwt11Rules() {

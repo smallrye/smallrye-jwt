@@ -1,6 +1,5 @@
 package io.smallrye.jwt.auth.principal;
 
-
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -24,10 +23,10 @@ import org.eclipse.microprofile.jwt.JsonWebToken;
  */
 public abstract class JWTCallerPrincipal implements JsonWebToken {
     private static final String TMP = "tmp";
-    
+
     private String rawToken;
     private String tokenType;
-    
+
     /**
      * Create a JWTCallerPrincipal with the caller's name
      *
@@ -50,20 +49,20 @@ public abstract class JWTCallerPrincipal implements JsonWebToken {
         }
         return principalName;
     }
-    
+
     @Override
     public Set<String> getClaimNames() {
         Set<String> names = new HashSet<>(doGetClaimNames());
         names.add(Claims.raw_token.name());
         return names;
     }
-    
+
     protected abstract Collection<String> doGetClaimNames();
 
     @Override
     public <T> T getClaim(String claimName) {
         @SuppressWarnings("unchecked")
-        T claimValue = Claims.raw_token.name().equals(claimName) ? (T)rawToken : (T)getClaimValue(claimName);
+        T claimValue = Claims.raw_token.name().equals(claimName) ? (T) rawToken : (T) getClaimValue(claimName);
         return claimValue;
     }
 
@@ -73,7 +72,7 @@ public abstract class JWTCallerPrincipal implements JsonWebToken {
     public boolean implies(Subject subject) {
         return false;
     }
-    
+
     public String toString() {
         return toString(false);
     }
@@ -82,7 +81,7 @@ public abstract class JWTCallerPrincipal implements JsonWebToken {
      * TODO: showAll is ignored and currently assumed true
      *
      * @param showAll - should all claims associated with the JWT be displayed or should only those defined in the
-     *                JsonWebToken interface be displayed.
+     *        JsonWebToken interface be displayed.
      * @return JWTCallerPrincipal string view
      */
     public String toString(boolean showAll) {
@@ -118,7 +117,7 @@ public abstract class JWTCallerPrincipal implements JsonWebToken {
         tmp.append("]}");
         return tmp.toString();
     }
-    
+
     protected JsonObject replaceMapClaims(Map<String, Object> map) {
         JsonObjectBuilder builder = Json.createObjectBuilder();
         for (Map.Entry<String, Object> entry : map.entrySet()) {
@@ -188,13 +187,13 @@ public abstract class JWTCallerPrincipal implements JsonWebToken {
         }
         return jsonValue;
     }
-    
+
     protected Claims getClaimType(String claimName) {
-    	Claims claimType = Claims.UNKNOWN;
+        Claims claimType = Claims.UNKNOWN;
         try {
             claimType = Claims.valueOf(claimName);
         } catch (IllegalArgumentException e) {
         }
         return claimType;
-	}
+    }
 }

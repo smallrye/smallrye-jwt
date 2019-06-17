@@ -37,6 +37,7 @@ public class JWTSecurityContext implements SecurityContext {
         this.delegate = delegate;
         this.principal = principal;
     }
+
     @Override
     public Principal getUserPrincipal() {
         return principal;

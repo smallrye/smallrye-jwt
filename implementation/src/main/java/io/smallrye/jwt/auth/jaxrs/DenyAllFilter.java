@@ -25,8 +25,8 @@ import javax.ws.rs.container.ContainerRequestFilter;
 
 /**
  * @author Michal Szynkiewicz, michal.l.szynkiewicz@gmail.com
- * <br>
- * Date: 6/12/18
+ *         <br>
+ *         Date: 6/12/18
  */
 @Priority(Priorities.AUTHORIZATION)
 public class DenyAllFilter implements ContainerRequestFilter {

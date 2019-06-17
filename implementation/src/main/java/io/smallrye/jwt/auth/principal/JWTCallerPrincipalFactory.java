@@ -44,7 +44,8 @@ public abstract class JWTCallerPrincipalFactory {
                     return instance;
                 }
 
-                ClassLoader cl = AccessController.doPrivileged((PrivilegedAction<ClassLoader>) () -> Thread.currentThread().getContextClassLoader());
+                ClassLoader cl = AccessController
+                        .doPrivileged((PrivilegedAction<ClassLoader>) () -> Thread.currentThread().getContextClassLoader());
                 if (cl == null) {
                     cl = JWTCallerPrincipalFactory.class.getClassLoader();
                 }
@@ -89,11 +90,11 @@ public abstract class JWTCallerPrincipalFactory {
                     if (spi instanceof JWTCallerPrincipalFactory) {
                         if (instance != null) {
                             log.warn("Multiple JWTCallerPrincipalFactory implementations found: "
-                                             + spi.getClass().getName() + " and " + instance.getClass().getName());
+                                    + spi.getClass().getName() + " and " + instance.getClass().getName());
                             break;
                         } else {
                             log.debugf("sl=%s, loaded=%s", sl, spi);
-                            instance = (JWTCallerPrincipalFactory)spi;
+                            instance = (JWTCallerPrincipalFactory) spi;
                         }
                     }
                 }

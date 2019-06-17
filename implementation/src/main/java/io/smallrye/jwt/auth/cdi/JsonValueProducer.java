@@ -103,4 +103,3 @@ public class JsonValueProducer {
         return Optional.ofNullable(jsonValue);
     }
 }
-

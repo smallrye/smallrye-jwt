@@ -51,9 +51,9 @@ public class JWTHttpAuthenticationMechanism implements HttpAuthenticationMechani
 
     @Override
     public AuthenticationStatus validateRequest(HttpServletRequest request,
-                                                HttpServletResponse response,
-                                                HttpMessageContext httpMessageContext)
-                                            throws AuthenticationException {
+            HttpServletResponse response,
+            HttpMessageContext httpMessageContext)
+            throws AuthenticationException {
 
         AbstractBearerTokenExtractor extractor = new BearerTokenExtractor(request, authContextInfo);
         String bearerToken = extractor.getBearerToken();

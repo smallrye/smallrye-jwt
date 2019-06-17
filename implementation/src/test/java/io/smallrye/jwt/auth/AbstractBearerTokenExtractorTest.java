@@ -29,12 +29,13 @@ public class AbstractBearerTokenExtractorTest {
     }
 
     private AbstractBearerTokenExtractor newTarget(Function<String, String> headerValue,
-                                                   Function<String, String> cookieValue) {
+            Function<String, String> cookieValue) {
         return new AbstractBearerTokenExtractor(authContextInfo) {
             @Override
             protected String getHeaderValue(String headerName) {
                 return headerValue.apply(headerName);
             }
+
             @Override
             protected String getCookieValue(String cookieName) {
                 return cookieValue.apply(cookieName);
@@ -45,7 +46,7 @@ public class AbstractBearerTokenExtractorTest {
     @Test
     public void testGetBearerTokenAuthorizationHeader() {
         when(authContextInfo.getTokenHeader()).thenReturn(AUTHORIZATION);
-        AbstractBearerTokenExtractor target = newTarget(h ->"Bearer THE_TOKEN", c -> null);
+        AbstractBearerTokenExtractor target = newTarget(h -> "Bearer THE_TOKEN", c -> null);
         String bearerToken = target.getBearerToken();
         assertEquals("THE_TOKEN", bearerToken);
     }
@@ -53,7 +54,7 @@ public class AbstractBearerTokenExtractorTest {
     @Test
     public void testGetBearerTokenAuthorizationHeaderMixedCase() {
         when(authContextInfo.getTokenHeader()).thenReturn(AUTHORIZATION);
-        AbstractBearerTokenExtractor target = newTarget(h ->"bEaReR THE_TOKEN", c -> null);
+        AbstractBearerTokenExtractor target = newTarget(h -> "bEaReR THE_TOKEN", c -> null);
         String bearerToken = target.getBearerToken();
         assertEquals("THE_TOKEN", bearerToken);
     }
@@ -61,7 +62,7 @@ public class AbstractBearerTokenExtractorTest {
     @Test
     public void testGetBearerTokenAuthorizationHeaderBlank() {
         when(authContextInfo.getTokenHeader()).thenReturn(AUTHORIZATION);
-        AbstractBearerTokenExtractor target = newTarget(h ->"BEARER ", c -> null);
+        AbstractBearerTokenExtractor target = newTarget(h -> "BEARER ", c -> null);
         String bearerToken = target.getBearerToken();
         assertEquals("", bearerToken);
     }
@@ -69,7 +70,7 @@ public class AbstractBearerTokenExtractorTest {
     @Test
     public void testGetBearerTokenAuthorizationHeaderInvalidSchemePrefix() {
         when(authContextInfo.getTokenHeader()).thenReturn(AUTHORIZATION);
-        AbstractBearerTokenExtractor target = newTarget(h ->"BEARER", c -> null);
+        AbstractBearerTokenExtractor target = newTarget(h -> "BEARER", c -> null);
         String bearerToken = target.getBearerToken();
         assertNull(bearerToken);
     }
