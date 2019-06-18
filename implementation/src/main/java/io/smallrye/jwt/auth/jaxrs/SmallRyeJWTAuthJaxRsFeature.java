@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2019 Red Hat, Inc, and individual contributors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
@@ -55,14 +55,14 @@ public class SmallRyeJWTAuthJaxRsFeature implements Feature {
                 context.register(JWTAuthenticationFilter.class);
 
                 logger.debugf("EE Security is not in use, %s has been registered",
-                              JWTAuthenticationFilter.class.getSimpleName());
+                        JWTAuthenticationFilter.class.getSimpleName());
             }
 
             logger.debugf("MP-JWT LoginConfig present, %s is enabled",
-                          getClass().getSimpleName());
+                    getClass().getSimpleName());
         } else {
             logger.infof("LoginConfig not found on Application class, %s will not be enabled",
-                         getClass().getSimpleName());
+                    getClass().getSimpleName());
         }
 
         return enabled;

@@ -1,6 +1,5 @@
 /*
- *
- *   Copyright 2018 Red Hat, Inc, and individual contributors.
+ *   Copyright 2019 Red Hat, Inc, and individual contributors.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -16,6 +15,7 @@
  *
  */
 
+package io.smallrye.jwt;
 
 import java.security.PrivateKey;
 
@@ -33,6 +33,7 @@ public class KeyLocationResolverTest {
     public void testVerifyWithJwkKeyWithMatchingKid() throws Exception {
         verifyToken("key1", "publicKey.jwk");
     }
+
     @Test
     public void testVerifyWithJwkKeyWithNonMatchingKid() throws Exception {
         try {
@@ -42,11 +43,12 @@ public class KeyLocationResolverTest {
             Assert.assertTrue(ex.getCause().getCause() instanceof UnresolvableKeyException);
         }
     }
-    
+
     @Test
     public void testVerifyWithJwkKeyWithMatchingKidFromSet() throws Exception {
         verifyToken("key1", "publicKeySet.jwk");
     }
+
     @Test
     public void testVerifyWithJwkKeyWithNonMatchingKidFromSet() throws Exception {
         try {
@@ -56,7 +58,7 @@ public class KeyLocationResolverTest {
             Assert.assertTrue(ex.getCause().getCause() instanceof UnresolvableKeyException);
         }
     }
-    
+
     @Test
     public void testVerifyWithPemKey() throws Exception {
         verifyToken("key3", "publicKey.pem");
@@ -65,8 +67,8 @@ public class KeyLocationResolverTest {
     private static void verifyToken(String kid, String publicKeyLocation) throws Exception {
         PrivateKey privateKey = TokenUtils.readPrivateKey("/privateKey.pem");
         String token = TokenUtils.generateTokenString(privateKey, kid, "/Token1.json", null, null);
-        JWTAuthContextInfoProvider provider =
-            JWTAuthContextInfoProvider.createWithKeyLocation(publicKeyLocation, "https://server.example.com");
+        JWTAuthContextInfoProvider provider = JWTAuthContextInfoProvider.createWithKeyLocation(publicKeyLocation,
+                "https://server.example.com");
         Assert.assertNotNull(new DefaultJWTTokenParser().parse(token, provider.getContextInfo()));
     }
 }

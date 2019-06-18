@@ -1,6 +1,5 @@
-/**
- *
- *   Copyright 2018 Red Hat, Inc, and individual contributors.
+/*
+ *   Copyright 2019 Red Hat, Inc, and individual contributors.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -25,8 +24,8 @@ import javax.ws.rs.container.ContainerRequestFilter;
 
 /**
  * @author Michal Szynkiewicz, michal.l.szynkiewicz@gmail.com
- * <br>
- * Date: 6/12/18
+ *         <br>
+ *         Date: 6/12/18
  */
 @Priority(Priorities.AUTHORIZATION)
 public class DenyAllFilter implements ContainerRequestFilter {

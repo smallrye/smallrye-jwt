@@ -1,6 +1,5 @@
 /*
- *
- *   Copyright 2018 Red Hat, Inc, and individual contributors.
+ *   Copyright 2019 Red Hat, Inc, and individual contributors.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -67,6 +66,7 @@ public class KeyUtils {
 
     /**
      * Decode a PEM RSA private key
+     * 
      * @param pemEncoded - pem string for key
      * @return RSA private key instance
      * @throws Exception - on failure to decode and create key
@@ -86,6 +86,7 @@ public class KeyUtils {
     /**
      * Decode a JWK(S) encoded public key string to an RSA PublicKey. This assumes a single JWK in the set as
      * only the first JWK is used.
+     * 
      * @param jwksValue - JWKS string value
      * @return PublicKey from RSAPublicKeySpec
      */
@@ -121,6 +122,7 @@ public class KeyUtils {
 
     /**
      * Decode a PEM encoded public key string to an RSA PublicKey
+     * 
      * @param pemEncoded - PEM string for public key
      * @return PublicKey
      * @throws Exception on decode failure
@@ -136,6 +138,7 @@ public class KeyUtils {
 
     /**
      * Strip any -----BEGIN*KEY... header and -----END*KEY... footer and newlines
+     * 
      * @param pem encoded string with option header/footer
      * @return a single base64 encoded pem string
      */
@@ -146,6 +149,7 @@ public class KeyUtils {
         pem = pem.replaceAll("\n", "");
         return pem.trim();
     }
+
     private KeyUtils() {
     }
 }

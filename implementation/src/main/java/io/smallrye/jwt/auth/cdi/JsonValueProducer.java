@@ -1,6 +1,5 @@
-/**
- *
- *   Copyright 2017 Red Hat, Inc, and individual contributors.
+/*
+ *   Copyright 2019 Red Hat, Inc, and individual contributors.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -103,4 +102,3 @@ public class JsonValueProducer {
         return Optional.ofNullable(jsonValue);
     }
 }
-

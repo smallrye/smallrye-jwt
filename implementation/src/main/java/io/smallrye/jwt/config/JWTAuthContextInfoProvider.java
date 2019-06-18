@@ -1,5 +1,4 @@
-/**
- *
+/*
  *   Copyright 2018 Red Hat, Inc, and individual contributors.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
@@ -50,6 +49,7 @@ public class JWTAuthContextInfoProvider {
 
     /**
      * Create JWTAuthContextInfoProvider with the public key and issuer
+     * 
      * @param publicKey the public key value
      * @param issuer the issuer
      * @return
@@ -60,6 +60,7 @@ public class JWTAuthContextInfoProvider {
 
     /**
      * Create JWTAuthContextInfoProvider with the public key location and issuer
+     * 
      * @param publicKeyLocation the public key location
      * @param issuer the issuer
      * @return
@@ -140,11 +141,13 @@ public class JWTAuthContextInfoProvider {
     Optional<JWTAuthContextInfo> getOptionalContextInfo() {
         // Log the config values
         log.debugf("init, mpJwtPublicKey=%s, mpJwtIssuer=%s, mpJwtLocation=%s",
-                   mpJwtPublicKey.orElse("missing"), mpJwtIssuer, mpJwtLocation.orElse("missing"));
+                mpJwtPublicKey.orElse("missing"), mpJwtIssuer, mpJwtLocation.orElse("missing"));
         /*
-        FIXME Due to a bug in MP-Config (https://github.com/wildfly-extras/wildfly-microprofile-config/issues/43) we need to set all
-        values to "NONE" as Optional Strings are populated with a ConfigProperty.defaultValue if they are absent. Fix this when MP-Config
-        is repaired.
+         * FIXME Due to a bug in MP-Config (https://github.com/wildfly-extras/wildfly-microprofile-config/issues/43) we need to
+         * set all
+         * values to "NONE" as Optional Strings are populated with a ConfigProperty.defaultValue if they are absent. Fix this
+         * when MP-Config
+         * is repaired.
          */
         if (NONE.equals(mpJwtPublicKey.get()) && NONE.equals(mpJwtLocation.get())) {
             log.debugf("Neither mpJwtPublicKey nor mpJwtLocation properties are configured,"
@@ -232,11 +235,11 @@ public class JWTAuthContextInfoProvider {
     public String getTokenHeader() {
         return tokenHeader;
     }
-    
+
     public Optional<String> getTokenCookie() {
         return tokenCookie;
     }
-    
+
     public Optional<String> getDefaultGroupsClaim() {
         return defaultGroupsClaim;
     }

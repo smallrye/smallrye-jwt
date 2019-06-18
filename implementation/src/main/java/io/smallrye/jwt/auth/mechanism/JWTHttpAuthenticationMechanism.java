@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2019 Red Hat, Inc, and individual contributors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
@@ -51,9 +51,9 @@ public class JWTHttpAuthenticationMechanism implements HttpAuthenticationMechani
 
     @Override
     public AuthenticationStatus validateRequest(HttpServletRequest request,
-                                                HttpServletResponse response,
-                                                HttpMessageContext httpMessageContext)
-                                            throws AuthenticationException {
+            HttpServletResponse response,
+            HttpMessageContext httpMessageContext)
+            throws AuthenticationException {
 
         AbstractBearerTokenExtractor extractor = new BearerTokenExtractor(request, authContextInfo);
         String bearerToken = extractor.getBearerToken();

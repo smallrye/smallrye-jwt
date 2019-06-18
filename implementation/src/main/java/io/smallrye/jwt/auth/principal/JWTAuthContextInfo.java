@@ -1,6 +1,5 @@
-/**
- *
- *   Copyright 2018 Red Hat, Inc, and individual contributors.
+/*
+ *   Copyright 2019 Red Hat, Inc, and individual contributors.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -15,7 +14,6 @@
  *   limitations under the License.
  */
 package io.smallrye.jwt.auth.principal;
-
 
 import java.security.interfaces.RSAPublicKey;
 
@@ -43,6 +41,7 @@ public class JWTAuthContextInfo {
 
     /**
      * Create an auth context from the token signer public key and issuer
+     * 
      * @param signerKey
      * @param issuedBy
      */
@@ -53,6 +52,7 @@ public class JWTAuthContextInfo {
 
     /**
      * Create an auth context from an {@linkplain JWTAuthContextInfo} instance
+     * 
      * @param orig
      */
     public JWTAuthContextInfo(JWTAuthContextInfo orig) {
@@ -114,6 +114,7 @@ public class JWTAuthContextInfo {
     /**
      * Is the {@linkplain #jwksUri} a location that follows the MP-JWT 1.1 rules for the mp.jwt.verify.publickey.location
      * property? These rules allow for any URL type to one of PEM, JWK or JWKS contents.
+     * 
      * @return true if jwksUri was set from the mp.jwt.verify.publickey.location, false otherwise
      */
     public boolean isFollowMpJwt11Rules() {

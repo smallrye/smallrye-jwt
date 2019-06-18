@@ -1,6 +1,5 @@
 /*
- *
- *   Copyright 2018 Red Hat, Inc, and individual contributors.
+ *   Copyright 2019 Red Hat, Inc, and individual contributors.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -44,7 +43,8 @@ public abstract class JWTCallerPrincipalFactory {
                     return instance;
                 }
 
-                ClassLoader cl = AccessController.doPrivileged((PrivilegedAction<ClassLoader>) () -> Thread.currentThread().getContextClassLoader());
+                ClassLoader cl = AccessController
+                        .doPrivileged((PrivilegedAction<ClassLoader>) () -> Thread.currentThread().getContextClassLoader());
                 if (cl == null) {
                     cl = JWTCallerPrincipalFactory.class.getClassLoader();
                 }
@@ -89,11 +89,11 @@ public abstract class JWTCallerPrincipalFactory {
                     if (spi instanceof JWTCallerPrincipalFactory) {
                         if (instance != null) {
                             log.warn("Multiple JWTCallerPrincipalFactory implementations found: "
-                                             + spi.getClass().getName() + " and " + instance.getClass().getName());
+                                    + spi.getClass().getName() + " and " + instance.getClass().getName());
                             break;
                         } else {
                             log.debugf("sl=%s, loaded=%s", sl, spi);
-                            instance = (JWTCallerPrincipalFactory)spi;
+                            instance = (JWTCallerPrincipalFactory) spi;
                         }
                     }
                 }

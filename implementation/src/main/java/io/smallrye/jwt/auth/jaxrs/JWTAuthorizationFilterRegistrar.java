@@ -1,12 +1,12 @@
-/**
- * Copyright 2018 Red Hat, Inc, and individual contributors.
- * <p>
+/*
+ * Copyright 2019 Red Hat, Inc, and individual contributors.
+ * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * <p>
+ * 
  * http://www.apache.org/licenses/LICENSE-2.0
- * <p>
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -15,13 +15,8 @@
  */
 package io.smallrye.jwt.auth.jaxrs;
 
-import javax.annotation.security.DenyAll;
-import javax.annotation.security.PermitAll;
-import javax.annotation.security.RolesAllowed;
-import javax.ws.rs.HttpMethod;
-import javax.ws.rs.container.DynamicFeature;
-import javax.ws.rs.container.ResourceInfo;
-import javax.ws.rs.core.FeatureContext;
+import static java.util.Arrays.asList;
+
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.net.URL;
@@ -32,19 +27,24 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static java.util.Arrays.asList;
+import javax.annotation.security.DenyAll;
+import javax.annotation.security.PermitAll;
+import javax.annotation.security.RolesAllowed;
+import javax.ws.rs.HttpMethod;
+import javax.ws.rs.container.DynamicFeature;
+import javax.ws.rs.container.ResourceInfo;
+import javax.ws.rs.core.FeatureContext;
 
 /**
  * @author Michal Szynkiewicz, michal.l.szynkiewicz@gmail.com
- * <br>
- * Date: 5/30/18
+ *         <br>
+ *         Date: 5/30/18
  */
 public class JWTAuthorizationFilterRegistrar implements DynamicFeature {
 
     private static final DenyAllFilter denyAllFilter = new DenyAllFilter();
-    private final Set<Class<? extends Annotation>> mpJwtAnnotations =
-            new HashSet<>(asList(DenyAll.class, PermitAll.class, RolesAllowed.class));
-
+    private final Set<Class<? extends Annotation>> mpJwtAnnotations = new HashSet<>(
+            asList(DenyAll.class, PermitAll.class, RolesAllowed.class));
 
     @Override
     public void configure(ResourceInfo resourceInfo, FeatureContext context) {
@@ -75,8 +75,7 @@ public class JWTAuthorizationFilterRegistrar implements DynamicFeature {
     private Annotation getMpJwtAnnotation(ResourceInfo resourceInfo) {
         Annotation annotation = getAnnotation(
                 resourceInfo.getResourceMethod().getDeclaredAnnotations(),
-                () -> resourceInfo.getResourceClass().getCanonicalName() + ":" + resourceInfo.getResourceMethod().getName()
-        );
+                () -> resourceInfo.getResourceClass().getCanonicalName() + ":" + resourceInfo.getResourceMethod().getName());
         if (annotation == null) {
             annotation = getAnnotation(resourceInfo.getResourceMethod().getDeclaringClass().getDeclaredAnnotations(),
                     () -> resourceInfo.getResourceClass().getCanonicalName());
@@ -86,7 +85,7 @@ public class JWTAuthorizationFilterRegistrar implements DynamicFeature {
     }
 
     private Annotation getAnnotation(Annotation[] declaredAnnotations,
-                                     Supplier<String> annotationPlacementDescriptor) {
+            Supplier<String> annotationPlacementDescriptor) {
         List<Annotation> annotations = Stream.of(declaredAnnotations)
                 .filter(annotation -> mpJwtAnnotations.contains(annotation.annotationType()))
                 .collect(Collectors.toList());
