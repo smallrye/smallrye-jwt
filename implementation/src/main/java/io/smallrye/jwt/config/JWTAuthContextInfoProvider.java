@@ -136,6 +136,9 @@ public class JWTAuthContextInfoProvider {
     @Inject
     @ConfigProperty(name = "smallrye.jwt.groups.path")
     private Optional<String> groupsPath;
+    @Inject
+    @ConfigProperty(name = "smallrye.jwt.expiration.grace", defaultValue = "60")
+    private Optional<Integer> expGracePeriodSecs;
     /**
      * List of algorithms to whitelist JWT validation based on jose4j algorithms
      * list org.jose4j.jws.AlgorithmIdentifiers.
@@ -195,6 +198,10 @@ public class JWTAuthContextInfoProvider {
             contextInfo.setDefaultGroupsClaim(defaultGroupsClaim.get());
         }
         SmallryeJwtUtils.setContextGroupsPath(contextInfo, groupsPath);
+
+        if (expGracePeriodSecs != null && expGracePeriodSecs.isPresent()) {
+            contextInfo.setExpGracePeriodSecs(expGracePeriodSecs.get());
+        }
 
         if (whitelistAlgorithms != null && !whitelistAlgorithms.isEmpty()) {
             contextInfo.getWhitelistAlgorithms().addAll(whitelistAlgorithms);
