@@ -17,6 +17,7 @@
 package io.smallrye.jwt.config;
 
 import java.security.interfaces.RSAPublicKey;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
 
@@ -135,6 +136,13 @@ public class JWTAuthContextInfoProvider {
     @Inject
     @ConfigProperty(name = "smallrye.jwt.groups.path")
     private Optional<String> groupsPath;
+    /**
+     * List of algorithms to whitelist JWT validation based on jose4j algorithms
+     * list org.jose4j.jws.AlgorithmIdentifiers.
+     */
+    @Inject
+    @ConfigProperty(name = "smallrye.jwt.whitelist.algorithms")
+    private List<String> whitelistAlgorithms;
 
     @Produces
     @ApplicationScoped
@@ -187,6 +195,10 @@ public class JWTAuthContextInfoProvider {
             contextInfo.setDefaultGroupsClaim(defaultGroupsClaim.get());
         }
         SmallryeJwtUtils.setContextGroupsPath(contextInfo, groupsPath);
+
+        if (whitelistAlgorithms != null && !whitelistAlgorithms.isEmpty()) {
+            contextInfo.getWhitelistAlgorithms().addAll(whitelistAlgorithms);
+        }
 
         return Optional.of(contextInfo);
     }

@@ -54,10 +54,17 @@ public class DefaultJWTTokenParser {
             JwtConsumerBuilder builder = new JwtConsumerBuilder()
                     .setRequireExpirationTime()
                     .setRequireSubject()
-                    .setSkipDefaultAudienceValidation()
-                    .setJwsAlgorithmConstraints(
-                            new AlgorithmConstraints(AlgorithmConstraints.ConstraintType.WHITELIST,
-                                    AlgorithmIdentifiers.RSA_USING_SHA256));
+                    .setSkipDefaultAudienceValidation();
+
+            if (authContextInfo.getWhitelistAlgorithms().isEmpty()) {
+                builder.setJwsAlgorithmConstraints(
+                        new AlgorithmConstraints(AlgorithmConstraints.ConstraintType.WHITELIST,
+                                AlgorithmIdentifiers.RSA_USING_SHA256));
+            } else {
+                builder.setJwsAlgorithmConstraints(
+                        new AlgorithmConstraints(AlgorithmConstraints.ConstraintType.WHITELIST,
+                                authContextInfo.getWhitelistAlgorithms().toArray(new String[0])));
+            }
 
             if (authContextInfo.isRequireIssuer()) {
                 builder.setExpectedIssuer(true, authContextInfo.getIssuedBy());

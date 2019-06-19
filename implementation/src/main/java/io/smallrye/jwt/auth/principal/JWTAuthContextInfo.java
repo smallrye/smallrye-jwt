@@ -16,6 +16,8 @@
 package io.smallrye.jwt.auth.principal;
 
 import java.security.interfaces.RSAPublicKey;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * The public key and expected issuer needed to validate a token.
@@ -30,6 +32,7 @@ public class JWTAuthContextInfo {
     private String tokenCookie;
     private String defaultGroupsClaim;
     private String groupsPath;
+    private List<String> whitelistAlgorithms = new ArrayList<>();
     /**
      * Flag that indicates whether the issuer is required and validated, or ignored, new in MP-JWT 1.1.
      */
@@ -155,5 +158,13 @@ public class JWTAuthContextInfo {
 
     public void setGroupsPath(String groupsPath) {
         this.groupsPath = groupsPath;
+    }
+
+    public List<String> getWhitelistAlgorithms() {
+        return whitelistAlgorithms;
+    }
+
+    public void setWhitelistAlgorithms(final List<String> whitelistAlgorithms) {
+        this.whitelistAlgorithms = whitelistAlgorithms;
     }
 }
