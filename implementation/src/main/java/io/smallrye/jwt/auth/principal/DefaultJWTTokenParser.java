@@ -53,8 +53,12 @@ public class DefaultJWTTokenParser {
         try {
             JwtConsumerBuilder builder = new JwtConsumerBuilder()
                     .setRequireExpirationTime()
-                    .setRequireSubject()
                     .setSkipDefaultAudienceValidation();
+
+            if (authContextInfo.getDefaultSubjectClaim() == null ||
+                    Claims.sub.name().equals(authContextInfo.getDefaultSubjectClaim())) {
+                builder.setRequireSubject();
+            }
 
             if (authContextInfo.getWhitelistAlgorithms().isEmpty()) {
                 builder.setJwsAlgorithmConstraints(
@@ -93,6 +97,10 @@ public class DefaultJWTTokenParser {
             JwtClaims claimsSet = jwtContext.getJwtClaims();
 
             claimsSet.setClaim(Claims.raw_token.name(), token);
+            if (authContextInfo.getDefaultSubjectClaim() != null) {
+                claimsSet.setClaim(Claims.sub.name(),
+                        claimsSet.getClaimValue(authContextInfo.getDefaultSubjectClaim()));
+            }
             if (!claimsSet.hasClaim(Claims.groups.name())) {
                 List<String> groups = checkGroupsPath(authContextInfo, claimsSet);
                 if (groups == null && authContextInfo.getDefaultGroupsClaim() != null) {

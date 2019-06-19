@@ -30,6 +30,7 @@ public class JWTAuthContextInfo {
     private Integer jwksRefreshInterval;
     private String tokenHeader = "Authorization";
     private String tokenCookie;
+    private String defaultSubjectClaim;
     private String defaultGroupsClaim;
     private String groupsPath;
     private List<String> whitelistAlgorithms = new ArrayList<>();
@@ -142,6 +143,14 @@ public class JWTAuthContextInfo {
 
     public void setTokenCookie(String tokenCookie) {
         this.tokenCookie = tokenCookie;
+    }
+
+    public String getDefaultSubjectClaim() {
+        return defaultSubjectClaim;
+    }
+
+    public void setDefaultSubjectClaim(final String defaultSubjectClaim) {
+        this.defaultSubjectClaim = defaultSubjectClaim;
     }
 
     public String getDefaultGroupsClaim() {

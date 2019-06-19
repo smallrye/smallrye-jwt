@@ -121,7 +121,12 @@ public class JWTAuthContextInfoProvider {
     @Inject
     @ConfigProperty(name = "smallrye.jwt.token.cookie")
     private Optional<String> tokenCookie;
-
+    /**
+     * Default subject name. This property can be used to support the JWT tokens without a 'sub' claim.
+     */
+    @Inject
+    @ConfigProperty(name = "smallrye.jwt.claims.subject")
+    private Optional<String> defaultSubjectClaim;
     /**
      * Default group name. This property can be used to support the JWT tokens without a 'groups' claim.
      */
@@ -194,6 +199,9 @@ public class JWTAuthContextInfoProvider {
             contextInfo.setTokenHeader(tokenHeader);
         }
         SmallryeJwtUtils.setContextTokenCookie(contextInfo, tokenCookie);
+        if (defaultSubjectClaim != null && defaultSubjectClaim.isPresent()) {
+            contextInfo.setDefaultSubjectClaim(defaultSubjectClaim.get());
+        }
         if (defaultGroupsClaim != null && defaultGroupsClaim.isPresent()) {
             contextInfo.setDefaultGroupsClaim(defaultGroupsClaim.get());
         }
