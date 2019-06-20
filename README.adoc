@@ -4,6 +4,7 @@
 :mp-jwt-name: Eclipse MicroProfile JWT RBAC
 
 image:https://semaphoreci.com/api/v1/smallrye/smallrye-jwt/branches/master/badge.svg["Semaphore CI", link="https://semaphoreci.com/smallrye/smallrye-jwt"]
+image:https://sonarcloud.io/api/project_badges/measure?project=smallrye_smallrye-jwt&metric=alert_status["Quality Gate Status", link="https://sonarcloud.io/dashboard?id=smallrye_smallrye-jwt"]
 image:https://img.shields.io/github/license/thorntail/thorntail.svg["License", link="http://www.apache.org/licenses/LICENSE-2.0"]
 
 = SmallRye JWT
