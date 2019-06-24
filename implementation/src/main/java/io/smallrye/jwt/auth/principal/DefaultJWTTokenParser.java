@@ -55,10 +55,13 @@ public class DefaultJWTTokenParser {
                     .setRequireExpirationTime()
                     .setSkipDefaultAudienceValidation();
 
-            if (authContextInfo.getDefaultSubjectClaim() == null ||
-                    Claims.sub.name().equals(authContextInfo.getDefaultSubjectClaim())) {
-                builder.setRequireSubject();
-            }
+            /*
+             * TODO - radcortez - Check how to handle sub valication on jose4j
+             * if (authContextInfo.getDefaultSubClaim() == null ||
+             * Claims.sub.name().equals(authContextInfo.getDefaultSubClaim())) {
+             * builder.setRequireSubject();
+             * }
+             */
 
             if (authContextInfo.getWhitelistAlgorithms().isEmpty()) {
                 builder.setJwsAlgorithmConstraints(
@@ -97,10 +100,16 @@ public class DefaultJWTTokenParser {
             JwtClaims claimsSet = jwtContext.getJwtClaims();
 
             claimsSet.setClaim(Claims.raw_token.name(), token);
-            if (authContextInfo.getDefaultSubjectClaim() != null) {
-                claimsSet.setClaim(Claims.sub.name(),
-                        claimsSet.getClaimValue(authContextInfo.getDefaultSubjectClaim()));
+
+            if (!claimsSet.hasClaim(Claims.sub.name())) {
+                String sub = checkSubPath(authContextInfo, claimsSet);
+                if (sub == null && authContextInfo.getDefaultSubClaim() != null) {
+                    sub = findSub(authContextInfo, claimsSet.getClaimsMap(),
+                            new String[] { authContextInfo.getDefaultSubClaim() }, 0);
+                }
+                claimsSet.setClaim(Claims.sub.name(), sub);
             }
+
             if (!claimsSet.hasClaim(Claims.groups.name())) {
                 List<String> groups = checkGroupsPath(authContextInfo, claimsSet);
                 if (groups == null && authContextInfo.getDefaultGroupsClaim() != null) {
@@ -108,6 +117,7 @@ public class DefaultJWTTokenParser {
                 }
                 claimsSet.setClaim(Claims.groups.name(), groups);
             }
+
             // Process the rolesMapping claim
             if (claimsSet.hasClaim(ROLE_MAPPINGS)) {
                 try {
@@ -136,6 +146,46 @@ public class DefaultJWTTokenParser {
             throw new ParseException("Failed to verify token", e);
         }
 
+    }
+
+    private String checkSubPath(JWTAuthContextInfo authContextInfo, JwtClaims claimsSet) {
+        if (authContextInfo.getSubPath() != null) {
+            final String[] pathSegments = authContextInfo.getSubPath().split("/");
+            return findSub(authContextInfo, claimsSet.getClaimsMap(), pathSegments, 0);
+        }
+        return null;
+    }
+
+    private String findSub(
+            JWTAuthContextInfo authContextInfo,
+            Map<String, Object> claimsMap,
+            String[] pathArray,
+            int step) {
+        Object claimValue = claimsMap.get(pathArray[step]);
+        if (claimValue == null) {
+            logger.warnf("No claim exists at the path %s at segment %s",
+                    authContextInfo.getGroupsPath(), pathArray[step]);
+        } else if (step + 1 < pathArray.length) {
+            if (claimValue instanceof Map) {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> nextMap = (Map<String, Object>) claimValue;
+                int nextStep = step + 1;
+                return findSub(authContextInfo, nextMap, pathArray, nextStep);
+            } else {
+                logger.warnf("Claim value at the path %s is not a json object", authContextInfo.getGroupsPath());
+            }
+        } else if (claimValue instanceof String) {
+            // last segment
+            try {
+                return (String) claimValue;
+            } catch (ClassCastException e) {
+                logger.warnf("Claim value at the path %s is not an array of strings", authContextInfo.getGroupsPath());
+            }
+        } else {
+            // last segment
+            logger.warnf("Claim value at the path %s is not an array", authContextInfo.getGroupsPath());
+        }
+        return null;
     }
 
     private List<String> checkGroupsPath(JWTAuthContextInfo authContextInfo, JwtClaims claimsSet) {

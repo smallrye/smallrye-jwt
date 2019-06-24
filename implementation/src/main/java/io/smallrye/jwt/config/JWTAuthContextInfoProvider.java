@@ -125,8 +125,16 @@ public class JWTAuthContextInfoProvider {
      * Default subject name. This property can be used to support the JWT tokens without a 'sub' claim.
      */
     @Inject
-    @ConfigProperty(name = "smallrye.jwt.claims.subject")
-    private Optional<String> defaultSubjectClaim;
+    @ConfigProperty(name = "smallrye.jwt.claims.sub")
+    private Optional<String> defaultSubClaim;
+    /**
+     * JSON path to the claim containing the sub. It starts from the top level JSON object and
+     * can contain multiple segments where each segment represents a JSON object name only, example: "realm/sub".
+     * This property can be used if a token has no 'sub' claim but has the sub set in a different claim.
+     */
+    @Inject
+    @ConfigProperty(name = "smallrye.jwt.sub.path")
+    private Optional<String> subPath;
     /**
      * Default group name. This property can be used to support the JWT tokens without a 'groups' claim.
      */
@@ -199,9 +207,10 @@ public class JWTAuthContextInfoProvider {
             contextInfo.setTokenHeader(tokenHeader);
         }
         SmallryeJwtUtils.setContextTokenCookie(contextInfo, tokenCookie);
-        if (defaultSubjectClaim != null && defaultSubjectClaim.isPresent()) {
-            contextInfo.setDefaultSubjectClaim(defaultSubjectClaim.get());
+        if (defaultSubClaim != null && defaultSubClaim.isPresent()) {
+            contextInfo.setDefaultSubClaim(defaultSubClaim.get());
         }
+        SmallryeJwtUtils.setContextSubPath(contextInfo, subPath);
         if (defaultGroupsClaim != null && defaultGroupsClaim.isPresent()) {
             contextInfo.setDefaultGroupsClaim(defaultGroupsClaim.get());
         }
