@@ -44,6 +44,7 @@ public class TestTokenWithSubPath extends Arquillian {
     @Test(groups = TEST_GROUP_JWT, description = "validate the custom sub claim is not available on the long path")
     public void subClaimIsNotAvailableOnTooDeepPath() throws Exception {
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo((RSAPublicKey) publicKey, TEST_ISSUER);
+        contextInfo.setRequireNamedPrincipal(false);
         contextInfo.setSubPath("realm/access/sub/principal/5");
         JWTCallerPrincipalFactory factory = JWTCallerPrincipalFactory.instance();
         JsonWebToken jwt = factory.parse(token, contextInfo);
@@ -53,6 +54,7 @@ public class TestTokenWithSubPath extends Arquillian {
     @Test(groups = TEST_GROUP_JWT, description = "validate the custom sub claim is not available if the claim is not array")
     public void subClaimIsNotAvailableIfClaimIsNotString() throws Exception {
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo((RSAPublicKey) publicKey, TEST_ISSUER);
+        contextInfo.setRequireNamedPrincipal(false);
         contextInfo.setSubPath("realm/access/sub");
         JWTCallerPrincipalFactory factory = JWTCallerPrincipalFactory.instance();
         JsonWebToken jwt = factory.parse(token, contextInfo);
@@ -62,6 +64,7 @@ public class TestTokenWithSubPath extends Arquillian {
     @Test(groups = TEST_GROUP_JWT, description = "validate the custom sub claim is not available on the wrong path")
     public void subClaimIsNotAvailableOnWrongPath() throws Exception {
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo((RSAPublicKey) publicKey, TEST_ISSUER);
+        contextInfo.setRequireNamedPrincipal(false);
         contextInfo.setSubPath("realm/access/user/principal");
         JWTCallerPrincipalFactory factory = JWTCallerPrincipalFactory.instance();
         JsonWebToken jwt = factory.parse(token, contextInfo);

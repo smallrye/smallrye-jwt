@@ -1,8 +1,6 @@
 {
   "iss": "https://server.example.com",
   "jti": "a-123",
-  "upn": "jdoe@example.com",
-  "preferred_username": "jdoe",
   "aud": "s6BhdRkqt3",
   "exp": 1311281970,
   "iat": 1311280970,

@@ -30,6 +30,7 @@ public class JWTAuthContextInfo {
     private Integer jwksRefreshInterval;
     private String tokenHeader = "Authorization";
     private String tokenCookie;
+    private boolean requireNamedPrincipal = true;
     private String defaultSubClaim;
     private String subPath;
     private String defaultGroupsClaim;
@@ -144,6 +145,14 @@ public class JWTAuthContextInfo {
 
     public void setTokenCookie(String tokenCookie) {
         this.tokenCookie = tokenCookie;
+    }
+
+    public boolean isRequireNamedPrincipal() {
+        return requireNamedPrincipal;
+    }
+
+    public void setRequireNamedPrincipal(final boolean requireNamedPrincipal) {
+        this.requireNamedPrincipal = requireNamedPrincipal;
     }
 
     public String getDefaultSubClaim() {

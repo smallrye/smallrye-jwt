@@ -122,6 +122,14 @@ public class JWTAuthContextInfoProvider {
     @ConfigProperty(name = "smallrye.jwt.token.cookie")
     private Optional<String> tokenCookie;
     /**
+     * Check that the JWT has at least one of 'sub', 'upn' or 'preferred_user_name' set. If not the JWT validation will
+     * fail. If the properties 'smallrye.jwt.claims.sub' or 'smallrye.jwt.sub.path' are set it will use these values
+     * to validate instead.
+     */
+    @Inject
+    @ConfigProperty(name = "smallrye.jwt.require.named-principal", defaultValue = "true")
+    private Optional<Boolean> requireNamedPrincipal;
+    /**
      * Default subject name. This property can be used to support the JWT tokens without a 'sub' claim.
      */
     @Inject
@@ -205,6 +213,9 @@ public class JWTAuthContextInfoProvider {
         }
         if (tokenHeader != null) {
             contextInfo.setTokenHeader(tokenHeader);
+        }
+        if (requireNamedPrincipal != null && requireNamedPrincipal.isPresent()) {
+            contextInfo.setRequireNamedPrincipal(requireNamedPrincipal.get());
         }
         SmallryeJwtUtils.setContextTokenCookie(contextInfo, tokenCookie);
         if (defaultSubClaim != null && defaultSubClaim.isPresent()) {
