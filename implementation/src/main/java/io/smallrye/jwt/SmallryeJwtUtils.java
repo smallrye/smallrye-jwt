@@ -31,8 +31,7 @@ import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
  * Utility methods for dealing with decoding public and private keys resources
  */
 public class SmallryeJwtUtils {
-    private static final Integer MAX_SUB_PATH_DEPTH = 4;
-    private static final Integer MAX_GROUPS_PATH_DEPTH = 4;
+    private static final Integer MAX_PATH_DEPTH = 4;
     private static final String COOKIE_HEADER = "Cookie";
     private static final Set<String> SUPPORTED_ALGORITHMS = new HashSet<>(Arrays.asList(AlgorithmIdentifiers.RSA_USING_SHA256,
             AlgorithmIdentifiers.RSA_USING_SHA384,
@@ -49,9 +48,9 @@ public class SmallryeJwtUtils {
     public static void setContextSubPath(JWTAuthContextInfo contextInfo, Optional<String> subPath) {
         if (subPath != null && subPath.isPresent()) {
             final String[] pathSegments = subPath.get().split("/");
-            if (MAX_SUB_PATH_DEPTH < pathSegments.length) {
+            if (MAX_PATH_DEPTH < pathSegments.length) {
                 log.errorf("Sub path configuration will be ignored because its depth is too large:"
-                        + " %d, maximum depth is %d.", pathSegments.length, MAX_SUB_PATH_DEPTH);
+                        + " %d, maximum depth is %d.", pathSegments.length, MAX_PATH_DEPTH);
             } else {
                 contextInfo.setSubPath(subPath.get());
             }
@@ -61,9 +60,9 @@ public class SmallryeJwtUtils {
     public static void setContextGroupsPath(JWTAuthContextInfo contextInfo, Optional<String> groupsPath) {
         if (groupsPath != null && groupsPath.isPresent()) {
             final String[] pathSegments = groupsPath.get().split("/");
-            if (MAX_GROUPS_PATH_DEPTH < pathSegments.length) {
+            if (MAX_PATH_DEPTH < pathSegments.length) {
                 log.errorf("Groups path configuration will be ignored because its depth is too large:"
-                        + " %d, maximum depth is %d.", pathSegments.length, MAX_GROUPS_PATH_DEPTH);
+                        + " %d, maximum depth is %d.", pathSegments.length, MAX_PATH_DEPTH);
             } else {
                 contextInfo.setGroupsPath(groupsPath.get());
             }
