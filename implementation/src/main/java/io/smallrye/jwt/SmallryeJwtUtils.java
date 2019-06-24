@@ -16,9 +16,14 @@
  */
 package io.smallrye.jwt;
 
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import org.jboss.logging.Logger;
+import org.jose4j.jws.AlgorithmIdentifiers;
 
 import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
 
@@ -29,6 +34,12 @@ public class SmallryeJwtUtils {
     private static final Integer MAX_SUB_PATH_DEPTH = 4;
     private static final Integer MAX_GROUPS_PATH_DEPTH = 4;
     private static final String COOKIE_HEADER = "Cookie";
+    private static final Set<String> SUPPORTED_ALGORITHMS = new HashSet<>(Arrays.asList(AlgorithmIdentifiers.RSA_USING_SHA256,
+            AlgorithmIdentifiers.RSA_USING_SHA384,
+            AlgorithmIdentifiers.RSA_USING_SHA512,
+            AlgorithmIdentifiers.ECDSA_USING_P256_CURVE_AND_SHA256,
+            AlgorithmIdentifiers.ECDSA_USING_P384_CURVE_AND_SHA384,
+            AlgorithmIdentifiers.ECDSA_USING_P521_CURVE_AND_SHA512));
 
     private static final Logger log = Logger.getLogger(SmallryeJwtUtils.class);
 
@@ -65,6 +76,18 @@ public class SmallryeJwtUtils {
                 log.error("Token header is not 'Cookie', the cookie name value will be ignored");
             } else {
                 contextInfo.setTokenCookie(cookieName.get());
+            }
+        }
+    }
+
+    public static void setWhitelistAlgorithms(JWTAuthContextInfo contextInfo, List<String> whitelistAlgorithms) {
+        if (whitelistAlgorithms != null && !whitelistAlgorithms.isEmpty()) {
+            for (String whitelistAlgorithm : whitelistAlgorithms) {
+                if (SUPPORTED_ALGORITHMS.contains(whitelistAlgorithm)) {
+                    contextInfo.getWhitelistAlgorithms().add(whitelistAlgorithm);
+                } else {
+                    log.errorf("Algorithm %s not supported", whitelistAlgorithm);
+                }
             }
         }
     }

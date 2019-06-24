@@ -231,9 +231,7 @@ public class JWTAuthContextInfoProvider {
             contextInfo.setExpGracePeriodSecs(expGracePeriodSecs.get());
         }
 
-        if (whitelistAlgorithms != null && !whitelistAlgorithms.isEmpty()) {
-            contextInfo.getWhitelistAlgorithms().addAll(whitelistAlgorithms);
-        }
+        SmallryeJwtUtils.setWhitelistAlgorithms(contextInfo, whitelistAlgorithms);
 
         return Optional.of(contextInfo);
     }
