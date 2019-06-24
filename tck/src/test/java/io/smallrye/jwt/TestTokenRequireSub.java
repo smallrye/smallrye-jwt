@@ -59,7 +59,6 @@ public class TestTokenRequireSub extends Arquillian {
 
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo((RSAPublicKey) publicKey, TEST_ISSUER);
         contextInfo.setRequireNamedPrincipal(false);
-        contextInfo.setDefaultSubClaim("nothing");
         JWTCallerPrincipalFactory factory = JWTCallerPrincipalFactory.instance();
         JsonWebToken jwt = factory.parse(token, contextInfo);
         String sub = jwt.getSubject();

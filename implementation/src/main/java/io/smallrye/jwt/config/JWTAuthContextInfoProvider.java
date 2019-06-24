@@ -130,7 +130,7 @@ public class JWTAuthContextInfoProvider {
     @ConfigProperty(name = "smallrye.jwt.require.named-principal", defaultValue = "true")
     private Optional<Boolean> requireNamedPrincipal;
     /**
-     * Default subject name. This property can be used to support the JWT tokens without a 'sub' claim.
+     * Default subject claim value. This property can be used to support the JWT tokens without a 'sub' claim.
      */
     @Inject
     @ConfigProperty(name = "smallrye.jwt.claims.sub")
@@ -144,7 +144,7 @@ public class JWTAuthContextInfoProvider {
     @ConfigProperty(name = "smallrye.jwt.sub.path")
     private Optional<String> subPath;
     /**
-     * Default group name. This property can be used to support the JWT tokens without a 'groups' claim.
+     * Default groups claim value. This property can be used to support the JWT tokens without a 'groups' claim.
      */
     @Inject
     @ConfigProperty(name = "smallrye.jwt.claims.groups")
