@@ -26,7 +26,7 @@ public class JWTAuthContextInfo {
     private RSAPublicKey signerKey;
     private String issuedBy;
     private int expGracePeriodSecs = 60;
-    private String jwksUri;
+    private String publicKeyLocation;
     private Integer jwksRefreshInterval;
     private String tokenHeader = "Authorization";
     private String tokenCookie;
@@ -40,7 +40,6 @@ public class JWTAuthContextInfo {
      * Flag that indicates whether the issuer is required and validated, or ignored, new in MP-JWT 1.1.
      */
     private boolean requireIssuer = true;
-    private boolean followMpJwt11Rules;
 
     public JWTAuthContextInfo() {
     }
@@ -56,6 +55,11 @@ public class JWTAuthContextInfo {
         this.issuedBy = issuedBy;
     }
 
+    public JWTAuthContextInfo(String publicKeyLocation, String issuedBy) {
+        this.publicKeyLocation = publicKeyLocation;
+        this.issuedBy = issuedBy;
+    }
+
     /**
      * Create an auth context from an {@linkplain JWTAuthContextInfo} instance
      * 
@@ -65,7 +69,7 @@ public class JWTAuthContextInfo {
         this.signerKey = orig.signerKey;
         this.issuedBy = orig.issuedBy;
         this.expGracePeriodSecs = orig.expGracePeriodSecs;
-        this.jwksUri = orig.jwksUri;
+        this.publicKeyLocation = orig.publicKeyLocation;
         this.jwksRefreshInterval = orig.jwksRefreshInterval;
     }
 
@@ -93,12 +97,22 @@ public class JWTAuthContextInfo {
         this.expGracePeriodSecs = expGracePeriodSecs;
     }
 
+    @Deprecated
     public String getJwksUri() {
-        return jwksUri;
+        return this.publicKeyLocation;
     }
 
+    @Deprecated
     public void setJwksUri(String jwksUri) {
-        this.jwksUri = jwksUri;
+        this.publicKeyLocation = jwksUri;
+    }
+
+    public String getPublicKeyLocation() {
+        return this.publicKeyLocation;
+    }
+
+    public void setPublicKeyLocation(String publicKeyLocation) {
+        this.publicKeyLocation = publicKeyLocation;
     }
 
     public Integer getJwksRefreshInterval() {
@@ -123,12 +137,13 @@ public class JWTAuthContextInfo {
      * 
      * @return true if jwksUri was set from the mp.jwt.verify.publickey.location, false otherwise
      */
+    @Deprecated
     public boolean isFollowMpJwt11Rules() {
-        return followMpJwt11Rules;
+        return false;
     }
 
+    @Deprecated
     public void setFollowMpJwt11Rules(boolean followMpJwt11Rules) {
-        this.followMpJwt11Rules = followMpJwt11Rules;
     }
 
     public String getTokenHeader() {

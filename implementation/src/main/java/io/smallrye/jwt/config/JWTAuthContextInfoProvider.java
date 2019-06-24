@@ -208,7 +208,7 @@ public class JWTAuthContextInfoProvider {
 
         // The MP-JWT location can be a PEM, JWK or JWKS
         if (mpJwtLocation.isPresent() && !NONE.equals(mpJwtLocation.get())) {
-            setMpJwtLocation(contextInfo);
+            contextInfo.setPublicKeyLocation(mpJwtLocation.get());
         }
         if (tokenHeader != null) {
             contextInfo.setTokenHeader(tokenHeader);
@@ -233,11 +233,6 @@ public class JWTAuthContextInfoProvider {
         SmallryeJwtUtils.setWhitelistAlgorithms(contextInfo, whitelistAlgorithms);
 
         return Optional.of(contextInfo);
-    }
-
-    protected void setMpJwtLocation(JWTAuthContextInfo contextInfo) {
-        contextInfo.setJwksUri(mpJwtLocation.get());
-        contextInfo.setFollowMpJwt11Rules(true);
     }
 
     protected void decodeMpJwtPublicKey(JWTAuthContextInfo contextInfo) {
