@@ -123,8 +123,7 @@ public class JWTAuthContextInfoProvider {
     private Optional<String> tokenCookie;
     /**
      * Check that the JWT has at least one of 'sub', 'upn' or 'preferred_user_name' set. If not the JWT validation will
-     * fail. If the properties 'smallrye.jwt.claims.sub' or 'smallrye.jwt.sub.path' are set it will use these values
-     * to validate instead.
+     * fail.
      */
     @Inject
     @ConfigProperty(name = "smallrye.jwt.require.named-principal", defaultValue = "false")
@@ -166,7 +165,7 @@ public class JWTAuthContextInfoProvider {
      */
     @Inject
     @ConfigProperty(name = "smallrye.jwt.whitelist.algorithms")
-    private List<String> whitelistAlgorithms;
+    private Optional<List<String>> whitelistAlgorithms;
 
     @Produces
     @ApplicationScoped

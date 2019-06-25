@@ -79,9 +79,9 @@ public class SmallryeJwtUtils {
         }
     }
 
-    public static void setWhitelistAlgorithms(JWTAuthContextInfo contextInfo, List<String> whitelistAlgorithms) {
-        if (whitelistAlgorithms != null && !whitelistAlgorithms.isEmpty()) {
-            for (String whitelistAlgorithm : whitelistAlgorithms) {
+    public static void setWhitelistAlgorithms(JWTAuthContextInfo contextInfo, Optional<List<String>> whitelistAlgorithms) {
+        if (whitelistAlgorithms != null && whitelistAlgorithms.isPresent() && !whitelistAlgorithms.get().isEmpty()) {
+            for (String whitelistAlgorithm : whitelistAlgorithms.get()) {
                 if (SUPPORTED_ALGORITHMS.contains(whitelistAlgorithm)) {
                     contextInfo.getWhitelistAlgorithms().add(whitelistAlgorithm);
                 } else {

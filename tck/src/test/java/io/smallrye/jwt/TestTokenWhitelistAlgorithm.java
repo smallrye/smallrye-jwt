@@ -3,15 +3,16 @@ package io.smallrye.jwt;
 import static java.util.Collections.singletonList;
 import static org.eclipse.microprofile.jwt.tck.TCKConstants.TEST_GROUP_JWT;
 import static org.eclipse.microprofile.jwt.tck.TCKConstants.TEST_ISSUER;
+import static org.jose4j.jws.AlgorithmIdentifiers.HMAC_SHA256;
 
 import java.security.PublicKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.HashMap;
+import java.util.Optional;
 
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.eclipse.microprofile.jwt.tck.util.TokenUtils;
 import org.jboss.arquillian.testng.Arquillian;
-import org.jose4j.jws.AlgorithmIdentifiers;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -45,7 +46,7 @@ public class TestTokenWhitelistAlgorithm extends Arquillian {
     @Test(groups = TEST_GROUP_JWT, description = "ignore no valid algorithm")
     public void ignoreNoValidAlgorithm() throws Exception {
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo((RSAPublicKey) publicKey, TEST_ISSUER);
-        SmallryeJwtUtils.setWhitelistAlgorithms(contextInfo, singletonList(AlgorithmIdentifiers.HMAC_SHA256));
+        SmallryeJwtUtils.setWhitelistAlgorithms(contextInfo, Optional.of(singletonList(HMAC_SHA256)));
         JWTCallerPrincipalFactory factory = JWTCallerPrincipalFactory.instance();
         JsonWebToken jwt = factory.parse(token, contextInfo);
         String sub = jwt.getSubject();
