@@ -17,6 +17,7 @@
 package io.smallrye.jwt.config;
 
 import java.security.interfaces.RSAPublicKey;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
 
@@ -120,9 +121,29 @@ public class JWTAuthContextInfoProvider {
     @Inject
     @ConfigProperty(name = "smallrye.jwt.token.cookie")
     private Optional<String> tokenCookie;
-
     /**
-     * Default group name. This property can be used to support the JWT tokens without a 'groups' claim.
+     * Check that the JWT has at least one of 'sub', 'upn' or 'preferred_user_name' set. If not the JWT validation will
+     * fail.
+     */
+    @Inject
+    @ConfigProperty(name = "smallrye.jwt.require.named-principal", defaultValue = "false")
+    private Optional<Boolean> requireNamedPrincipal;
+    /**
+     * Default subject claim value. This property can be used to support the JWT tokens without a 'sub' claim.
+     */
+    @Inject
+    @ConfigProperty(name = "smallrye.jwt.claims.sub")
+    private Optional<String> defaultSubClaim;
+    /**
+     * JSON path to the claim containing the sub. It starts from the top level JSON object and
+     * can contain multiple segments where each segment represents a JSON object name only, example: "realm/sub".
+     * This property can be used if a token has no 'sub' claim but has the sub set in a different claim.
+     */
+    @Inject
+    @ConfigProperty(name = "smallrye.jwt.sub.path")
+    private Optional<String> subPath;
+    /**
+     * Default groups claim value. This property can be used to support the JWT tokens without a 'groups' claim.
      */
     @Inject
     @ConfigProperty(name = "smallrye.jwt.claims.groups")
@@ -135,6 +156,16 @@ public class JWTAuthContextInfoProvider {
     @Inject
     @ConfigProperty(name = "smallrye.jwt.groups.path")
     private Optional<String> groupsPath;
+    @Inject
+    @ConfigProperty(name = "smallrye.jwt.expiration.grace", defaultValue = "60")
+    private Optional<Integer> expGracePeriodSecs;
+    /**
+     * List of algorithms to whitelist JWT validation based on jose4j algorithms
+     * list org.jose4j.jws.AlgorithmIdentifiers.
+     */
+    @Inject
+    @ConfigProperty(name = "smallrye.jwt.whitelist.algorithms")
+    private Optional<List<String>> whitelistAlgorithms;
 
     @Produces
     @ApplicationScoped
@@ -182,11 +213,24 @@ public class JWTAuthContextInfoProvider {
         if (tokenHeader != null) {
             contextInfo.setTokenHeader(tokenHeader);
         }
+        if (requireNamedPrincipal != null && requireNamedPrincipal.isPresent()) {
+            contextInfo.setRequireNamedPrincipal(requireNamedPrincipal.get());
+        }
         SmallryeJwtUtils.setContextTokenCookie(contextInfo, tokenCookie);
+        if (defaultSubClaim != null && defaultSubClaim.isPresent()) {
+            contextInfo.setDefaultSubClaim(defaultSubClaim.get());
+        }
+        SmallryeJwtUtils.setContextSubPath(contextInfo, subPath);
         if (defaultGroupsClaim != null && defaultGroupsClaim.isPresent()) {
             contextInfo.setDefaultGroupsClaim(defaultGroupsClaim.get());
         }
         SmallryeJwtUtils.setContextGroupsPath(contextInfo, groupsPath);
+
+        if (expGracePeriodSecs != null && expGracePeriodSecs.isPresent()) {
+            contextInfo.setExpGracePeriodSecs(expGracePeriodSecs.get());
+        }
+
+        SmallryeJwtUtils.setWhitelistAlgorithms(contextInfo, whitelistAlgorithms);
 
         return Optional.of(contextInfo);
     }

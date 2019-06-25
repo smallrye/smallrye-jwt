@@ -1,0 +1,21 @@
+{
+  "iss": "https://server.example.com",
+  "jti": "a-123",
+  "aud": "s6BhdRkqt3",
+  "exp": 1311281970,
+  "iat": 1311280970,
+  "auth_time": 1311280969,
+  "realm": {
+    "access": {
+      "sub": {
+        "principal": "microprofile_jwt_principal"
+      }
+    }
+  },
+  "groups": [
+    "Echoer",
+    "Tester",
+    "group1",
+    "group2"
+  ]
+}

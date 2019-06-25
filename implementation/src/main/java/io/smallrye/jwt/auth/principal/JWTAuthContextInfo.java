@@ -16,6 +16,8 @@
 package io.smallrye.jwt.auth.principal;
 
 import java.security.interfaces.RSAPublicKey;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * The public key and expected issuer needed to validate a token.
@@ -28,8 +30,12 @@ public class JWTAuthContextInfo {
     private Integer jwksRefreshInterval;
     private String tokenHeader = "Authorization";
     private String tokenCookie;
+    private boolean requireNamedPrincipal = true;
+    private String defaultSubClaim;
+    private String subPath;
     private String defaultGroupsClaim;
     private String groupsPath;
+    private List<String> whitelistAlgorithms = new ArrayList<>();
     /**
      * Flag that indicates whether the issuer is required and validated, or ignored, new in MP-JWT 1.1.
      */
@@ -141,6 +147,30 @@ public class JWTAuthContextInfo {
         this.tokenCookie = tokenCookie;
     }
 
+    public boolean isRequireNamedPrincipal() {
+        return requireNamedPrincipal;
+    }
+
+    public void setRequireNamedPrincipal(final boolean requireNamedPrincipal) {
+        this.requireNamedPrincipal = requireNamedPrincipal;
+    }
+
+    public String getDefaultSubClaim() {
+        return defaultSubClaim;
+    }
+
+    public void setDefaultSubClaim(final String defaultSubClaim) {
+        this.defaultSubClaim = defaultSubClaim;
+    }
+
+    public String getSubPath() {
+        return subPath;
+    }
+
+    public void setSubPath(final String subPath) {
+        this.subPath = subPath;
+    }
+
     public String getDefaultGroupsClaim() {
         return defaultGroupsClaim;
     }
@@ -155,5 +185,13 @@ public class JWTAuthContextInfo {
 
     public void setGroupsPath(String groupsPath) {
         this.groupsPath = groupsPath;
+    }
+
+    public List<String> getWhitelistAlgorithms() {
+        return whitelistAlgorithms;
+    }
+
+    public void setWhitelistAlgorithms(final List<String> whitelistAlgorithms) {
+        this.whitelistAlgorithms = whitelistAlgorithms;
     }
 }

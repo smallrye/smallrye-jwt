@@ -21,7 +21,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.eclipse.microprofile.jwt.Claims;
 import org.jboss.logging.Logger;
@@ -53,11 +55,17 @@ public class DefaultJWTTokenParser {
         try {
             JwtConsumerBuilder builder = new JwtConsumerBuilder()
                     .setRequireExpirationTime()
-                    .setRequireSubject()
-                    .setSkipDefaultAudienceValidation()
-                    .setJwsAlgorithmConstraints(
-                            new AlgorithmConstraints(AlgorithmConstraints.ConstraintType.WHITELIST,
-                                    AlgorithmIdentifiers.RSA_USING_SHA256));
+                    .setSkipDefaultAudienceValidation();
+
+            if (authContextInfo.getWhitelistAlgorithms().isEmpty()) {
+                builder.setJwsAlgorithmConstraints(
+                        new AlgorithmConstraints(AlgorithmConstraints.ConstraintType.WHITELIST,
+                                AlgorithmIdentifiers.RSA_USING_SHA256));
+            } else {
+                builder.setJwsAlgorithmConstraints(
+                        new AlgorithmConstraints(AlgorithmConstraints.ConstraintType.WHITELIST,
+                                authContextInfo.getWhitelistAlgorithms().toArray(new String[0])));
+            }
 
             if (authContextInfo.isRequireIssuer()) {
                 builder.setExpectedIssuer(true, authContextInfo.getIssuedBy());
@@ -86,6 +94,19 @@ public class DefaultJWTTokenParser {
             JwtClaims claimsSet = jwtContext.getJwtClaims();
 
             claimsSet.setClaim(Claims.raw_token.name(), token);
+
+            if (!claimsSet.hasClaim(Claims.sub.name())) {
+                String sub = checkSubPath(authContextInfo, claimsSet);
+                if (sub == null && authContextInfo.getDefaultSubClaim() != null) {
+                    sub = authContextInfo.getDefaultSubClaim();
+                }
+                claimsSet.setClaim(Claims.sub.name(), sub);
+            }
+
+            if (authContextInfo.isRequireNamedPrincipal()) {
+                validateSub(jwtContext);
+            }
+
             if (!claimsSet.hasClaim(Claims.groups.name())) {
                 List<String> groups = checkGroupsPath(authContextInfo, claimsSet);
                 if (groups == null && authContextInfo.getDefaultGroupsClaim() != null) {
@@ -93,6 +114,7 @@ public class DefaultJWTTokenParser {
                 }
                 claimsSet.setClaim(Claims.groups.name(), groups);
             }
+
             // Process the rolesMapping claim
             if (claimsSet.hasClaim(ROLE_MAPPINGS)) {
                 try {
@@ -121,6 +143,53 @@ public class DefaultJWTTokenParser {
             throw new ParseException("Failed to verify token", e);
         }
 
+    }
+
+    private void validateSub(JwtContext jwtContext) throws InvalidJwtException {
+        JwtClaims claimsSet = jwtContext.getJwtClaims();
+        final boolean hasPrincipalClaim = Stream.of(Claims.sub.name(), Claims.upn.name(), Claims.preferred_username.name())
+                .map(claimsSet::getClaimValue)
+                .anyMatch(Objects::nonNull);
+
+        if (!hasPrincipalClaim) {
+            throw new InvalidJwtException("No claim exists in sub, upn or preferred_username", new ArrayList<>(),
+                    jwtContext);
+        }
+    }
+
+    private String checkSubPath(JWTAuthContextInfo authContextInfo, JwtClaims claimsSet) {
+        if (authContextInfo.getSubPath() != null) {
+            final String[] pathSegments = authContextInfo.getSubPath().split("/");
+            return findSub(authContextInfo, claimsSet.getClaimsMap(), pathSegments, 0);
+        }
+        return null;
+    }
+
+    private String findSub(
+            JWTAuthContextInfo authContextInfo,
+            Map<String, Object> claimsMap,
+            String[] pathArray,
+            int step) {
+        Object claimValue = claimsMap.get(pathArray[step]);
+        if (claimValue == null) {
+            logger.warnf("No claim exists at the path %s at segment %s",
+                    authContextInfo.getGroupsPath(), pathArray[step]);
+        } else if (step + 1 < pathArray.length) {
+            if (claimValue instanceof Map) {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> nextMap = (Map<String, Object>) claimValue;
+                int nextStep = step + 1;
+                return findSub(authContextInfo, nextMap, pathArray, nextStep);
+            } else {
+                logger.warnf("Claim value at the path %s is not a json object", authContextInfo.getGroupsPath());
+            }
+        } else if (claimValue instanceof String) {
+            return (String) claimValue;
+        } else {
+            // last segment
+            logger.warnf("Claim value at the path %s is not a String", authContextInfo.getGroupsPath());
+        }
+        return null;
     }
 
     private List<String> checkGroupsPath(JWTAuthContextInfo authContextInfo, JwtClaims claimsSet) {
