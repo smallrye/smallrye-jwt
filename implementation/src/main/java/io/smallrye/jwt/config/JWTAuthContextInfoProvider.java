@@ -127,7 +127,7 @@ public class JWTAuthContextInfoProvider {
      * to validate instead.
      */
     @Inject
-    @ConfigProperty(name = "smallrye.jwt.require.named-principal", defaultValue = "true")
+    @ConfigProperty(name = "smallrye.jwt.require.named-principal", defaultValue = "false")
     private Optional<Boolean> requireNamedPrincipal;
     /**
      * Default subject claim value. This property can be used to support the JWT tokens without a 'sub' claim.
