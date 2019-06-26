@@ -34,6 +34,7 @@ import org.jose4j.jwt.consumer.JwtConsumer;
 import org.jose4j.jwt.consumer.JwtConsumerBuilder;
 import org.jose4j.jwt.consumer.JwtContext;
 import org.jose4j.keys.resolvers.VerificationKeyResolver;
+import org.jose4j.lang.UnresolvableKeyException;
 
 /**
  * Default JWT token validator
@@ -129,7 +130,7 @@ public class DefaultJWTTokenParser {
             }
 
             return jwtContext;
-        } catch (InvalidJwtException e) {
+        } catch (InvalidJwtException | UnresolvableKeyException e) {
             logger.warnf("Token is invalid: %s", e.getMessage());
             throw new ParseException("Failed to verify token", e);
         }
@@ -225,7 +226,7 @@ public class DefaultJWTTokenParser {
         return null;
     }
 
-    private VerificationKeyResolver getKeyResolver(JWTAuthContextInfo authContextInfo) {
+    protected VerificationKeyResolver getKeyResolver(JWTAuthContextInfo authContextInfo) throws UnresolvableKeyException {
         if (keyResolver == null) {
             keyResolver = new KeyLocationResolver(authContextInfo);
         }

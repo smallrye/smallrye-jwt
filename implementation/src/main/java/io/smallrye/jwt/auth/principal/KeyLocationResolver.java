@@ -47,47 +47,55 @@ import io.smallrye.jwt.KeyUtils;
  */
 public class KeyLocationResolver implements VerificationKeyResolver {
     private static final Logger log = Logger.getLogger(KeyLocationResolver.class);
-    private String location;
     private String content;
     private HttpsJwks httpsJwks;
+    private volatile PublicKey verificationKey;
+    private JWTAuthContextInfo authContextInfo;
 
-    public KeyLocationResolver(JWTAuthContextInfo authContextInfo) {
-        this.location = authContextInfo.getPublicKeyLocation();
-        if (location.startsWith("https:")) {
-            httpsJwks = new HttpsJwks(authContextInfo.getPublicKeyLocation());
-            httpsJwks.setDefaultCacheDuration(authContextInfo.getJwksRefreshInterval().longValue() * 60L);
+    public KeyLocationResolver(JWTAuthContextInfo authContextInfo) throws UnresolvableKeyException {
+        this.authContextInfo = authContextInfo;
+        try {
+            loadContents();
+        } catch (Exception e) {
+            throw new UnresolvableKeyException("Failed to load a key from: " + authContextInfo.getPublicKeyLocation(), e);
         }
     }
 
     @Override
     public Key resolveKey(JsonWebSignature jws, List<JsonWebStructure> nestingContext) throws UnresolvableKeyException {
-        try {
-            loadContents();
-        } catch (IOException e) {
-            throw new UnresolvableKeyException("Failed to load a key from: " + location, e);
+        if (verificationKey != null) {
+            return verificationKey;
         }
         PublicKey key = tryAsJWK(jws);
         if (key == null) {
             key = tryAsPEM();
         }
         if (key == null) {
-            throw new UnresolvableKeyException("Failed to read location as any of JWK, JWKS, PEM; " + location);
+            throw new UnresolvableKeyException("Failed to read location as any of JWK, JWKS, PEM. "
+                    + authContextInfo.getPublicKeyLocation());
         }
         return key;
     }
 
     private PublicKey tryAsPEM() {
-        PublicKey publicKey = null;
         try {
-            publicKey = KeyUtils.decodePublicKey(content);
+            verificationKey = KeyUtils.decodePublicKey(content);
         } catch (Exception e) {
             log.debug("Failed to read location as PEM", e);
         }
-        return publicKey;
+        return verificationKey;
     }
 
-    private PublicKey tryAsJWK(JsonWebSignature jws) {
+    private PublicKey tryAsJWK(JsonWebSignature jws) throws UnresolvableKeyException {
         String kid = jws.getHeaders().getStringHeaderValue("kid");
+        if (kid != null) {
+            if (authContextInfo.getTokenKeyId() != null && !kid.equals(authContextInfo.getTokenKeyId())) {
+                log.debugf("Invalid token 'kid' header: %s, expected: %s", kid, authContextInfo.getTokenKeyId());
+                throw new UnresolvableKeyException("Invalid token 'kid' header");
+            }
+        } else {
+            kid = authContextInfo.getTokenKeyId();
+        }
 
         PublicKey publicKey = null;
         try {
@@ -132,11 +140,20 @@ public class KeyLocationResolver implements VerificationKeyResolver {
         } catch (Exception e) {
             log.debug("Failed to read location as JWK(S)", e);
         }
-
+        if (publicKey != null && authContextInfo.getTokenKeyId() != null) {
+            verificationKey = publicKey;
+        }
         return publicKey;
     }
 
-    private void loadContents() throws IOException {
+    private void loadContents() throws Exception {
+        final String location = authContextInfo.getPublicKeyLocation();
+        if (location.startsWith("https:")) {
+            httpsJwks = new HttpsJwks(location);
+            httpsJwks.setDefaultCacheDuration(authContextInfo.getJwksRefreshInterval().longValue() * 60L);
+            return;
+        }
+
         StringWriter contents = new StringWriter();
         final InputStream is;
         if (location.startsWith("classpath:") || location.indexOf(':') < 0) {

@@ -25,19 +25,20 @@ import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import io.smallrye.jwt.auth.principal.DefaultJWTTokenParser;
+import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
 import io.smallrye.jwt.auth.principal.ParseException;
 import io.smallrye.jwt.config.JWTAuthContextInfoProvider;
 
 public class KeyLocationResolverTest {
     @Test
     public void testVerifyWithJwkKeyWithMatchingKid() throws Exception {
-        verifyToken("key1", "publicKey.jwk");
+        verifyToken("key1", null, "publicKey.jwk");
     }
 
     @Test
     public void testVerifyWithJwkKeyWithNonMatchingKid() throws Exception {
         try {
-            verifyToken("key2", "publicKey.jwk");
+            verifyToken("key2", null, "publicKey.jwk");
             Assert.fail("ParseException is expected");
         } catch (ParseException ex) {
             Assert.assertTrue(ex.getCause().getCause() instanceof UnresolvableKeyException);
@@ -46,13 +47,28 @@ public class KeyLocationResolverTest {
 
     @Test
     public void testVerifyWithJwkKeyWithMatchingKidFromSet() throws Exception {
-        verifyToken("key1", "publicKeySet.jwk");
+        verifyToken("key1", null, "publicKeySet.jwk");
+    }
+
+    @Test
+    public void testVerifyWithJwkFromSetWithKidAndRequiredKid() throws Exception {
+        verifyToken("key1", "key1", "publicKeySet.jwk");
+    }
+
+    @Test
+    public void testVerifyWithJwkFromSetWithWrongKidAndRequiredKid() throws Exception {
+        try {
+            verifyToken("key2", "key1", "publicKeySet.jwk");
+            Assert.fail("ParseException is expected");
+        } catch (ParseException ex) {
+            Assert.assertTrue(ex.getCause().getCause() instanceof UnresolvableKeyException);
+        }
     }
 
     @Test
     public void testVerifyWithJwkKeyWithNonMatchingKidFromSet() throws Exception {
         try {
-            verifyToken("key3", "publicKeySet.jwk");
+            verifyToken("key3", null, "publicKeySet.jwk");
             Assert.fail("ParseException is expected");
         } catch (ParseException ex) {
             Assert.assertTrue(ex.getCause().getCause() instanceof UnresolvableKeyException);
@@ -61,14 +77,22 @@ public class KeyLocationResolverTest {
 
     @Test
     public void testVerifyWithPemKey() throws Exception {
-        verifyToken("key3", "publicKey.pem");
+        verifyToken("key3", null, "publicKey.pem");
     }
 
-    private static void verifyToken(String kid, String publicKeyLocation) throws Exception {
+    @Test
+    public void testVerifyWithPemKeyWithMatchingKid() throws Exception {
+        verifyToken("key3", null, "publicKey.pem");
+    }
+
+    private static void verifyToken(String kid, String requiredKeyId, String publicKeyLocation) throws Exception {
         PrivateKey privateKey = TokenUtils.readPrivateKey("/privateKey.pem");
         String token = TokenUtils.generateTokenString(privateKey, kid, "/Token1.json", null, null);
         JWTAuthContextInfoProvider provider = JWTAuthContextInfoProvider.createWithKeyLocation(publicKeyLocation,
                 "https://server.example.com");
-        Assert.assertNotNull(new DefaultJWTTokenParser().parse(token, provider.getContextInfo()));
+        JWTAuthContextInfo contextInfo = provider.getContextInfo();
+        contextInfo.setTokenKeyId(requiredKeyId);
+        Assert.assertNotNull(new DefaultJWTTokenParser().parse(token, contextInfo));
     }
+
 }

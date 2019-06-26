@@ -30,6 +30,7 @@ public class JWTAuthContextInfo {
     private Integer jwksRefreshInterval;
     private String tokenHeader = "Authorization";
     private String tokenCookie;
+    private String tokenKeyId;
     private boolean requireNamedPrincipal = true;
     private String defaultSubClaim;
     private String subPath;
@@ -97,16 +98,6 @@ public class JWTAuthContextInfo {
         this.expGracePeriodSecs = expGracePeriodSecs;
     }
 
-    @Deprecated
-    public String getJwksUri() {
-        return this.publicKeyLocation;
-    }
-
-    @Deprecated
-    public void setJwksUri(String jwksUri) {
-        this.publicKeyLocation = jwksUri;
-    }
-
     public String getPublicKeyLocation() {
         return this.publicKeyLocation;
     }
@@ -129,21 +120,6 @@ public class JWTAuthContextInfo {
 
     public void setRequireIssuer(boolean requireIssuer) {
         this.requireIssuer = requireIssuer;
-    }
-
-    /**
-     * Is the {@linkplain #jwksUri} a location that follows the MP-JWT 1.1 rules for the mp.jwt.verify.publickey.location
-     * property? These rules allow for any URL type to one of PEM, JWK or JWKS contents.
-     * 
-     * @return true if jwksUri was set from the mp.jwt.verify.publickey.location, false otherwise
-     */
-    @Deprecated
-    public boolean isFollowMpJwt11Rules() {
-        return false;
-    }
-
-    @Deprecated
-    public void setFollowMpJwt11Rules(boolean followMpJwt11Rules) {
     }
 
     public String getTokenHeader() {
@@ -208,5 +184,13 @@ public class JWTAuthContextInfo {
 
     public void setWhitelistAlgorithms(final List<String> whitelistAlgorithms) {
         this.whitelistAlgorithms = whitelistAlgorithms;
+    }
+
+    public String getTokenKeyId() {
+        return tokenKeyId;
+    }
+
+    public void setTokenKeyId(String tokenKeyId) {
+        this.tokenKeyId = tokenKeyId;
     }
 }
