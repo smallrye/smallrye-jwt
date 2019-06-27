@@ -47,9 +47,17 @@ import io.smallrye.jwt.KeyUtils;
  */
 public class KeyLocationResolver implements VerificationKeyResolver {
     private static final Logger log = Logger.getLogger(KeyLocationResolver.class);
+
+    // The 'content' and 'httpsJwks' fields are used to keep the key content and are mutually exclusive
+    // 'content' represents the key(s) loaded from all but the HTTPS URL based resources.
     private String content;
+    // 'httpsJwks' represents the JWK set loaded from the HTTPS URL
     private HttpsJwks httpsJwks;
+
+    // If the 'smallrye.jwt.token.kid' is set then the verification key will be calculated
+    // only once and used for all the token verification requests
     private volatile PublicKey verificationKey;
+
     private JWTAuthContextInfo authContextInfo;
 
     public KeyLocationResolver(JWTAuthContextInfo authContextInfo) throws UnresolvableKeyException {
