@@ -21,6 +21,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.jboss.logging.Logger;
 import org.jose4j.jws.AlgorithmIdentifiers;
@@ -79,9 +80,13 @@ public class SmallryeJwtUtils {
         }
     }
 
-    public static void setWhitelistAlgorithms(JWTAuthContextInfo contextInfo, Optional<List<String>> whitelistAlgorithms) {
-        if (whitelistAlgorithms != null && whitelistAlgorithms.isPresent() && !whitelistAlgorithms.get().isEmpty()) {
-            for (String whitelistAlgorithm : whitelistAlgorithms.get()) {
+    public static void setWhitelistAlgorithms(JWTAuthContextInfo contextInfo, Optional<String> whitelistAlgorithms) {
+        if (whitelistAlgorithms != null && whitelistAlgorithms.isPresent()) {
+            final List<String> algorithms = Arrays.stream(whitelistAlgorithms.get().split(","))
+                    .map(String::trim)
+                    .collect(Collectors.toList());
+
+            for (String whitelistAlgorithm : algorithms) {
                 if (SUPPORTED_ALGORITHMS.contains(whitelistAlgorithm)) {
                     contextInfo.getWhitelistAlgorithms().add(whitelistAlgorithm);
                 } else {
