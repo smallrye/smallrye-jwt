@@ -165,7 +165,7 @@ public class JWTAuthContextInfoProvider {
      */
     @Inject
     @ConfigProperty(name = "smallrye.jwt.whitelist.algorithms")
-    private Optional<List<String>> whitelistAlgorithms;
+    private Optional<String> whitelistAlgorithms;
 
     @Produces
     @ApplicationScoped

@@ -1,6 +1,5 @@
 package io.smallrye.jwt;
 
-import static java.util.Collections.singletonList;
 import static org.eclipse.microprofile.jwt.tck.TCKConstants.TEST_GROUP_JWT;
 import static org.eclipse.microprofile.jwt.tck.TCKConstants.TEST_ISSUER;
 import static org.jose4j.jws.AlgorithmIdentifiers.HMAC_SHA256;
@@ -46,7 +45,17 @@ public class TestTokenWhitelistAlgorithm extends Arquillian {
     @Test(groups = TEST_GROUP_JWT, description = "ignore no valid algorithm")
     public void ignoreNoValidAlgorithm() throws Exception {
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo((RSAPublicKey) publicKey, TEST_ISSUER);
-        SmallryeJwtUtils.setWhitelistAlgorithms(contextInfo, Optional.of(singletonList(HMAC_SHA256)));
+        SmallryeJwtUtils.setWhitelistAlgorithms(contextInfo, Optional.of((HMAC_SHA256)));
+        JWTCallerPrincipalFactory factory = JWTCallerPrincipalFactory.instance();
+        JsonWebToken jwt = factory.parse(token, contextInfo);
+        String sub = jwt.getSubject();
+        Assert.assertEquals(sub, "24400320");
+    }
+
+    @Test(groups = TEST_GROUP_JWT, description = "invalid algorithm configuration")
+    public void invalidAlgorithmConfiguration() throws Exception {
+        JWTAuthContextInfo contextInfo = new JWTAuthContextInfo((RSAPublicKey) publicKey, TEST_ISSUER);
+        SmallryeJwtUtils.setWhitelistAlgorithms(contextInfo, Optional.of("abcqwe"));
         JWTCallerPrincipalFactory factory = JWTCallerPrincipalFactory.instance();
         JsonWebToken jwt = factory.parse(token, contextInfo);
         String sub = jwt.getSubject();
