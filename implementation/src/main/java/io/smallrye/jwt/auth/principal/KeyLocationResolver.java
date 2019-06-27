@@ -49,7 +49,7 @@ public class KeyLocationResolver implements VerificationKeyResolver {
     private static final Logger log = Logger.getLogger(KeyLocationResolver.class);
 
     // The 'content' and 'httpsJwks' fields are used to keep the key content and mutually exclusive.
-    // 'content' represents the key(s) loaded from all but the HTTPS URL based JWK set.
+    // 'content' represents the key(s) loaded from all resources but the HTTPS URL based JWK set.
     private String content;
     // 'httpsJwks' represents the JWK set loaded from the HTTPS URL.
     private HttpsJwks httpsJwks;
