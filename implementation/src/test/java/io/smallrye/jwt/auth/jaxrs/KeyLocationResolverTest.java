@@ -25,6 +25,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.mockito.Mock;
 
+import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
 import io.smallrye.jwt.auth.principal.KeyLocationResolver;
 
 public class KeyLocationResolverTest {
@@ -40,7 +41,7 @@ public class KeyLocationResolverTest {
 
         expectedEx.expect(UnresolvableKeyException.class);
 
-        KeyLocationResolver keyLocationResolver = new KeyLocationResolver("wrong_location.pem");
+        KeyLocationResolver keyLocationResolver = new KeyLocationResolver(new JWTAuthContextInfo("wrong_location.pem", null));
         keyLocationResolver.resolveKey(jsonWebSignature, emptyList());
     }
 }

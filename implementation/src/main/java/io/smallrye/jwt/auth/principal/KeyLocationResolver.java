@@ -32,6 +32,8 @@ import javax.json.JsonArray;
 import javax.json.JsonObject;
 
 import org.jboss.logging.Logger;
+import org.jose4j.jwk.HttpsJwks;
+import org.jose4j.jwk.JsonWebKey;
 import org.jose4j.jwk.PublicJsonWebKey;
 import org.jose4j.jws.JsonWebSignature;
 import org.jose4j.jwx.JsonWebStructure;
@@ -45,77 +47,121 @@ import io.smallrye.jwt.KeyUtils;
  */
 public class KeyLocationResolver implements VerificationKeyResolver {
     private static final Logger log = Logger.getLogger(KeyLocationResolver.class);
-    private String location;
-    private String content;
 
-    public KeyLocationResolver(String location) {
-        this.location = location;
+    // The 'content' and 'httpsJwks' fields are used to keep the key content and mutually exclusive.
+    // 'content' represents the key(s) loaded from all resources but the HTTPS URL based JWK set.
+    private String content;
+    // 'httpsJwks' represents the JWK set loaded from the HTTPS URL.
+    private HttpsJwks httpsJwks;
+
+    // If the 'smallrye.jwt.token.kid' is set then the verification key will be calculated
+    // only once and used for all the token verification requests
+    private volatile PublicKey verificationKey;
+
+    private JWTAuthContextInfo authContextInfo;
+
+    public KeyLocationResolver(JWTAuthContextInfo authContextInfo) throws UnresolvableKeyException {
+        this.authContextInfo = authContextInfo;
+        try {
+            loadContents();
+        } catch (Exception e) {
+            throw new UnresolvableKeyException("Failed to load a key from: " + authContextInfo.getPublicKeyLocation(), e);
+        }
     }
 
     @Override
     public Key resolveKey(JsonWebSignature jws, List<JsonWebStructure> nestingContext) throws UnresolvableKeyException {
-        try {
-            loadContents();
-        } catch (IOException e) {
-            throw new UnresolvableKeyException("Failed to load a key from: " + location, e);
+        if (verificationKey != null) {
+            return verificationKey;
         }
-        String kid = jws.getHeaders().getStringHeaderValue("kid");
-
-        PublicKey key = tryAsJWK(kid);
+        PublicKey key = tryAsJWK(jws);
         if (key == null) {
             key = tryAsPEM();
         }
         if (key == null) {
-            throw new UnresolvableKeyException("Failed to read location as any of JWK, JWKS, PEM; " + location);
+            throw new UnresolvableKeyException("Failed to read location as any of JWK, JWKS, PEM. "
+                    + authContextInfo.getPublicKeyLocation());
         }
         return key;
     }
 
     private PublicKey tryAsPEM() {
-        PublicKey publicKey = null;
         try {
-            publicKey = KeyUtils.decodePublicKey(content);
+            verificationKey = KeyUtils.decodePublicKey(content);
         } catch (Exception e) {
             log.debug("Failed to read location as PEM", e);
         }
-        return publicKey;
+        return verificationKey;
     }
 
-    private PublicKey tryAsJWK(String kid) {
+    private PublicKey tryAsJWK(JsonWebSignature jws) throws UnresolvableKeyException {
+        String kid = jws.getHeaders().getStringHeaderValue("kid");
+        if (kid != null) {
+            if (authContextInfo.getTokenKeyId() != null && !kid.equals(authContextInfo.getTokenKeyId())) {
+                log.debugf("Invalid token 'kid' header: %s, expected: %s", kid, authContextInfo.getTokenKeyId());
+                throw new UnresolvableKeyException("Invalid token 'kid' header");
+            }
+        } else {
+            kid = authContextInfo.getTokenKeyId();
+        }
+
         PublicKey publicKey = null;
         try {
             log.debugf("Trying location as JWK(S)...");
 
-            JsonObject jwk = null;
-
-            JsonObject jwks = Json.createReader(new StringReader(content)).readObject();
-            JsonArray keys = jwks.getJsonArray("keys");
-            if (keys != null) {
+            if (httpsJwks != null) {
+                List<JsonWebKey> keys = httpsJwks.getJsonWebKeys();
                 if (kid != null) {
-                    for (int i = 0; i < keys.size(); i++) {
-                        JsonObject currentJwk = keys.getJsonObject(i);
-                        if (kid.equals(currentJwk.getString("kid", null))) {
-                            jwk = currentJwk;
+                    for (JsonWebKey currentJwk : keys) {
+                        if (kid.equals(currentJwk.getKeyId())) {
+                            publicKey = PublicJsonWebKey.class.cast(currentJwk).getPublicKey();
                             break;
                         }
                     }
                 } else if (keys.size() == 1) {
-                    jwk = keys.getJsonObject(0);
+                    publicKey = PublicJsonWebKey.class.cast(keys.get(0)).getPublicKey();
                 }
-            } else if (kid == null || kid.equals(jwks.getString("kid", null))) {
-                jwk = jwks;
-            }
-            if (jwk != null) {
-                publicKey = PublicJsonWebKey.Factory.newPublicJwk(jwk.toString()).getPublicKey();
+            } else {
+                JsonObject jwk = null;
+
+                JsonObject jwks = Json.createReader(new StringReader(content)).readObject();
+                JsonArray keys = jwks.getJsonArray("keys");
+                if (keys != null) {
+                    if (kid != null) {
+                        for (int i = 0; i < keys.size(); i++) {
+                            JsonObject currentJwk = keys.getJsonObject(i);
+                            if (kid.equals(currentJwk.getString("kid", null))) {
+                                jwk = currentJwk;
+                                break;
+                            }
+                        }
+                    } else if (keys.size() == 1) {
+                        jwk = keys.getJsonObject(0);
+                    }
+                } else if (kid == null || kid.equals(jwks.getString("kid", null))) {
+                    jwk = jwks;
+                }
+                if (jwk != null) {
+                    publicKey = PublicJsonWebKey.Factory.newPublicJwk(jwk.toString()).getPublicKey();
+                }
             }
         } catch (Exception e) {
             log.debug("Failed to read location as JWK(S)", e);
         }
-
+        if (publicKey != null && authContextInfo.getTokenKeyId() != null) {
+            verificationKey = publicKey;
+        }
         return publicKey;
     }
 
-    private void loadContents() throws IOException {
+    private void loadContents() throws Exception {
+        final String location = authContextInfo.getPublicKeyLocation();
+        if (location.startsWith("https:")) {
+            httpsJwks = new HttpsJwks(location);
+            httpsJwks.setDefaultCacheDuration(authContextInfo.getJwksRefreshInterval().longValue() * 60L);
+            return;
+        }
+
         StringWriter contents = new StringWriter();
         final InputStream is;
         if (location.startsWith("classpath:") || location.indexOf(':') < 0) {

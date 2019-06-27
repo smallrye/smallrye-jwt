@@ -16,20 +16,16 @@
  */
 package io.smallrye.jwt.auth.principal;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.eclipse.microprofile.jwt.Claims;
 import org.jboss.logging.Logger;
 import org.jose4j.jwa.AlgorithmConstraints;
-import org.jose4j.jwk.HttpsJwks;
-import org.jose4j.jwk.JsonWebKey;
 import org.jose4j.jws.AlgorithmIdentifiers;
 import org.jose4j.jwt.JwtClaims;
 import org.jose4j.jwt.NumericDate;
@@ -37,8 +33,8 @@ import org.jose4j.jwt.consumer.InvalidJwtException;
 import org.jose4j.jwt.consumer.JwtConsumer;
 import org.jose4j.jwt.consumer.JwtConsumerBuilder;
 import org.jose4j.jwt.consumer.JwtContext;
-import org.jose4j.keys.resolvers.JwksVerificationKeyResolver;
-import org.jose4j.lang.JoseException;
+import org.jose4j.keys.resolvers.VerificationKeyResolver;
+import org.jose4j.lang.UnresolvableKeyException;
 
 /**
  * Default JWT token validator
@@ -47,8 +43,7 @@ import org.jose4j.lang.JoseException;
 public class DefaultJWTTokenParser {
     private static Logger logger = Logger.getLogger(DefaultJWTTokenParser.class);
     private static final String ROLE_MAPPINGS = "roleMappings";
-
-    private HttpsJwks httpsJwks;
+    private volatile VerificationKeyResolver keyResolver;
 
     public JwtContext parse(final String token, final JWTAuthContextInfo authContextInfo) throws ParseException {
 
@@ -74,11 +69,8 @@ public class DefaultJWTTokenParser {
             }
             if (authContextInfo.getSignerKey() != null) {
                 builder.setVerificationKey(authContextInfo.getSignerKey());
-            } else if (authContextInfo.isFollowMpJwt11Rules()) {
-                builder.setVerificationKeyResolver(new KeyLocationResolver(authContextInfo.getJwksUri()));
             } else {
-                final List<JsonWebKey> jsonWebKeys = loadJsonWebKeys(authContextInfo);
-                builder.setVerificationKeyResolver(new JwksVerificationKeyResolver(jsonWebKeys));
+                builder.setVerificationKeyResolver(getKeyResolver(authContextInfo));
             }
 
             if (authContextInfo.getExpGracePeriodSecs() > 0) {
@@ -138,7 +130,7 @@ public class DefaultJWTTokenParser {
             }
 
             return jwtContext;
-        } catch (InvalidJwtException e) {
+        } catch (InvalidJwtException | UnresolvableKeyException e) {
             logger.warnf("Token is invalid: %s", e.getMessage());
             throw new ParseException("Failed to verify token", e);
         }
@@ -234,26 +226,10 @@ public class DefaultJWTTokenParser {
         return null;
     }
 
-    protected List<JsonWebKey> loadJsonWebKeys(JWTAuthContextInfo authContextInfo) {
-        synchronized (this) {
-            if (authContextInfo.getJwksUri() == null) {
-                return Collections.emptyList();
-            }
-
-            if (httpsJwks == null) {
-                httpsJwks = new HttpsJwks(authContextInfo.getJwksUri());
-                httpsJwks.setDefaultCacheDuration(authContextInfo.getJwksRefreshInterval().longValue() * 60L);
-            }
+    protected VerificationKeyResolver getKeyResolver(JWTAuthContextInfo authContextInfo) throws UnresolvableKeyException {
+        if (keyResolver == null) {
+            keyResolver = new KeyLocationResolver(authContextInfo);
         }
-
-        try {
-            return httpsJwks.getJsonWebKeys().stream()
-                    .filter(jsonWebKey -> "sig".equals(jsonWebKey.getUse())) // only signing keys are relevant
-                    .filter(jsonWebKey -> "RS256".equals(jsonWebKey.getAlgorithm())) // MP-JWT dictates RS256 only
-                    .collect(Collectors.toList());
-        } catch (IOException | JoseException e) {
-            throw new IllegalStateException(String.format("Unable to fetch JWKS from %s.",
-                    authContextInfo.getJwksUri()), e);
-        }
+        return keyResolver;
     }
 }

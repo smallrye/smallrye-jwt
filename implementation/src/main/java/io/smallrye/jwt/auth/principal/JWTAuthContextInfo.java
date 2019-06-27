@@ -26,10 +26,11 @@ public class JWTAuthContextInfo {
     private RSAPublicKey signerKey;
     private String issuedBy;
     private int expGracePeriodSecs = 60;
-    private String jwksUri;
+    private String publicKeyLocation;
     private Integer jwksRefreshInterval;
     private String tokenHeader = "Authorization";
     private String tokenCookie;
+    private String tokenKeyId;
     private boolean requireNamedPrincipal = true;
     private String defaultSubClaim;
     private String subPath;
@@ -40,7 +41,6 @@ public class JWTAuthContextInfo {
      * Flag that indicates whether the issuer is required and validated, or ignored, new in MP-JWT 1.1.
      */
     private boolean requireIssuer = true;
-    private boolean followMpJwt11Rules;
 
     public JWTAuthContextInfo() {
     }
@@ -56,6 +56,11 @@ public class JWTAuthContextInfo {
         this.issuedBy = issuedBy;
     }
 
+    public JWTAuthContextInfo(String publicKeyLocation, String issuedBy) {
+        this.publicKeyLocation = publicKeyLocation;
+        this.issuedBy = issuedBy;
+    }
+
     /**
      * Create an auth context from an {@linkplain JWTAuthContextInfo} instance
      * 
@@ -65,7 +70,7 @@ public class JWTAuthContextInfo {
         this.signerKey = orig.signerKey;
         this.issuedBy = orig.issuedBy;
         this.expGracePeriodSecs = orig.expGracePeriodSecs;
-        this.jwksUri = orig.jwksUri;
+        this.publicKeyLocation = orig.publicKeyLocation;
         this.jwksRefreshInterval = orig.jwksRefreshInterval;
     }
 
@@ -93,12 +98,12 @@ public class JWTAuthContextInfo {
         this.expGracePeriodSecs = expGracePeriodSecs;
     }
 
-    public String getJwksUri() {
-        return jwksUri;
+    public String getPublicKeyLocation() {
+        return this.publicKeyLocation;
     }
 
-    public void setJwksUri(String jwksUri) {
-        this.jwksUri = jwksUri;
+    public void setPublicKeyLocation(String publicKeyLocation) {
+        this.publicKeyLocation = publicKeyLocation;
     }
 
     public Integer getJwksRefreshInterval() {
@@ -115,20 +120,6 @@ public class JWTAuthContextInfo {
 
     public void setRequireIssuer(boolean requireIssuer) {
         this.requireIssuer = requireIssuer;
-    }
-
-    /**
-     * Is the {@linkplain #jwksUri} a location that follows the MP-JWT 1.1 rules for the mp.jwt.verify.publickey.location
-     * property? These rules allow for any URL type to one of PEM, JWK or JWKS contents.
-     * 
-     * @return true if jwksUri was set from the mp.jwt.verify.publickey.location, false otherwise
-     */
-    public boolean isFollowMpJwt11Rules() {
-        return followMpJwt11Rules;
-    }
-
-    public void setFollowMpJwt11Rules(boolean followMpJwt11Rules) {
-        this.followMpJwt11Rules = followMpJwt11Rules;
     }
 
     public String getTokenHeader() {
@@ -193,5 +184,13 @@ public class JWTAuthContextInfo {
 
     public void setWhitelistAlgorithms(final List<String> whitelistAlgorithms) {
         this.whitelistAlgorithms = whitelistAlgorithms;
+    }
+
+    public String getTokenKeyId() {
+        return tokenKeyId;
+    }
+
+    public void setTokenKeyId(String tokenKeyId) {
+        this.tokenKeyId = tokenKeyId;
     }
 }

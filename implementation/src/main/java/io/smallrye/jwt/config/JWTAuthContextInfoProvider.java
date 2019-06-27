@@ -121,6 +121,16 @@ public class JWTAuthContextInfoProvider {
     @Inject
     @ConfigProperty(name = "smallrye.jwt.token.cookie")
     private Optional<String> tokenCookie;
+
+    /**
+     * The key identifier ('kid'). If it is set then if the token contains 'kid' then both values must match. It will also be
+     * used to
+     * select a JWK key from a JWK set.
+     */
+    @Inject
+    @ConfigProperty(name = "smallrye.jwt.token.kid")
+    private Optional<String> tokenKeyId;
+
     /**
      * Check that the JWT has at least one of 'sub', 'upn' or 'preferred_user_name' set. If not the JWT validation will
      * fail.
@@ -128,40 +138,45 @@ public class JWTAuthContextInfoProvider {
     @Inject
     @ConfigProperty(name = "smallrye.jwt.require.named-principal", defaultValue = "false")
     private Optional<Boolean> requireNamedPrincipal;
+
     /**
      * Default subject claim value. This property can be used to support the JWT tokens without a 'sub' claim.
      */
     @Inject
     @ConfigProperty(name = "smallrye.jwt.claims.sub")
     private Optional<String> defaultSubClaim;
+
     /**
-     * JSON path to the claim containing the sub. It starts from the top level JSON object and
+     * Path to the claim containing the sub. It starts from the top level JSON object and
      * can contain multiple segments where each segment represents a JSON object name only, example: "realm/sub".
      * This property can be used if a token has no 'sub' claim but has the sub set in a different claim.
      */
     @Inject
-    @ConfigProperty(name = "smallrye.jwt.sub.path")
+    @ConfigProperty(name = "smallrye.jwt.path.sub")
     private Optional<String> subPath;
+
     /**
      * Default groups claim value. This property can be used to support the JWT tokens without a 'groups' claim.
      */
     @Inject
     @ConfigProperty(name = "smallrye.jwt.claims.groups")
     private Optional<String> defaultGroupsClaim;
+
     /**
-     * JSON path to the claim containing an array of groups. It starts from the top level JSON object and
+     * Path to the claim containing an array of groups. It starts from the top level JSON object and
      * can contain multiple segments where each segment represents a JSON object name only, example: "realm/groups".
      * This property can be used if a token has no 'groups' claim but has the groups set in a different claim.
      */
     @Inject
-    @ConfigProperty(name = "smallrye.jwt.groups.path")
+    @ConfigProperty(name = "smallrye.jwt.path.groups")
     private Optional<String> groupsPath;
+
     @Inject
     @ConfigProperty(name = "smallrye.jwt.expiration.grace", defaultValue = "60")
     private Optional<Integer> expGracePeriodSecs;
+
     /**
-     * List of algorithms to whitelist JWT validation based on jose4j algorithms
-     * list org.jose4j.jws.AlgorithmIdentifiers.
+     * List of supported JSON Web Algorithm RSA and Elliptic Curve signing algorithms, default is RS256.
      */
     @Inject
     @ConfigProperty(name = "smallrye.jwt.whitelist.algorithms")
@@ -208,10 +223,14 @@ public class JWTAuthContextInfoProvider {
 
         // The MP-JWT location can be a PEM, JWK or JWKS
         if (mpJwtLocation.isPresent() && !NONE.equals(mpJwtLocation.get())) {
-            setMpJwtLocation(contextInfo);
+            contextInfo.setPublicKeyLocation(mpJwtLocation.get());
         }
         if (tokenHeader != null) {
             contextInfo.setTokenHeader(tokenHeader);
+        }
+
+        if (tokenKeyId != null && tokenKeyId.isPresent()) {
+            contextInfo.setTokenKeyId(tokenKeyId.get());
         }
         if (requireNamedPrincipal != null && requireNamedPrincipal.isPresent()) {
             contextInfo.setRequireNamedPrincipal(requireNamedPrincipal.get());
@@ -233,11 +252,6 @@ public class JWTAuthContextInfoProvider {
         SmallryeJwtUtils.setWhitelistAlgorithms(contextInfo, whitelistAlgorithms);
 
         return Optional.of(contextInfo);
-    }
-
-    protected void setMpJwtLocation(JWTAuthContextInfo contextInfo) {
-        contextInfo.setJwksUri(mpJwtLocation.get());
-        contextInfo.setFollowMpJwt11Rules(true);
     }
 
     protected void decodeMpJwtPublicKey(JWTAuthContextInfo contextInfo) {
@@ -281,6 +295,10 @@ public class JWTAuthContextInfoProvider {
     }
 
     public Optional<String> getTokenCookie() {
+        return tokenCookie;
+    }
+
+    public Optional<String> getTokenKeyId() {
         return tokenCookie;
     }
 
