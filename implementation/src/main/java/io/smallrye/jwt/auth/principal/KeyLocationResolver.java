@@ -148,7 +148,9 @@ public class KeyLocationResolver implements VerificationKeyResolver {
         } catch (Exception e) {
             log.debug("Failed to read location as JWK(S)", e);
         }
-        if (publicKey != null && authContextInfo.getTokenKeyId() != null) {
+        if (httpsJwks == null && publicKey != null && authContextInfo.getTokenKeyId() != null) {
+            // httpsJwks may refresh itself even if the jwksRefreshInterval is set to 0 as it checks HTTPS Cache-Control header
+            // so the public key will have to be created per request to ensure the rotation (if any) is effective.
             verificationKey = publicKey;
         }
         return publicKey;

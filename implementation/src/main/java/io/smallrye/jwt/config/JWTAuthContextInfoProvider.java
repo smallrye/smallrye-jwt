@@ -17,7 +17,6 @@
 package io.smallrye.jwt.config;
 
 import java.security.interfaces.RSAPublicKey;
-import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
 
@@ -176,6 +175,14 @@ public class JWTAuthContextInfoProvider {
     private Optional<Integer> expGracePeriodSecs;
 
     /**
+     * JWK cache refresh interval in minutes. It will be ignored unless the 'mp.jwt.verify.publickey.location' property points to the HTTPS URL based JWK set.
+     * Note this property will only be used if no HTTP Cache-Control response header with a positive 'max-age' parameter value is available.
+     */
+    @Inject
+    @ConfigProperty(name = "smallrye.jwt.jwks.refresh-interval", defaultValue = "60")
+    private Optional<Integer> jwksRefreshInterval;
+
+    /**
      * List of supported JSON Web Algorithm RSA and Elliptic Curve signing algorithms, default is RS256.
      */
     @Inject
@@ -249,6 +256,10 @@ public class JWTAuthContextInfoProvider {
             contextInfo.setExpGracePeriodSecs(expGracePeriodSecs.get());
         }
 
+        if (this.jwksRefreshInterval != null && jwksRefreshInterval.isPresent()) {
+            contextInfo.setJwksRefreshInterval(jwksRefreshInterval.get());
+        }
+
         SmallryeJwtUtils.setWhitelistAlgorithms(contextInfo, whitelistAlgorithms);
 
         return Optional.of(contextInfo);
@@ -302,12 +313,32 @@ public class JWTAuthContextInfoProvider {
         return tokenCookie;
     }
 
+    public Optional<Integer> getExpGracePeriodSecs() {
+        return expGracePeriodSecs;
+    }
+
+    public Optional<Integer> getJwksRefreshInterval() {
+        return jwksRefreshInterval;
+    }
+
     public Optional<String> getDefaultGroupsClaim() {
         return defaultGroupsClaim;
     }
 
     public Optional<String> getGroupsPath() {
         return groupsPath;
+    }
+
+    public Optional<String> getSubjectPath() {
+        return subPath;
+    }
+
+    public Optional<String> getDefaultSubjectClaim() {
+        return defaultSubClaim;
+    }
+
+    public Optional<String> getWhitelistAlgorithms() {
+        return whitelistAlgorithms;
     }
 
     @Produces
