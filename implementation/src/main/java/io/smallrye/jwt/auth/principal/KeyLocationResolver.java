@@ -150,7 +150,7 @@ public class KeyLocationResolver implements VerificationKeyResolver {
         }
         if (httpsJwks == null && publicKey != null && authContextInfo.getTokenKeyId() != null) {
             // httpsJwks may refresh itself even if the jwksRefreshInterval is set to 0 as it checks HTTPS Cache-Control header
-            // so the public key will have be created per request to ensure the rotation (if any) is effective.
+            // so the public key will have to be created per request to ensure the rotation (if any) is effective.
             verificationKey = publicKey;
         }
         return publicKey;
