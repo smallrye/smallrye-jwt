@@ -146,19 +146,19 @@ public class JWTAuthContextInfo {
         this.requireNamedPrincipal = requireNamedPrincipal;
     }
 
-    public String getDefaultSubClaim() {
+    public String getDefaultSubjectClaim() {
         return defaultSubClaim;
     }
 
-    public void setDefaultSubClaim(final String defaultSubClaim) {
+    public void setDefaultSubjectClaim(final String defaultSubClaim) {
         this.defaultSubClaim = defaultSubClaim;
     }
 
-    public String getSubPath() {
+    public String getSubjectPath() {
         return subPath;
     }
 
-    public void setSubPath(final String subPath) {
+    public void setSubjectPath(final String subPath) {
         this.subPath = subPath;
     }
 

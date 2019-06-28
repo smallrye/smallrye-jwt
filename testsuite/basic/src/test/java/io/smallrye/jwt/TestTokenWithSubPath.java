@@ -34,7 +34,7 @@ public class TestTokenWithSubPath extends Arquillian {
     @Test(groups = TEST_GROUP_JWT, description = "validate the custom sub claim is available on the path")
     public void subClaimIsAvailableOnPath() throws Exception {
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo((RSAPublicKey) publicKey, TEST_ISSUER);
-        contextInfo.setSubPath("realm/access/sub/principal");
+        contextInfo.setSubjectPath("realm/access/sub/principal");
         JWTCallerPrincipalFactory factory = JWTCallerPrincipalFactory.instance();
         JsonWebToken jwt = factory.parse(token, contextInfo);
         String sub = jwt.getSubject();
@@ -45,7 +45,7 @@ public class TestTokenWithSubPath extends Arquillian {
     public void subClaimIsNotAvailableOnTooDeepPath() throws Exception {
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo((RSAPublicKey) publicKey, TEST_ISSUER);
         contextInfo.setRequireNamedPrincipal(false);
-        contextInfo.setSubPath("realm/access/sub/principal/5");
+        contextInfo.setSubjectPath("realm/access/sub/principal/5");
         JWTCallerPrincipalFactory factory = JWTCallerPrincipalFactory.instance();
         JsonWebToken jwt = factory.parse(token, contextInfo);
         Assert.assertNull(jwt.getSubject());
@@ -55,7 +55,7 @@ public class TestTokenWithSubPath extends Arquillian {
     public void subClaimIsNotAvailableIfClaimIsNotString() throws Exception {
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo((RSAPublicKey) publicKey, TEST_ISSUER);
         contextInfo.setRequireNamedPrincipal(false);
-        contextInfo.setSubPath("realm/access/sub");
+        contextInfo.setSubjectPath("realm/access/sub");
         JWTCallerPrincipalFactory factory = JWTCallerPrincipalFactory.instance();
         JsonWebToken jwt = factory.parse(token, contextInfo);
         Assert.assertNull(jwt.getSubject());
@@ -65,7 +65,7 @@ public class TestTokenWithSubPath extends Arquillian {
     public void subClaimIsNotAvailableOnWrongPath() throws Exception {
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo((RSAPublicKey) publicKey, TEST_ISSUER);
         contextInfo.setRequireNamedPrincipal(false);
-        contextInfo.setSubPath("realm/access/user/principal");
+        contextInfo.setSubjectPath("realm/access/user/principal");
         JWTCallerPrincipalFactory factory = JWTCallerPrincipalFactory.instance();
         JsonWebToken jwt = factory.parse(token, contextInfo);
         Assert.assertNull(jwt.getSubject());

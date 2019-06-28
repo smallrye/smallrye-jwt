@@ -51,7 +51,7 @@
 
   <modules>
     <module>implementation</module>
-    <module>tck</module>
+    <module>testsuite</module>
     <module>docs</module>
   </modules>
 

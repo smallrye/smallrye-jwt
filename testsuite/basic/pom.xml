@@ -21,13 +21,13 @@
 
   <parent>
     <groupId>io.smallrye</groupId>
-    <artifactId>smallrye-jwt-parent-1.1</artifactId>
+    <artifactId>smallrye-jwt-testsuite-parent-1.1</artifactId>
     <version>2.0.0-SNAPSHOT</version>
   </parent>
 
-  <artifactId>smallrye-jwt-tck</artifactId>
+  <artifactId>smallrye-jwt-testsuite-basic</artifactId>
 
-  <name>SmallRye: MicroProfile JWT TCK</name>
+  <name>SmallRye: MicroProfile JWT Basic Testsuite</name>
 
   <dependencies>
     <!-- Arquillian extension SPI -->
@@ -85,24 +85,10 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
         <version>2.22.2</version>
-
         <configuration>
-          <systemPropertyVariables>
-            <!-- Uncomment to run thorntail v2 with debugging enabled
-            -->
-            <swarm.debug.port>8888</swarm.debug.port>
-            <swarm.logging>DEBUG</swarm.logging>
-          </systemPropertyVariables>
-          <redirectTestOutputToFile>true</redirectTestOutputToFile>
-          <!--
-          <suiteXmlFiles>
-            <suiteXmlFile>tck-suite.xml</suiteXmlFile>
-          </suiteXmlFiles>
-          <forkCount>0</forkCount>
-        -->
+           <redirectTestOutputToFile>true</redirectTestOutputToFile>
         </configuration>
       </plugin>
-
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-install-plugin</artifactId>
