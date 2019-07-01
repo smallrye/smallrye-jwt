@@ -23,6 +23,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.eclipse.microprofile.jwt.Claims;
 import org.jboss.logging.Logger;
 import org.jose4j.jws.AlgorithmIdentifiers;
 
@@ -47,27 +48,28 @@ public class SmallryeJwtUtils {
     }
 
     public static void setContextSubPath(JWTAuthContextInfo contextInfo, Optional<String> subPath) {
-        if (subPath != null && subPath.isPresent()) {
-            final String[] pathSegments = subPath.get().split("/");
-            if (MAX_PATH_DEPTH < pathSegments.length) {
-                log.errorf("Sub path configuration will be ignored because its depth is too large:"
-                        + " %d, maximum depth is %d.", pathSegments.length, MAX_PATH_DEPTH);
-            } else {
-                contextInfo.setSubPath(subPath.get());
-            }
+        if (checkClaimPath(Claims.sub.name(), subPath)) {
+            contextInfo.setSubjectPath(subPath.get());
         }
     }
 
     public static void setContextGroupsPath(JWTAuthContextInfo contextInfo, Optional<String> groupsPath) {
-        if (groupsPath != null && groupsPath.isPresent()) {
-            final String[] pathSegments = groupsPath.get().split("/");
+        if (checkClaimPath(Claims.groups.name(), groupsPath)) {
+            contextInfo.setGroupsPath(groupsPath.get());
+        }
+    }
+
+    private static boolean checkClaimPath(String claimName, Optional<String> claimPath) {
+        if (claimPath != null && claimPath.isPresent()) {
+            final String[] pathSegments = claimPath.get().split("/");
             if (MAX_PATH_DEPTH < pathSegments.length) {
-                log.errorf("Groups path configuration will be ignored because its depth is too large:"
+                log.errorf("path." + claimName + " configuration will be ignored because the path depth is too large:"
                         + " %d, maximum depth is %d.", pathSegments.length, MAX_PATH_DEPTH);
             } else {
-                contextInfo.setGroupsPath(groupsPath.get());
+                return true;
             }
         }
+        return false;
     }
 
     public static void setContextTokenCookie(JWTAuthContextInfo contextInfo, Optional<String> cookieName) {

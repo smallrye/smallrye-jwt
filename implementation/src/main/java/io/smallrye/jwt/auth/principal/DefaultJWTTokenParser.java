@@ -88,22 +88,16 @@ public class DefaultJWTTokenParser {
             claimsSet.setClaim(Claims.raw_token.name(), token);
 
             if (!claimsSet.hasClaim(Claims.sub.name())) {
-                String sub = checkSubPath(authContextInfo, claimsSet);
-                if (sub == null && authContextInfo.getDefaultSubClaim() != null) {
-                    sub = authContextInfo.getDefaultSubClaim();
-                }
+                String sub = findSubject(authContextInfo, claimsSet);
                 claimsSet.setClaim(Claims.sub.name(), sub);
             }
 
             if (authContextInfo.isRequireNamedPrincipal()) {
-                validateSub(jwtContext);
+                checkNameClaims(jwtContext);
             }
 
             if (!claimsSet.hasClaim(Claims.groups.name())) {
-                List<String> groups = checkGroupsPath(authContextInfo, claimsSet);
-                if (groups == null && authContextInfo.getDefaultGroupsClaim() != null) {
-                    groups = Collections.singletonList(authContextInfo.getDefaultGroupsClaim());
-                }
+                List<String> groups = findGroups(authContextInfo, claimsSet);
                 claimsSet.setClaim(Claims.groups.name(), groups);
             }
 
@@ -137,7 +131,7 @@ public class DefaultJWTTokenParser {
 
     }
 
-    private void validateSub(JwtContext jwtContext) throws InvalidJwtException {
+    private void checkNameClaims(JwtContext jwtContext) throws InvalidJwtException {
         JwtClaims claimsSet = jwtContext.getJwtClaims();
         final boolean hasPrincipalClaim = Stream.of(Claims.sub.name(), Claims.upn.name(), Claims.preferred_username.name())
                 .map(claimsSet::getClaimValue)
@@ -149,81 +143,61 @@ public class DefaultJWTTokenParser {
         }
     }
 
-    private String checkSubPath(JWTAuthContextInfo authContextInfo, JwtClaims claimsSet) {
-        if (authContextInfo.getSubPath() != null) {
-            final String[] pathSegments = authContextInfo.getSubPath().split("/");
-            return findSub(authContextInfo, claimsSet.getClaimsMap(), pathSegments, 0);
-        }
-        return null;
-    }
-
-    private String findSub(
-            JWTAuthContextInfo authContextInfo,
-            Map<String, Object> claimsMap,
-            String[] pathArray,
-            int step) {
-        Object claimValue = claimsMap.get(pathArray[step]);
-        if (claimValue == null) {
-            logger.warnf("No claim exists at the path %s at segment %s",
-                    authContextInfo.getGroupsPath(), pathArray[step]);
-        } else if (step + 1 < pathArray.length) {
-            if (claimValue instanceof Map) {
-                @SuppressWarnings("unchecked")
-                Map<String, Object> nextMap = (Map<String, Object>) claimValue;
-                int nextStep = step + 1;
-                return findSub(authContextInfo, nextMap, pathArray, nextStep);
+    private String findSubject(JWTAuthContextInfo authContextInfo, JwtClaims claimsSet) {
+        if (authContextInfo.getSubjectPath() != null) {
+            final String[] pathSegments = authContextInfo.getSubjectPath().split("/");
+            Object claimValue = findClaimValue(authContextInfo.getSubjectPath(), claimsSet.getClaimsMap(), pathSegments, 0);
+            if (claimValue instanceof String) {
+                return (String) claimValue;
             } else {
-                logger.warnf("Claim value at the path %s is not a json object", authContextInfo.getGroupsPath());
+                logger.warnf("Claim value at the path %s is not a String", authContextInfo.getSubjectPath());
             }
-        } else if (claimValue instanceof String) {
-            return (String) claimValue;
-        } else {
-            // last segment
-            logger.warnf("Claim value at the path %s is not a String", authContextInfo.getGroupsPath());
+        }
+        if (authContextInfo.getDefaultSubjectClaim() != null) {
+            return authContextInfo.getDefaultSubjectClaim();
         }
         return null;
     }
 
-    private List<String> checkGroupsPath(JWTAuthContextInfo authContextInfo, JwtClaims claimsSet) {
+    private List<String> findGroups(JWTAuthContextInfo authContextInfo, JwtClaims claimsSet) {
         if (authContextInfo.getGroupsPath() != null) {
             final String[] pathSegments = authContextInfo.getGroupsPath().split("/");
-            return findGroups(authContextInfo, claimsSet.getClaimsMap(), pathSegments, 0);
+            Object claimValue = findClaimValue(authContextInfo.getGroupsPath(), claimsSet.getClaimsMap(), pathSegments, 0);
+            if (claimValue instanceof List) {
+                try {
+                    @SuppressWarnings("unchecked")
+                    List<String> groups = (List<String>) claimValue;
+                    return groups;
+                } catch (ClassCastException e) {
+                    logger.warnf("Claim value at the path %s is not an array of strings", authContextInfo.getGroupsPath());
+                }
+            } else {
+                logger.warnf("Claim value at the path %s is not an array", authContextInfo.getGroupsPath());
+            }
         }
+        if (authContextInfo.getDefaultGroupsClaim() != null) {
+            return Collections.singletonList(authContextInfo.getDefaultGroupsClaim());
+        }
+
         return null;
     }
 
-    private List<String> findGroups(JWTAuthContextInfo authContextInfo,
-            Map<String, Object> claimsMap,
-            String[] pathArray,
-            int step) {
-
+    private Object findClaimValue(String claimPath, Map<String, Object> claimsMap, String[] pathArray, int step) {
         Object claimValue = claimsMap.get(pathArray[step]);
         if (claimValue == null) {
-            logger.warnf("No claim exists at the path %s at segment %s",
-                    authContextInfo.getGroupsPath(), pathArray[step]);
+            logger.warnf("No claim exists at the path %s at segment %s", claimPath, pathArray[step]);
         } else if (step + 1 < pathArray.length) {
             if (claimValue instanceof Map) {
                 @SuppressWarnings("unchecked")
                 Map<String, Object> nextMap = (Map<String, Object>) claimValue;
                 int nextStep = step + 1;
-                return findGroups(authContextInfo, nextMap, pathArray, nextStep);
+                return findClaimValue(claimPath, nextMap, pathArray, nextStep);
             } else {
-                logger.warnf("Claim value at the path %s is not a json object", authContextInfo.getGroupsPath());
+                logger.warnf("Claim value at the path %s is not a json object", claimPath);
+                return null;
             }
-        } else if (claimValue instanceof List) {
-            // last segment
-            try {
-                @SuppressWarnings("unchecked")
-                List<String> groups = (List<String>) claimValue;
-                return groups;
-            } catch (ClassCastException e) {
-                logger.warnf("Claim value at the path %s is not an array of strings", authContextInfo.getGroupsPath());
-            }
-        } else {
-            // last segment
-            logger.warnf("Claim value at the path %s is not an array", authContextInfo.getGroupsPath());
         }
-        return null;
+        return claimValue;
     }
 
     protected VerificationKeyResolver getKeyResolver(JWTAuthContextInfo authContextInfo) throws UnresolvableKeyException {

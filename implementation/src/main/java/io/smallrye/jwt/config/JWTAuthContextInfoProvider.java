@@ -175,8 +175,10 @@ public class JWTAuthContextInfoProvider {
     private Optional<Integer> expGracePeriodSecs;
 
     /**
-     * JWK cache refresh interval in minutes. It will be ignored unless the 'mp.jwt.verify.publickey.location' property points to the HTTPS URL based JWK set.
-     * Note this property will only be used if no HTTP Cache-Control response header with a positive 'max-age' parameter value is available.
+     * JWK cache refresh interval in minutes. It will be ignored unless the 'mp.jwt.verify.publickey.location' property points
+     * to the HTTPS URL based JWK set.
+     * Note this property will only be used if no HTTP Cache-Control response header with a positive 'max-age' parameter value
+     * is available.
      */
     @Inject
     @ConfigProperty(name = "smallrye.jwt.jwks.refresh-interval", defaultValue = "60")
@@ -244,7 +246,7 @@ public class JWTAuthContextInfoProvider {
         }
         SmallryeJwtUtils.setContextTokenCookie(contextInfo, tokenCookie);
         if (defaultSubClaim != null && defaultSubClaim.isPresent()) {
-            contextInfo.setDefaultSubClaim(defaultSubClaim.get());
+            contextInfo.setDefaultSubjectClaim(defaultSubClaim.get());
         }
         SmallryeJwtUtils.setContextSubPath(contextInfo, subPath);
         if (defaultGroupsClaim != null && defaultGroupsClaim.isPresent()) {
