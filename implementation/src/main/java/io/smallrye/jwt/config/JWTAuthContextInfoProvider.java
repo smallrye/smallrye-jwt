@@ -34,8 +34,8 @@ import io.smallrye.jwt.SmallryeJwtUtils;
 import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
 
 /**
- * A CDI provider for the JWTAuthContextInfo that obtains the necessary information from
- * MP config properties.
+ * A CDI provider for the JWTAuthContextInfo that obtains the necessary
+ * information from MP config properties.
  */
 @Dependent
 public class JWTAuthContextInfoProvider {
@@ -51,7 +51,7 @@ public class JWTAuthContextInfoProvider {
      * Create JWTAuthContextInfoProvider with the public key and issuer
      * 
      * @param publicKey the public key value
-     * @param issuer the issuer
+     * @param issuer    the issuer
      * @return
      */
     public static JWTAuthContextInfoProvider createWithKey(String publicKey, String issuer) {
@@ -62,7 +62,7 @@ public class JWTAuthContextInfoProvider {
      * Create JWTAuthContextInfoProvider with the public key location and issuer
      * 
      * @param publicKeyLocation the public key location
-     * @param issuer the issuer
+     * @param issuer            the issuer
      * @return
      */
     public static JWTAuthContextInfoProvider createWithKeyLocation(String publicKeyLocation, String issuer) {
@@ -108,63 +108,69 @@ public class JWTAuthContextInfoProvider {
 
     // SmallRye JWT specific properties
     /**
-     * HTTP header which is expected to contain a JWT token, default value is 'Authorization'
+     * HTTP header which is expected to contain a JWT token, default value is
+     * 'Authorization'
      */
     @Inject
     @ConfigProperty(name = "smallrye.jwt.token.header", defaultValue = AUTHORIZATION_HEADER)
     private String tokenHeader;
 
     /**
-     * Cookie name containing a JWT token. This property is ignored unless the "smallrye.jwt.token.header" is set to 'Cookie'
+     * Cookie name containing a JWT token. This property is ignored unless the
+     * "smallrye.jwt.token.header" is set to 'Cookie'
      */
     @Inject
     @ConfigProperty(name = "smallrye.jwt.token.cookie")
     private Optional<String> tokenCookie;
 
     /**
-     * The key identifier ('kid'). If it is set then if the token contains 'kid' then both values must match. It will also be
-     * used to
-     * select a JWK key from a JWK set.
+     * The key identifier ('kid'). If it is set then if the token contains 'kid'
+     * then both values must match. It will also be used to select a JWK key from a
+     * JWK set.
      */
     @Inject
     @ConfigProperty(name = "smallrye.jwt.token.kid")
     private Optional<String> tokenKeyId;
 
     /**
-     * Check that the JWT has at least one of 'sub', 'upn' or 'preferred_user_name' set. If not the JWT validation will
-     * fail.
+     * Check that the JWT has at least one of 'sub', 'upn' or 'preferred_user_name'
+     * set. If not the JWT validation will fail.
      */
     @Inject
     @ConfigProperty(name = "smallrye.jwt.require.named-principal", defaultValue = "false")
     private Optional<Boolean> requireNamedPrincipal;
 
     /**
-     * Default subject claim value. This property can be used to support the JWT tokens without a 'sub' claim.
+     * Default subject claim value. This property can be used to support the JWT
+     * tokens without a 'sub' claim.
      */
     @Inject
     @ConfigProperty(name = "smallrye.jwt.claims.sub")
     private Optional<String> defaultSubClaim;
 
     /**
-     * Path to the claim containing the sub. It starts from the top level JSON object and
-     * can contain multiple segments where each segment represents a JSON object name only, example: "realm/sub".
-     * This property can be used if a token has no 'sub' claim but has the sub set in a different claim.
+     * Path to the claim containing the sub. It starts from the top level JSON
+     * object and can contain multiple segments where each segment represents a JSON
+     * object name only, example: "realm/sub". This property can be used if a token
+     * has no 'sub' claim but has the sub set in a different claim.
      */
     @Inject
     @ConfigProperty(name = "smallrye.jwt.path.sub")
     private Optional<String> subPath;
 
     /**
-     * Default groups claim value. This property can be used to support the JWT tokens without a 'groups' claim.
+     * Default groups claim value. This property can be used to support the JWT
+     * tokens without a 'groups' claim.
      */
     @Inject
     @ConfigProperty(name = "smallrye.jwt.claims.groups")
     private Optional<String> defaultGroupsClaim;
 
     /**
-     * Path to the claim containing an array of groups. It starts from the top level JSON object and
-     * can contain multiple segments where each segment represents a JSON object name only, example: "realm/groups".
-     * This property can be used if a token has no 'groups' claim but has the groups set in a different claim.
+     * Path to the claim containing an array of groups. It starts from the top level
+     * JSON object and can contain multiple segments where each segment represents a
+     * JSON object name only, example: "realm/groups". This property can be used if
+     * a token has no 'groups' claim but has the groups set in a different claim.
      */
     @Inject
     @ConfigProperty(name = "smallrye.jwt.path.groups")
@@ -175,17 +181,18 @@ public class JWTAuthContextInfoProvider {
     private Optional<Integer> expGracePeriodSecs;
 
     /**
-     * JWK cache refresh interval in minutes. It will be ignored unless the 'mp.jwt.verify.publickey.location' property points
-     * to the HTTPS URL based JWK set.
-     * Note this property will only be used if no HTTP Cache-Control response header with a positive 'max-age' parameter value
-     * is available.
+     * JWK cache refresh interval in minutes. It will be ignored unless the
+     * 'mp.jwt.verify.publickey.location' property points to the HTTPS URL based JWK
+     * set. Note this property will only be used if no HTTP Cache-Control response
+     * header with a positive 'max-age' parameter value is available.
      */
     @Inject
     @ConfigProperty(name = "smallrye.jwt.jwks.refresh-interval", defaultValue = "60")
     private Optional<Integer> jwksRefreshInterval;
 
     /**
-     * List of supported JSON Web Algorithm RSA and Elliptic Curve signing algorithms, default is RS256.
+     * List of supported JSON Web Algorithm RSA and Elliptic Curve signing
+     * algorithms, default is RS256.
      */
     @Inject
     @ConfigProperty(name = "smallrye.jwt.whitelist.algorithms")
@@ -195,14 +202,14 @@ public class JWTAuthContextInfoProvider {
     @ApplicationScoped
     Optional<JWTAuthContextInfo> getOptionalContextInfo() {
         // Log the config values
-        log.debugf("init, mpJwtPublicKey=%s, mpJwtIssuer=%s, mpJwtLocation=%s",
-                mpJwtPublicKey.orElse("missing"), mpJwtIssuer, mpJwtLocation.orElse("missing"));
+        log.debugf("init, mpJwtPublicKey=%s, mpJwtIssuer=%s, mpJwtLocation=%s", mpJwtPublicKey.orElse("missing"),
+                mpJwtIssuer, mpJwtLocation.orElse("missing"));
         /*
-         * FIXME Due to a bug in MP-Config (https://github.com/wildfly-extras/wildfly-microprofile-config/issues/43) we need to
-         * set all
-         * values to "NONE" as Optional Strings are populated with a ConfigProperty.defaultValue if they are absent. Fix this
-         * when MP-Config
-         * is repaired.
+         * FIXME Due to a bug in MP-Config
+         * (https://github.com/wildfly-extras/wildfly-microprofile-config/issues/43) we
+         * need to set all values to "NONE" as Optional Strings are populated with a
+         * ConfigProperty.defaultValue if they are absent. Fix this when MP-Config is
+         * repaired.
          */
         if (NONE.equals(mpJwtPublicKey.get()) && NONE.equals(mpJwtLocation.get())) {
             log.debugf("Neither mpJwtPublicKey nor mpJwtLocation properties are configured,"
@@ -216,51 +223,40 @@ public class JWTAuthContextInfoProvider {
             decodeMpJwtPublicKey(contextInfo);
         }
 
-        if (mpJwtIssuer != null && !mpJwtIssuer.equals(NONE)) {
+        if (!mpJwtIssuer.equals(NONE)) {
             contextInfo.setIssuedBy(mpJwtIssuer);
         } else {
-            // If there is no expected issuer configured, don't validate it; new in MP-JWT 1.1
+            // If there is no expected issuer configured, don't validate it; new in MP-JWT
+            // 1.1
             contextInfo.setRequireIssuer(false);
         }
-
-        if (mpJwtRequireIss != null && mpJwtRequireIss.isPresent()) {
-            contextInfo.setRequireIssuer(mpJwtRequireIss.get());
-        } else {
-            // Default is to require iss claim
-            contextInfo.setRequireIssuer(true);
-        }
+        // Default is to require iss claim
+        contextInfo.setRequireIssuer(mpJwtRequireIss.orElse(true));
 
         // The MP-JWT location can be a PEM, JWK or JWKS
         if (mpJwtLocation.isPresent() && !NONE.equals(mpJwtLocation.get())) {
             contextInfo.setPublicKeyLocation(mpJwtLocation.get());
         }
-        if (tokenHeader != null) {
-            contextInfo.setTokenHeader(tokenHeader);
-        }
 
-        if (tokenKeyId != null && tokenKeyId.isPresent()) {
-            contextInfo.setTokenKeyId(tokenKeyId.get());
-        }
-        if (requireNamedPrincipal != null && requireNamedPrincipal.isPresent()) {
-            contextInfo.setRequireNamedPrincipal(requireNamedPrincipal.get());
-        }
+        contextInfo.setTokenHeader(tokenHeader);
+
+        tokenKeyId.ifPresent(value -> contextInfo.setTokenKeyId(value));
+
+        requireNamedPrincipal.ifPresent(value -> contextInfo.setRequireNamedPrincipal(value));
+
         SmallryeJwtUtils.setContextTokenCookie(contextInfo, tokenCookie);
-        if (defaultSubClaim != null && defaultSubClaim.isPresent()) {
-            contextInfo.setDefaultSubjectClaim(defaultSubClaim.get());
-        }
+
+        defaultSubClaim.ifPresent(value -> contextInfo.setDefaultSubjectClaim(value));
+
         SmallryeJwtUtils.setContextSubPath(contextInfo, subPath);
-        if (defaultGroupsClaim != null && defaultGroupsClaim.isPresent()) {
-            contextInfo.setDefaultGroupsClaim(defaultGroupsClaim.get());
-        }
+
+        defaultGroupsClaim.ifPresent(value -> contextInfo.setDefaultGroupsClaim(value));
+
         SmallryeJwtUtils.setContextGroupsPath(contextInfo, groupsPath);
 
-        if (expGracePeriodSecs != null && expGracePeriodSecs.isPresent()) {
-            contextInfo.setExpGracePeriodSecs(expGracePeriodSecs.get());
-        }
+        expGracePeriodSecs.ifPresent(value -> contextInfo.setExpGracePeriodSecs(value));
 
-        if (this.jwksRefreshInterval != null && jwksRefreshInterval.isPresent()) {
-            contextInfo.setJwksRefreshInterval(jwksRefreshInterval.get());
-        }
+        jwksRefreshInterval.ifPresent(value -> contextInfo.setJwksRefreshInterval(value));
 
         SmallryeJwtUtils.setWhitelistAlgorithms(contextInfo, whitelistAlgorithms);
 
@@ -312,7 +308,7 @@ public class JWTAuthContextInfoProvider {
     }
 
     public Optional<String> getTokenKeyId() {
-        return tokenCookie;
+        return tokenKeyId;
     }
 
     public Optional<Integer> getExpGracePeriodSecs() {
