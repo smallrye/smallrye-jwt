@@ -312,7 +312,7 @@ public class JWTAuthContextInfoProvider {
     }
 
     public Optional<String> getTokenKeyId() {
-        return tokenCookie;
+        return tokenKeyId;
     }
 
     public Optional<Integer> getExpGracePeriodSecs() {
