@@ -161,7 +161,7 @@ public abstract class JWTCallerPrincipal implements JsonWebToken {
     }
 
     protected JsonValue wrapClaimValue(Object value) {
-        JsonValue jsonValue = null;
+        JsonValue jsonValue = JsonValue.NULL;
         if (value instanceof JsonValue) {
             // This may already be a JsonValue
             jsonValue = (JsonValue) value;
