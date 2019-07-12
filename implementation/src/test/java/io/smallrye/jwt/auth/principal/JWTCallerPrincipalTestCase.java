@@ -130,7 +130,7 @@ public class JWTCallerPrincipalTestCase {
         assertTrue(result instanceof JsonArray);
         JsonArray resultArray = result.asJsonArray();
         assertEquals(expResult.size(), resultArray.size());
-        assertEquals(expResult.getString(0), resultArray.getString(0));
+        assertEquals(expResult.get(0), resultArray.get(0));
     }
 
     @Test
