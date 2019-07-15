@@ -114,7 +114,7 @@ public class JWTCallerPrincipalTestCase {
 
     @Test
     public void testWrapClaimValueNull() {
-        JsonValue expResult = JsonValue.NULL;
+        JsonValue expResult = null;
         JsonValue result = target.wrapClaimValue(null);
 
         assertEquals(expResult, result);
@@ -136,7 +136,6 @@ public class JWTCallerPrincipalTestCase {
     @Test
     public void testWrapClaimValueMapWithNull() {
         JsonObject expResult = Json.createObjectBuilder()
-                .add("a", NULL)
                 .build();
 
         Map<String, String> value = new HashMap<>();

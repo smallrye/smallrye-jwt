@@ -16,6 +16,8 @@
  */
 package io.smallrye.jwt.auth.principal;
 
+import static javax.json.JsonValue.NULL;
+
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -155,15 +157,13 @@ public abstract class JWTCallerPrincipal implements JsonWebToken {
                 builder.add(entry.getKey(), flag);
             } else if (entryValue instanceof String) {
                 builder.add(entry.getKey(), entryValue.toString());
-            } else if (entryValue == null) {
-                builder.add(entry.getKey(), JsonValue.NULL);
             }
         }
         return builder.build();
     }
 
     protected JsonValue wrapClaimValue(Object value) {
-        JsonValue jsonValue = JsonValue.NULL;
+        JsonValue jsonValue = null;
         if (value instanceof JsonValue) {
             // This may already be a JsonValue
             jsonValue = (JsonValue) value;
@@ -194,6 +194,8 @@ public abstract class JWTCallerPrincipal implements JsonWebToken {
             for (Object element : list) {
                 if (element instanceof String) {
                     arrayBuilder.add(element.toString());
+                } else if (element == null) {
+                    arrayBuilder.add(NULL);
                 } else {
                     JsonValue jvalue = wrapClaimValue(element);
                     arrayBuilder.add(jvalue);
