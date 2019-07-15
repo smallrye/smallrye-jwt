@@ -54,7 +54,7 @@ public class TestTokenWithGroupsPath extends Arquillian {
         }
     }
 
-    @Test(groups = TEST_GROUP_JWT, description = "validate the custom groups claim is available on the path")
+    @Test(groups = TEST_GROUP_JWT, description = "validate the groups claim can be mapped from a custom array claim")
     public void groupsIsAvailableInCustomArray() throws Exception {
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo((RSAPublicKey) publicKey, TEST_ISSUER);
         contextInfo.setGroupsPath("realm/access/groups/array");
@@ -65,7 +65,7 @@ public class TestTokenWithGroupsPath extends Arquillian {
         Assert.assertTrue(groups.contains("microprofile_jwt_user"));
     }
 
-    @Test(groups = TEST_GROUP_JWT, description = "validate the custom groups claim is available on the path")
+    @Test(groups = TEST_GROUP_JWT, description = "validate the groups claim can be mapped from a standard scope claim")
     public void groupsIsAvailableInInScopeClaim() throws Exception {
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo((RSAPublicKey) publicKey, TEST_ISSUER);
         contextInfo.setGroupsPath("scope");
