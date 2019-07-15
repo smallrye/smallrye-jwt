@@ -54,15 +54,27 @@ public class TestTokenWithGroupsPath extends Arquillian {
         }
     }
 
-    @Test(groups = TEST_GROUP_JWT, description = "validate the custom groups claim is available on the path")
-    public void groupsClaimIsAvailableOnPath() throws Exception {
+    @Test(groups = TEST_GROUP_JWT, description = "validate the groups claim can be mapped from a custom array claim")
+    public void groupsIsAvailableInCustomArray() throws Exception {
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo((RSAPublicKey) publicKey, TEST_ISSUER);
         contextInfo.setGroupsPath("realm/access/groups/array");
         JWTCallerPrincipalFactory factory = JWTCallerPrincipalFactory.instance();
         JsonWebToken jwt = factory.parse(token, contextInfo);
         Set<String> groups = jwt.getGroups();
-        Assert.assertEquals(1, groups.size());
+        Assert.assertEquals(groups.size(), 1);
         Assert.assertTrue(groups.contains("microprofile_jwt_user"));
+    }
+
+    @Test(groups = TEST_GROUP_JWT, description = "validate the groups claim can be mapped from a standard scope claim")
+    public void groupsIsAvailableInInScopeClaim() throws Exception {
+        JWTAuthContextInfo contextInfo = new JWTAuthContextInfo((RSAPublicKey) publicKey, TEST_ISSUER);
+        contextInfo.setGroupsPath("scope");
+        JWTCallerPrincipalFactory factory = JWTCallerPrincipalFactory.instance();
+        JsonWebToken jwt = factory.parse(token, contextInfo);
+        Set<String> groups = jwt.getGroups();
+        Assert.assertEquals(groups.size(), 2);
+        Assert.assertTrue(groups.contains("write"));
+        Assert.assertTrue(groups.contains("read"));
     }
 
     @Test(groups = TEST_GROUP_JWT, description = "validate the custom groups claim is not available on the long path")
