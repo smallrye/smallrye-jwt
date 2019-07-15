@@ -17,11 +17,14 @@
 package io.smallrye.jwt.auth.principal;
 
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.StringReader;
 import java.io.StringWriter;
+import java.net.URI;
 import java.net.URL;
 import java.security.Key;
 import java.security.PublicKey;
@@ -157,21 +160,36 @@ public class KeyLocationResolver implements VerificationKeyResolver {
     }
 
     private void loadContents() throws Exception {
-        final String location = authContextInfo.getPublicKeyLocation();
-        if (location.startsWith("https:")) {
-            httpsJwks = new HttpsJwks(location);
+        final URI location = URI.create(authContextInfo.getPublicKeyLocation());
+
+        if ("https".equals(location.getScheme())) {
+            httpsJwks = new HttpsJwks(authContextInfo.getPublicKeyLocation());
             httpsJwks.setDefaultCacheDuration(authContextInfo.getJwksRefreshInterval().longValue() * 60L);
             return;
         }
 
-        StringWriter contents = new StringWriter();
-        final InputStream is;
-        if (location.startsWith("classpath:") || location.indexOf(':') < 0) {
-            is = getAsResource(location);
+        InputStream is = null;
+
+        if (location.getScheme() != null) {
+            if ("classpath".equals(location.getScheme())) {
+                is = getAsClasspathResource(location.getSchemeSpecificPart());
+            } else if ("file".equals(location.getScheme())) {
+                is = getAsFileSystemResource(location.getRawSchemeSpecificPart());
+            } else {
+                is = new URL(authContextInfo.getPublicKeyLocation()).openStream();
+            }
         } else {
-            URL locationURL = new URL(location);
-            is = locationURL.openStream();
+            is = getAsClasspathResource(authContextInfo.getPublicKeyLocation());
+            if (is == null) {
+                is = getAsFileSystemResource(authContextInfo.getPublicKeyLocation());
+            }
         }
+
+        if (is == null) {
+            throw new IOException("No resource with the named " + location + " location exists");
+        }
+
+        StringWriter contents = new StringWriter();
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(is))) {
             String line = reader.readLine();
             while (line != null) {
@@ -185,20 +203,12 @@ public class KeyLocationResolver implements VerificationKeyResolver {
         content = contents.toString();
     }
 
-    private static InputStream getAsResource(String location) throws IOException {
+    private static InputStream getAsFileSystemResource(String publicKeyLocation) throws IOException {
+        File f = new File(publicKeyLocation);
+        return f.exists() ? new FileInputStream(f) : null;
+    }
 
-        final String path;
-        if (location.startsWith("classpath:")) {
-            path = location.substring(10);
-        } else {
-            path = location;
-        }
-        ClassLoader loader = Thread.currentThread().getContextClassLoader();
-        final InputStream is = loader.getResourceAsStream(path);
-        if (is == null) {
-            throw new IOException("No resource with named " + location + " exists");
-        }
-
-        return is;
+    private static InputStream getAsClasspathResource(String location) throws IOException {
+        return Thread.currentThread().getContextClassLoader().getResourceAsStream(location);
     }
 }

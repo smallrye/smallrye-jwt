@@ -76,13 +76,23 @@ public class KeyLocationResolverTest {
     }
 
     @Test
-    public void testVerifyWithPemKey() throws Exception {
+    public void testVerifyWithClassPathPemKey() throws Exception {
         verifyToken("key3", null, "publicKey.pem");
     }
 
     @Test
-    public void testVerifyWithPemKeyWithMatchingKid() throws Exception {
-        verifyToken("key3", null, "publicKey.pem");
+    public void testVerifyWithClassPathPemKey2() throws Exception {
+        verifyToken("key3", null, "classpath:publicKey.pem");
+    }
+
+    @Test
+    public void testVerifyWithFileSystemPemKey() throws Exception {
+        verifyToken("key3", null, "target/test-classes/publicKey.pem");
+    }
+
+    @Test
+    public void testVerifyWithFileSystemPemKey2() throws Exception {
+        verifyToken("key3", null, "file:target/test-classes/publicKey.pem");
     }
 
     private static void verifyToken(String kid, String requiredKeyId, String publicKeyLocation) throws Exception {
