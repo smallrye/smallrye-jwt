@@ -192,6 +192,8 @@ public abstract class JWTCallerPrincipal implements JsonWebToken {
             for (Object element : list) {
                 if (element instanceof String) {
                     arrayBuilder.add(element.toString());
+                } else if (element == null) {
+                    arrayBuilder.add(JsonValue.NULL);
                 } else {
                     JsonValue jvalue = wrapClaimValue(element);
                     arrayBuilder.add(jvalue);
