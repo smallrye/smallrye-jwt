@@ -16,5 +16,17 @@
             ]
          }
        }
-    }
+    },
+    "scope": "read write",
+    customClaim": {
+    "customValue1": [
+      "read"
+    ],
+    "customValue2": [
+      null
+    ],
+    "customValue3": [
+      "admin"
+    ]
+  }
 }

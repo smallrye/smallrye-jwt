@@ -17,6 +17,7 @@
 package io.smallrye.jwt.auth.principal;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -43,6 +44,7 @@ import org.jose4j.lang.UnresolvableKeyException;
 public class DefaultJWTTokenParser {
     private static Logger logger = Logger.getLogger(DefaultJWTTokenParser.class);
     private static final String ROLE_MAPPINGS = "roleMappings";
+    private static final String SCOPE_CLAIM = "scope";
     private volatile VerificationKeyResolver keyResolver;
 
     public JwtContext parse(final String token, final JWTAuthContextInfo authContextInfo) throws ParseException {
@@ -170,6 +172,12 @@ public class DefaultJWTTokenParser {
                     return groups;
                 } catch (ClassCastException e) {
                     logger.warnf("Claim value at the path %s is not an array of strings", authContextInfo.getGroupsPath());
+                }
+            } else if (pathSegments.length == 1 && SCOPE_CLAIM.equals(pathSegments[0])) {
+                try {
+                    return Arrays.asList(((String) claimValue).split(" "));
+                } catch (ClassCastException e) {
+                    logger.warnf("Claim value is not a string 'scope' claim");
                 }
             } else {
                 logger.warnf("Claim value at the path %s is not an array", authContextInfo.getGroupsPath());
