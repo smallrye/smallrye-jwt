@@ -55,7 +55,8 @@ public class SmallRyeJWTAuthCDIExtension implements Extension {
             try {
                 instance = CDI.current().select(JWTHttpAuthenticationMechanism.class);
                 enabled = instance.isResolvable();
-            } catch (@SuppressWarnings("unused") Throwable e) {
+            } catch (@SuppressWarnings("unused") Exception e) {
+                //Ignore exceptions, consider HTTP authentication mechanism to be disabled
             }
         }
 

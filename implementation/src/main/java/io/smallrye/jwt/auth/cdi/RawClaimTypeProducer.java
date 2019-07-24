@@ -40,6 +40,7 @@ public class RawClaimTypeProducer {
 
     @Produces
     @Claim("")
+    @SuppressWarnings("squid:S1168") // Indicate to Sonar that a null return is acceptable
     Set<String> getClaimAsSet(InjectionPoint ip) {
         log.debugf("getClaimAsSet(%s)", ip);
         if (currentToken == null) {
@@ -48,8 +49,7 @@ public class RawClaimTypeProducer {
 
         String name = getName(ip);
         Optional<Set<String>> value = currentToken.claim(name);
-        Set<String> returnValue = value.orElse(null);
-        return returnValue;
+        return value.orElse(null);
     }
 
     @Produces
@@ -123,10 +123,10 @@ public class RawClaimTypeProducer {
 
     @Produces
     @Claim("")
-    public Optional getOptionalValue(InjectionPoint ip) {
+    public <T> Optional<T> getOptionalValue(InjectionPoint ip) {
         log.debugf("getOptionalValue(%s)", ip);
         if (currentToken == null) {
-            return null;
+            return Optional.empty();
         }
         return currentToken.claim(getName(ip));
     }

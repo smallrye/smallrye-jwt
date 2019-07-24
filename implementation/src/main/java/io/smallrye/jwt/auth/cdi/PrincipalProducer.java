@@ -34,9 +34,6 @@ import org.eclipse.microprofile.jwt.JsonWebToken;
 public class PrincipalProducer {
     private JsonWebToken token;
 
-    public PrincipalProducer() {
-    }
-
     public void setJsonWebToken(JsonWebToken token) {
         this.token = token;
     }
@@ -60,6 +57,7 @@ public class PrincipalProducer {
         }
 
         @Override
+        @SuppressWarnings("squid:S1168") // Indicate to Sonar that a null return is acceptable
         public Set<String> getClaimNames() {
             return null;
         }
