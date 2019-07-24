@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import org.eclipse.microprofile.jwt.Claims;
@@ -51,8 +52,7 @@ public class DefaultJWTTokenParser {
 
         try {
             JwtConsumerBuilder builder = new JwtConsumerBuilder()
-                    .setRequireExpirationTime()
-                    .setSkipDefaultAudienceValidation();
+                    .setRequireExpirationTime();
 
             if (authContextInfo.getWhitelistAlgorithms().isEmpty()) {
                 builder.setJwsAlgorithmConstraints(
@@ -80,6 +80,8 @@ public class DefaultJWTTokenParser {
             } else {
                 builder.setEvaluationTime(NumericDate.fromSeconds(0));
             }
+
+            setExpectedAudience(builder, authContextInfo);
 
             JwtConsumer jwtConsumer = builder.build();
 
@@ -114,6 +116,16 @@ public class DefaultJWTTokenParser {
             throw new ParseException("Failed to verify token", e);
         }
 
+    }
+
+    void setExpectedAudience(JwtConsumerBuilder builder, JWTAuthContextInfo authContextInfo) {
+        final Set<String> expectedAudience = authContextInfo.getExpectedAudience();
+
+        if (expectedAudience != null) {
+            builder.setExpectedAudience(expectedAudience.toArray(new String[0]));
+        } else {
+            builder.setSkipDefaultAudienceValidation();
+        }
     }
 
     private void checkNameClaims(JwtContext jwtContext) throws InvalidJwtException {

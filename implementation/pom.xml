@@ -89,6 +89,32 @@
       <artifactId>javax.json</artifactId>
       <scope>test</scope>
     </dependency>
+    <!-- Use the MP-JWT TCK for utility classes -->
+    <dependency>
+      <groupId>org.eclipse.microprofile.jwt</groupId>
+      <artifactId>microprofile-jwt-auth-tck</artifactId>
+      <scope>test</scope>
+      <!-- Exclude TestNG to prevent warning since this module contains no TestNG cases. -->
+      <exclusions>
+        <exclusion>
+          <groupId>org.testng</groupId>
+          <artifactId>testng</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.microprofile.jwt</groupId>
+      <artifactId>microprofile-jwt-auth-tck</artifactId>
+      <type>test-jar</type>
+      <scope>test</scope>
+      <!-- Exclude TestNG to prevent warning since this module contains no TestNG cases. -->
+      <exclusions>
+        <exclusion>
+          <groupId>org.testng</groupId>
+          <artifactId>testng</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
   </dependencies>
 
   <build>

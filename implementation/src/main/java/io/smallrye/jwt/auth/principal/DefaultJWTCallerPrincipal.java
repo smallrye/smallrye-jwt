@@ -17,6 +17,7 @@ package io.smallrye.jwt.auth.principal;
 
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -72,19 +73,10 @@ public class DefaultJWTCallerPrincipal extends JWTCallerPrincipal {
     public Set<String> getAudience() {
         Set<String> audSet = null;
         try {
-            if (claimsSet.hasClaim(Claims.aud.name())) {
-                List<String> audList = claimsSet.getStringListClaimValue(Claims.aud.name());
-                audSet = new HashSet<>(audList);
-            }
+            // Use LinkedHashSet to preserve iteration order
+            audSet = new LinkedHashSet<>(claimsSet.getAudience());
         } catch (MalformedClaimException e) {
-            try {
-                // Not sent as an array, try a single value
-                String aud = claimsSet.getStringClaimValue(Claims.aud.name());
-                audSet = new HashSet<>();
-                audSet.add(aud);
-            } catch (MalformedClaimException e1) {
-                logger.warn("getAudience failure: ", e);
-            }
+            logger.warnf("getAudience failure: %s", e.getMessage());
         }
         return audSet;
     }
