@@ -144,7 +144,6 @@ public class DefaultJWTTokenParser {
         return null;
     }
 
-    @SuppressWarnings("squid:S1168") // Indicate to Sonar that a null return is acceptable
     private List<String> findGroups(JWTAuthContextInfo authContextInfo, JwtClaims claimsSet) {
         if (authContextInfo.getGroupsPath() != null) {
             final String[] pathSegments = authContextInfo.getGroupsPath().split("/");

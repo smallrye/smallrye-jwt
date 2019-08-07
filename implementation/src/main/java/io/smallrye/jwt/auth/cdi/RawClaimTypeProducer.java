@@ -40,7 +40,6 @@ public class RawClaimTypeProducer {
 
     @Produces
     @Claim("")
-    @SuppressWarnings("squid:S1168") // Indicate to Sonar that a null return is acceptable
     Set<String> getClaimAsSet(InjectionPoint ip) {
         log.debugf("getClaimAsSet(%s)", ip);
         if (currentToken == null) {

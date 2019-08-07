@@ -33,6 +33,7 @@ import java.util.List;
 import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
+import javax.json.JsonReader;
 
 import org.jboss.logging.Logger;
 import org.jose4j.jwk.HttpsJwks;
@@ -151,8 +152,10 @@ public class KeyLocationResolver implements VerificationKeyResolver {
     PublicKey getContentJwk(String content, String kid) throws JoseException {
         JsonObject jwk = null;
 
-        @SuppressWarnings("squid:S2095")
-        JsonObject jwks = Json.createReader(new StringReader(content)).readObject();
+        JsonObject jwks;
+        try (JsonReader reader = Json.createReader(new StringReader(content))) {
+            jwks = reader.readObject();
+        }
         JsonArray keys = jwks.getJsonArray(JsonWebKeySet.JWK_SET_MEMBER_NAME);
 
         if (keys != null) {
