@@ -25,7 +25,12 @@ import java.io.UncheckedIOException;
 import java.math.BigInteger;
 import java.security.GeneralSecurityException;
 import java.security.KeyFactory;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.RSAPublicKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
@@ -41,10 +46,48 @@ import javax.json.JsonReader;
 public class KeyUtils {
     private static final String RSA = "RSA";
 
+    public static PrivateKey readPrivateKey(String pemResName) throws IOException, GeneralSecurityException {
+        InputStream contentIS = KeyUtils.class.getResourceAsStream(pemResName);
+        byte[] tmp = new byte[4096];
+        int length = contentIS.read(tmp);
+        return decodePrivateKey(new String(tmp, 0, length));
+    }
+
+    public static PublicKey readPublicKey(String pemResName) throws IOException, GeneralSecurityException {
+        InputStream contentIS = KeyUtils.class.getResourceAsStream(pemResName);
+        byte[] tmp = new byte[4096];
+        int length = contentIS.read(tmp);
+        return decodePublicKey(new String(tmp, 0, length));
+    }
+
+    public static KeyPair generateKeyPair(int keySize) throws NoSuchAlgorithmException {
+        KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance(RSA);
+        keyPairGenerator.initialize(keySize);
+        return keyPairGenerator.genKeyPair();
+    }
+
+    /**
+     * Decode a PEM RSA private key
+     * 
+     * @param pemEncoded - pem string for key
+     * @return RSA private key instance
+     * @throws Exception - on failure to decode and create key
+     */
+    public static PrivateKey decodePrivateKey(String pemEncoded) throws GeneralSecurityException {
+        pemEncoded = removeBeginEnd(pemEncoded);
+        byte[] pkcs8EncodedBytes = Base64.getDecoder().decode(pemEncoded);
+
+        // extract the private key
+
+        PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(pkcs8EncodedBytes);
+        KeyFactory kf = KeyFactory.getInstance(RSA);
+        return kf.generatePrivate(keySpec);
+    }
+
     /**
      * Decode a JWK(S) encoded public key string to an RSA PublicKey. This assumes a single JWK in the set as
      * only the first JWK is used.
-     *
+     * 
      * @param jwksValue - JWKS string value
      * @return PublicKey from RSAPublicKeySpec
      * @throws GeneralSecurityException when RSA security is not supported or public key cannot be decoded
@@ -66,7 +109,6 @@ public class KeyUtils {
                 throw new UncheckedIOException(ioe);
             }
         }
-
         JsonArray keys = jwks.getJsonArray("keys");
         JsonObject jwk;
         if (keys != null) {
@@ -89,7 +131,7 @@ public class KeyUtils {
 
     /**
      * Decode a PEM encoded public key string to an RSA PublicKey
-     *
+     * 
      * @param pemEncoded - PEM string for public key
      * @return PublicKey
      * @throws GeneralSecurityException on decode failure
@@ -105,7 +147,7 @@ public class KeyUtils {
 
     /**
      * Strip any -----BEGIN*KEY... header and -----END*KEY... footer and newlines
-     *
+     * 
      * @param pem encoded string with option header/footer
      * @return a single base64 encoded pem string
      */
