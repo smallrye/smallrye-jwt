@@ -120,9 +120,19 @@ public class RawClaimTypeProducer {
         return returnValue;
     }
 
+    /**
+     * Produces a *raw* Optional value. The type parameter is intentionally
+     * left unspecified on this producer to avoid ambiguous type resolution
+     * with other producers of Optional values where the type parameter is
+     * specified.
+     *
+     * @param ip reference to the injection point
+     * @return an optional claim value
+     */
     @Produces
     @Claim("")
-    public <T> Optional<T> getOptionalValue(InjectionPoint ip) {
+    @SuppressWarnings("rawtypes")
+    public Optional getOptionalValue(InjectionPoint ip) {
         log.debugf("getOptionalValue(%s)", ip);
         if (currentToken == null) {
             return Optional.empty();
