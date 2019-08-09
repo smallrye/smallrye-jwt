@@ -85,19 +85,17 @@ public abstract class JWTCallerPrincipalFactory {
             URL u = cl.getResource("/META-INF/services/org.eclipse.microprofile.jwt.principal.JWTCallerPrincipalFactory");
             log.debugf("loadSpi, cl=%s, u=%s, sl=%s", cl, u, sl);
             try {
-                for (Object spi : sl) {
-                    if (spi instanceof JWTCallerPrincipalFactory) {
-                        if (instance != null) {
-                            log.warn("Multiple JWTCallerPrincipalFactory implementations found: "
-                                    + spi.getClass().getName() + " and " + instance.getClass().getName());
-                            break;
-                        } else {
-                            log.debugf("sl=%s, loaded=%s", sl, spi);
-                            instance = (JWTCallerPrincipalFactory) spi;
-                        }
+                for (JWTCallerPrincipalFactory spi : sl) {
+                    if (instance != null) {
+                        log.warn("Multiple JWTCallerPrincipalFactory implementations found: "
+                                + spi.getClass().getName() + " and " + instance.getClass().getName());
+                        break;
                     }
+
+                    log.debugf("sl=%s, loaded=%s", sl, spi);
+                    instance = spi;
                 }
-            } catch (Throwable e) {
+            } catch (Exception e) {
                 log.warn("Failed to locate JWTCallerPrincipalFactory provider", e);
             }
         }
@@ -117,6 +115,7 @@ public abstract class JWTCallerPrincipalFactory {
      * Parse the given bearer token string into a JWTCallerPrincipal instance.
      *
      * @param token - the bearer token provided for authorization
+     * @param authContextInfo - context/configuration details
      * @return A JWTCallerPrincipal representation for the token.
      * @throws ParseException on parse or verification failure.
      */

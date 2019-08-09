@@ -105,24 +105,7 @@ public class DefaultJWTTokenParser {
 
             // Process the rolesMapping claim
             if (claimsSet.hasClaim(ROLE_MAPPINGS)) {
-                try {
-                    @SuppressWarnings("unchecked")
-                    Map<String, String> rolesMapping = claimsSet.getClaimValue(ROLE_MAPPINGS, Map.class);
-                    List<String> groups = claimsSet.getStringListClaimValue(Claims.groups.name());
-                    List<String> allGroups = new ArrayList<>(groups);
-                    for (String key : rolesMapping.keySet()) {
-                        // If the key group is in groups list, add the mapped role
-                        if (groups.contains(key)) {
-                            String toRole = rolesMapping.get(key);
-                            allGroups.add(toRole);
-                        }
-                    }
-                    // Replace the groups with the original groups + mapped roles
-                    claimsSet.setStringListClaim("groups", allGroups);
-                    logger.infof("Updated groups to: %s", allGroups);
-                } catch (Exception e) {
-                    logger.warnf(e, "Failed to access rolesMapping claim");
-                }
+                mapRoles(claimsSet);
             }
 
             return jwtContext;
@@ -165,19 +148,14 @@ public class DefaultJWTTokenParser {
         if (authContextInfo.getGroupsPath() != null) {
             final String[] pathSegments = authContextInfo.getGroupsPath().split("/");
             Object claimValue = findClaimValue(authContextInfo.getGroupsPath(), claimsSet.getClaimsMap(), pathSegments, 0);
+
             if (claimValue instanceof List) {
-                try {
-                    @SuppressWarnings("unchecked")
-                    List<String> groups = (List<String>) claimValue;
-                    return groups;
-                } catch (ClassCastException e) {
-                    logger.warnf("Claim value at the path %s is not an array of strings", authContextInfo.getGroupsPath());
-                }
+                @SuppressWarnings("unchecked")
+                List<String> groups = List.class.cast(claimValue);
+                return groups;
             } else if (pathSegments.length == 1 && SCOPE_CLAIM.equals(pathSegments[0])) {
-                try {
+                if (claimValue instanceof String) {
                     return Arrays.asList(((String) claimValue).split(" "));
-                } catch (ClassCastException e) {
-                    logger.warnf("Claim value is not a string 'scope' claim");
                 }
             } else {
                 logger.warnf("Claim value at the path %s is not an array", authContextInfo.getGroupsPath());
@@ -188,6 +166,26 @@ public class DefaultJWTTokenParser {
         }
 
         return null;
+    }
+
+    private void mapRoles(JwtClaims claimsSet) {
+        try {
+            @SuppressWarnings("unchecked")
+            Map<String, String> rolesMapping = claimsSet.getClaimValue(ROLE_MAPPINGS, Map.class);
+            List<String> groups = claimsSet.getStringListClaimValue(Claims.groups.name());
+            List<String> allGroups = new ArrayList<>(groups);
+            for (Map.Entry<String, String> mapping : rolesMapping.entrySet()) {
+                // If the key group is in groups list, add the mapped role
+                if (groups.contains(mapping.getKey())) {
+                    allGroups.add(mapping.getValue());
+                }
+            }
+            // Replace the groups with the original groups + mapped roles
+            claimsSet.setStringListClaim(Claims.groups.name(), allGroups);
+            logger.infof("Updated groups to: %s", allGroups);
+        } catch (Exception e) {
+            logger.warnf(e, "Failed to access rolesMapping claim");
+        }
     }
 
     private Object findClaimValue(String claimPath, Map<String, Object> claimsMap, String[] pathArray, int step) {

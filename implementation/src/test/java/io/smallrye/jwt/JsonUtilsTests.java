@@ -14,7 +14,7 @@
  *   limitations under the License.
  *
  */
-package io.smallrye.jwt.auth.principal;
+package io.smallrye.jwt;
 
 import static javax.json.JsonValue.NULL;
 import static org.junit.Assert.assertEquals;
@@ -29,17 +29,14 @@ import javax.json.JsonArray;
 import javax.json.JsonObject;
 import javax.json.JsonValue;
 
-import org.jose4j.jwt.JwtClaims;
 import org.junit.Test;
 
-public class JWTCallerPrincipalTestCase {
-
-    JWTCallerPrincipal target = new DefaultJWTCallerPrincipal(new JwtClaims());
+public class JsonUtilsTests {
 
     @Test
     public void testWrapClaimValueJsonValue() {
         JsonValue expResult = JsonValue.TRUE;
-        JsonValue result = target.wrapClaimValue(expResult);
+        JsonValue result = JsonUtils.wrapValue(expResult);
 
         assertEquals(expResult, result);
     }
@@ -47,7 +44,7 @@ public class JWTCallerPrincipalTestCase {
     @Test
     public void testWrapClaimValueString() {
         JsonValue expResult = Json.createValue("string");
-        JsonValue result = target.wrapClaimValue("string");
+        JsonValue result = JsonUtils.wrapValue("string");
 
         assertEquals(expResult, result);
     }
@@ -55,7 +52,7 @@ public class JWTCallerPrincipalTestCase {
     @Test
     public void testWrapClaimValueNumber() {
         JsonValue expResult = Json.createValue(1);
-        JsonValue result = target.wrapClaimValue(1);
+        JsonValue result = JsonUtils.wrapValue(1);
 
         assertEquals(expResult, result);
     }
@@ -63,7 +60,7 @@ public class JWTCallerPrincipalTestCase {
     @Test
     public void testWrapClaimValueNumberDecimal() {
         JsonValue expResult = Json.createValue(1.1d);
-        JsonValue result = target.wrapClaimValue(1.1d);
+        JsonValue result = JsonUtils.wrapValue(1.1d);
 
         assertEquals(expResult, result);
     }
@@ -71,7 +68,7 @@ public class JWTCallerPrincipalTestCase {
     @Test
     public void testWrapClaimValueBoolean() {
         JsonValue expResult = JsonValue.FALSE;
-        JsonValue result = target.wrapClaimValue(false);
+        JsonValue result = JsonUtils.wrapValue(false);
 
         assertEquals(expResult, result);
     }
@@ -83,7 +80,7 @@ public class JWTCallerPrincipalTestCase {
                 .add("b")
                 .add("c")
                 .build();
-        JsonValue result = target.wrapClaimValue(Arrays.asList("a", "b", "c"));
+        JsonValue result = JsonUtils.wrapValue(Arrays.asList("a", "b", "c"));
 
         assertTrue(result instanceof JsonArray);
         JsonArray resultArray = result.asJsonArray();
@@ -105,7 +102,7 @@ public class JWTCallerPrincipalTestCase {
         value.put("a", "a");
         value.put("b", "b");
         value.put("c", "c");
-        JsonValue result = target.wrapClaimValue(value);
+        JsonValue result = JsonUtils.wrapValue(value);
 
         assertTrue(result instanceof JsonObject);
         JsonObject resultObject = result.asJsonObject();
@@ -115,7 +112,7 @@ public class JWTCallerPrincipalTestCase {
     @Test
     public void testWrapClaimValueNull() {
         JsonValue expResult = null;
-        JsonValue result = target.wrapClaimValue(null);
+        JsonValue result = JsonUtils.wrapValue(null);
 
         assertEquals(expResult, result);
     }
@@ -125,7 +122,7 @@ public class JWTCallerPrincipalTestCase {
         JsonArray expResult = Json.createArrayBuilder()
                 .add(NULL)
                 .build();
-        JsonValue result = target.wrapClaimValue(Arrays.asList((String) null));
+        JsonValue result = JsonUtils.wrapValue(Arrays.asList((String) null));
 
         assertTrue(result instanceof JsonArray);
         JsonArray resultArray = result.asJsonArray();
@@ -140,7 +137,7 @@ public class JWTCallerPrincipalTestCase {
 
         Map<String, String> value = new HashMap<>();
         value.put("a", null);
-        JsonValue result = target.wrapClaimValue(value);
+        JsonValue result = JsonUtils.wrapValue(value);
 
         assertTrue(result instanceof JsonObject);
         JsonObject resultObject = result.asJsonObject();

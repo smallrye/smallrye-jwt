@@ -19,7 +19,6 @@ import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.jboss.logging.Logger;
 
 import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
-import io.smallrye.jwt.auth.principal.JWTCallerPrincipal;
 import io.smallrye.jwt.auth.principal.JWTCallerPrincipalFactory;
 import io.smallrye.jwt.auth.principal.ParseException;
 
@@ -33,10 +32,10 @@ import io.smallrye.jwt.auth.principal.ParseException;
  */
 public abstract class AbstractBearerTokenExtractor {
 
-    protected final static String AUTHORIZATION_HEADER = "Authorization";
-    protected final static String COOKIE_HEADER = "Cookie";
-    protected final static String BEARER = "Bearer";
-    protected final static String BEARER_SCHEME_PREFIX = BEARER + ' ';
+    protected static final String AUTHORIZATION_HEADER = "Authorization";
+    protected static final String COOKIE_HEADER = "Cookie";
+    protected static final String BEARER = "Bearer";
+    protected static final String BEARER_SCHEME_PREFIX = BEARER + ' ';
     private static Logger logger = Logger.getLogger(AbstractBearerTokenExtractor.class);
 
     private final JWTAuthContextInfo authContextInfo;
@@ -60,39 +59,52 @@ public abstract class AbstractBearerTokenExtractor {
         final String bearerValue;
 
         if (COOKIE_HEADER.equals(tokenHeaderName)) {
-            String tokenCookieName = authContextInfo.getTokenCookie();
-
-            if (tokenCookieName == null) {
-                tokenCookieName = BEARER;
-            }
-
-            logger.debugf("tokenCookieName = %s", tokenCookieName);
-
-            bearerValue = getCookieValue(tokenCookieName);
-
-            if (bearerValue == null) {
-                logger.debugf("Cookie %s was null", tokenCookieName);
-            }
+            bearerValue = getBearerTokenCookie();
         } else if (AUTHORIZATION_HEADER.equals(tokenHeaderName)) {
-            final String tokenHeader = getHeaderValue(tokenHeaderName);
-
-            if (tokenHeader != null) {
-                if (isBearerScheme(tokenHeader)) {
-                    bearerValue = tokenHeader.substring(BEARER_SCHEME_PREFIX.length());
-                } else {
-                    logger.debugf("Authorization header does not contain a Bearer prefix");
-                    bearerValue = null;
-                }
-            } else {
-                logger.debugf("Authorization header was null");
-                bearerValue = null;
-            }
+            bearerValue = getBearerTokenAuthHeader();
         } else {
             bearerValue = getHeaderValue(tokenHeaderName);
 
             if (bearerValue == null) {
                 logger.debugf("Header %s was null", tokenHeaderName);
             }
+        }
+
+        return bearerValue;
+    }
+
+    private String getBearerTokenCookie() {
+        String tokenCookieName = authContextInfo.getTokenCookie();
+
+        if (tokenCookieName == null) {
+            tokenCookieName = BEARER;
+        }
+
+        logger.debugf("tokenCookieName = %s", tokenCookieName);
+
+        String bearerValue = getCookieValue(tokenCookieName);
+
+        if (bearerValue == null) {
+            logger.debugf("Cookie %s was null", tokenCookieName);
+        }
+
+        return bearerValue;
+    }
+
+    private String getBearerTokenAuthHeader() {
+        final String tokenHeader = getHeaderValue(AUTHORIZATION_HEADER);
+        final String bearerValue;
+
+        if (tokenHeader != null) {
+            if (isBearerScheme(tokenHeader)) {
+                bearerValue = tokenHeader.substring(BEARER_SCHEME_PREFIX.length());
+            } else {
+                logger.debugf("Authorization header does not contain a Bearer prefix");
+                bearerValue = null;
+            }
+        } else {
+            logger.debugf("Authorization header was null");
+            bearerValue = null;
         }
 
         return bearerValue;
@@ -110,8 +122,7 @@ public abstract class AbstractBearerTokenExtractor {
 
     public JsonWebToken validate(String bearerToken) throws ParseException {
         JWTCallerPrincipalFactory factory = JWTCallerPrincipalFactory.instance();
-        JWTCallerPrincipal callerPrincipal = factory.parse(bearerToken, authContextInfo);
-        return callerPrincipal;
+        return factory.parse(bearerToken, authContextInfo);
     }
 
     /**

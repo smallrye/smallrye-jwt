@@ -33,14 +33,17 @@ import java.util.List;
 import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
+import javax.json.JsonReader;
 
 import org.jboss.logging.Logger;
 import org.jose4j.jwk.HttpsJwks;
 import org.jose4j.jwk.JsonWebKey;
+import org.jose4j.jwk.JsonWebKeySet;
 import org.jose4j.jwk.PublicJsonWebKey;
 import org.jose4j.jws.JsonWebSignature;
 import org.jose4j.jwx.JsonWebStructure;
 import org.jose4j.keys.resolvers.VerificationKeyResolver;
+import org.jose4j.lang.JoseException;
 import org.jose4j.lang.UnresolvableKeyException;
 
 import io.smallrye.jwt.KeyUtils;
@@ -98,7 +101,7 @@ public class KeyLocationResolver implements VerificationKeyResolver {
     }
 
     private PublicKey tryAsJWK(JsonWebSignature jws) throws UnresolvableKeyException {
-        String kid = jws.getHeaders().getStringHeaderValue("kid");
+        String kid = jws.getHeaders().getStringHeaderValue(JsonWebKey.KEY_ID_PARAMETER);
         if (kid != null) {
             if (authContextInfo.getTokenKeyId() != null && !kid.equals(authContextInfo.getTokenKeyId())) {
                 log.debugf("Invalid token 'kid' header: %s, expected: %s", kid, authContextInfo.getTokenKeyId());
@@ -109,57 +112,76 @@ public class KeyLocationResolver implements VerificationKeyResolver {
         }
 
         PublicKey publicKey = null;
+
         try {
             log.debugf("Trying location as JWK(S)...");
 
             if (httpsJwks != null) {
-                List<JsonWebKey> keys = httpsJwks.getJsonWebKeys();
-                if (kid != null) {
-                    for (JsonWebKey currentJwk : keys) {
-                        if (kid.equals(currentJwk.getKeyId())) {
-                            publicKey = PublicJsonWebKey.class.cast(currentJwk).getPublicKey();
-                            break;
-                        }
-                    }
-                } else if (keys.size() == 1) {
-                    publicKey = PublicJsonWebKey.class.cast(keys.get(0)).getPublicKey();
-                }
+                publicKey = getHttpJwk(httpsJwks, kid);
             } else {
-                JsonObject jwk = null;
-
-                JsonObject jwks = Json.createReader(new StringReader(content)).readObject();
-                JsonArray keys = jwks.getJsonArray("keys");
-                if (keys != null) {
-                    if (kid != null) {
-                        for (int i = 0; i < keys.size(); i++) {
-                            JsonObject currentJwk = keys.getJsonObject(i);
-                            if (kid.equals(currentJwk.getString("kid", null))) {
-                                jwk = currentJwk;
-                                break;
-                            }
-                        }
-                    } else if (keys.size() == 1) {
-                        jwk = keys.getJsonObject(0);
-                    }
-                } else if (kid == null || kid.equals(jwks.getString("kid", null))) {
-                    jwk = jwks;
-                }
-                if (jwk != null) {
-                    publicKey = PublicJsonWebKey.Factory.newPublicJwk(jwk.toString()).getPublicKey();
-                }
+                publicKey = getContentJwk(content, kid);
             }
         } catch (Exception e) {
             log.debug("Failed to read location as JWK(S)", e);
         }
+
         if (httpsJwks == null && publicKey != null && authContextInfo.getTokenKeyId() != null) {
             // httpsJwks may refresh itself even if the jwksRefreshInterval is set to 0 as it checks HTTPS Cache-Control header
             // so the public key will have to be created per request to ensure the rotation (if any) is effective.
             verificationKey = publicKey;
         }
+
         return publicKey;
     }
 
-    private void loadContents() throws Exception {
+    PublicKey getHttpJwk(HttpsJwks httpsJwks, String kid) throws JoseException, IOException {
+        List<JsonWebKey> keys = httpsJwks.getJsonWebKeys();
+        if (kid != null) {
+            for (JsonWebKey currentJwk : keys) {
+                if (kid.equals(currentJwk.getKeyId())) {
+                    return PublicJsonWebKey.class.cast(currentJwk).getPublicKey();
+                }
+            }
+        } else if (keys.size() == 1) {
+            return PublicJsonWebKey.class.cast(keys.get(0)).getPublicKey();
+        }
+
+        return null;
+    }
+
+    PublicKey getContentJwk(String content, String kid) throws JoseException {
+        JsonObject jwk = null;
+
+        JsonObject jwks;
+        try (JsonReader reader = Json.createReader(new StringReader(content))) {
+            jwks = reader.readObject();
+        }
+        JsonArray keys = jwks.getJsonArray(JsonWebKeySet.JWK_SET_MEMBER_NAME);
+
+        if (keys != null) {
+            if (kid != null) {
+                for (int i = 0; i < keys.size(); i++) {
+                    JsonObject currentJwk = keys.getJsonObject(i);
+                    if (kid.equals(currentJwk.getString(JsonWebKey.KEY_ID_PARAMETER, null))) {
+                        jwk = currentJwk;
+                        break;
+                    }
+                }
+            } else if (keys.size() == 1) {
+                jwk = keys.getJsonObject(0);
+            }
+        } else if (kid == null || kid.equals(jwks.getString(JsonWebKey.KEY_ID_PARAMETER, null))) {
+            jwk = jwks;
+        }
+
+        if (jwk != null) {
+            return PublicJsonWebKey.Factory.newPublicJwk(jwk.toString()).getPublicKey();
+        }
+
+        return null;
+    }
+
+    private void loadContents() throws IOException {
         final URI location = URI.create(authContextInfo.getPublicKeyLocation());
 
         if ("https".equals(location.getScheme())) {
@@ -208,7 +230,7 @@ public class KeyLocationResolver implements VerificationKeyResolver {
         return f.exists() ? new FileInputStream(f) : null;
     }
 
-    private static InputStream getAsClasspathResource(String location) throws IOException {
+    private static InputStream getAsClasspathResource(String location) {
         return Thread.currentThread().getContextClassLoader().getResourceAsStream(location);
     }
 }

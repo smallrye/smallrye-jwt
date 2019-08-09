@@ -97,15 +97,7 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
-          <environmentVariables>
-          </environmentVariables>
           <redirectTestOutputToFile>true</redirectTestOutputToFile>
-          <enableAssertions>true</enableAssertions>
-          <argLine>-Xmx512m</argLine>
-          <includes>
-            <include>**/*TestCase.java</include>
-          </includes>
-          <forkMode>once</forkMode>
         </configuration>
       </plugin>
       <plugin>
@@ -123,4 +115,22 @@
       </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <profile>
+      <id>coverage</id>
+      <properties>
+        <argLine>@{jacocoArgLine}</argLine>
+      </properties>
+
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.jacoco</groupId>
+            <artifactId>jacoco-maven-plugin</artifactId>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>

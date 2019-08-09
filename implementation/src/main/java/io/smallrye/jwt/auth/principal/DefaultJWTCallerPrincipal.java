@@ -30,6 +30,8 @@ import org.jboss.logging.Logger;
 import org.jose4j.jwt.JwtClaims;
 import org.jose4j.jwt.MalformedClaimException;
 
+import io.smallrye.jwt.JsonUtils;
+
 /**
  * A default implementation of JWTCallerPrincipal that wraps the jose4j JwtClaims.
  *
@@ -121,9 +123,10 @@ public class DefaultJWTCallerPrincipal extends JWTCallerPrincipal {
                 try {
                     claim = claimsSet.getClaimValue(claimType.name(), Long.class);
                     if (claim == null) {
-                        claim = new Long(0);
+                        claim = Long.valueOf(0L);
                     }
                 } catch (MalformedClaimException e) {
+                    logger.warn("getClaimValue failure for: " + claimName, e);
                 }
                 break;
             case groups:
@@ -191,7 +194,7 @@ public class DefaultJWTCallerPrincipal extends JWTCallerPrincipal {
         try {
             @SuppressWarnings("unchecked")
             Map<String, Object> map = claimsSet.getClaimValue(name, Map.class);
-            JsonObject jsonObject = replaceMapClaims(map);
+            JsonObject jsonObject = JsonUtils.replaceMap(map);
             claimsSet.setClaim(name, jsonObject);
         } catch (MalformedClaimException e) {
             logger.warn("replaceMap failure for: " + name, e);
@@ -205,7 +208,7 @@ public class DefaultJWTCallerPrincipal extends JWTCallerPrincipal {
      */
     protected void replaceList(String name) {
         try {
-            JsonArray array = (JsonArray) wrapClaimValue(claimsSet.getClaimValue(name, List.class));
+            JsonArray array = (JsonArray) JsonUtils.wrapValue(claimsSet.getClaimValue(name, List.class));
             claimsSet.setClaim(name, array);
         } catch (MalformedClaimException e) {
             logger.warn("replaceList failure for: " + name, e);
@@ -215,7 +218,7 @@ public class DefaultJWTCallerPrincipal extends JWTCallerPrincipal {
     protected void replaceNumber(String name) {
         try {
             Number number = claimsSet.getClaimValue(name, Number.class);
-            JsonNumber jsonNumber = (JsonNumber) wrapClaimValue(number);
+            JsonNumber jsonNumber = (JsonNumber) JsonUtils.wrapValue(number);
             claimsSet.setClaim(name, jsonNumber);
         } catch (MalformedClaimException e) {
             logger.warn("replaceNumber failure for: " + name, e);

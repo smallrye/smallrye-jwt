@@ -38,6 +38,7 @@
     <version.jose4j>0.6.5</version.jose4j>
     <version.mokito>3.0.0</version.mokito>
     <version.weld-junit4>2.0.0.Final</version.weld-junit4>
+    <sonar.coverage.jacoco.xmlReportPaths>${project.basedir}/testsuite/basic/target/site/jacoco-aggregate/jacoco.xml,${project.basedir}/../testsuite/basic/target/site/jacoco-aggregate/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
 
     <!-- Used by release plugin to define git tag -->
     <tagNameFormat>smallrye-jwt-1.1-@{project.version}</tagNameFormat>

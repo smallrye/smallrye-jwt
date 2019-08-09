@@ -60,7 +60,7 @@ public class SmallryeJwtUtils {
     }
 
     private static boolean checkClaimPath(String claimName, Optional<String> claimPath) {
-        if (claimPath != null && claimPath.isPresent()) {
+        if (claimPath.isPresent()) {
             final String[] pathSegments = claimPath.get().split("/");
             if (MAX_PATH_DEPTH < pathSegments.length) {
                 log.errorf("path." + claimName + " configuration will be ignored because the path depth is too large:"
@@ -73,7 +73,7 @@ public class SmallryeJwtUtils {
     }
 
     public static void setContextTokenCookie(JWTAuthContextInfo contextInfo, Optional<String> cookieName) {
-        if (cookieName != null && cookieName.isPresent()) {
+        if (cookieName.isPresent()) {
             if (!COOKIE_HEADER.equals(contextInfo.getTokenHeader())) {
                 log.error("Token header is not 'Cookie', the cookie name value will be ignored");
             } else {
@@ -83,7 +83,7 @@ public class SmallryeJwtUtils {
     }
 
     public static void setWhitelistAlgorithms(JWTAuthContextInfo contextInfo, Optional<String> whitelistAlgorithms) {
-        if (whitelistAlgorithms != null && whitelistAlgorithms.isPresent()) {
+        if (whitelistAlgorithms.isPresent()) {
             final List<String> algorithms = Arrays.stream(whitelistAlgorithms.get().split(","))
                     .map(String::trim)
                     .collect(Collectors.toList());

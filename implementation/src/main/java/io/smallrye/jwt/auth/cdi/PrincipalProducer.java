@@ -34,9 +34,6 @@ import org.eclipse.microprofile.jwt.JsonWebToken;
 public class PrincipalProducer {
     private JsonWebToken token;
 
-    public PrincipalProducer() {
-    }
-
     public void setJsonWebToken(JsonWebToken token) {
         this.token = token;
     }
