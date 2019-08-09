@@ -21,18 +21,18 @@
 
   <parent>
     <groupId>io.smallrye</groupId>
-    <artifactId>smallrye-jwt-testsuite-parent-1.1</artifactId>
+    <artifactId>smallrye-jwt-testsuite-parent</artifactId>
     <version>2.0.2-SNAPSHOT</version>
   </parent>
 
-  <artifactId>smallrye-jwt-testsuite-basic-1.1</artifactId>
+  <artifactId>smallrye-jwt-testsuite-basic</artifactId>
 
   <name>SmallRye: MicroProfile JWT Basic Testsuite</name>
 
   <dependencies>
     <dependency>
       <groupId>io.smallrye</groupId>
-      <artifactId>smallrye-jwt-1.1</artifactId>
+      <artifactId>smallrye-jwt</artifactId>
     </dependency>
 
     <!-- This is the MP-JWT TCK base extension and utility classes -->

@@ -20,12 +20,12 @@
 
   <parent>
     <groupId>io.smallrye</groupId>
-    <artifactId>smallrye-jwt-parent-1.1</artifactId>
+    <artifactId>smallrye-jwt-parent</artifactId>
     <version>2.0.2-SNAPSHOT</version>
   </parent>
 
   <packaging>pom</packaging>
-  <artifactId>smallrye-jwt-testsuite-parent-1.1</artifactId>
+  <artifactId>smallrye-jwt-testsuite-parent</artifactId>
   <name>SmallRye: MicroProfile JWT - Testsuite Parent</name>
 
   <modules>
