@@ -20,10 +20,13 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
+import javax.json.JsonValue;
 import javax.security.auth.Subject;
 
 import org.eclipse.microprofile.jwt.Claims;
 import org.eclipse.microprofile.jwt.JsonWebToken;
+
+import io.smallrye.jwt.JsonUtils;
 
 /**
  * An abstract CallerPrincipal implementation that provides access to the JWT claims that are required by
@@ -123,6 +126,10 @@ public abstract class JWTCallerPrincipal implements JsonWebToken {
         tmp.setLength(tmp.length() - 1);
         tmp.append("]}");
         return tmp.toString();
+    }
+
+    protected JsonValue wrapClaimValue(Object value) {
+        return JsonUtils.wrapValue(value);
     }
 
     protected Claims getClaimType(String claimName) {

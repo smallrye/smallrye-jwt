@@ -71,7 +71,7 @@ public class KeyUtils {
      * 
      * @param pemEncoded - pem string for key
      * @return RSA private key instance
-     * @throws Exception - on failure to decode and create key
+     * @throws GeneralSecurityException - on failure to decode and create key
      */
     public static PrivateKey decodePrivateKey(String pemEncoded) throws GeneralSecurityException {
         pemEncoded = removeBeginEnd(pemEncoded);
