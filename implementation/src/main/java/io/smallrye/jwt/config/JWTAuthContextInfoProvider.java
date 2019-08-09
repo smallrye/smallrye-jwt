@@ -43,16 +43,12 @@ public class JWTAuthContextInfoProvider {
     private static final String NONE = "NONE";
     private static final Logger log = Logger.getLogger(JWTAuthContextInfoProvider.class);
 
-    public JWTAuthContextInfoProvider() {
-
-    }
-
     /**
      * Create JWTAuthContextInfoProvider with the public key and issuer
-     * 
+     *
      * @param publicKey the public key value
      * @param issuer the issuer
-     * @return
+     * @return a new instance of JWTAuthContextInfoProvider
      */
     public static JWTAuthContextInfoProvider createWithKey(String publicKey, String issuer) {
         return create(publicKey, NONE, issuer);
@@ -60,10 +56,10 @@ public class JWTAuthContextInfoProvider {
 
     /**
      * Create JWTAuthContextInfoProvider with the public key location and issuer
-     * 
+     *
      * @param publicKeyLocation the public key location
      * @param issuer the issuer
-     * @return
+     * @return a new instance of JWTAuthContextInfoProvider
      */
     public static JWTAuthContextInfoProvider createWithKeyLocation(String publicKeyLocation, String issuer) {
         return create(NONE, publicKeyLocation, issuer);
@@ -74,6 +70,20 @@ public class JWTAuthContextInfoProvider {
         provider.mpJwtPublicKey = Optional.of(publicKey);
         provider.mpJwtLocation = Optional.of(publicKeyLocation);
         provider.mpJwtIssuer = issuer;
+
+        provider.mpJwtRequireIss = Optional.of(Boolean.TRUE);
+        provider.tokenHeader = AUTHORIZATION_HEADER;
+        provider.tokenCookie = Optional.empty();
+        provider.tokenKeyId = Optional.empty();
+        provider.requireNamedPrincipal = Optional.of(Boolean.TRUE);
+        provider.defaultSubClaim = Optional.empty();
+        provider.subPath = Optional.empty();
+        provider.defaultGroupsClaim = Optional.empty();
+        provider.groupsPath = Optional.empty();
+        provider.expGracePeriodSecs = Optional.of(60);
+        provider.jwksRefreshInterval = Optional.empty();
+        provider.whitelistAlgorithms = Optional.empty();
+
         return provider;
     }
     // The MP-JWT spec defined configuration properties
@@ -212,9 +222,7 @@ public class JWTAuthContextInfoProvider {
 
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo();
         // Look to MP-JWT values first
-        if (mpJwtPublicKey.isPresent() && !NONE.equals(mpJwtPublicKey.get())) {
-            decodeMpJwtPublicKey(contextInfo);
-        }
+        decodeMpJwtPublicKey(contextInfo);
 
         if (mpJwtIssuer != null && !mpJwtIssuer.equals(NONE)) {
             contextInfo.setIssuedBy(mpJwtIssuer);
@@ -223,12 +231,8 @@ public class JWTAuthContextInfoProvider {
             contextInfo.setRequireIssuer(false);
         }
 
-        if (mpJwtRequireIss != null && mpJwtRequireIss.isPresent()) {
-            contextInfo.setRequireIssuer(mpJwtRequireIss.get());
-        } else {
-            // Default is to require iss claim
-            contextInfo.setRequireIssuer(true);
-        }
+        // Default is to require iss claim
+        contextInfo.setRequireIssuer(mpJwtRequireIss.orElse(true));
 
         // The MP-JWT location can be a PEM, JWK or JWKS
         if (mpJwtLocation.isPresent() && !NONE.equals(mpJwtLocation.get())) {
@@ -238,36 +242,25 @@ public class JWTAuthContextInfoProvider {
             contextInfo.setTokenHeader(tokenHeader);
         }
 
-        if (tokenKeyId != null && tokenKeyId.isPresent()) {
-            contextInfo.setTokenKeyId(tokenKeyId.get());
-        }
-        if (requireNamedPrincipal != null && requireNamedPrincipal.isPresent()) {
-            contextInfo.setRequireNamedPrincipal(requireNamedPrincipal.get());
-        }
+        contextInfo.setTokenKeyId(tokenKeyId.orElse(null));
+        contextInfo.setRequireNamedPrincipal(requireNamedPrincipal.orElse(null));
         SmallryeJwtUtils.setContextTokenCookie(contextInfo, tokenCookie);
-        if (defaultSubClaim != null && defaultSubClaim.isPresent()) {
-            contextInfo.setDefaultSubjectClaim(defaultSubClaim.get());
-        }
+        contextInfo.setDefaultSubjectClaim(defaultSubClaim.orElse(null));
         SmallryeJwtUtils.setContextSubPath(contextInfo, subPath);
-        if (defaultGroupsClaim != null && defaultGroupsClaim.isPresent()) {
-            contextInfo.setDefaultGroupsClaim(defaultGroupsClaim.get());
-        }
+        contextInfo.setDefaultGroupsClaim(defaultGroupsClaim.orElse(null));
         SmallryeJwtUtils.setContextGroupsPath(contextInfo, groupsPath);
-
-        if (expGracePeriodSecs != null && expGracePeriodSecs.isPresent()) {
-            contextInfo.setExpGracePeriodSecs(expGracePeriodSecs.get());
-        }
-
-        if (this.jwksRefreshInterval != null && jwksRefreshInterval.isPresent()) {
-            contextInfo.setJwksRefreshInterval(jwksRefreshInterval.get());
-        }
-
+        contextInfo.setExpGracePeriodSecs(expGracePeriodSecs.orElse(null));
+        contextInfo.setJwksRefreshInterval(jwksRefreshInterval.orElse(null));
         SmallryeJwtUtils.setWhitelistAlgorithms(contextInfo, whitelistAlgorithms);
 
         return Optional.of(contextInfo);
     }
 
     protected void decodeMpJwtPublicKey(JWTAuthContextInfo contextInfo) {
+        if (!mpJwtPublicKey.isPresent() || NONE.equals(mpJwtPublicKey.get())) {
+            return;
+        }
+
         // Need to decode what this is...
         try {
             RSAPublicKey pk = (RSAPublicKey) KeyUtils.decodeJWKSPublicKey(mpJwtPublicKey.get());

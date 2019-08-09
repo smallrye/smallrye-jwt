@@ -47,9 +47,9 @@ public class JWTAuthContextInfo {
 
     /**
      * Create an auth context from the token signer public key and issuer
-     * 
-     * @param signerKey
-     * @param issuedBy
+     *
+     * @param signerKey public key
+     * @param issuedBy the issuer
      */
     public JWTAuthContextInfo(RSAPublicKey signerKey, String issuedBy) {
         this.signerKey = signerKey;
@@ -63,8 +63,8 @@ public class JWTAuthContextInfo {
 
     /**
      * Create an auth context from an {@linkplain JWTAuthContextInfo} instance
-     * 
-     * @param orig
+     *
+     * @param orig the original instance to copy
      */
     public JWTAuthContextInfo(JWTAuthContextInfo orig) {
         this.signerKey = orig.signerKey;

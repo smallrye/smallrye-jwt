@@ -91,8 +91,7 @@ public class JsonValueProducer {
     @SuppressWarnings("unchecked")
     public <T extends JsonValue> T getValue(InjectionPoint ip) {
         log.debugf("JsonValueProducer(%s).produce", ip);
-        T jsonValue = (T) util.generalJsonValueProducer(ip);
-        return jsonValue;
+        return (T) util.generalJsonValueProducer(ip);
     }
 
     @SuppressWarnings("unchecked")

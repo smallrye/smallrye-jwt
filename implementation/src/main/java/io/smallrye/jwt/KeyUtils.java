@@ -17,9 +17,13 @@
 package io.smallrye.jwt;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.Reader;
 import java.io.StringReader;
+import java.io.UncheckedIOException;
 import java.math.BigInteger;
+import java.security.GeneralSecurityException;
 import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
@@ -34,6 +38,7 @@ import java.util.Base64;
 import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
+import javax.json.JsonReader;
 
 /**
  * Utility methods for dealing with decoding public and private keys resources
@@ -41,27 +46,24 @@ import javax.json.JsonObject;
 public class KeyUtils {
     private static final String RSA = "RSA";
 
-    public static PrivateKey readPrivateKey(String pemResName) throws Exception {
+    public static PrivateKey readPrivateKey(String pemResName) throws IOException, GeneralSecurityException {
         InputStream contentIS = KeyUtils.class.getResourceAsStream(pemResName);
         byte[] tmp = new byte[4096];
         int length = contentIS.read(tmp);
-        PrivateKey privateKey = decodePrivateKey(new String(tmp, 0, length));
-        return privateKey;
+        return decodePrivateKey(new String(tmp, 0, length));
     }
 
-    public static PublicKey readPublicKey(String pemResName) throws Exception {
+    public static PublicKey readPublicKey(String pemResName) throws IOException, GeneralSecurityException {
         InputStream contentIS = KeyUtils.class.getResourceAsStream(pemResName);
         byte[] tmp = new byte[4096];
         int length = contentIS.read(tmp);
-        PublicKey publicKey = decodePublicKey(new String(tmp, 0, length));
-        return publicKey;
+        return decodePublicKey(new String(tmp, 0, length));
     }
 
     public static KeyPair generateKeyPair(int keySize) throws NoSuchAlgorithmException {
         KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance(RSA);
         keyPairGenerator.initialize(keySize);
-        KeyPair keyPair = keyPairGenerator.genKeyPair();
-        return keyPair;
+        return keyPairGenerator.genKeyPair();
     }
 
     /**
@@ -69,9 +71,9 @@ public class KeyUtils {
      * 
      * @param pemEncoded - pem string for key
      * @return RSA private key instance
-     * @throws Exception - on failure to decode and create key
+     * @throws GeneralSecurityException - on failure to decode and create key
      */
-    public static PrivateKey decodePrivateKey(String pemEncoded) throws Exception {
+    public static PrivateKey decodePrivateKey(String pemEncoded) throws GeneralSecurityException {
         pemEncoded = removeBeginEnd(pemEncoded);
         byte[] pkcs8EncodedBytes = Base64.getDecoder().decode(pemEncoded);
 
@@ -79,8 +81,7 @@ public class KeyUtils {
 
         PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(pkcs8EncodedBytes);
         KeyFactory kf = KeyFactory.getInstance(RSA);
-        PrivateKey privKey = kf.generatePrivate(keySpec);
-        return privKey;
+        return kf.generatePrivate(keySpec);
     }
 
     /**
@@ -89,15 +90,24 @@ public class KeyUtils {
      * 
      * @param jwksValue - JWKS string value
      * @return PublicKey from RSAPublicKeySpec
+     * @throws GeneralSecurityException when RSA security is not supported or public key cannot be decoded
      */
-    public static PublicKey decodeJWKSPublicKey(String jwksValue) throws Exception {
+    public static PublicKey decodeJWKSPublicKey(String jwksValue) throws GeneralSecurityException {
         JsonObject jwks;
-        try {
-            jwks = Json.createReader(new StringReader(jwksValue)).readObject();
+
+        try (Reader reader = new StringReader(jwksValue);
+                JsonReader json = Json.createReader(reader)) {
+            jwks = json.readObject();
         } catch (Exception e) {
             // See if this is base64 encoded
             byte[] decoded = Base64.getDecoder().decode(jwksValue);
-            jwks = Json.createReader(new ByteArrayInputStream(decoded)).readObject();
+
+            try (InputStream stream = new ByteArrayInputStream(decoded);
+                    JsonReader json = Json.createReader(stream)) {
+                jwks = json.readObject();
+            } catch (IOException ioe) {
+                throw new UncheckedIOException(ioe);
+            }
         }
         JsonArray keys = jwks.getJsonArray("keys");
         JsonObject jwk;
@@ -116,8 +126,7 @@ public class KeyUtils {
         BigInteger modulus = new BigInteger(1, nbytes);
         KeyFactory kf = KeyFactory.getInstance(RSA);
         RSAPublicKeySpec rsaPublicKeySpec = new RSAPublicKeySpec(modulus, publicExponent);
-        PublicKey publicKey = kf.generatePublic(rsaPublicKeySpec);
-        return publicKey;
+        return kf.generatePublic(rsaPublicKeySpec);
     }
 
     /**
@@ -125,9 +134,9 @@ public class KeyUtils {
      * 
      * @param pemEncoded - PEM string for public key
      * @return PublicKey
-     * @throws Exception on decode failure
+     * @throws GeneralSecurityException on decode failure
      */
-    public static PublicKey decodePublicKey(String pemEncoded) throws Exception {
+    public static PublicKey decodePublicKey(String pemEncoded) throws GeneralSecurityException {
         pemEncoded = removeBeginEnd(pemEncoded);
         byte[] encodedBytes = Base64.getDecoder().decode(pemEncoded);
 

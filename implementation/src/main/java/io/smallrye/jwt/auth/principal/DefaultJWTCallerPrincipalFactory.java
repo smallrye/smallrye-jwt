@@ -25,12 +25,6 @@ public class DefaultJWTCallerPrincipalFactory extends JWTCallerPrincipalFactory 
 
     private DefaultJWTTokenParser parser = new DefaultJWTTokenParser();
 
-    /**
-     * Tries to load the JWTAuthContextInfo from CDI if the class level authContextInfo has not been set.
-     */
-    public DefaultJWTCallerPrincipalFactory() {
-    }
-
     @Override
     public JWTCallerPrincipal parse(final String token, final JWTAuthContextInfo authContextInfo) throws ParseException {
 
