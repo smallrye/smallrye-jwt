@@ -17,10 +17,6 @@
 
 package io.smallrye.jwt.auth.cdi;
 
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
-import java.util.Optional;
-
 import javax.enterprise.context.Dependent;
 import javax.enterprise.inject.Produces;
 import javax.enterprise.inject.spi.InjectionPoint;
@@ -31,8 +27,6 @@ import org.eclipse.microprofile.jwt.ClaimValue;
 
 /**
  * A producer for the ClaimValue wrapper injection sites.
- * 
- * @param <T> the raw claim type
  */
 @Dependent
 public class ClaimValueProducer {
@@ -43,40 +37,6 @@ public class ClaimValueProducer {
     @Produces
     @Claim("")
     <T> ClaimValue<T> produceClaim(InjectionPoint ip) {
-        return new ClaimValueProxy<>(ip);
-    }
-
-    private class ClaimValueProxy<T> extends ClaimValueWrapper<T> {
-        final boolean optional;
-
-        ClaimValueProxy(InjectionPoint ip) {
-            super(util.getName(ip));
-            Type injectedType = ip.getType();
-
-            if (injectedType instanceof ParameterizedType) {
-                ParameterizedType parameterizedType = (ParameterizedType) injectedType;
-                Type typeArgument = parameterizedType.getActualTypeArguments()[0];
-                // Check if the injection point is optional, i.e. ClaimValue<<Optional<?>>
-                optional = typeArgument.getTypeName().startsWith(Optional.class.getTypeName());
-            } else {
-                optional = false;
-            }
-        }
-
-        @Override
-        @SuppressWarnings("unchecked")
-        public T getValue() {
-            Object value = util.getValue(getName(), optional);
-
-            if (optional) {
-                /*
-                 * Wrap the raw value in Optional based on type parameter of the
-                 * ClaimValue checked during construction.
-                 */
-                return (T) Optional.ofNullable(value);
-            }
-
-            return (T) value;
-        }
+        return new ClaimValueWrapper<>(ip, util);
     }
 }
