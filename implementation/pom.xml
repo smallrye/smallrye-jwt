@@ -21,11 +21,11 @@
 
   <parent>
     <groupId>io.smallrye</groupId>
-    <artifactId>smallrye-jwt-parent-1.1</artifactId>
+    <artifactId>smallrye-jwt-parent</artifactId>
     <version>2.0.2-SNAPSHOT</version>
   </parent>
 
-  <artifactId>smallrye-jwt-1.1</artifactId>
+  <artifactId>smallrye-jwt</artifactId>
 
   <name>SmallRye: MicroProfile JWT Implementation</name>
 

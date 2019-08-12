@@ -4,11 +4,11 @@
 
     <parent>
         <groupId>io.smallrye</groupId>
-        <artifactId>smallrye-jwt-parent-1.1</artifactId>
+        <artifactId>smallrye-jwt-parent</artifactId>
         <version>2.0.2-SNAPSHOT</version>
     </parent>
 
-    <artifactId>smallrye-jwt-1.1-release</artifactId>
+    <artifactId>smallrye-jwt-release</artifactId>
 
     <name>Empty Release Project to Avoid Maven Bug</name>
     <description>Empty Release Project to Avoid Maven Bug</description>
