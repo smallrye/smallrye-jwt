@@ -16,6 +16,12 @@
  */
 package io.smallrye.jwt.auth.cdi;
 
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.util.Optional;
+
+import javax.enterprise.inject.spi.InjectionPoint;
+
 import org.eclipse.microprofile.jwt.ClaimValue;
 
 /**
@@ -24,12 +30,23 @@ import org.eclipse.microprofile.jwt.ClaimValue;
  * @param <T> the claim value type
  */
 public class ClaimValueWrapper<T> implements ClaimValue<T> {
-    private String name;
+    private final CommonJwtProducer producer;
+    private final String name;
+    private final boolean optional;
 
-    private T value;
+    public ClaimValueWrapper(InjectionPoint ip, CommonJwtProducer producer) {
+        this.producer = producer;
+        this.name = producer.getName(ip);
+        Type injectedType = ip.getType();
 
-    public ClaimValueWrapper(String name) {
-        this.name = name;
+        if (injectedType instanceof ParameterizedType) {
+            ParameterizedType parameterizedType = (ParameterizedType) injectedType;
+            Type typeArgument = parameterizedType.getActualTypeArguments()[0];
+            // Check if the injection point is optional, i.e. ClaimValue<<Optional<?>>
+            optional = typeArgument.getTypeName().startsWith(Optional.class.getTypeName());
+        } else {
+            optional = false;
+        }
     }
 
     @Override
@@ -38,16 +55,24 @@ public class ClaimValueWrapper<T> implements ClaimValue<T> {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public T getValue() {
-        return value;
-    }
+        Object value = producer.getValue(getName(), optional);
 
-    public void setValue(T value) {
-        this.value = value;
+        if (optional) {
+            /*
+             * Wrap the raw value in Optional based on type parameter of the
+             * ClaimValue checked during construction.
+             */
+            return (T) Optional.ofNullable(value);
+        }
+
+        return (T) value;
     }
 
     @Override
     public String toString() {
+        T value = getValue();
         return String.format("ClaimValueWrapper[@%s], name=%s, value[%s]=%s", Integer.toHexString(hashCode()),
                 name, value.getClass(), value);
     }

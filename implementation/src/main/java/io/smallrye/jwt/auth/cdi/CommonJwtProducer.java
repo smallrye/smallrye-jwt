@@ -25,7 +25,6 @@ import javax.inject.Inject;
 import javax.json.JsonValue;
 
 import org.eclipse.microprofile.jwt.Claim;
-import org.eclipse.microprofile.jwt.ClaimValue;
 import org.eclipse.microprofile.jwt.Claims;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.jboss.logging.Logger;
@@ -44,22 +43,6 @@ public class CommonJwtProducer {
 
     @Inject
     JsonWebToken currentToken;
-
-    /**
-     * A utility method for accessing a claim from the current JsonWebToken as a ClaimValue Optional object.
-     *
-     * @param ip - injection point of the claim
-     * @param <T> expected actual type of the claim
-     * @return the claim value wrapper object
-     */
-    public <T> ClaimValue<Optional<T>> generalClaimValueProducer(InjectionPoint ip) {
-        String name = getName(ip);
-        ClaimValueWrapper<Optional<T>> wrapper = new ClaimValueWrapper<>(name);
-        T value = getValue(name, false);
-        Optional<T> optValue = Optional.ofNullable(value);
-        wrapper.setValue(optValue);
-        return wrapper;
-    }
 
     /**
      * Return the indicated claim value as a JsonValue
