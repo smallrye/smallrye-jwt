@@ -35,7 +35,8 @@ import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
 public class SmallryeJwtUtils {
     private static final Integer MAX_PATH_DEPTH = 4;
     private static final String COOKIE_HEADER = "Cookie";
-    private static final Set<String> SUPPORTED_ALGORITHMS = new HashSet<>(Arrays.asList(AlgorithmIdentifiers.RSA_USING_SHA256,
+    private static final Set<String> SUPPORTED_ALGORITHMS = new HashSet<>(Arrays.asList(AlgorithmIdentifiers.NONE,
+            AlgorithmIdentifiers.RSA_USING_SHA256,
             AlgorithmIdentifiers.RSA_USING_SHA384,
             AlgorithmIdentifiers.RSA_USING_SHA512,
             AlgorithmIdentifiers.ECDSA_USING_P256_CURVE_AND_SHA256,
