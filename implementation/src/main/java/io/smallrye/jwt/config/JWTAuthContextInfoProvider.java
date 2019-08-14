@@ -351,6 +351,10 @@ public class JWTAuthContextInfoProvider {
         return whitelistAlgorithms;
     }
 
+    public Optional<Set<String>> getExpectedAudience() {
+        return expectedAudience;
+    }
+
     @Produces
     @ApplicationScoped
     public JWTAuthContextInfo getContextInfo() {
