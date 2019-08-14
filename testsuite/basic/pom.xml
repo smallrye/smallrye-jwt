@@ -35,6 +35,11 @@
       <artifactId>smallrye-jwt</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <scope>test</scope>
+    </dependency>
     <!-- This is the MP-JWT TCK base extension and utility classes -->
     <dependency>
       <groupId>org.eclipse.microprofile.jwt</groupId>
