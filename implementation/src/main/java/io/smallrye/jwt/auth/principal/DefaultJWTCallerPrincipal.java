@@ -72,11 +72,13 @@ public class DefaultJWTCallerPrincipal extends JWTCallerPrincipal {
     @Override
     public Set<String> getAudience() {
         Set<String> audSet = null;
-        try {
-            // Use LinkedHashSet to preserve iteration order
-            audSet = new LinkedHashSet<>(claimsSet.getAudience());
-        } catch (MalformedClaimException e) {
-            logger.warnf("getAudience failure: %s", e.getMessage());
+        if (claimsSet.hasAudience()) {
+            try {
+                // Use LinkedHashSet to preserve iteration order
+                audSet = new LinkedHashSet<>(claimsSet.getAudience());
+            } catch (MalformedClaimException e) {
+                logger.warnf("getAudience failure: %s", e.getMessage());
+            }
         }
         return audSet;
     }
