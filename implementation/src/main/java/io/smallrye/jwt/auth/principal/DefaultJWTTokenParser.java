@@ -43,7 +43,7 @@ import org.jose4j.lang.UnresolvableKeyException;
  *
  */
 public class DefaultJWTTokenParser {
-    private static Logger logger = Logger.getLogger(DefaultJWTTokenParser.class);
+    private static final Logger LOGGER = Logger.getLogger(DefaultJWTTokenParser.class);
     private static final String ROLE_MAPPINGS = "roleMappings";
     private static final String SCOPE_CLAIM = "scope";
     private volatile VerificationKeyResolver keyResolver;
@@ -112,7 +112,7 @@ public class DefaultJWTTokenParser {
 
             return jwtContext;
         } catch (InvalidJwtException | UnresolvableKeyException e) {
-            logger.warnf("Token is invalid: %s", e.getMessage());
+            LOGGER.warnf("Token is invalid: %s", e.getMessage());
             throw new ParseException("Failed to verify token", e);
         }
 
@@ -147,7 +147,7 @@ public class DefaultJWTTokenParser {
             if (claimValue instanceof String) {
                 return (String) claimValue;
             } else {
-                logger.warnf("Claim value at the path %s is not a String", authContextInfo.getSubjectPath());
+                LOGGER.warnf("Claim value at the path %s is not a String", authContextInfo.getSubjectPath());
             }
         }
         if (authContextInfo.getDefaultSubjectClaim() != null) {
@@ -170,7 +170,7 @@ public class DefaultJWTTokenParser {
                     return Arrays.asList(((String) claimValue).split(" "));
                 }
             } else {
-                logger.warnf("Claim value at the path %s is not an array", authContextInfo.getGroupsPath());
+                LOGGER.warnf("Claim value at the path %s is not an array", authContextInfo.getGroupsPath());
             }
         }
         if (authContextInfo.getDefaultGroupsClaim() != null) {
@@ -194,16 +194,16 @@ public class DefaultJWTTokenParser {
             }
             // Replace the groups with the original groups + mapped roles
             claimsSet.setStringListClaim(Claims.groups.name(), allGroups);
-            logger.infof("Updated groups to: %s", allGroups);
+            LOGGER.infof("Updated groups to: %s", allGroups);
         } catch (Exception e) {
-            logger.warnf(e, "Failed to access rolesMapping claim");
+            LOGGER.warnf(e, "Failed to access rolesMapping claim");
         }
     }
 
     private Object findClaimValue(String claimPath, Map<String, Object> claimsMap, String[] pathArray, int step) {
         Object claimValue = claimsMap.get(pathArray[step]);
         if (claimValue == null) {
-            logger.warnf("No claim exists at the path %s at segment %s", claimPath, pathArray[step]);
+            LOGGER.warnf("No claim exists at the path %s at segment %s", claimPath, pathArray[step]);
         } else if (step + 1 < pathArray.length) {
             if (claimValue instanceof Map) {
                 @SuppressWarnings("unchecked")
@@ -211,7 +211,7 @@ public class DefaultJWTTokenParser {
                 int nextStep = step + 1;
                 return findClaimValue(claimPath, nextMap, pathArray, nextStep);
             } else {
-                logger.warnf("Claim value at the path %s is not a json object", claimPath);
+                LOGGER.warnf("Claim value at the path %s is not a json object", claimPath);
                 return null;
             }
         }
@@ -220,7 +220,10 @@ public class DefaultJWTTokenParser {
 
     protected VerificationKeyResolver getKeyResolver(JWTAuthContextInfo authContextInfo) throws UnresolvableKeyException {
         if (keyResolver == null) {
-            keyResolver = new KeyLocationResolver(authContextInfo);
+            synchronized (this) {
+                if (keyResolver == null)
+                    keyResolver = new KeyLocationResolver(authContextInfo);
+            }
         }
         return keyResolver;
     }

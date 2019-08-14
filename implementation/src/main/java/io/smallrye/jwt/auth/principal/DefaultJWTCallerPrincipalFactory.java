@@ -23,7 +23,7 @@ import org.jose4j.jwt.consumer.JwtContext;
  */
 public class DefaultJWTCallerPrincipalFactory extends JWTCallerPrincipalFactory {
 
-    private DefaultJWTTokenParser parser = new DefaultJWTTokenParser();
+    private final DefaultJWTTokenParser parser = new DefaultJWTTokenParser();
 
     @Override
     public JWTCallerPrincipal parse(final String token, final JWTAuthContextInfo authContextInfo) throws ParseException {

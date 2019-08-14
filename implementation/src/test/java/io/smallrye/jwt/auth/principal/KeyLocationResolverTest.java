@@ -14,24 +14,37 @@
  *   limitations under the License.
  *
  */
-package io.smallrye.jwt.auth.jaxrs;
+package io.smallrye.jwt.auth.principal;
 
 import static java.util.Collections.emptyList;
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.when;
 
+import java.security.PublicKey;
+
+import org.jose4j.jwk.JsonWebKey;
 import org.jose4j.jws.JsonWebSignature;
+import org.jose4j.jwx.Headers;
 import org.jose4j.lang.UnresolvableKeyException;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.junit.runner.RunWith;
 import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.junit.MockitoJUnitRunner;
 
-import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
-import io.smallrye.jwt.auth.principal.KeyLocationResolver;
-
+@RunWith(MockitoJUnitRunner.class)
 public class KeyLocationResolverTest {
 
     @Mock
     JsonWebSignature jsonWebSignature;
+    @Mock
+    JsonWebSignature signature;
+    @Mock
+    PublicKey key;
+    @Mock
+    Headers headers;
 
     @Rule
     public ExpectedException expectedEx = ExpectedException.none();
@@ -43,5 +56,18 @@ public class KeyLocationResolverTest {
 
         KeyLocationResolver keyLocationResolver = new KeyLocationResolver(new JWTAuthContextInfo("wrong_location.pem", null));
         keyLocationResolver.resolveKey(jsonWebSignature, emptyList());
+    }
+
+    @Test
+    public void testHttpsKeyLocation() throws Exception {
+        JWTAuthContextInfo contextInfo = new JWTAuthContextInfo("https://github.com/my_key.pem", "issuer");
+        contextInfo.setJwksRefreshInterval(10);
+        KeyLocationResolver keyLocationResolver = new KeyLocationResolver(contextInfo);
+        keyLocationResolver = Mockito.spy(keyLocationResolver);
+        Mockito.doReturn(key).when(keyLocationResolver).getHttpJwk(Mockito.any(), Mockito.any());
+        when(signature.getHeaders()).thenReturn(headers);
+        when(headers.getStringHeaderValue(JsonWebKey.KEY_ID_PARAMETER)).thenReturn("1");
+        assertEquals(key, keyLocationResolver.resolveKey(signature, emptyList()));
+        assertNull(keyLocationResolver.verificationKey);
     }
 }
