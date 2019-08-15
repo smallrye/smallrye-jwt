@@ -79,6 +79,12 @@
         <artifactId>microprofile-jwt-auth-tck</artifactId>
         <version>${version.eclipse.microprofile.jwt}</version>
       </dependency>
+      <dependency>
+        <groupId>org.eclipse.microprofile.jwt</groupId>
+        <artifactId>microprofile-jwt-auth-tck</artifactId>
+        <type>test-jar</type>
+        <version>${version.eclipse.microprofile.jwt}</version>
+      </dependency>
 
       <dependency>
         <groupId>org.eclipse.microprofile.config</groupId>

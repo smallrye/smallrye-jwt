@@ -18,6 +18,7 @@ package io.smallrye.jwt.config;
 
 import java.security.interfaces.RSAPublicKey;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Supplier;
 
 import javax.enterprise.context.ApplicationScoped;
@@ -83,6 +84,7 @@ public class JWTAuthContextInfoProvider {
         provider.expGracePeriodSecs = Optional.of(60);
         provider.jwksRefreshInterval = Optional.empty();
         provider.whitelistAlgorithms = Optional.empty();
+        provider.expectedAudience = Optional.empty();
 
         return provider;
     }
@@ -201,6 +203,18 @@ public class JWTAuthContextInfoProvider {
     @ConfigProperty(name = "smallrye.jwt.whitelist.algorithms")
     private Optional<String> whitelistAlgorithms;
 
+    /**
+     * The audience value(s) that identify valid recipient(s) of a JWT. Audience validation
+     * will succeed, if any one of the provided values is equal to any one of the values of
+     * the "aud" claim in the JWT. The config value should be specified as a comma-separated
+     * list per MP Config requirements for a collection property.
+     *
+     * @since 2.0.3
+     */
+    @Inject
+    @ConfigProperty(name = "smallrye.jwt.verify.aud")
+    Optional<Set<String>> expectedAudience;
+
     @Produces
     @ApplicationScoped
     Optional<JWTAuthContextInfo> getOptionalContextInfo() {
@@ -252,6 +266,7 @@ public class JWTAuthContextInfoProvider {
         contextInfo.setExpGracePeriodSecs(expGracePeriodSecs.orElse(null));
         contextInfo.setJwksRefreshInterval(jwksRefreshInterval.orElse(null));
         SmallryeJwtUtils.setWhitelistAlgorithms(contextInfo, whitelistAlgorithms);
+        contextInfo.setExpectedAudience(expectedAudience.orElse(null));
 
         return Optional.of(contextInfo);
     }
@@ -334,6 +349,10 @@ public class JWTAuthContextInfoProvider {
 
     public Optional<String> getWhitelistAlgorithms() {
         return whitelistAlgorithms;
+    }
+
+    public Optional<Set<String>> getExpectedAudience() {
+        return expectedAudience;
     }
 
     @Produces

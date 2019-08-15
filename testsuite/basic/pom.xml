@@ -35,6 +35,11 @@
       <artifactId>smallrye-jwt</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <scope>test</scope>
+    </dependency>
     <!-- This is the MP-JWT TCK base extension and utility classes -->
     <dependency>
       <groupId>org.eclipse.microprofile.jwt</groupId>
@@ -44,7 +49,6 @@
    <dependency>
       <groupId>org.eclipse.microprofile.jwt</groupId>
       <artifactId>microprofile-jwt-auth-tck</artifactId>
-      <version>${version.eclipse.microprofile.jwt}</version>
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>
