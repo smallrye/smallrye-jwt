@@ -39,9 +39,9 @@ import io.smallrye.jwt.JsonUtils;
  * @see JwtClaims
  */
 public class DefaultJWTCallerPrincipal extends JWTCallerPrincipal {
-    private static Logger logger = Logger.getLogger(DefaultJWTCallerPrincipal.class);
+    private static final Logger LOGGER = Logger.getLogger(DefaultJWTCallerPrincipal.class);
 
-    private JwtClaims claimsSet;
+    private final JwtClaims claimsSet;
 
     /**
      * Create the DefaultJWTCallerPrincipal from the parsed JWT token and the extracted principal name
@@ -77,7 +77,7 @@ public class DefaultJWTCallerPrincipal extends JWTCallerPrincipal {
                 // Use LinkedHashSet to preserve iteration order
                 audSet = new LinkedHashSet<>(claimsSet.getAudience());
             } catch (MalformedClaimException e) {
-                logger.warnf("getAudience failure: %s", e.getMessage());
+                LOGGER.warnf("getAudience failure: %s", e.getMessage());
             }
         }
         return audSet;
@@ -92,7 +92,7 @@ public class DefaultJWTCallerPrincipal extends JWTCallerPrincipal {
                 groups.addAll(globalGroups);
             }
         } catch (MalformedClaimException e) {
-            logger.warn("getGroups failure: ", e);
+            LOGGER.warn("getGroups failure: ", e);
         }
         return groups;
     }
@@ -120,7 +120,7 @@ public class DefaultJWTCallerPrincipal extends JWTCallerPrincipal {
                         claim = Long.valueOf(0L);
                     }
                 } catch (MalformedClaimException e) {
-                    logger.warn("getClaimValue failure for: " + claimName, e);
+                    LOGGER.warn("getClaimValue failure for: " + claimName, e);
                 }
                 break;
             case groups:
@@ -191,7 +191,7 @@ public class DefaultJWTCallerPrincipal extends JWTCallerPrincipal {
             JsonObject jsonObject = JsonUtils.replaceMap(map);
             claimsSet.setClaim(name, jsonObject);
         } catch (MalformedClaimException e) {
-            logger.warn("replaceMap failure for: " + name, e);
+            LOGGER.warn("replaceMap failure for: " + name, e);
         }
     }
 
@@ -205,7 +205,7 @@ public class DefaultJWTCallerPrincipal extends JWTCallerPrincipal {
             JsonArray array = (JsonArray) JsonUtils.wrapValue(claimsSet.getClaimValue(name, List.class));
             claimsSet.setClaim(name, array);
         } catch (MalformedClaimException e) {
-            logger.warn("replaceList failure for: " + name, e);
+            LOGGER.warn("replaceList failure for: " + name, e);
         }
     }
 
@@ -215,7 +215,7 @@ public class DefaultJWTCallerPrincipal extends JWTCallerPrincipal {
             JsonNumber jsonNumber = (JsonNumber) JsonUtils.wrapValue(number);
             claimsSet.setClaim(name, jsonNumber);
         } catch (MalformedClaimException e) {
-            logger.warn("replaceNumber failure for: " + name, e);
+            LOGGER.warn("replaceNumber failure for: " + name, e);
         }
     }
 }

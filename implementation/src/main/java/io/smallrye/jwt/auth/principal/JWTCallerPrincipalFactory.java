@@ -27,8 +27,8 @@ import org.jboss.logging.Logger;
  * The factory class that provides the token string to JWTCallerPrincipal parsing for a given implementation.
  */
 public abstract class JWTCallerPrincipalFactory {
-    private static Logger log = Logger.getLogger(JWTCallerPrincipalFactory.class);
-    private static JWTCallerPrincipalFactory instance;
+    private static final Logger LOGGER = Logger.getLogger(JWTCallerPrincipalFactory.class);
+    private static volatile JWTCallerPrincipalFactory instance;
 
     /**
      * Obtain the JWTCallerPrincipalFactory that has been set or by using the ServiceLoader pattern.
@@ -39,27 +39,26 @@ public abstract class JWTCallerPrincipalFactory {
     public static JWTCallerPrincipalFactory instance() {
         if (instance == null) {
             synchronized (JWTCallerPrincipalFactory.class) {
-                if (instance != null) {
-                    return instance;
-                }
+                if (instance == null) {
 
-                ClassLoader cl = AccessController
-                        .doPrivileged((PrivilegedAction<ClassLoader>) () -> Thread.currentThread().getContextClassLoader());
-                if (cl == null) {
-                    cl = JWTCallerPrincipalFactory.class.getClassLoader();
-                }
+                    ClassLoader cl = AccessController
+                            .doPrivileged((PrivilegedAction<ClassLoader>) () -> Thread.currentThread().getContextClassLoader());
+                    if (cl == null) {
+                        cl = JWTCallerPrincipalFactory.class.getClassLoader();
+                    }
 
-                JWTCallerPrincipalFactory newInstance = loadSpi(cl);
+                    JWTCallerPrincipalFactory newInstance = loadSpi(cl);
 
-                if (newInstance == null && cl != JWTCallerPrincipalFactory.class.getClassLoader()) {
-                    cl = JWTCallerPrincipalFactory.class.getClassLoader();
-                    newInstance = loadSpi(cl);
-                }
-                if (newInstance == null) {
-                    newInstance = new DefaultJWTCallerPrincipalFactory();
-                }
+                    if (newInstance == null && cl != JWTCallerPrincipalFactory.class.getClassLoader()) {
+                        cl = JWTCallerPrincipalFactory.class.getClassLoader();
+                        newInstance = loadSpi(cl);
+                    }
+                    if (newInstance == null) {
+                        newInstance = new DefaultJWTCallerPrincipalFactory();
+                    }
 
-                instance = newInstance;
+                    instance = newInstance;
+                }
             }
         }
 
@@ -83,20 +82,20 @@ public abstract class JWTCallerPrincipalFactory {
         if (instance == null) {
             ServiceLoader<JWTCallerPrincipalFactory> sl = ServiceLoader.load(JWTCallerPrincipalFactory.class, cl);
             URL u = cl.getResource("/META-INF/services/org.eclipse.microprofile.jwt.principal.JWTCallerPrincipalFactory");
-            log.debugf("loadSpi, cl=%s, u=%s, sl=%s", cl, u, sl);
+            LOGGER.debugf("loadSpi, cl=%s, u=%s, sl=%s", cl, u, sl);
             try {
                 for (JWTCallerPrincipalFactory spi : sl) {
                     if (instance != null) {
-                        log.warn("Multiple JWTCallerPrincipalFactory implementations found: "
+                        LOGGER.warn("Multiple JWTCallerPrincipalFactory implementations found: "
                                 + spi.getClass().getName() + " and " + instance.getClass().getName());
                         break;
                     }
 
-                    log.debugf("sl=%s, loaded=%s", sl, spi);
+                    LOGGER.debugf("sl=%s, loaded=%s", sl, spi);
                     instance = spi;
                 }
             } catch (Exception e) {
-                log.warn("Failed to locate JWTCallerPrincipalFactory provider", e);
+                LOGGER.warn("Failed to locate JWTCallerPrincipalFactory provider", e);
             }
         }
         return instance;
@@ -107,7 +106,7 @@ public abstract class JWTCallerPrincipalFactory {
      *
      * @param resolver the instance to use.
      */
-    public static void setInstance(JWTCallerPrincipalFactory resolver) {
+    public static synchronized void setInstance(JWTCallerPrincipalFactory resolver) {
         instance = resolver;
     }
 

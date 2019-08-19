@@ -52,7 +52,7 @@ import io.smallrye.jwt.KeyUtils;
  * This implements the MP-JWT 1.1 mp.jwt.verify.publickey.location config property resolution logic
  */
 public class KeyLocationResolver implements VerificationKeyResolver {
-    private static final Logger log = Logger.getLogger(KeyLocationResolver.class);
+    private static final Logger LOGGER = Logger.getLogger(KeyLocationResolver.class);
 
     // The 'content' and 'httpsJwks' fields are used to keep the key content and mutually exclusive.
     // 'content' represents the key(s) loaded from all resources but the HTTPS URL based JWK set.
@@ -62,7 +62,7 @@ public class KeyLocationResolver implements VerificationKeyResolver {
 
     // If the 'smallrye.jwt.token.kid' is set then the verification key will be calculated
     // only once and used for all the token verification requests
-    private volatile PublicKey verificationKey;
+    volatile PublicKey verificationKey;
 
     private JWTAuthContextInfo authContextInfo;
 
@@ -95,26 +95,31 @@ public class KeyLocationResolver implements VerificationKeyResolver {
         try {
             verificationKey = KeyUtils.decodePublicKey(content);
         } catch (Exception e) {
-            log.debug("Failed to read location as PEM", e);
+            LOGGER.debug("Failed to read location as PEM", e);
         }
         return verificationKey;
     }
 
-    private PublicKey tryAsJWK(JsonWebSignature jws) throws UnresolvableKeyException {
+    private String getKid(JsonWebSignature jws) throws UnresolvableKeyException {
         String kid = jws.getHeaders().getStringHeaderValue(JsonWebKey.KEY_ID_PARAMETER);
         if (kid != null) {
             if (authContextInfo.getTokenKeyId() != null && !kid.equals(authContextInfo.getTokenKeyId())) {
-                log.debugf("Invalid token 'kid' header: %s, expected: %s", kid, authContextInfo.getTokenKeyId());
+                LOGGER.debugf("Invalid token 'kid' header: %s, expected: %s", kid, authContextInfo.getTokenKeyId());
                 throw new UnresolvableKeyException("Invalid token 'kid' header");
             }
         } else {
             kid = authContextInfo.getTokenKeyId();
         }
+        return kid;
+    }
+
+    private PublicKey tryAsJWK(JsonWebSignature jws) throws UnresolvableKeyException {
+        String kid = getKid(jws);
 
         PublicKey publicKey = null;
 
         try {
-            log.debugf("Trying location as JWK(S)...");
+            LOGGER.debugf("Trying location as JWK(S)...");
 
             if (httpsJwks != null) {
                 publicKey = getHttpJwk(httpsJwks, kid);
@@ -122,7 +127,7 @@ public class KeyLocationResolver implements VerificationKeyResolver {
                 publicKey = getContentJwk(content, kid);
             }
         } catch (Exception e) {
-            log.debug("Failed to read location as JWK(S)", e);
+            LOGGER.debug("Failed to read location as JWK(S)", e);
         }
 
         if (httpsJwks == null && publicKey != null && authContextInfo.getTokenKeyId() != null) {

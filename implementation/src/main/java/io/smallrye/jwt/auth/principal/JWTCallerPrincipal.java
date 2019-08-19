@@ -34,8 +34,8 @@ import io.smallrye.jwt.JsonUtils;
  */
 public abstract class JWTCallerPrincipal implements JsonWebToken {
 
-    private String rawToken;
-    private String tokenType;
+    private final String rawToken;
+    private final String tokenType;
 
     /**
      * Create a JWTCallerPrincipal with the caller's name

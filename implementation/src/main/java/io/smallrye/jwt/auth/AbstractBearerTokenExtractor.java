@@ -36,7 +36,7 @@ public abstract class AbstractBearerTokenExtractor {
     protected static final String COOKIE_HEADER = "Cookie";
     protected static final String BEARER = "Bearer";
     protected static final String BEARER_SCHEME_PREFIX = BEARER + ' ';
-    private static Logger logger = Logger.getLogger(AbstractBearerTokenExtractor.class);
+    private static final Logger LOGGER = Logger.getLogger(AbstractBearerTokenExtractor.class);
 
     private final JWTAuthContextInfo authContextInfo;
 
@@ -54,7 +54,7 @@ public abstract class AbstractBearerTokenExtractor {
      */
     public String getBearerToken() {
         final String tokenHeaderName = authContextInfo.getTokenHeader();
-        logger.debugf("tokenHeaderName = %s", tokenHeaderName);
+        LOGGER.debugf("tokenHeaderName = %s", tokenHeaderName);
 
         final String bearerValue;
 
@@ -66,7 +66,7 @@ public abstract class AbstractBearerTokenExtractor {
             bearerValue = getHeaderValue(tokenHeaderName);
 
             if (bearerValue == null) {
-                logger.debugf("Header %s was null", tokenHeaderName);
+                LOGGER.debugf("Header %s was null", tokenHeaderName);
             }
         }
 
@@ -80,12 +80,12 @@ public abstract class AbstractBearerTokenExtractor {
             tokenCookieName = BEARER;
         }
 
-        logger.debugf("tokenCookieName = %s", tokenCookieName);
+        LOGGER.debugf("tokenCookieName = %s", tokenCookieName);
 
         String bearerValue = getCookieValue(tokenCookieName);
 
         if (bearerValue == null) {
-            logger.debugf("Cookie %s was null", tokenCookieName);
+            LOGGER.debugf("Cookie %s was null", tokenCookieName);
         }
 
         return bearerValue;
@@ -99,11 +99,11 @@ public abstract class AbstractBearerTokenExtractor {
             if (isBearerScheme(tokenHeader)) {
                 bearerValue = tokenHeader.substring(BEARER_SCHEME_PREFIX.length());
             } else {
-                logger.debugf("Authorization header does not contain a Bearer prefix");
+                LOGGER.debugf("Authorization header does not contain a Bearer prefix");
                 bearerValue = null;
             }
         } else {
-            logger.debugf("Authorization header was null");
+            LOGGER.debugf("Authorization header was null");
             bearerValue = null;
         }
 
