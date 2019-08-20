@@ -24,7 +24,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.StringReader;
 import java.io.StringWriter;
-import java.net.URI;
 import java.net.URL;
 import java.security.Key;
 import java.security.PublicKey;
@@ -53,6 +52,9 @@ import io.smallrye.jwt.KeyUtils;
  */
 public class KeyLocationResolver implements VerificationKeyResolver {
     private static final Logger LOGGER = Logger.getLogger(KeyLocationResolver.class);
+    private static final String HTTPS_SCHEME = "https:";
+    private static final String CLASSPATH_SCHEME = "classpath:";
+    private static final String FILE_SCHEME = "file:";
 
     // The 'content' and 'httpsJwks' fields are used to keep the key content and mutually exclusive.
     // 'content' represents the key(s) loaded from all resources but the HTTPS URL based JWK set.
@@ -187,33 +189,31 @@ public class KeyLocationResolver implements VerificationKeyResolver {
     }
 
     private void loadContents() throws IOException {
-        final URI location = URI.create(authContextInfo.getPublicKeyLocation());
-
-        if ("https".equals(location.getScheme())) {
-            httpsJwks = new HttpsJwks(authContextInfo.getPublicKeyLocation());
+        final String keyLocation = authContextInfo.getPublicKeyLocation();
+        if (authContextInfo.getPublicKeyLocation().startsWith(HTTPS_SCHEME)) {
+            httpsJwks = new HttpsJwks(keyLocation);
             httpsJwks.setDefaultCacheDuration(authContextInfo.getJwksRefreshInterval().longValue() * 60L);
             return;
         }
 
         InputStream is = null;
 
-        if (location.getScheme() != null) {
-            if ("classpath".equals(location.getScheme())) {
-                is = getAsClasspathResource(location.getSchemeSpecificPart());
-            } else if ("file".equals(location.getScheme())) {
-                is = getAsFileSystemResource(location.getRawSchemeSpecificPart());
-            } else {
-                is = new URL(authContextInfo.getPublicKeyLocation()).openStream();
-            }
+        if (keyLocation.startsWith(FILE_SCHEME)) {
+            is = getAsFileSystemResource(keyLocation.substring(FILE_SCHEME.length()));
+        } else if (keyLocation.startsWith(CLASSPATH_SCHEME)) {
+            is = getAsClasspathResource(keyLocation.substring(CLASSPATH_SCHEME.length()));
         } else {
-            is = getAsClasspathResource(authContextInfo.getPublicKeyLocation());
+            is = getAsFileSystemResource(keyLocation);
             if (is == null) {
-                is = getAsFileSystemResource(authContextInfo.getPublicKeyLocation());
+                is = getAsClasspathResource(keyLocation);
+            }
+            if (is == null) {
+                is = new URL(keyLocation).openStream();
             }
         }
 
         if (is == null) {
-            throw new IOException("No resource with the named " + location + " location exists");
+            throw new IOException("No resource with the named " + authContextInfo.getPublicKeyLocation() + " location exists");
         }
 
         StringWriter contents = new StringWriter();
