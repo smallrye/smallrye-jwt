@@ -190,7 +190,7 @@ public class KeyLocationResolver implements VerificationKeyResolver {
 
     private void loadContents() throws IOException {
         final String keyLocation = authContextInfo.getPublicKeyLocation();
-        if (authContextInfo.getPublicKeyLocation().startsWith(HTTPS_SCHEME)) {
+        if (keyLocation.startsWith(HTTPS_SCHEME)) {
             httpsJwks = new HttpsJwks(keyLocation);
             httpsJwks.setDefaultCacheDuration(authContextInfo.getJwksRefreshInterval().longValue() * 60L);
             return;
