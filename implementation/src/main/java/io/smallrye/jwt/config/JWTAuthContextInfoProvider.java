@@ -42,6 +42,7 @@ import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
 public class JWTAuthContextInfoProvider {
     private static final String AUTHORIZATION_HEADER = "Authorization";
     private static final String NONE = "NONE";
+    private static final String DEFAULT_GROUPS_SEPARATOR = " ";
     private static final Logger log = Logger.getLogger(JWTAuthContextInfoProvider.class);
 
     /**
@@ -85,6 +86,7 @@ public class JWTAuthContextInfoProvider {
         provider.jwksRefreshInterval = Optional.empty();
         provider.whitelistAlgorithms = Optional.empty();
         provider.expectedAudience = Optional.empty();
+        provider.groupsSeparator = DEFAULT_GROUPS_SEPARATOR;
 
         return provider;
     }
@@ -182,6 +184,15 @@ public class JWTAuthContextInfoProvider {
     @ConfigProperty(name = "smallrye.jwt.path.groups")
     private Optional<String> groupsPath;
 
+    /**
+     * Separator for splitting a string which may contain multiple group values.
+     * It will only be used if the "smallrye.jwt.path.groups" property points to a custom claim whose value is a string.
+     * The default value is a single space because the standard 'scope' claim may contain a space separated sequence.
+     */
+    @Inject
+    @ConfigProperty(name = "smallrye.jwt.groups-separator", defaultValue = DEFAULT_GROUPS_SEPARATOR)
+    private String groupsSeparator;
+
     @Inject
     @ConfigProperty(name = "smallrye.jwt.expiration.grace", defaultValue = "60")
     private Optional<Integer> expGracePeriodSecs;
@@ -267,6 +278,7 @@ public class JWTAuthContextInfoProvider {
         contextInfo.setJwksRefreshInterval(jwksRefreshInterval.orElse(null));
         SmallryeJwtUtils.setWhitelistAlgorithms(contextInfo, whitelistAlgorithms);
         contextInfo.setExpectedAudience(expectedAudience.orElse(null));
+        contextInfo.setGroupsSeparator(groupsSeparator);
 
         return Optional.of(contextInfo);
     }
@@ -337,6 +349,10 @@ public class JWTAuthContextInfoProvider {
 
     public Optional<String> getGroupsPath() {
         return groupsPath;
+    }
+
+    public String getGroupsSeparator() {
+        return groupsSeparator;
     }
 
     public Optional<String> getSubjectPath() {

@@ -39,6 +39,7 @@ public class JWTAuthContextInfo {
     private String groupsPath;
     private List<String> whitelistAlgorithms = new ArrayList<>();
     private Set<String> expectedAudience;
+    private String groupsSeparator = " ";
 
     /**
      * Flag that indicates whether the issuer is required and validated, or ignored, new in MP-JWT 1.1.
@@ -203,5 +204,13 @@ public class JWTAuthContextInfo {
 
     public void setExpectedAudience(Set<String> expectedAudience) {
         this.expectedAudience = expectedAudience;
+    }
+
+    public String getGroupsSeparator() {
+        return groupsSeparator;
+    }
+
+    public void setGroupsSeparator(String groupsSeparator) {
+        this.groupsSeparator = groupsSeparator;
     }
 }

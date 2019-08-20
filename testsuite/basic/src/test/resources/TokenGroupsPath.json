@@ -17,5 +17,6 @@
          }
        }
     },
-    "scope": "read write"
+    "scope": "read write",
+    "auth": "read,write"
 }
