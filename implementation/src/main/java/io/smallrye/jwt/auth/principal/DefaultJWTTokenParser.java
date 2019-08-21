@@ -45,7 +45,6 @@ import org.jose4j.lang.UnresolvableKeyException;
 public class DefaultJWTTokenParser {
     private static final Logger LOGGER = Logger.getLogger(DefaultJWTTokenParser.class);
     private static final String ROLE_MAPPINGS = "roleMappings";
-    private static final String SCOPE_CLAIM = "scope";
     private volatile VerificationKeyResolver keyResolver;
 
     public JwtContext parse(final String token, final JWTAuthContextInfo authContextInfo) throws ParseException {
@@ -164,13 +163,18 @@ public class DefaultJWTTokenParser {
             if (claimValue instanceof List) {
                 @SuppressWarnings("unchecked")
                 List<String> groups = List.class.cast(claimValue);
-                return groups;
-            } else if (pathSegments.length == 1 && SCOPE_CLAIM.equals(pathSegments[0])) {
-                if (claimValue instanceof String) {
-                    return Arrays.asList(((String) claimValue).split(" "));
+                // Force a check that a list contains the string values only
+                try {
+                    return Arrays.asList(groups.toArray(new String[] {}));
+                } catch (ArrayStoreException ex) {
+                    LOGGER.warnf("Claim value at the path %s is not an array of strings",
+                            authContextInfo.getGroupsPath());
                 }
+            } else if (claimValue instanceof String) {
+                return Arrays.asList(((String) claimValue).split(authContextInfo.getGroupsSeparator()));
             } else {
-                LOGGER.warnf("Claim value at the path %s is not an array", authContextInfo.getGroupsPath());
+                LOGGER.warnf("Claim value at the path %s is neither an array of strings nor string",
+                        authContextInfo.getGroupsPath());
             }
         }
         if (authContextInfo.getDefaultGroupsClaim() != null) {

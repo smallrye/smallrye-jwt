@@ -66,9 +66,22 @@ public class TestTokenWithGroupsPath extends Arquillian {
     }
 
     @Test(groups = TEST_GROUP_JWT, description = "validate the groups claim can be mapped from a standard scope claim")
-    public void groupsIsAvailableInInScopeClaim() throws Exception {
+    public void groupsIsAvailableInScopeStringClaim() throws Exception {
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo((RSAPublicKey) publicKey, TEST_ISSUER);
         contextInfo.setGroupsPath("scope");
+        JWTCallerPrincipalFactory factory = JWTCallerPrincipalFactory.instance();
+        JsonWebToken jwt = factory.parse(token, contextInfo);
+        Set<String> groups = jwt.getGroups();
+        Assert.assertEquals(groups.size(), 2);
+        Assert.assertTrue(groups.contains("write"));
+        Assert.assertTrue(groups.contains("read"));
+    }
+
+    @Test(groups = TEST_GROUP_JWT, description = "validate the groups claim can be mapped from a standard scope claim")
+    public void groupsIsAvailableInCommaSeparatedStringClaim() throws Exception {
+        JWTAuthContextInfo contextInfo = new JWTAuthContextInfo((RSAPublicKey) publicKey, TEST_ISSUER);
+        contextInfo.setGroupsPath("auth");
+        contextInfo.setGroupsSeparator(",");
         JWTCallerPrincipalFactory factory = JWTCallerPrincipalFactory.instance();
         JsonWebToken jwt = factory.parse(token, contextInfo);
         Set<String> groups = jwt.getGroups();
