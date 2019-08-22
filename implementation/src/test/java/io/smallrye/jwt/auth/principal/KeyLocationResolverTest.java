@@ -64,7 +64,7 @@ public class KeyLocationResolverTest {
         contextInfo.setJwksRefreshInterval(10);
         KeyLocationResolver keyLocationResolver = new KeyLocationResolver(contextInfo);
         keyLocationResolver = Mockito.spy(keyLocationResolver);
-        Mockito.doReturn(key).when(keyLocationResolver).getHttpJwk(Mockito.any(), Mockito.any());
+        Mockito.doReturn(key).when(keyLocationResolver).getHttpsJwk(Mockito.any());
         when(signature.getHeaders()).thenReturn(headers);
         when(headers.getStringHeaderValue(JsonWebKey.KEY_ID_PARAMETER)).thenReturn("1");
         assertEquals(key, keyLocationResolver.resolveKey(signature, emptyList()));

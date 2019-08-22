@@ -15,7 +15,7 @@
  *
  */
 
-package io.smallrye.jwt;
+package io.smallrye.jwt.auth.principal;
 
 import java.security.PrivateKey;
 
@@ -24,12 +24,16 @@ import org.jose4j.lang.UnresolvableKeyException;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-import io.smallrye.jwt.auth.principal.DefaultJWTTokenParser;
-import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
-import io.smallrye.jwt.auth.principal.ParseException;
 import io.smallrye.jwt.config.JWTAuthContextInfoProvider;
 
 public class KeyLocationResolverTest {
+
+    @Test
+    public void testGetPublicKeyFromCertificate() throws Exception {
+        String content = KeyLocationResolver.readKeyContent("publicCrt.pem");
+        Assert.assertNotNull(KeyLocationResolver.tryAsPEMCertificate(content));
+    }
+
     @Test
     public void testVerifyWithJwkKeyWithMatchingKid() throws Exception {
         verifyToken("key1", null, "publicKey.jwk");
