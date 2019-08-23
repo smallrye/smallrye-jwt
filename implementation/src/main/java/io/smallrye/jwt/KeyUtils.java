@@ -30,6 +30,7 @@ import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.security.cert.CertificateFactory;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.RSAPublicKeySpec;
 import java.security.spec.X509EncodedKeySpec;
@@ -74,7 +75,7 @@ public class KeyUtils {
      * @throws GeneralSecurityException - on failure to decode and create key
      */
     public static PrivateKey decodePrivateKey(String pemEncoded) throws GeneralSecurityException {
-        pemEncoded = removeBeginEnd(pemEncoded);
+        pemEncoded = removeKeyBeginEnd(pemEncoded);
         byte[] pkcs8EncodedBytes = Base64.getDecoder().decode(pemEncoded);
 
         // extract the private key
@@ -137,7 +138,7 @@ public class KeyUtils {
      * @throws GeneralSecurityException on decode failure
      */
     public static PublicKey decodePublicKey(String pemEncoded) throws GeneralSecurityException {
-        pemEncoded = removeBeginEnd(pemEncoded);
+        pemEncoded = removeKeyBeginEnd(pemEncoded);
         byte[] encodedBytes = Base64.getDecoder().decode(pemEncoded);
 
         X509EncodedKeySpec spec = new X509EncodedKeySpec(encodedBytes);
@@ -146,16 +147,46 @@ public class KeyUtils {
     }
 
     /**
+     * Decode a PEM encoded certificate string to an RSA PublicKey
+     * 
+     * @param pemEncoded - PEM string for certificate
+     * @return PublicKey
+     * @throws GeneralSecurityException on decode failure
+     */
+    public static PublicKey decodeCertificate(String pemEncoded) throws GeneralSecurityException {
+        pemEncoded = removeCertBeginEnd(pemEncoded);
+        byte[] encodedBytes = Base64.getDecoder().decode(pemEncoded);
+        return CertificateFactory.getInstance("X.509")
+                .generateCertificate(new ByteArrayInputStream(encodedBytes)).getPublicKey();
+    }
+
+    /**
      * Strip any -----BEGIN*KEY... header and -----END*KEY... footer and newlines
      * 
      * @param pem encoded string with option header/footer
      * @return a single base64 encoded pem string
      */
-    private static String removeBeginEnd(String pem) {
-        pem = pem.replaceAll("-----BEGIN(.*)KEY-----", "");
-        pem = pem.replaceAll("-----END(.*)KEY-----", "");
+    private static String removeKeyBeginEnd(String pem) {
+        pem = pem.replaceAll("-----BEGIN(.*?)KEY-----", "");
+        pem = pem.replaceAll("-----END(.*?)KEY-----", "");
         pem = pem.replaceAll("\r\n", "");
         pem = pem.replaceAll("\n", "");
+        pem = pem.replaceAll("\\\\n", "");
+        return pem.trim();
+    }
+
+    /**
+     * Strip any -----BEGIN*CERTIFICATE... header and -----END*CERTIFICATE... footer and newlines
+     * 
+     * @param pem encoded string with option header/footer
+     * @return a single base64 encoded pem string
+     */
+    private static String removeCertBeginEnd(String pem) {
+        pem = pem.replaceAll("-----BEGIN(.*?)CERTIFICATE-----", "");
+        pem = pem.replaceAll("-----END(.*?)CERTIFICATE-----", "");
+        pem = pem.replaceAll("\r\n", "");
+        pem = pem.replaceAll("\n", "");
+        pem = pem.replaceAll("\\\\n", "");
         return pem.trim();
     }
 
