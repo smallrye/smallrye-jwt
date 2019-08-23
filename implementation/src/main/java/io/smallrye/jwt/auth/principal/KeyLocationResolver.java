@@ -17,8 +17,8 @@
 package io.smallrye.jwt.auth.principal;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -226,7 +226,7 @@ public class KeyLocationResolver implements VerificationKeyResolver {
         return null;
     }
 
-    private static List<JsonWebKey> loadLocalJwks(String content) throws Exception {
+    private static List<JsonWebKey> loadLocalJwks(String content) {
         LOGGER.debugf("Trying to load the local JWK(S)...");
 
         JsonObject jwks = null;
@@ -239,15 +239,21 @@ public class KeyLocationResolver implements VerificationKeyResolver {
 
         List<JsonWebKey> localKeys = null;
         JsonArray keys = jwks.getJsonArray(JsonWebKeySet.JWK_SET_MEMBER_NAME);
-        if (keys != null) {
-            // JWK set
-            localKeys = new ArrayList<>(keys.size());
-            for (int i = 0; i < keys.size(); i++) {
-                localKeys.add(createJsonWebKey(keys.getJsonObject(i)));
+
+        try {
+            if (keys != null) {
+                // JWK set
+                localKeys = new ArrayList<>(keys.size());
+                for (int i = 0; i < keys.size(); i++) {
+                    localKeys.add(createJsonWebKey(keys.getJsonObject(i)));
+                }
+            } else {
+                // single JWK
+                localKeys = Collections.singletonList(createJsonWebKey(jwks));
             }
-        } else {
-            // single JWK
-            localKeys = Collections.singletonList(createJsonWebKey(jwks));
+        } catch (Exception ex) {
+            LOGGER.debug("Failed to parse the JWK JSON representation");
+            return null;
         }
         return localKeys;
     }
@@ -270,8 +276,11 @@ public class KeyLocationResolver implements VerificationKeyResolver {
     }
 
     private static InputStream getAsFileSystemResource(String publicKeyLocation) throws IOException {
-        File f = new File(publicKeyLocation);
-        return f.exists() ? new FileInputStream(f) : null;
+        try {
+            return new FileInputStream(publicKeyLocation);
+        } catch (FileNotFoundException e) {
+            return null;
+        }
     }
 
     private static InputStream getAsClasspathResource(String location) {
