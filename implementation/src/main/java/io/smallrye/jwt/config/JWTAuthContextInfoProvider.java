@@ -227,7 +227,6 @@ public class JWTAuthContextInfoProvider {
     Optional<Set<String>> expectedAudience;
 
     @Produces
-    @ApplicationScoped
     Optional<JWTAuthContextInfo> getOptionalContextInfo() {
         // Log the config values
         log.debugf("init, mpJwtPublicKey=%s, mpJwtIssuer=%s, mpJwtLocation=%s",
