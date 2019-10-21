@@ -54,13 +54,14 @@ import io.smallrye.jwt.KeyUtils;
  */
 public class KeyLocationResolver implements VerificationKeyResolver {
     private static final Logger LOGGER = Logger.getLogger(KeyLocationResolver.class);
+    private static final String HTTP_SCHEME = "http:";
     private static final String HTTPS_SCHEME = "https:";
     private static final String CLASSPATH_SCHEME = "classpath:";
     private static final String FILE_SCHEME = "file:";
 
     // The verification key can be calculated only once and used for all the token verification requests.
     // It will be created in the constructor if the PEM or the local JWK(S) content is available.
-    // 'smallrye.jwt.token.kid' has to be set for the verificationKey to be created from the local JWK(S). 
+    // 'smallrye.jwt.token.kid' has to be set for the verificationKey to be created from the local JWK(S).
     PublicKey verificationKey;
 
     // The 'localJwks' and 'httpsJwks' fields keep the JWK key content and are mutually exclusive.
@@ -84,14 +85,14 @@ public class KeyLocationResolver implements VerificationKeyResolver {
     public Key resolveKey(JsonWebSignature jws, List<JsonWebStructure> nestingContext) throws UnresolvableKeyException {
         verifyKid(jws, authContextInfo.getTokenKeyId());
 
-        // The verificationKey may have been calculated in the constructor from the local PEM, or, 
+        // The verificationKey may have been calculated in the constructor from the local PEM, or,
         // if authContextInfo.getTokenKeyId() is not null - from the local JWK(S) content.
         if (verificationKey != null) {
             return verificationKey;
         }
 
         // At this point the key can be loaded from either the HTTPS or local JWK(s) content using
-        // the current token kid to select the key. 
+        // the current token kid to select the key.
         PublicKey key = tryAsJwk(jws);
 
         if (key == null) {
@@ -182,13 +183,12 @@ public class KeyLocationResolver implements VerificationKeyResolver {
             is = getAsFileSystemResource(keyLocation.substring(FILE_SCHEME.length()));
         } else if (keyLocation.startsWith(CLASSPATH_SCHEME)) {
             is = getAsClasspathResource(keyLocation.substring(CLASSPATH_SCHEME.length()));
+        } else if (keyLocation.startsWith(HTTP_SCHEME)) {
+            is = new URL(keyLocation).openStream();
         } else {
             is = getAsFileSystemResource(keyLocation);
             if (is == null) {
                 is = getAsClasspathResource(keyLocation);
-            }
-            if (is == null) {
-                is = new URL(keyLocation).openStream();
             }
         }
 
