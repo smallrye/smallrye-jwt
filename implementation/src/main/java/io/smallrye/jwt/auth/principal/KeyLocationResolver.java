@@ -61,7 +61,7 @@ public class KeyLocationResolver implements VerificationKeyResolver {
 
     // The verification key can be calculated only once and used for all the token verification requests.
     // It will be created in the constructor if the PEM or the local JWK(S) content is available.
-    // 'smallrye.jwt.token.kid' has to be set for the verificationKey to be created from the local JWK(S).
+    // 'smallrye.jwt.token.kid' has to be set for the verificationKey to be created from the local JWK(S). 
     PublicKey verificationKey;
 
     // The 'localJwks' and 'httpsJwks' fields keep the JWK key content and are mutually exclusive.
@@ -85,14 +85,14 @@ public class KeyLocationResolver implements VerificationKeyResolver {
     public Key resolveKey(JsonWebSignature jws, List<JsonWebStructure> nestingContext) throws UnresolvableKeyException {
         verifyKid(jws, authContextInfo.getTokenKeyId());
 
-        // The verificationKey may have been calculated in the constructor from the local PEM, or,
+        // The verificationKey may have been calculated in the constructor from the local PEM, or, 
         // if authContextInfo.getTokenKeyId() is not null - from the local JWK(S) content.
         if (verificationKey != null) {
             return verificationKey;
         }
 
         // At this point the key can be loaded from either the HTTPS or local JWK(s) content using
-        // the current token kid to select the key.
+        // the current token kid to select the key. 
         PublicKey key = tryAsJwk(jws);
 
         if (key == null) {
