@@ -29,12 +29,6 @@ import io.smallrye.jwt.config.JWTAuthContextInfoProvider;
 public class KeyLocationResolverTest {
 
     @Test
-    public void testGetPublicKeyFromCertificate() throws Exception {
-        String content = KeyLocationResolver.readKeyContent("publicCrt.pem");
-        Assert.assertNotNull(KeyLocationResolver.tryAsPEMCertificate(content));
-    }
-
-    @Test
     public void testVerifyWithJwkKeyWithMatchingKid() throws Exception {
         verifyToken("key1", null, "publicKey.jwk");
     }
@@ -52,6 +46,11 @@ public class KeyLocationResolverTest {
     @Test
     public void testVerifyWithJwkKeyWithMatchingKidFromSet() throws Exception {
         verifyToken("key1", null, "publicKeySet.jwk");
+    }
+
+    @Test
+    public void testVerifyWithJwkKeyWithKidFromSingleKeySetWithoutKid() throws Exception {
+        verifyToken("key1", null, "publicSingleKeySetWithoutKid.jwk");
     }
 
     @Test
