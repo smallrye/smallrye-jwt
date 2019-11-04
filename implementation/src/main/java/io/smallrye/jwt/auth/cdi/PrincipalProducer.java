@@ -16,8 +16,6 @@
  */
 package io.smallrye.jwt.auth.cdi;
 
-import java.util.Set;
-
 import javax.annotation.Priority;
 import javax.enterprise.context.RequestScoped;
 import javax.enterprise.inject.Alternative;
@@ -47,23 +45,5 @@ public class PrincipalProducer {
     @RequestScoped
     JsonWebToken currentJWTPrincipalOrNull() {
         return token == null ? new NullJsonWebToken() : token;
-    }
-
-    private static class NullJsonWebToken implements JsonWebToken {
-
-        @Override
-        public String getName() {
-            return null;
-        }
-
-        @Override
-        public Set<String> getClaimNames() {
-            return null;
-        }
-
-        @Override
-        public <T> T getClaim(String claimName) {
-            return null;
-        }
     }
 }
