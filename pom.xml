@@ -38,7 +38,7 @@
 
     <version.jose4j>0.7.0</version.jose4j>
     <version.mokito>3.1.0</version.mokito>
-    <version.weld-junit4>2.0.0.Final</version.weld-junit4>
+    <version.weld-junit4>2.0.1.Final</version.weld-junit4>
     <sonar.coverage.jacoco.xmlReportPaths>${project.basedir}/testsuite/basic/target/site/jacoco-aggregate/jacoco.xml,${project.basedir}/../testsuite/basic/target/site/jacoco-aggregate/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
   </properties>
 
