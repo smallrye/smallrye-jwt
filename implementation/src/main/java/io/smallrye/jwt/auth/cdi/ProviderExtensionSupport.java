@@ -107,7 +107,7 @@ public class ProviderExtensionSupport {
     private Set<Annotation> providerQualifiers = new HashSet<>();
 
     /**
-     * An implementation of BeanAttributes<Object> that wraps the generic producer BeanAttributes
+     * An implementation of BeanAttributes that wraps the generic producer BeanAttributes
      */
     public static class ProviderBeanAttributes implements BeanAttributes<Object> {
         /**
@@ -116,6 +116,7 @@ public class ProviderExtensionSupport {
          *
          * @param delegate - the original producer method BeanAttributes
          * @param types - the full set of @Claim injection point types
+         * @param qualifiers - @Claim qualifiers
          */
         public ProviderBeanAttributes(BeanAttributes<Object> delegate, Set<Type> types, Set<Annotation> qualifiers) {
             this.delegate = delegate;
