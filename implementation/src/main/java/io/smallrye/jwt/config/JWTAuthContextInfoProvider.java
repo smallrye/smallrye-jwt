@@ -16,6 +16,7 @@
  */
 package io.smallrye.jwt.config;
 
+import java.security.PublicKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.Optional;
 import java.util.Set;
@@ -296,7 +297,7 @@ public class JWTAuthContextInfoProvider {
             // Try as PEM key value
             log.debugf("mpJwtPublicKey failed as JWK(S), %s", e.getMessage());
             try {
-                RSAPublicKey pk = (RSAPublicKey) KeyUtils.decodePublicKey(mpJwtPublicKey.get());
+                PublicKey pk = KeyUtils.decodePublicKey(mpJwtPublicKey.get());
                 contextInfo.setSignerKey(pk);
                 log.debugf("mpJwtPublicKey parsed as PEM");
             } catch (Exception e1) {

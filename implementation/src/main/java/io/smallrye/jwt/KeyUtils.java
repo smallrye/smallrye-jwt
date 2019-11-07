@@ -46,6 +46,7 @@ import javax.json.JsonReader;
  */
 public class KeyUtils {
     private static final String RSA = "RSA";
+    private static final String EC = "EC";
 
     public static PrivateKey readPrivateKey(String pemResName) throws IOException, GeneralSecurityException {
         InputStream contentIS = KeyUtils.class.getResourceAsStream(pemResName);
@@ -142,8 +143,13 @@ public class KeyUtils {
         byte[] encodedBytes = Base64.getDecoder().decode(pemEncoded);
 
         X509EncodedKeySpec spec = new X509EncodedKeySpec(encodedBytes);
-        KeyFactory kf = KeyFactory.getInstance(RSA);
-        return kf.generatePublic(spec);
+        try {
+            KeyFactory kf = KeyFactory.getInstance(RSA);
+            return kf.generatePublic(spec);
+        } catch (GeneralSecurityException e) {
+            KeyFactory kf = KeyFactory.getInstance(EC);
+            return kf.generatePublic(spec);
+        }
     }
 
     /**

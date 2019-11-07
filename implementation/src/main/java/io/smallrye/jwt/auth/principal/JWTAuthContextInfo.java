@@ -15,6 +15,7 @@
  */
 package io.smallrye.jwt.auth.principal;
 
+import java.security.PublicKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.ArrayList;
 import java.util.List;
@@ -24,7 +25,7 @@ import java.util.Set;
  * The public key and expected issuer needed to validate a token.
  */
 public class JWTAuthContextInfo {
-    private RSAPublicKey signerKey;
+    private PublicKey signerKey;
     private String issuedBy;
     private int expGracePeriodSecs = 60;
     private String publicKeyLocation;
@@ -78,11 +79,11 @@ public class JWTAuthContextInfo {
         this.jwksRefreshInterval = orig.jwksRefreshInterval;
     }
 
-    public RSAPublicKey getSignerKey() {
+    public PublicKey getSignerKey() {
         return signerKey;
     }
 
-    public void setSignerKey(RSAPublicKey signerKey) {
+    public void setSignerKey(PublicKey signerKey) {
         this.signerKey = signerKey;
     }
 
