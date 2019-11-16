@@ -16,10 +16,11 @@
 package io.smallrye.jwt.auth.principal;
 
 import java.security.PublicKey;
-import java.security.interfaces.RSAPublicKey;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+
+import io.smallrye.jwt.SignatureAlgorithm;
 
 /**
  * The public key and expected issuer needed to validate a token.
@@ -41,6 +42,8 @@ public class JWTAuthContextInfo {
     private List<String> whitelistAlgorithms = new ArrayList<>();
     private Set<String> expectedAudience;
     private String groupsSeparator = " ";
+    private SignatureAlgorithm signatureAlgorithm;
+    private byte[] hmacSecret;
 
     /**
      * Flag that indicates whether the issuer is required and validated, or ignored, new in MP-JWT 1.1.
@@ -56,8 +59,13 @@ public class JWTAuthContextInfo {
      * @param signerKey public key
      * @param issuedBy the issuer
      */
-    public JWTAuthContextInfo(RSAPublicKey signerKey, String issuedBy) {
+    public JWTAuthContextInfo(PublicKey signerKey, String issuedBy) {
         this.signerKey = signerKey;
+        this.issuedBy = issuedBy;
+    }
+
+    public JWTAuthContextInfo(byte[] hmacSecret, String issuedBy) {
+        this.hmacSecret = hmacSecret;
         this.issuedBy = issuedBy;
     }
 
@@ -77,6 +85,8 @@ public class JWTAuthContextInfo {
         this.expGracePeriodSecs = orig.expGracePeriodSecs;
         this.publicKeyLocation = orig.publicKeyLocation;
         this.jwksRefreshInterval = orig.jwksRefreshInterval;
+        this.signatureAlgorithm = orig.signatureAlgorithm;
+        this.hmacSecret = orig.hmacSecret;
     }
 
     public PublicKey getSignerKey() {
@@ -183,10 +193,12 @@ public class JWTAuthContextInfo {
         this.groupsPath = groupsPath;
     }
 
+    @Deprecated
     public List<String> getWhitelistAlgorithms() {
         return whitelistAlgorithms;
     }
 
+    @Deprecated
     public void setWhitelistAlgorithms(final List<String> whitelistAlgorithms) {
         this.whitelistAlgorithms = whitelistAlgorithms;
     }
@@ -213,5 +225,21 @@ public class JWTAuthContextInfo {
 
     public void setGroupsSeparator(String groupsSeparator) {
         this.groupsSeparator = groupsSeparator;
+    }
+
+    public void setSignatureAlgorithm(SignatureAlgorithm signatureAlgorithm) {
+        this.signatureAlgorithm = signatureAlgorithm;
+    }
+
+    public SignatureAlgorithm getSignatureAlgorithm() {
+        return signatureAlgorithm;
+    }
+
+    public void setHmacSecret(byte[] hmacSecret) {
+        this.hmacSecret = hmacSecret;
+    }
+
+    public byte[] getHmacSecret() {
+        return hmacSecret;
     }
 }

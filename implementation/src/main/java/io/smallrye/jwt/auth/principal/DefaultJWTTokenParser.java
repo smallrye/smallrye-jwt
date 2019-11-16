@@ -28,13 +28,13 @@ import java.util.stream.Stream;
 import org.eclipse.microprofile.jwt.Claims;
 import org.jboss.logging.Logger;
 import org.jose4j.jwa.AlgorithmConstraints;
-import org.jose4j.jws.AlgorithmIdentifiers;
 import org.jose4j.jwt.JwtClaims;
 import org.jose4j.jwt.NumericDate;
 import org.jose4j.jwt.consumer.InvalidJwtException;
 import org.jose4j.jwt.consumer.JwtConsumer;
 import org.jose4j.jwt.consumer.JwtConsumerBuilder;
 import org.jose4j.jwt.consumer.JwtContext;
+import org.jose4j.keys.HmacKey;
 import org.jose4j.keys.resolvers.VerificationKeyResolver;
 import org.jose4j.lang.UnresolvableKeyException;
 
@@ -53,16 +53,11 @@ public class DefaultJWTTokenParser {
             JwtConsumerBuilder builder = new JwtConsumerBuilder()
                     .setRequireExpirationTime();
 
-            if (authContextInfo.getWhitelistAlgorithms().isEmpty()) {
-                builder.setJwsAlgorithmConstraints(
-                        new AlgorithmConstraints(AlgorithmConstraints.ConstraintType.WHITELIST,
-                                AlgorithmIdentifiers.RSA_USING_SHA256));
-            } else {
+            if (!authContextInfo.getWhitelistAlgorithms().isEmpty()) {
                 builder.setJwsAlgorithmConstraints(
                         new AlgorithmConstraints(AlgorithmConstraints.ConstraintType.WHITELIST,
                                 authContextInfo.getWhitelistAlgorithms().toArray(new String[0])));
             }
-
             if (authContextInfo.isRequireIssuer()) {
                 builder.setExpectedIssuer(true, authContextInfo.getIssuedBy());
             } else {
@@ -70,6 +65,8 @@ public class DefaultJWTTokenParser {
             }
             if (authContextInfo.getSignerKey() != null) {
                 builder.setVerificationKey(authContextInfo.getSignerKey());
+            } else if (authContextInfo.getHmacSecret() != null) {
+                builder.setVerificationKey(new HmacKey(authContextInfo.getHmacSecret()));
             } else {
                 builder.setVerificationKeyResolver(getKeyResolver(authContextInfo));
             }

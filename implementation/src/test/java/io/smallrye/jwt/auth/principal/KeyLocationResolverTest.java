@@ -38,6 +38,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
 
+import io.smallrye.jwt.SignatureAlgorithm;
 import io.smallrye.jwt.auth.principal.KeyLocationResolver.UrlStreamResolver;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -122,11 +123,13 @@ public class KeyLocationResolverTest {
     @Test
     public void testLoadPemOnClassPath() throws Exception {
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo("publicKey.pem", "issuer");
+        contextInfo.setSignatureAlgorithm(SignatureAlgorithm.RS256);
         KeyLocationResolver keyLocationResolver = new KeyLocationResolver(contextInfo);
         assertNotNull(keyLocationResolver.verificationKey);
         assertEquals(keyLocationResolver.verificationKey, keyLocationResolver.resolveKey(signature, emptyList()));
         assertEquals(keyLocationResolver.verificationKey,
-                KeyLocationResolver.tryAsPEMPublicKey(keyLocationResolver.readKeyContent("publicKey.pem")));
+                KeyLocationResolver.tryAsPEMPublicKey(keyLocationResolver.readKeyContent("publicKey.pem"),
+                        contextInfo.getSignatureAlgorithm()));
     }
 
     @Test

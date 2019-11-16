@@ -23,6 +23,7 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.io.UncheckedIOException;
 import java.math.BigInteger;
+import java.security.AlgorithmParameters;
 import java.security.GeneralSecurityException;
 import java.security.KeyFactory;
 import java.security.KeyPair;
@@ -31,6 +32,10 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.cert.CertificateFactory;
+import java.security.spec.ECGenParameterSpec;
+import java.security.spec.ECParameterSpec;
+import java.security.spec.ECPoint;
+import java.security.spec.ECPublicKeySpec;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.RSAPublicKeySpec;
 import java.security.spec.X509EncodedKeySpec;
@@ -48,24 +53,38 @@ public class KeyUtils {
     private static final String RSA = "RSA";
     private static final String EC = "EC";
 
-    public static PrivateKey readPrivateKey(String pemResName) throws IOException, GeneralSecurityException {
+    public static PrivateKey readPrivateKey(String pemResName, SignatureAlgorithm algo)
+            throws IOException, GeneralSecurityException {
         InputStream contentIS = KeyUtils.class.getResourceAsStream(pemResName);
         byte[] tmp = new byte[4096];
         int length = contentIS.read(tmp);
-        return decodePrivateKey(new String(tmp, 0, length));
+        return decodePrivateKey(new String(tmp, 0, length), algo);
     }
 
-    public static PublicKey readPublicKey(String pemResName) throws IOException, GeneralSecurityException {
+    public static PublicKey readPublicKey(String pemResName, SignatureAlgorithm algo)
+            throws IOException, GeneralSecurityException {
         InputStream contentIS = KeyUtils.class.getResourceAsStream(pemResName);
         byte[] tmp = new byte[4096];
         int length = contentIS.read(tmp);
-        return decodePublicKey(new String(tmp, 0, length));
+        return decodePublicKey(new String(tmp, 0, length), algo);
     }
 
-    public static KeyPair generateKeyPair(int keySize) throws NoSuchAlgorithmException {
-        KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance(RSA);
+    public static KeyPair generateKeyPair(int keySize, SignatureAlgorithm algo) throws NoSuchAlgorithmException {
+        KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance(keyAlgorithm(algo));
         keyPairGenerator.initialize(keySize);
         return keyPairGenerator.genKeyPair();
+    }
+
+    public static String keyAlgorithm(SignatureAlgorithm algo) throws NoSuchAlgorithmException {
+        if (algo.name().startsWith("RS")) {
+            return RSA;
+        }
+        if (algo.name().startsWith("ES")) {
+            return EC;
+        }
+
+        throw new NoSuchAlgorithmException("Unsupported key type" + algo.name());
+
     }
 
     /**
@@ -75,14 +94,14 @@ public class KeyUtils {
      * @return RSA private key instance
      * @throws GeneralSecurityException - on failure to decode and create key
      */
-    public static PrivateKey decodePrivateKey(String pemEncoded) throws GeneralSecurityException {
+    public static PrivateKey decodePrivateKey(String pemEncoded, SignatureAlgorithm algo) throws GeneralSecurityException {
         pemEncoded = removeKeyBeginEnd(pemEncoded);
         byte[] pkcs8EncodedBytes = Base64.getDecoder().decode(pemEncoded);
 
         // extract the private key
 
         PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(pkcs8EncodedBytes);
-        KeyFactory kf = KeyFactory.getInstance(RSA);
+        KeyFactory kf = KeyFactory.getInstance(keyAlgorithm(algo));
         return kf.generatePrivate(keySpec);
     }
 
@@ -94,18 +113,16 @@ public class KeyUtils {
      * @return PublicKey from RSAPublicKeySpec
      * @throws GeneralSecurityException when RSA security is not supported or public key cannot be decoded
      */
-    public static PublicKey decodeJWKSPublicKey(String jwksValue) throws GeneralSecurityException {
+    public static PublicKey decodeJWKSPublicKey(String jwksValue, SignatureAlgorithm algo) throws GeneralSecurityException {
         JsonObject jwks;
 
-        try (Reader reader = new StringReader(jwksValue);
-                JsonReader json = Json.createReader(reader)) {
+        try (Reader reader = new StringReader(jwksValue); JsonReader json = Json.createReader(reader)) {
             jwks = json.readObject();
         } catch (Exception e) {
             // See if this is base64 encoded
             byte[] decoded = Base64.getDecoder().decode(jwksValue);
 
-            try (InputStream stream = new ByteArrayInputStream(decoded);
-                    JsonReader json = Json.createReader(stream)) {
+            try (InputStream stream = new ByteArrayInputStream(decoded); JsonReader json = Json.createReader(stream)) {
                 jwks = json.readObject();
             } catch (IOException ioe) {
                 throw new UncheckedIOException(ioe);
@@ -119,16 +136,35 @@ public class KeyUtils {
             // A JWK
             jwk = jwks;
         }
-        String e = jwk.getString("e");
-        String n = jwk.getString("n");
 
-        byte[] ebytes = Base64.getUrlDecoder().decode(e);
-        BigInteger publicExponent = new BigInteger(1, ebytes);
-        byte[] nbytes = Base64.getUrlDecoder().decode(n);
-        BigInteger modulus = new BigInteger(1, nbytes);
-        KeyFactory kf = KeyFactory.getInstance(RSA);
-        RSAPublicKeySpec rsaPublicKeySpec = new RSAPublicKeySpec(modulus, publicExponent);
-        return kf.generatePublic(rsaPublicKeySpec);
+        String keyAlgorithm = keyAlgorithm(algo);
+        KeyFactory kf = KeyFactory.getInstance(keyAlgorithm);
+        if (EC.equals(keyAlgorithm)) {
+            String x = jwk.getString("x");
+            String y = jwk.getString("y");
+            String crv = jwk.getString("crv");
+
+            byte[] xbytes = Base64.getUrlDecoder().decode(x);
+            BigInteger xint = new BigInteger(1, xbytes);
+            byte[] ybytes = Base64.getUrlDecoder().decode(y);
+            BigInteger yint = new BigInteger(1, ybytes);
+            String stdName = String.format("secp%03dr1", Integer.parseInt(crv.split("P-")[1]));
+            AlgorithmParameters parameters = AlgorithmParameters.getInstance(EC);
+            parameters.init(new ECGenParameterSpec(stdName));
+            ECPublicKeySpec ecPublicKeySpec = new ECPublicKeySpec(new ECPoint(xint, yint),
+                    parameters.getParameterSpec(ECParameterSpec.class));
+            return kf.generatePublic(ecPublicKeySpec);
+        } else {
+            String e = jwk.getString("e");
+            String n = jwk.getString("n");
+
+            byte[] ebytes = Base64.getUrlDecoder().decode(e);
+            BigInteger publicExponent = new BigInteger(1, ebytes);
+            byte[] nbytes = Base64.getUrlDecoder().decode(n);
+            BigInteger modulus = new BigInteger(1, nbytes);
+            RSAPublicKeySpec rsaPublicKeySpec = new RSAPublicKeySpec(modulus, publicExponent);
+            return kf.generatePublic(rsaPublicKeySpec);
+        }
     }
 
     /**
@@ -138,18 +174,13 @@ public class KeyUtils {
      * @return PublicKey
      * @throws GeneralSecurityException on decode failure
      */
-    public static PublicKey decodePublicKey(String pemEncoded) throws GeneralSecurityException {
+    public static PublicKey decodePublicKey(String pemEncoded, SignatureAlgorithm algo) throws GeneralSecurityException {
         pemEncoded = removeKeyBeginEnd(pemEncoded);
         byte[] encodedBytes = Base64.getDecoder().decode(pemEncoded);
 
         X509EncodedKeySpec spec = new X509EncodedKeySpec(encodedBytes);
-        try {
-            KeyFactory kf = KeyFactory.getInstance(RSA);
-            return kf.generatePublic(spec);
-        } catch (GeneralSecurityException e) {
-            KeyFactory kf = KeyFactory.getInstance(EC);
-            return kf.generatePublic(spec);
-        }
+        KeyFactory kf = KeyFactory.getInstance(keyAlgorithm(algo));
+        return kf.generatePublic(spec);
     }
 
     /**
@@ -162,8 +193,8 @@ public class KeyUtils {
     public static PublicKey decodeCertificate(String pemEncoded) throws GeneralSecurityException {
         pemEncoded = removeCertBeginEnd(pemEncoded);
         byte[] encodedBytes = Base64.getDecoder().decode(pemEncoded);
-        return CertificateFactory.getInstance("X.509")
-                .generateCertificate(new ByteArrayInputStream(encodedBytes)).getPublicKey();
+        return CertificateFactory.getInstance("X.509").generateCertificate(new ByteArrayInputStream(encodedBytes))
+                .getPublicKey();
     }
 
     /**

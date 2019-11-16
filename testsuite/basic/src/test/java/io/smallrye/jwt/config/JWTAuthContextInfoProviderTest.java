@@ -1,10 +1,12 @@
 package io.smallrye.jwt.config;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.InputStream;
+import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.Optional;
@@ -88,4 +90,18 @@ public class JWTAuthContextInfoProviderTest {
         assertEquals(1, info.get().getExpectedAudience().size());
         assertEquals("expected.aud", info.get().getExpectedAudience().stream().findFirst().get());
     }
+
+    @Test
+    public void testGetOptionalContextInfoWithHmac() throws Exception {
+        SecureRandom random = new SecureRandom();
+        byte[] hmacSecret = new byte[32];
+        random.nextBytes(hmacSecret);
+        JWTAuthContextInfoProvider provider = JWTAuthContextInfoProvider
+                .createWithHmac(Base64.getEncoder().encodeToString(hmacSecret), TEST_ISS);
+        Optional<JWTAuthContextInfo> info = provider.getOptionalContextInfo();
+        assertNotNull(info);
+        assertTrue(info.isPresent());
+        assertArrayEquals(hmacSecret, info.get().getHmacSecret());
+    }
+
 }

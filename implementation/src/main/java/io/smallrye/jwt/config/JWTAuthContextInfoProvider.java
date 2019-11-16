@@ -17,7 +17,7 @@
 package io.smallrye.jwt.config;
 
 import java.security.PublicKey;
-import java.security.interfaces.RSAPublicKey;
+import java.util.Base64;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -32,6 +32,7 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
 import io.smallrye.jwt.KeyUtils;
+import io.smallrye.jwt.SignatureAlgorithm;
 import io.smallrye.jwt.SmallryeJwtUtils;
 import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
 
@@ -54,7 +55,18 @@ public class JWTAuthContextInfoProvider {
      * @return a new instance of JWTAuthContextInfoProvider
      */
     public static JWTAuthContextInfoProvider createWithKey(String publicKey, String issuer) {
-        return create(publicKey, NONE, issuer);
+        return create(publicKey, NONE, NONE, issuer);
+    }
+
+    /**
+     * Create JWTAuthContextInfoProvider with the public key and issuer
+     *
+     * @param publicKey the public key value
+     * @param issuer the issuer
+     * @return a new instance of JWTAuthContextInfoProvider
+     */
+    public static JWTAuthContextInfoProvider createWithHmac(String secret, String issuer) {
+        return create(NONE, NONE, secret, issuer);
     }
 
     /**
@@ -65,10 +77,11 @@ public class JWTAuthContextInfoProvider {
      * @return a new instance of JWTAuthContextInfoProvider
      */
     public static JWTAuthContextInfoProvider createWithKeyLocation(String publicKeyLocation, String issuer) {
-        return create(NONE, publicKeyLocation, issuer);
+        return create(NONE, publicKeyLocation, NONE, issuer);
     }
 
-    private static JWTAuthContextInfoProvider create(String publicKey, String publicKeyLocation, String issuer) {
+    private static JWTAuthContextInfoProvider create(String publicKey, String publicKeyLocation, String hmacSecret,
+            String issuer) {
         JWTAuthContextInfoProvider provider = new JWTAuthContextInfoProvider();
         provider.mpJwtPublicKey = Optional.of(publicKey);
         provider.mpJwtLocation = Optional.of(publicKeyLocation);
@@ -88,6 +101,8 @@ public class JWTAuthContextInfoProvider {
         provider.whitelistAlgorithms = Optional.empty();
         provider.expectedAudience = Optional.empty();
         provider.groupsSeparator = DEFAULT_GROUPS_SEPARATOR;
+        provider.signatureAlgorithm = SignatureAlgorithm.RS256.name();
+        provider.hmacSecret = Optional.of(hmacSecret);
 
         return provider;
     }
@@ -210,7 +225,10 @@ public class JWTAuthContextInfoProvider {
 
     /**
      * List of supported JSON Web Algorithm RSA and Elliptic Curve signing algorithms, default is RS256.
+     * 
+     * @deprecated
      */
+    @Deprecated
     @Inject
     @ConfigProperty(name = "smallrye.jwt.whitelist.algorithms")
     private Optional<String> whitelistAlgorithms;
@@ -227,6 +245,20 @@ public class JWTAuthContextInfoProvider {
     @ConfigProperty(name = "smallrye.jwt.verify.aud")
     Optional<Set<String>> expectedAudience;
 
+    /**
+     * The JWT signature verification algorithm to use.
+     */
+    @Inject
+    @ConfigProperty(name = "io.smallrye.jwt.verify.algorithm", defaultValue = "RS256")
+    String signatureAlgorithm;
+
+    /**
+     * The HMAC secret if HMAC is used.
+     */
+    @Inject
+    @ConfigProperty(name = "io.smallrye.jwt.verify.hmac-secret")
+    Optional<String> hmacSecret;
+
     @Produces
     Optional<JWTAuthContextInfo> getOptionalContextInfo() {
         // Log the config values
@@ -239,13 +271,15 @@ public class JWTAuthContextInfoProvider {
          * when MP-Config
          * is repaired.
          */
-        if (NONE.equals(mpJwtPublicKey.get()) && NONE.equals(mpJwtLocation.get())) {
-            log.debugf("Neither mpJwtPublicKey nor mpJwtLocation properties are configured,"
+        if (NONE.equals(mpJwtPublicKey.get()) && NONE.equals(mpJwtLocation.get()) && NONE.equals(hmacSecret.get())) {
+            log.debugf("Neither mpJwtPublicKey nor mpJwtLocation nor hmacSecret properties are configured,"
                     + " JWTAuthContextInfo will not be available");
             return Optional.empty();
         }
 
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo();
+        contextInfo.setSignatureAlgorithm(SignatureAlgorithm.valueOf(signatureAlgorithm));
+
         // Look to MP-JWT values first
         decodeMpJwtPublicKey(contextInfo);
 
@@ -263,6 +297,10 @@ public class JWTAuthContextInfoProvider {
         if (mpJwtLocation.isPresent() && !NONE.equals(mpJwtLocation.get())) {
             contextInfo.setPublicKeyLocation(mpJwtLocation.get());
         }
+
+        if (hmacSecret.isPresent() && !NONE.equals(hmacSecret.get())) {
+            contextInfo.setHmacSecret(Base64.getDecoder().decode(hmacSecret.get()));
+        }
         if (tokenHeader != null) {
             contextInfo.setTokenHeader(tokenHeader);
         }
@@ -279,7 +317,6 @@ public class JWTAuthContextInfoProvider {
         SmallryeJwtUtils.setWhitelistAlgorithms(contextInfo, whitelistAlgorithms);
         contextInfo.setExpectedAudience(expectedAudience.orElse(null));
         contextInfo.setGroupsSeparator(groupsSeparator);
-
         return Optional.of(contextInfo);
     }
 
@@ -290,14 +327,14 @@ public class JWTAuthContextInfoProvider {
 
         // Need to decode what this is...
         try {
-            RSAPublicKey pk = (RSAPublicKey) KeyUtils.decodeJWKSPublicKey(mpJwtPublicKey.get());
+            PublicKey pk = KeyUtils.decodeJWKSPublicKey(mpJwtPublicKey.get(), contextInfo.getSignatureAlgorithm());
             contextInfo.setSignerKey(pk);
             log.debugf("mpJwtPublicKey parsed as JWK(S)");
         } catch (Exception e) {
             // Try as PEM key value
             log.debugf("mpJwtPublicKey failed as JWK(S), %s", e.getMessage());
             try {
-                PublicKey pk = KeyUtils.decodePublicKey(mpJwtPublicKey.get());
+                PublicKey pk = KeyUtils.decodePublicKey(mpJwtPublicKey.get(), contextInfo.getSignatureAlgorithm());
                 contextInfo.setSignerKey(pk);
                 log.debugf("mpJwtPublicKey parsed as PEM");
             } catch (Exception e1) {
@@ -369,6 +406,10 @@ public class JWTAuthContextInfoProvider {
 
     public Optional<Set<String>> getExpectedAudience() {
         return expectedAudience;
+    }
+
+    public String getSignatureAlgorithm() {
+        return signatureAlgorithm;
     }
 
     @Produces

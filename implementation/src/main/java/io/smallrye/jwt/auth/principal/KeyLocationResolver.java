@@ -49,6 +49,7 @@ import org.jose4j.lang.JoseException;
 import org.jose4j.lang.UnresolvableKeyException;
 
 import io.smallrye.jwt.KeyUtils;
+import io.smallrye.jwt.SignatureAlgorithm;
 
 /**
  * This implements the MP-JWT 1.1 mp.jwt.verify.publickey.location config property resolution logic
@@ -168,7 +169,7 @@ public class KeyLocationResolver implements VerificationKeyResolver {
         String content = readKeyContent(authContextInfo.getPublicKeyLocation());
 
         // Try to init the verification key from the local PEM or JWK(S) content
-        verificationKey = tryAsPEMPublicKey(content);
+        verificationKey = tryAsPEMPublicKey(content, authContextInfo.getSignatureAlgorithm());
         if (verificationKey == null) {
             verificationKey = tryAsPEMCertificate(content);
         }
@@ -224,10 +225,10 @@ public class KeyLocationResolver implements VerificationKeyResolver {
         return new UrlStreamResolver();
     }
 
-    static PublicKey tryAsPEMPublicKey(String content) {
+    static PublicKey tryAsPEMPublicKey(String content, SignatureAlgorithm signatureAlgorithm) {
         LOGGER.debugf("Trying to create a key from the encoded PEM key...");
         try {
-            return KeyUtils.decodePublicKey(content);
+            return KeyUtils.decodePublicKey(content, signatureAlgorithm);
         } catch (Exception e) {
             LOGGER.debug("Failed to create a key from the encoded PEM key", e);
         }

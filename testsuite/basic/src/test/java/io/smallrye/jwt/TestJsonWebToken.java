@@ -16,6 +16,9 @@
  */
 package io.smallrye.jwt;
 
+import java.security.SecureRandom;
+import java.security.interfaces.ECPrivateKey;
+import java.security.interfaces.ECPublicKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -23,7 +26,18 @@ import java.util.HashSet;
 import org.eclipse.microprofile.jwt.Claims;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.eclipse.microprofile.jwt.tck.util.TokenUtils;
+import org.jose4j.jwt.JwtClaims;
 import org.testng.annotations.Test;
+
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.JWSHeader;
+import com.nimbusds.jose.JWSObject;
+import com.nimbusds.jose.JWSSigner;
+import com.nimbusds.jose.Payload;
+import com.nimbusds.jose.crypto.ECDSASigner;
+import com.nimbusds.jose.crypto.MACSigner;
+import com.nimbusds.jose.jwk.ECKey;
+import com.nimbusds.jose.jwk.ECKey.Curve;
 
 import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
 import io.smallrye.jwt.auth.principal.JWTCallerPrincipal;
@@ -37,8 +51,43 @@ public class TestJsonWebToken {
     @Test
     public void testValidation() throws Exception {
         String token = TokenUtils.generateTokenString("/Token1.json");
-        RSAPublicKey publicKey = (RSAPublicKey) TokenUtils.readPublicKey("/publicKey.pem");
+        RSAPublicKey publicKey = (RSAPublicKey) KeyUtils.readPublicKey("/publicKey.pem", SignatureAlgorithm.RS256);
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo(publicKey, "https://server.example.com");
+        contextInfo.setExpGracePeriodSecs(60);
+        JsonWebToken jwt = validateToken(token, contextInfo);
+    }
+
+    @Test
+    public void testECValidation() throws Exception {
+        ECPrivateKey privateKey = (ECPrivateKey) KeyUtils.readPrivateKey("/ecPrivateKey.pem", SignatureAlgorithm.ES256);
+        ECPublicKey publicKey = (ECPublicKey) KeyUtils.readPublicKey("/ecPublicKey.pem", SignatureAlgorithm.ES256);
+        ECKey ecJWK = new ECKey.Builder(Curve.P_256, publicKey).privateKey(privateKey).keyID("123").build();
+        JWSSigner signer = new ECDSASigner(ecJWK);
+        String token = TokenUtils.readResource("/Token1.json");
+        JwtClaims claims = JwtClaims.parse(token);
+        claims.setExpirationTimeMinutesInTheFuture(1);
+        JWSObject jwso = new JWSObject(new JWSHeader.Builder(JWSAlgorithm.ES256).keyID(ecJWK.getKeyID()).build(),
+                new Payload(claims.toJson()));
+        jwso.sign(signer);
+        token = jwso.serialize();
+        JWTAuthContextInfo contextInfo = new JWTAuthContextInfo(publicKey, "https://server.example.com");
+        contextInfo.setExpGracePeriodSecs(60);
+        JsonWebToken jwt = validateToken(token, contextInfo);
+    }
+
+    @Test
+    public void tesHMACValidation() throws Exception {
+        SecureRandom random = new SecureRandom();
+        byte[] secret = new byte[32];
+        random.nextBytes(secret);
+        JWSSigner signer = new MACSigner(secret);
+        String token = TokenUtils.readResource("/Token1.json");
+        JwtClaims claims = JwtClaims.parse(token);
+        claims.setExpirationTimeMinutesInTheFuture(1);
+        JWSObject jwso = new JWSObject(new JWSHeader(JWSAlgorithm.HS256), new Payload(claims.toJson()));
+        jwso.sign(signer);
+        token = jwso.serialize();
+        JWTAuthContextInfo contextInfo = new JWTAuthContextInfo(secret, "https://server.example.com");
         contextInfo.setExpGracePeriodSecs(60);
         JsonWebToken jwt = validateToken(token, contextInfo);
     }
