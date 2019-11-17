@@ -60,8 +60,9 @@ public class JWTAuthContextInfoProvider {
 
     /**
      * Create JWTAuthContextInfoProvider with the public key and issuer
+     * 
+     * @param secret - Base64 HMAC shared secret
      *
-     * @param publicKey the public key value
      * @param issuer the issuer
      * @return a new instance of JWTAuthContextInfoProvider
      */

@@ -91,6 +91,7 @@ public class KeyUtils {
      * Decode a PEM RSA private key
      * 
      * @param pemEncoded - pem string for key
+     * @param algo - decoding key algorithm
      * @return RSA private key instance
      * @throws GeneralSecurityException - on failure to decode and create key
      */
@@ -110,6 +111,7 @@ public class KeyUtils {
      * only the first JWK is used.
      * 
      * @param jwksValue - JWKS string value
+     * @param algo - decoding key algorithm
      * @return PublicKey from RSAPublicKeySpec
      * @throws GeneralSecurityException when RSA security is not supported or public key cannot be decoded
      */
@@ -171,6 +173,7 @@ public class KeyUtils {
      * Decode a PEM encoded public key string to an RSA PublicKey
      * 
      * @param pemEncoded - PEM string for public key
+     * @param algo - decoding key algorithm
      * @return PublicKey
      * @throws GeneralSecurityException on decode failure
      */
