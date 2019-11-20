@@ -1,0 +1,5 @@
+{
+  "kty":"oct",
+  "k":"Fdh9u8rINxfivbrianbbVT1u232VQBZYKx1HGAGPt2I",
+  "kid": "secretkey1"
+}
