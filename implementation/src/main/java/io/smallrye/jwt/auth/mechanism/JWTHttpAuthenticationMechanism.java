@@ -33,6 +33,7 @@ import org.jboss.logging.Logger;
 import io.smallrye.jwt.auth.AbstractBearerTokenExtractor;
 import io.smallrye.jwt.auth.cdi.PrincipalProducer;
 import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
+import io.smallrye.jwt.auth.principal.JWTParser;
 
 /**
  * A JAX-RS HttpAuthenticationMechanism prototype
@@ -47,6 +48,9 @@ public class JWTHttpAuthenticationMechanism implements HttpAuthenticationMechani
     private JWTAuthContextInfo authContextInfo;
 
     @Inject
+    private JWTParser jwtParser;
+
+    @Inject
     private PrincipalProducer producer;
 
     @Override
@@ -55,7 +59,7 @@ public class JWTHttpAuthenticationMechanism implements HttpAuthenticationMechani
             HttpMessageContext httpMessageContext)
             throws AuthenticationException {
 
-        AbstractBearerTokenExtractor extractor = new BearerTokenExtractor(request, authContextInfo);
+        AbstractBearerTokenExtractor extractor = new BearerTokenExtractor(request, authContextInfo, jwtParser);
         String bearerToken = extractor.getBearerToken();
 
         if (bearerToken != null) {
@@ -78,8 +82,8 @@ public class JWTHttpAuthenticationMechanism implements HttpAuthenticationMechani
     private static class BearerTokenExtractor extends AbstractBearerTokenExtractor {
         private final HttpServletRequest request;
 
-        BearerTokenExtractor(HttpServletRequest request, JWTAuthContextInfo authContextInfo) {
-            super(authContextInfo);
+        BearerTokenExtractor(HttpServletRequest request, JWTAuthContextInfo authContextInfo, JWTParser jwtParser) {
+            super(authContextInfo, jwtParser);
             this.request = request;
         }
 

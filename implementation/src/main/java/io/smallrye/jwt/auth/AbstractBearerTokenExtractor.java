@@ -19,7 +19,7 @@ import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.jboss.logging.Logger;
 
 import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
-import io.smallrye.jwt.auth.principal.JWTCallerPrincipalFactory;
+import io.smallrye.jwt.auth.principal.JWTParser;
 import io.smallrye.jwt.auth.principal.ParseException;
 
 /**
@@ -39,9 +39,11 @@ public abstract class AbstractBearerTokenExtractor {
     private static final Logger LOGGER = Logger.getLogger(AbstractBearerTokenExtractor.class);
 
     private final JWTAuthContextInfo authContextInfo;
+    private final JWTParser jwtParser;
 
-    protected AbstractBearerTokenExtractor(JWTAuthContextInfo authContextInfo) {
+    protected AbstractBearerTokenExtractor(JWTAuthContextInfo authContextInfo, JWTParser jwtParser) {
         this.authContextInfo = authContextInfo;
+        this.jwtParser = jwtParser;
     }
 
     /**
@@ -121,8 +123,7 @@ public abstract class AbstractBearerTokenExtractor {
     }
 
     public JsonWebToken validate(String bearerToken) throws ParseException {
-        JWTCallerPrincipalFactory factory = JWTCallerPrincipalFactory.instance();
-        return factory.parse(bearerToken, authContextInfo);
+        return jwtParser.parse(bearerToken);
     }
 
     /**

@@ -34,6 +34,7 @@ import org.jboss.logging.Logger;
 import io.smallrye.jwt.auth.AbstractBearerTokenExtractor;
 import io.smallrye.jwt.auth.cdi.PrincipalProducer;
 import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
+import io.smallrye.jwt.auth.principal.JWTParser;
 
 /**
  * A JAX-RS ContainerRequestFilter prototype
@@ -48,6 +49,9 @@ public class JWTAuthenticationFilter implements ContainerRequestFilter {
     private JWTAuthContextInfo authContextInfo;
 
     @Inject
+    private JWTParser jwtParser;
+
+    @Inject
     private PrincipalProducer producer;
 
     @Override
@@ -56,7 +60,7 @@ public class JWTAuthenticationFilter implements ContainerRequestFilter {
         final Principal principal = securityContext.getUserPrincipal();
 
         if (!(principal instanceof JsonWebToken)) {
-            AbstractBearerTokenExtractor extractor = new BearerTokenExtractor(requestContext, authContextInfo);
+            AbstractBearerTokenExtractor extractor = new BearerTokenExtractor(requestContext, authContextInfo, jwtParser);
             String bearerToken = extractor.getBearerToken();
 
             if (bearerToken != null) {
@@ -78,8 +82,8 @@ public class JWTAuthenticationFilter implements ContainerRequestFilter {
     private static class BearerTokenExtractor extends AbstractBearerTokenExtractor {
         private final ContainerRequestContext requestContext;
 
-        BearerTokenExtractor(ContainerRequestContext requestContext, JWTAuthContextInfo authContextInfo) {
-            super(authContextInfo);
+        BearerTokenExtractor(ContainerRequestContext requestContext, JWTAuthContextInfo authContextInfo, JWTParser jwtParser) {
+            super(authContextInfo, jwtParser);
             this.requestContext = requestContext;
         }
 

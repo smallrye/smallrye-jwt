@@ -27,6 +27,7 @@ import org.jboss.logging.Logger;
 
 import io.smallrye.jwt.auth.jaxrs.JWTAuthenticationFilter;
 import io.smallrye.jwt.auth.mechanism.JWTHttpAuthenticationMechanism;
+import io.smallrye.jwt.auth.principal.DefaultJWTParser;
 import io.smallrye.jwt.config.JWTAuthContextInfoProvider;
 
 /**
@@ -78,6 +79,7 @@ public class SmallRyeJWTAuthCDIExtension implements Extension {
         // TODO: Do not add CDI beans unless @LoginConfig (or other trigger) is configured
         addAnnotatedType(event, beanManager, ClaimValueProducer.class);
         addAnnotatedType(event, beanManager, CommonJwtProducer.class);
+        addAnnotatedType(event, beanManager, DefaultJWTParser.class);
         addAnnotatedType(event, beanManager, JsonValueProducer.class);
         addAnnotatedType(event, beanManager, JWTAuthContextInfoProvider.class);
         addAnnotatedType(event, beanManager, JWTAuthenticationFilter.class);
