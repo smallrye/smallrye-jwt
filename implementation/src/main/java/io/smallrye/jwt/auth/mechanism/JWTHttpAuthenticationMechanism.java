@@ -71,7 +71,8 @@ public class JWTHttpAuthenticationMechanism implements HttpAuthenticationMechani
             }
         } else {
             logger.debug("No usable bearer token was found in the request, continuing unauthenticated");
-            return httpMessageContext.doNothing();
+            return httpMessageContext.isProtected() ? httpMessageContext.responseUnauthorized()
+                    : httpMessageContext.doNothing();
         }
     }
 
