@@ -66,7 +66,7 @@ public class JWTHttpAuthenticationMechanism implements HttpAuthenticationMechani
                 logger.debugf("Success");
                 return httpMessageContext.notifyContainerAboutLogin(jwtPrincipal, groups);
             } catch (Exception e) {
-                logger.warnf(e, "Unable to validate bearer token: %s", e.getMessage());
+                logger.debug("Unable to validate bearer token", e);
                 return httpMessageContext.responseUnauthorized();
             }
         } else {
