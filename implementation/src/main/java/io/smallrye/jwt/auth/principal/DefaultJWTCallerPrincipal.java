@@ -77,7 +77,7 @@ public class DefaultJWTCallerPrincipal extends JWTCallerPrincipal {
                 // Use LinkedHashSet to preserve iteration order
                 audSet = new LinkedHashSet<>(claimsSet.getAudience());
             } catch (MalformedClaimException e) {
-                LOGGER.warnf("getAudience failure: %s", e.getMessage());
+                LOGGER.debug("getAudience failure", e);
             }
         }
         return audSet;

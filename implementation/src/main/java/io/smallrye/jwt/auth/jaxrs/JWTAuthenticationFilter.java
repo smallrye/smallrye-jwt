@@ -69,7 +69,7 @@ public class JWTAuthenticationFilter implements ContainerRequestFilter {
                     requestContext.setSecurityContext(jwtSecurityContext);
                     logger.debugf("Success");
                 } catch (Exception e) {
-                    logger.warnf(e, "Unable to parse/validate JWT: %s", e.getMessage());
+                    logger.debug("Unable to parse/validate JWT", e);
                 }
             }
         }

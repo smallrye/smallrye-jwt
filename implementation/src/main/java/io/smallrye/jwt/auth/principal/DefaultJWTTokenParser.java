@@ -111,7 +111,7 @@ public class DefaultJWTTokenParser {
 
             return jwtContext;
         } catch (InvalidJwtException | UnresolvableKeyException e) {
-            LOGGER.warnf("Token is invalid: %s", e.getMessage());
+            LOGGER.debug("Token is invalid");
             throw new ParseException("Failed to verify token", e);
         }
 
@@ -146,7 +146,7 @@ public class DefaultJWTTokenParser {
             if (claimValue instanceof String) {
                 return (String) claimValue;
             } else {
-                LOGGER.warnf("Claim value at the path %s is not a String", authContextInfo.getSubjectPath());
+                LOGGER.debugf("Claim value at the path %s is not a String", authContextInfo.getSubjectPath());
             }
         }
         if (authContextInfo.getDefaultSubjectClaim() != null) {
@@ -167,13 +167,13 @@ public class DefaultJWTTokenParser {
                 try {
                     return Arrays.asList(groups.toArray(new String[] {}));
                 } catch (ArrayStoreException ex) {
-                    LOGGER.warnf("Claim value at the path %s is not an array of strings",
+                    LOGGER.debugf("Claim value at the path %s is not an array of strings",
                             authContextInfo.getGroupsPath());
                 }
             } else if (claimValue instanceof String) {
                 return Arrays.asList(((String) claimValue).split(authContextInfo.getGroupsSeparator()));
             } else {
-                LOGGER.warnf("Claim value at the path %s is neither an array of strings nor string",
+                LOGGER.debugf("Claim value at the path %s is neither an array of strings nor string",
                         authContextInfo.getGroupsPath());
             }
         }
@@ -198,16 +198,16 @@ public class DefaultJWTTokenParser {
             }
             // Replace the groups with the original groups + mapped roles
             claimsSet.setStringListClaim(Claims.groups.name(), allGroups);
-            LOGGER.infof("Updated groups to: %s", allGroups);
+            LOGGER.tracef("Updated groups to: %s", allGroups);
         } catch (Exception e) {
-            LOGGER.warnf(e, "Failed to access rolesMapping claim");
+            LOGGER.debug("Failed to access rolesMapping claim", e);
         }
     }
 
     private Object findClaimValue(String claimPath, Map<String, Object> claimsMap, String[] pathArray, int step) {
         Object claimValue = claimsMap.get(pathArray[step]);
         if (claimValue == null) {
-            LOGGER.warnf("No claim exists at the path %s at segment %s", claimPath, pathArray[step]);
+            LOGGER.debugf("No claim exists at the path %s at segment %s", claimPath, pathArray[step]);
         } else if (step + 1 < pathArray.length) {
             if (claimValue instanceof Map) {
                 @SuppressWarnings("unchecked")
@@ -215,7 +215,7 @@ public class DefaultJWTTokenParser {
                 int nextStep = step + 1;
                 return findClaimValue(claimPath, nextMap, pathArray, nextStep);
             } else {
-                LOGGER.warnf("Claim value at the path %s is not a json object", claimPath);
+                LOGGER.debugf("Claim value at the path %s is not a json object", claimPath);
                 return null;
             }
         }
