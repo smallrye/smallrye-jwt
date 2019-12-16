@@ -72,6 +72,10 @@ public class SmallRyeJWTAuthCDIExtension implements Extension {
         }
     }
 
+    protected boolean registerOptionalClaimTypeProducer() {
+        return false;
+    }
+
     void beforeBeanDiscovery(@Observes BeforeBeanDiscovery event, BeanManager beanManager) {
         logger.debugf("beanManager = %s", beanManager);
 
@@ -83,6 +87,9 @@ public class SmallRyeJWTAuthCDIExtension implements Extension {
         addAnnotatedType(event, beanManager, JWTAuthenticationFilter.class);
         addAnnotatedType(event, beanManager, PrincipalProducer.class);
         addAnnotatedType(event, beanManager, RawClaimTypeProducer.class);
+        if (registerOptionalClaimTypeProducer()) {
+            addAnnotatedType(event, beanManager, OptionalClaimTypeProducer.class);
+        }
 
         if (isEESecurityAvailable()) {
             addAnnotatedType(event, beanManager, JWTHttpAuthenticationMechanism.class);

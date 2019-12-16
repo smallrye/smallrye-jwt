@@ -123,10 +123,6 @@ public class RawClaimTypeProducer {
     /**
      * Produces a *raw* Optional value.
      *
-     * This raw producer is not really required as the MicroProfile JWT specification only requires support for wrappers around
-     * the specified typed, however SmallRye JWT has contained this producer in prior releases so existing applications may
-     * depend on it.
-     *
      * @param ip reference to the injection point
      * @return an optional claim value
      */
@@ -141,71 +137,7 @@ public class RawClaimTypeProducer {
         return currentToken.claim(getName(ip));
     }
 
-    /**
-     * Produces an Optional claim value wrapping a String.
-     *
-     * @param ip reference to the injection point
-     * @return an optional claim value
-     */
-    @Produces
-    @Claim("")
-    public Optional<String> getOptionalString(InjectionPoint ip) {
-        log.debugf("getOptionalString(%s)", ip);
-        if (currentToken == null) {
-            return Optional.empty();
-        }
-        return currentToken.claim(getName(ip));
-    }
-
-    /**
-     * Produces an Optional claim value wrapping a Set of Strings.
-     *
-     * @param ip reference to the injection point
-     * @return an optional claim value
-     */
-    @Produces
-    @Claim("")
-    public Optional<Set<String>> getOptionalStringSet(InjectionPoint ip) {
-        log.debugf("getOptionalStringSet(%s)", ip);
-        if (currentToken == null) {
-            return Optional.empty();
-        }
-        return currentToken.claim(getName(ip));
-    }
-
-    /**
-     * Produces an Optional claim value wrapping a Long.
-     *
-     * @param ip reference to the injection point
-     * @return an optional claim value
-     */
-    @Produces
-    @Claim("")
-    public Optional<Long> getOptionalLong(InjectionPoint ip) {
-        log.debugf("getOptionalLong(%s)", ip);
-        if (currentToken == null) {
-            return Optional.empty();
-        }
-        return currentToken.claim(getName(ip));
-    }
-
-    /**
-     * Produces an Optional claim value wrapping a Boolean.
-     *
-     * @param ip reference to the injection point
-     * @return an optional claim value
-     */
-    @Produces
-    @Claim("")
-    public Optional<Boolean> getOptionalBoolean(InjectionPoint ip) {
-        log.debugf("getOptionalBoolean(%s)", ip);
-        if (currentToken == null) {
-            return Optional.empty();
-        }
-        return currentToken.claim(getName(ip));
-    }
-
-    String getName(InjectionPoint ip) {
+    static String getName(InjectionPoint ip) {
         String name = null;
         for (Annotation ann : ip.getQualifiers()) {
             if (ann instanceof Claim) {
