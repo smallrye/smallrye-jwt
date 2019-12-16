@@ -121,10 +121,7 @@ public class RawClaimTypeProducer {
     }
 
     /**
-     * Produces a *raw* Optional value. The type parameter is intentionally
-     * left unspecified on this producer to avoid ambiguous type resolution
-     * with other producers of Optional values where the type parameter is
-     * specified.
+     * Produces a *raw* Optional value.
      *
      * @param ip reference to the injection point
      * @return an optional claim value
@@ -140,7 +137,7 @@ public class RawClaimTypeProducer {
         return currentToken.claim(getName(ip));
     }
 
-    String getName(InjectionPoint ip) {
+    static String getName(InjectionPoint ip) {
         String name = null;
         for (Annotation ann : ip.getQualifiers()) {
             if (ann instanceof Claim) {
