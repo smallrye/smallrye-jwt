@@ -28,7 +28,6 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
-import io.smallrye.jwt.auth.principal.JWTParser;
 
 public class AbstractBearerTokenExtractorTest {
 
@@ -37,9 +36,6 @@ public class AbstractBearerTokenExtractorTest {
 
     @Mock
     JWTAuthContextInfo authContextInfo;
-
-    @Mock
-    JWTParser jwtParser;
 
     AbstractBearerTokenExtractor target;
 
@@ -50,7 +46,7 @@ public class AbstractBearerTokenExtractorTest {
 
     private AbstractBearerTokenExtractor newTarget(Function<String, String> headerValue,
             Function<String, String> cookieValue) {
-        return new AbstractBearerTokenExtractor(authContextInfo, jwtParser) {
+        return new AbstractBearerTokenExtractor(authContextInfo) {
             @Override
             protected String getHeaderValue(String headerName) {
                 return headerValue.apply(headerName);

@@ -59,12 +59,12 @@ public class JWTHttpAuthenticationMechanism implements HttpAuthenticationMechani
             HttpMessageContext httpMessageContext)
             throws AuthenticationException {
 
-        AbstractBearerTokenExtractor extractor = new BearerTokenExtractor(request, authContextInfo, jwtParser);
+        AbstractBearerTokenExtractor extractor = new BearerTokenExtractor(request, authContextInfo);
         String bearerToken = extractor.getBearerToken();
 
         if (bearerToken != null) {
             try {
-                JsonWebToken jwtPrincipal = extractor.validate(bearerToken);
+                JsonWebToken jwtPrincipal = jwtParser.parse(bearerToken);
                 producer.setJsonWebToken(jwtPrincipal);
                 Set<String> groups = jwtPrincipal.getGroups();
                 logger.debugf("Success");
@@ -82,8 +82,8 @@ public class JWTHttpAuthenticationMechanism implements HttpAuthenticationMechani
     private static class BearerTokenExtractor extends AbstractBearerTokenExtractor {
         private final HttpServletRequest request;
 
-        BearerTokenExtractor(HttpServletRequest request, JWTAuthContextInfo authContextInfo, JWTParser jwtParser) {
-            super(authContextInfo, jwtParser);
+        BearerTokenExtractor(HttpServletRequest request, JWTAuthContextInfo authContextInfo) {
+            super(authContextInfo);
             this.request = request;
         }
 

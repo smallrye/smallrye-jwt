@@ -60,12 +60,12 @@ public class JWTAuthenticationFilter implements ContainerRequestFilter {
         final Principal principal = securityContext.getUserPrincipal();
 
         if (!(principal instanceof JsonWebToken)) {
-            AbstractBearerTokenExtractor extractor = new BearerTokenExtractor(requestContext, authContextInfo, jwtParser);
+            AbstractBearerTokenExtractor extractor = new BearerTokenExtractor(requestContext, authContextInfo);
             String bearerToken = extractor.getBearerToken();
 
             if (bearerToken != null) {
                 try {
-                    JsonWebToken jwtPrincipal = extractor.validate(bearerToken);
+                    JsonWebToken jwtPrincipal = jwtParser.parse(bearerToken);
                     producer.setJsonWebToken(jwtPrincipal);
 
                     // Install the JWT principal as the caller
@@ -82,8 +82,8 @@ public class JWTAuthenticationFilter implements ContainerRequestFilter {
     private static class BearerTokenExtractor extends AbstractBearerTokenExtractor {
         private final ContainerRequestContext requestContext;
 
-        BearerTokenExtractor(ContainerRequestContext requestContext, JWTAuthContextInfo authContextInfo, JWTParser jwtParser) {
-            super(authContextInfo, jwtParser);
+        BearerTokenExtractor(ContainerRequestContext requestContext, JWTAuthContextInfo authContextInfo) {
+            super(authContextInfo);
             this.requestContext = requestContext;
         }
 

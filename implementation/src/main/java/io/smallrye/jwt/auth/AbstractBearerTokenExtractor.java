@@ -19,8 +19,6 @@ import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.jboss.logging.Logger;
 
 import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
-import io.smallrye.jwt.auth.principal.JWTParser;
-import io.smallrye.jwt.auth.principal.ParseException;
 
 /**
  * Common functionality for classes extracting Bearer tokens from HTTP request
@@ -39,11 +37,9 @@ public abstract class AbstractBearerTokenExtractor {
     private static final Logger LOGGER = Logger.getLogger(AbstractBearerTokenExtractor.class);
 
     private final JWTAuthContextInfo authContextInfo;
-    private final JWTParser jwtParser;
 
-    protected AbstractBearerTokenExtractor(JWTAuthContextInfo authContextInfo, JWTParser jwtParser) {
+    protected AbstractBearerTokenExtractor(JWTAuthContextInfo authContextInfo) {
         this.authContextInfo = authContextInfo;
-        this.jwtParser = jwtParser;
     }
 
     /**
@@ -120,10 +116,6 @@ public abstract class AbstractBearerTokenExtractor {
         String scheme = authorizationHeader.substring(0, BEARER_SCHEME_PREFIX.length());
 
         return BEARER_SCHEME_PREFIX.equalsIgnoreCase(scheme);
-    }
-
-    public JsonWebToken validate(String bearerToken) throws ParseException {
-        return jwtParser.parse(bearerToken);
     }
 
     /**
