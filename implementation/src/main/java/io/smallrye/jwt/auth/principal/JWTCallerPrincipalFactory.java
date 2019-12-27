@@ -37,32 +37,27 @@ public abstract class JWTCallerPrincipalFactory {
      * @see #setInstance(JWTCallerPrincipalFactory)
      */
     public static JWTCallerPrincipalFactory instance() {
-        if (instance == null) {
-            synchronized (JWTCallerPrincipalFactory.class) {
-                if (instance == null) {
-
-                    ClassLoader cl = AccessController
-                            .doPrivileged((PrivilegedAction<ClassLoader>) () -> Thread.currentThread().getContextClassLoader());
-                    if (cl == null) {
-                        cl = JWTCallerPrincipalFactory.class.getClassLoader();
-                    }
-
-                    JWTCallerPrincipalFactory newInstance = loadSpi(cl);
-
-                    if (newInstance == null && cl != JWTCallerPrincipalFactory.class.getClassLoader()) {
-                        cl = JWTCallerPrincipalFactory.class.getClassLoader();
-                        newInstance = loadSpi(cl);
-                    }
-                    if (newInstance == null) {
-                        newInstance = new DefaultJWTCallerPrincipalFactory();
-                    }
-
-                    instance = newInstance;
-                }
-            }
+        if (instance != null) {
+            return instance;
         }
 
-        return instance;
+        ClassLoader cl = AccessController
+                .doPrivileged((PrivilegedAction<ClassLoader>) () -> Thread.currentThread().getContextClassLoader());
+        if (cl == null) {
+            cl = JWTCallerPrincipalFactory.class.getClassLoader();
+        }
+
+        JWTCallerPrincipalFactory newInstance = loadSpi(cl);
+
+        if (newInstance == null && cl != JWTCallerPrincipalFactory.class.getClassLoader()) {
+            cl = JWTCallerPrincipalFactory.class.getClassLoader();
+            newInstance = loadSpi(cl);
+        }
+        if (newInstance == null) {
+            newInstance = new DefaultJWTCallerPrincipalFactory();
+        }
+
+        return newInstance;
     }
 
     /**

@@ -33,6 +33,7 @@ import org.jboss.logging.Logger;
 import io.smallrye.jwt.auth.AbstractBearerTokenExtractor;
 import io.smallrye.jwt.auth.cdi.PrincipalProducer;
 import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
+import io.smallrye.jwt.auth.principal.JWTParser;
 
 /**
  * A JAX-RS HttpAuthenticationMechanism prototype
@@ -45,6 +46,9 @@ public class JWTHttpAuthenticationMechanism implements HttpAuthenticationMechani
 
     @Inject
     private JWTAuthContextInfo authContextInfo;
+
+    @Inject
+    private JWTParser jwtParser;
 
     @Inject
     private PrincipalProducer producer;
@@ -60,7 +64,7 @@ public class JWTHttpAuthenticationMechanism implements HttpAuthenticationMechani
 
         if (bearerToken != null) {
             try {
-                JsonWebToken jwtPrincipal = extractor.validate(bearerToken);
+                JsonWebToken jwtPrincipal = jwtParser.parse(bearerToken);
                 producer.setJsonWebToken(jwtPrincipal);
                 Set<String> groups = jwtPrincipal.getGroups();
                 logger.debugf("Success");
