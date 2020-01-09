@@ -20,11 +20,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+import org.jose4j.jwk.JsonWebKey;
+
 /**
  * The public key and expected issuer needed to validate a token.
  */
 public class JWTAuthContextInfo {
     private RSAPublicKey signerKey;
+    private List<JsonWebKey> jsonWebKeys;
     private String issuedBy;
     private int expGracePeriodSecs = 60;
     private String publicKeyLocation;
@@ -84,6 +87,14 @@ public class JWTAuthContextInfo {
 
     public void setSignerKey(RSAPublicKey signerKey) {
         this.signerKey = signerKey;
+    }
+
+    public List<JsonWebKey> getJsonWebKeys() {
+        return jsonWebKeys;
+    }
+
+    public void setJsonWebKeys(List<JsonWebKey> jsonWebKeys) {
+        this.jsonWebKeys = jsonWebKeys;
     }
 
     public String getIssuedBy() {

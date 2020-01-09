@@ -226,7 +226,13 @@ public class DefaultJWTTokenParser {
         if (keyResolver == null) {
             synchronized (this) {
                 if (keyResolver == null)
-                    keyResolver = new KeyLocationResolver(authContextInfo);
+                    if (authContextInfo.getJsonWebKeys() != null) {
+                        LOGGER.debug("Creating key resolver for list of JWKs");
+                        keyResolver = new SimpleKeyResolver(authContextInfo.getJsonWebKeys());
+                    } else {
+                        LOGGER.debug("Creating location based key resolver");
+                        keyResolver = new KeyLocationResolver(authContextInfo);
+                    }
             }
         }
         return keyResolver;

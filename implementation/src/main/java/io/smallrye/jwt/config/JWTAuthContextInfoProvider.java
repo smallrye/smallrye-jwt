@@ -17,6 +17,7 @@
 package io.smallrye.jwt.config;
 
 import java.security.interfaces.RSAPublicKey;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -29,6 +30,7 @@ import javax.inject.Inject;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
+import org.jose4j.jwk.JsonWebKey;
 
 import io.smallrye.jwt.KeyUtils;
 import io.smallrye.jwt.SmallryeJwtUtils;
@@ -289,8 +291,12 @@ public class JWTAuthContextInfoProvider {
 
         // Need to decode what this is...
         try {
-            RSAPublicKey pk = (RSAPublicKey) KeyUtils.decodeJWKSPublicKey(mpJwtPublicKey.get());
-            contextInfo.setSignerKey(pk);
+            List<JsonWebKey> jsonWebKeys = KeyUtils.decodeJsonWebKeySet(mpJwtPublicKey.get());
+            if (jsonWebKeys.size() == 1) {
+                contextInfo.setSignerKey((RSAPublicKey) jsonWebKeys.get(0).getKey());
+            } else {
+                contextInfo.setJsonWebKeys(jsonWebKeys);
+            }
             log.debugf("mpJwtPublicKey parsed as JWK(S)");
         } catch (Exception e) {
             // Try as PEM key value

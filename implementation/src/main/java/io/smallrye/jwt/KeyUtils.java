@@ -22,7 +22,6 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.io.StringReader;
 import java.io.UncheckedIOException;
-import java.math.BigInteger;
 import java.security.GeneralSecurityException;
 import java.security.KeyFactory;
 import java.security.KeyPair;
@@ -32,14 +31,20 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.cert.CertificateFactory;
 import java.security.spec.PKCS8EncodedKeySpec;
-import java.security.spec.RSAPublicKeySpec;
 import java.security.spec.X509EncodedKeySpec;
+import java.util.ArrayList;
 import java.util.Base64;
+import java.util.Collections;
+import java.util.List;
 
 import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
 import javax.json.JsonReader;
+
+import org.jose4j.json.JsonUtil;
+import org.jose4j.jwk.JsonWebKey;
+import org.jose4j.lang.JoseException;
 
 /**
  * Utility methods for dealing with decoding public and private keys resources
@@ -69,7 +74,7 @@ public class KeyUtils {
 
     /**
      * Decode a PEM RSA private key
-     * 
+     *
      * @param pemEncoded - pem string for key
      * @return RSA private key instance
      * @throws GeneralSecurityException - on failure to decode and create key
@@ -86,14 +91,13 @@ public class KeyUtils {
     }
 
     /**
-     * Decode a JWK(S) encoded public key string to an RSA PublicKey. This assumes a single JWK in the set as
-     * only the first JWK is used.
-     * 
-     * @param jwksValue - JWKS string value
-     * @return PublicKey from RSAPublicKeySpec
-     * @throws GeneralSecurityException when RSA security is not supported or public key cannot be decoded
+     * Decode a JWK(S) encoded public key string to a list of JsonWebKeys.
+     *
+     * @param jwksValue
+     * @return a list of decoded JsonWebKey instances.
+     * @throws GeneralSecurityException when the JsonWebKey can not be decoded.
      */
-    public static PublicKey decodeJWKSPublicKey(String jwksValue) throws GeneralSecurityException {
+    public static List<JsonWebKey> decodeJsonWebKeySet(String jwksValue) throws GeneralSecurityException {
         JsonObject jwks;
 
         try (Reader reader = new StringReader(jwksValue);
@@ -115,24 +119,28 @@ public class KeyUtils {
         if (keys != null) {
             jwk = keys.getJsonObject(0);
         } else {
-            // A JWK
-            jwk = jwks;
+            return Collections.singletonList(createJsonWebKey(jwks));
         }
-        String e = jwk.getString("e");
-        String n = jwk.getString("n");
 
-        byte[] ebytes = Base64.getUrlDecoder().decode(e);
-        BigInteger publicExponent = new BigInteger(1, ebytes);
-        byte[] nbytes = Base64.getUrlDecoder().decode(n);
-        BigInteger modulus = new BigInteger(1, nbytes);
-        KeyFactory kf = KeyFactory.getInstance(RSA);
-        RSAPublicKeySpec rsaPublicKeySpec = new RSAPublicKeySpec(modulus, publicExponent);
-        return kf.generatePublic(rsaPublicKeySpec);
+        List<JsonWebKey> jsonWebKeys = new ArrayList<>(keys.size());
+        for (int i = 0; i < keys.size(); i++) {
+            jsonWebKeys.add(createJsonWebKey(keys.getJsonObject(i)));
+        }
+
+        return jsonWebKeys;
+    }
+
+    private static JsonWebKey createJsonWebKey(JsonObject jsonObject) throws GeneralSecurityException {
+        try {
+            return JsonWebKey.Factory.newJwk(JsonUtil.parseJson(jsonObject.toString()));
+        } catch (JoseException e) {
+            throw new GeneralSecurityException("Unable to create JsonWebKey", e);
+        }
     }
 
     /**
      * Decode a PEM encoded public key string to an RSA PublicKey
-     * 
+     *
      * @param pemEncoded - PEM string for public key
      * @return PublicKey
      * @throws GeneralSecurityException on decode failure
@@ -148,7 +156,7 @@ public class KeyUtils {
 
     /**
      * Decode a PEM encoded certificate string to an RSA PublicKey
-     * 
+     *
      * @param pemEncoded - PEM string for certificate
      * @return PublicKey
      * @throws GeneralSecurityException on decode failure
@@ -162,7 +170,7 @@ public class KeyUtils {
 
     /**
      * Strip any -----BEGIN*KEY... header and -----END*KEY... footer and newlines
-     * 
+     *
      * @param pem encoded string with option header/footer
      * @return a single base64 encoded pem string
      */
@@ -177,7 +185,7 @@ public class KeyUtils {
 
     /**
      * Strip any -----BEGIN*CERTIFICATE... header and -----END*CERTIFICATE... footer and newlines
-     * 
+     *
      * @param pem encoded string with option header/footer
      * @return a single base64 encoded pem string
      */
