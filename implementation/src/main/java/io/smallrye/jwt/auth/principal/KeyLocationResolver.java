@@ -25,9 +25,11 @@ import java.io.InputStreamReader;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.security.PublicKey;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
 
@@ -62,7 +64,7 @@ public class KeyLocationResolver implements VerificationKeyResolver {
 
     // The verification key can be calculated only once and used for all the token verification requests.
     // It will be created in the constructor if the PEM or the local JWK(S) content is available.
-    // 'smallrye.jwt.token.kid' has to be set for the verificationKey to be created from the local JWK(S). 
+    // 'smallrye.jwt.token.kid' has to be set for the verificationKey to be created from the local JWK(S).
     PublicKey verificationKey;
 
     // The 'jsonWebKeys' and 'httpsJwks' fields represent the JWK key content and are mutually exclusive.
@@ -87,14 +89,14 @@ public class KeyLocationResolver implements VerificationKeyResolver {
     public Key resolveKey(JsonWebSignature jws, List<JsonWebStructure> nestingContext) throws UnresolvableKeyException {
         verifyKid(jws, authContextInfo.getTokenKeyId());
 
-        // The verificationKey may have been calculated in the constructor from the local PEM, or, 
+        // The verificationKey may have been calculated in the constructor from the local PEM, or,
         // if authContextInfo.getTokenKeyId() is not null - from the local JWK(S) content.
         if (verificationKey != null) {
             return verificationKey;
         }
 
         // At this point the key can be loaded from either the HTTPS or local JWK(s) content using
-        // the current token kid to select the key. 
+        // the current token kid to select the key.
         PublicKey key = tryAsJwk(jws);
 
         if (key == null) {
@@ -166,19 +168,32 @@ public class KeyLocationResolver implements VerificationKeyResolver {
         }
 
         String content = readKeyContent(authContextInfo.getPublicKeyLocation());
-
         // Try to init the verification key from the local PEM or JWK(S) content
         verificationKey = tryAsPEMPublicKey(content);
         if (verificationKey == null) {
             verificationKey = tryAsPEMCertificate(content);
         }
         if (verificationKey == null) {
-            jsonWebKeys = loadJsonWebKeys(content);
-            if (jsonWebKeys != null && authContextInfo.getTokenKeyId() != null) {
-                verificationKey = getJsonWebKey(authContextInfo.getTokenKeyId());
-            }
+            tryJWKContent(content);
         }
 
+        if (verificationKey == null && jsonWebKeys == null) {
+            // Try Base64 Decoding
+            try {
+                content = new String(Base64.getUrlDecoder().decode(content.getBytes(StandardCharsets.UTF_8)),
+                        StandardCharsets.UTF_8);
+                tryJWKContent(content);
+            } catch (IllegalArgumentException e) {
+                LOGGER.debug("Unable to decode content using Base64 decoder", e);
+            }
+        }
+    }
+
+    private void tryJWKContent(final String content) {
+        jsonWebKeys = loadJsonWebKeys(content);
+        if (jsonWebKeys != null && authContextInfo.getTokenKeyId() != null) {
+            verificationKey = getJsonWebKey(authContextInfo.getTokenKeyId());
+        }
     }
 
     protected HttpsJwks initializeHttpsJwks() {
