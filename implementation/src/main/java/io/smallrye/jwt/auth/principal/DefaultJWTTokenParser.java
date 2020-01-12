@@ -21,9 +21,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Stream;
 
 import org.eclipse.microprofile.jwt.Claims;
 import org.jboss.logging.Logger;
@@ -129,12 +127,12 @@ public class DefaultJWTTokenParser {
 
     private void checkNameClaims(JwtContext jwtContext) throws InvalidJwtException {
         JwtClaims claimsSet = jwtContext.getJwtClaims();
-        final boolean hasPrincipalClaim = Stream.of(Claims.sub.name(), Claims.upn.name(), Claims.preferred_username.name())
-                .map(claimsSet::getClaimValue)
-                .anyMatch(Objects::nonNull);
+        final boolean hasPrincipalClaim = claimsSet.getClaimValue(Claims.sub.name()) != null ||
+                claimsSet.getClaimValue(Claims.upn.name()) != null ||
+                claimsSet.getClaimValue(Claims.preferred_username.name()) != null;
 
         if (!hasPrincipalClaim) {
-            throw new InvalidJwtException("No claim exists in sub, upn or preferred_username", new ArrayList<>(),
+            throw new InvalidJwtException("No claim exists in sub, upn or preferred_username", Collections.emptyList(),
                     jwtContext);
         }
     }
