@@ -41,7 +41,7 @@ import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
 @Dependent
 public class JWTAuthContextInfoProvider {
     private static final String AUTHORIZATION_HEADER = "Authorization";
-    private static final String BEARER_SCHEME = "BEARER";
+    private static final String BEARER_SCHEME = "Bearer";
     private static final String NONE = "NONE";
     private static final String DEFAULT_GROUPS_SEPARATOR = " ";
     private static final Logger log = Logger.getLogger(JWTAuthContextInfoProvider.class);
