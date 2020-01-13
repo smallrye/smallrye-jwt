@@ -15,6 +15,8 @@
  */
 package io.smallrye.jwt.auth;
 
+import java.util.Optional;
+
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.jboss.logging.Logger;
 
@@ -94,8 +96,13 @@ public abstract class AbstractBearerTokenExtractor {
         final String bearerValue;
 
         if (tokenHeader != null) {
-            if (isBearerScheme(tokenHeader)) {
-                bearerValue = tokenHeader.substring(BEARER_SCHEME_PREFIX.length());
+            final Optional<String> token = authContextInfo.getTokenSchemes().stream()
+                    .map(scheme -> scheme + " ")
+                    .filter(scheme -> isTokenScheme(tokenHeader, scheme))
+                    .map(scheme -> tokenHeader.substring(scheme.length()))
+                    .findFirst();
+            if (token.isPresent()) {
+                bearerValue = token.get();
             } else {
                 LOGGER.debugf("Authorization header does not contain a Bearer prefix");
                 bearerValue = null;
@@ -108,14 +115,14 @@ public abstract class AbstractBearerTokenExtractor {
         return bearerValue;
     }
 
-    private static boolean isBearerScheme(String authorizationHeader) {
-        if (authorizationHeader.length() < BEARER_SCHEME_PREFIX.length()) {
+    private static boolean isTokenScheme(String authorizationHeader, String schemePrefix) {
+        if (authorizationHeader.length() < schemePrefix.length()) {
             return false;
         }
 
-        String scheme = authorizationHeader.substring(0, BEARER_SCHEME_PREFIX.length());
+        String scheme = authorizationHeader.substring(0, schemePrefix.length());
 
-        return BEARER_SCHEME_PREFIX.equalsIgnoreCase(scheme);
+        return schemePrefix.equalsIgnoreCase(scheme);
     }
 
     /**

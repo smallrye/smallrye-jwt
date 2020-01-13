@@ -97,4 +97,10 @@ public class SmallryeJwtUtils {
             }
         }
     }
+
+    public static void setTokenSchemes(JWTAuthContextInfo contextInfo, Optional<String> tokenSchemes) {
+        tokenSchemes.ifPresent(schemes -> contextInfo.setTokenSchemes(Arrays.stream(schemes.split(","))
+                .map(String::trim)
+                .collect(Collectors.toList())));
+    }
 }

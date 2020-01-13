@@ -145,6 +145,13 @@ public class JWTAuthContextInfoProvider {
     private Optional<String> tokenKeyId;
 
     /**
+     * The scheme used with an HTTP Authorization header.
+     */
+    @Inject
+    @ConfigProperty(name = "smallrye.jwt.token.schemes", defaultValue = "Bearer")
+    private Optional<String> tokenSchemes;
+
+    /**
      * Check that the JWT has at least one of 'sub', 'upn' or 'preferred_user_name' set. If not the JWT validation will
      * fail.
      */
@@ -269,6 +276,7 @@ public class JWTAuthContextInfoProvider {
         contextInfo.setTokenKeyId(tokenKeyId.orElse(null));
         contextInfo.setRequireNamedPrincipal(requireNamedPrincipal.orElse(null));
         SmallryeJwtUtils.setContextTokenCookie(contextInfo, tokenCookie);
+        SmallryeJwtUtils.setTokenSchemes(contextInfo, tokenSchemes);
         contextInfo.setDefaultSubjectClaim(defaultSubClaim.orElse(null));
         SmallryeJwtUtils.setContextSubPath(contextInfo, subPath);
         contextInfo.setDefaultGroupsClaim(defaultGroupsClaim.orElse(null));
@@ -332,6 +340,10 @@ public class JWTAuthContextInfoProvider {
 
     public Optional<String> getTokenKeyId() {
         return tokenKeyId;
+    }
+
+    public Optional<String> getTokenSchemes() {
+        return tokenSchemes;
     }
 
     public Optional<Integer> getExpGracePeriodSecs() {

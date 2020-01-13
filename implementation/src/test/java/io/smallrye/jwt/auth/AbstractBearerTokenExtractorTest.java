@@ -20,6 +20,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.mockito.Mockito.when;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.function.Function;
 
 import org.junit.Before;
@@ -33,6 +36,7 @@ public class AbstractBearerTokenExtractorTest {
 
     private static final String AUTHORIZATION = "Authorization";
     private static final String COOKIE = "Cookie";
+    private static final List<String> BEARER_SCHEME = Collections.singletonList("Bearer");
 
     @Mock
     JWTAuthContextInfo authContextInfo;
@@ -62,6 +66,7 @@ public class AbstractBearerTokenExtractorTest {
     @Test
     public void testGetBearerTokenAuthorizationHeader() {
         when(authContextInfo.getTokenHeader()).thenReturn(AUTHORIZATION);
+        when(authContextInfo.getTokenSchemes()).thenReturn(BEARER_SCHEME);
         AbstractBearerTokenExtractor target = newTarget(h -> "Bearer THE_TOKEN", c -> null);
         String bearerToken = target.getBearerToken();
         assertEquals("THE_TOKEN", bearerToken);
@@ -70,6 +75,7 @@ public class AbstractBearerTokenExtractorTest {
     @Test
     public void testGetBearerTokenAuthorizationHeaderMixedCase() {
         when(authContextInfo.getTokenHeader()).thenReturn(AUTHORIZATION);
+        when(authContextInfo.getTokenSchemes()).thenReturn(BEARER_SCHEME);
         AbstractBearerTokenExtractor target = newTarget(h -> "bEaReR THE_TOKEN", c -> null);
         String bearerToken = target.getBearerToken();
         assertEquals("THE_TOKEN", bearerToken);
@@ -78,6 +84,7 @@ public class AbstractBearerTokenExtractorTest {
     @Test
     public void testGetBearerTokenAuthorizationHeaderBlank() {
         when(authContextInfo.getTokenHeader()).thenReturn(AUTHORIZATION);
+        when(authContextInfo.getTokenSchemes()).thenReturn(BEARER_SCHEME);
         AbstractBearerTokenExtractor target = newTarget(h -> "BEARER ", c -> null);
         String bearerToken = target.getBearerToken();
         assertEquals("", bearerToken);
@@ -86,6 +93,7 @@ public class AbstractBearerTokenExtractorTest {
     @Test
     public void testGetBearerTokenAuthorizationHeaderInvalidSchemePrefix() {
         when(authContextInfo.getTokenHeader()).thenReturn(AUTHORIZATION);
+        when(authContextInfo.getTokenSchemes()).thenReturn(BEARER_SCHEME);
         AbstractBearerTokenExtractor target = newTarget(h -> "BEARER", c -> null);
         String bearerToken = target.getBearerToken();
         assertNull(bearerToken);
@@ -94,6 +102,7 @@ public class AbstractBearerTokenExtractorTest {
     @Test
     public void testGetBearerTokenMissingAuthorizationHeader() {
         when(authContextInfo.getTokenHeader()).thenReturn(AUTHORIZATION);
+        when(authContextInfo.getTokenSchemes()).thenReturn(BEARER_SCHEME);
         AbstractBearerTokenExtractor target = newTarget(h -> null, c -> null);
         String bearerToken = target.getBearerToken();
         assertNull(bearerToken);
@@ -102,9 +111,19 @@ public class AbstractBearerTokenExtractorTest {
     @Test
     public void testGetBearerTokenOtherSchemeAuthorizationHeader() {
         when(authContextInfo.getTokenHeader()).thenReturn(AUTHORIZATION);
+        when(authContextInfo.getTokenSchemes()).thenReturn(BEARER_SCHEME);
         AbstractBearerTokenExtractor target = newTarget(h -> "Basic Not_a_JWT", c -> null);
         String bearerToken = target.getBearerToken();
         assertNull(bearerToken);
+    }
+
+    @Test
+    public void testGetBearerTokenCustomSchemeAuthorizationHeader() {
+        when(authContextInfo.getTokenHeader()).thenReturn(AUTHORIZATION);
+        when(authContextInfo.getTokenSchemes()).thenReturn(Arrays.asList("Bearer", "DPoP"));
+        AbstractBearerTokenExtractor target = newTarget(h -> "DPoP THE_TOKEN", c -> null);
+        String bearerToken = target.getBearerToken();
+        assertEquals("THE_TOKEN", bearerToken);
     }
 
     @Test
