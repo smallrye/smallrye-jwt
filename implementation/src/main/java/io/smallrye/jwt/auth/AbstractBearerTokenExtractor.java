@@ -15,8 +15,6 @@
  */
 package io.smallrye.jwt.auth;
 
-import java.util.Optional;
-
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.jboss.logging.Logger;
 
@@ -96,13 +94,9 @@ public abstract class AbstractBearerTokenExtractor {
         final String bearerValue;
 
         if (tokenHeader != null) {
-            final Optional<String> token = authContextInfo.getTokenSchemes().stream()
-                    .map(scheme -> scheme + " ")
-                    .filter(scheme -> isTokenScheme(tokenHeader, scheme))
-                    .map(scheme -> tokenHeader.substring(scheme.length()))
-                    .findFirst();
-            if (token.isPresent()) {
-                bearerValue = token.get();
+            final String token = getTokenWithConfiguredScheme(tokenHeader);
+            if (token != null) {
+                bearerValue = token;
             } else {
                 LOGGER.debugf("Authorization header does not contain a Bearer prefix");
                 bearerValue = null;
@@ -113,6 +107,16 @@ public abstract class AbstractBearerTokenExtractor {
         }
 
         return bearerValue;
+    }
+
+    private String getTokenWithConfiguredScheme(String tokenHeader) {
+        for (final String scheme : authContextInfo.getTokenSchemes()) {
+            final String schemePrefix = scheme + " ";
+            if (isTokenScheme(tokenHeader, schemePrefix)) {
+                return tokenHeader.substring(schemePrefix.length());
+            }
+        }
+        return null;
     }
 
     private static boolean isTokenScheme(String authorizationHeader, String schemePrefix) {
