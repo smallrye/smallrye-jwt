@@ -16,6 +16,7 @@
  */
 package io.smallrye.jwt;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -99,8 +100,12 @@ public class SmallryeJwtUtils {
     }
 
     public static void setTokenSchemes(JWTAuthContextInfo contextInfo, Optional<String> tokenSchemes) {
-        tokenSchemes.ifPresent(schemes -> contextInfo.setTokenSchemes(Arrays.stream(schemes.split(","))
-                .map(String::trim)
-                .collect(Collectors.toList())));
+        if (tokenSchemes.isPresent()) {
+            final List<String> schemes = new ArrayList<>();
+            for (final String s : tokenSchemes.get().split(",")) {
+                schemes.add(s.trim());
+            }
+            contextInfo.setTokenSchemes(schemes);
+        }
     }
 }
