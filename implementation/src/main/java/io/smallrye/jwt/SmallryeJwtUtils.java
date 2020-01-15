@@ -16,6 +16,7 @@
  */
 package io.smallrye.jwt;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -95,6 +96,16 @@ public class SmallryeJwtUtils {
                     log.errorf("Algorithm %s not supported", whitelistAlgorithm);
                 }
             }
+        }
+    }
+
+    public static void setTokenSchemes(JWTAuthContextInfo contextInfo, Optional<String> tokenSchemes) {
+        if (tokenSchemes.isPresent()) {
+            final List<String> schemes = new ArrayList<>();
+            for (final String s : tokenSchemes.get().split(",")) {
+                schemes.add(s.trim());
+            }
+            contextInfo.setTokenSchemes(schemes);
         }
     }
 }

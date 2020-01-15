@@ -17,6 +17,7 @@ package io.smallrye.jwt.auth.principal;
 
 import java.security.interfaces.RSAPublicKey;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -32,6 +33,7 @@ public class JWTAuthContextInfo {
     private String tokenHeader = "Authorization";
     private String tokenCookie;
     private String tokenKeyId;
+    private List<String> tokenSchemes = Collections.singletonList("Bearer");
     private boolean requireNamedPrincipal = true;
     private String defaultSubClaim;
     private String subPath;
@@ -196,6 +198,14 @@ public class JWTAuthContextInfo {
 
     public void setTokenKeyId(String tokenKeyId) {
         this.tokenKeyId = tokenKeyId;
+    }
+
+    public List<String> getTokenSchemes() {
+        return tokenSchemes;
+    }
+
+    public void setTokenSchemes(final List<String> tokenSchemes) {
+        this.tokenSchemes = tokenSchemes;
     }
 
     public Set<String> getExpectedAudience() {

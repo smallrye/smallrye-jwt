@@ -41,6 +41,7 @@ import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
 @Dependent
 public class JWTAuthContextInfoProvider {
     private static final String AUTHORIZATION_HEADER = "Authorization";
+    private static final String BEARER_SCHEME = "Bearer";
     private static final String NONE = "NONE";
     private static final String DEFAULT_GROUPS_SEPARATOR = " ";
     private static final Logger log = Logger.getLogger(JWTAuthContextInfoProvider.class);
@@ -77,6 +78,7 @@ public class JWTAuthContextInfoProvider {
         provider.tokenHeader = AUTHORIZATION_HEADER;
         provider.tokenCookie = Optional.empty();
         provider.tokenKeyId = Optional.empty();
+        provider.tokenSchemes = Optional.of(BEARER_SCHEME);
         provider.requireNamedPrincipal = Optional.of(Boolean.TRUE);
         provider.defaultSubClaim = Optional.empty();
         provider.subPath = Optional.empty();
@@ -143,6 +145,13 @@ public class JWTAuthContextInfoProvider {
     @Inject
     @ConfigProperty(name = "smallrye.jwt.token.kid")
     private Optional<String> tokenKeyId;
+
+    /**
+     * The scheme used with an HTTP Authorization header.
+     */
+    @Inject
+    @ConfigProperty(name = "smallrye.jwt.token.schemes", defaultValue = BEARER_SCHEME)
+    private Optional<String> tokenSchemes;
 
     /**
      * Check that the JWT has at least one of 'sub', 'upn' or 'preferred_user_name' set. If not the JWT validation will
@@ -269,6 +278,7 @@ public class JWTAuthContextInfoProvider {
         contextInfo.setTokenKeyId(tokenKeyId.orElse(null));
         contextInfo.setRequireNamedPrincipal(requireNamedPrincipal.orElse(null));
         SmallryeJwtUtils.setContextTokenCookie(contextInfo, tokenCookie);
+        SmallryeJwtUtils.setTokenSchemes(contextInfo, tokenSchemes);
         contextInfo.setDefaultSubjectClaim(defaultSubClaim.orElse(null));
         SmallryeJwtUtils.setContextSubPath(contextInfo, subPath);
         contextInfo.setDefaultGroupsClaim(defaultGroupsClaim.orElse(null));
@@ -332,6 +342,10 @@ public class JWTAuthContextInfoProvider {
 
     public Optional<String> getTokenKeyId() {
         return tokenKeyId;
+    }
+
+    public Optional<String> getTokenSchemes() {
+        return tokenSchemes;
     }
 
     public Optional<Integer> getExpGracePeriodSecs() {

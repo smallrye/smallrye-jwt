@@ -94,8 +94,9 @@ public abstract class AbstractBearerTokenExtractor {
         final String bearerValue;
 
         if (tokenHeader != null) {
-            if (isBearerScheme(tokenHeader)) {
-                bearerValue = tokenHeader.substring(BEARER_SCHEME_PREFIX.length());
+            final String token = getTokenWithConfiguredScheme(tokenHeader);
+            if (token != null) {
+                bearerValue = token;
             } else {
                 LOGGER.debugf("Authorization header does not contain a Bearer prefix");
                 bearerValue = null;
@@ -108,14 +109,24 @@ public abstract class AbstractBearerTokenExtractor {
         return bearerValue;
     }
 
-    private static boolean isBearerScheme(String authorizationHeader) {
-        if (authorizationHeader.length() < BEARER_SCHEME_PREFIX.length()) {
+    private String getTokenWithConfiguredScheme(String tokenHeader) {
+        for (final String scheme : authContextInfo.getTokenSchemes()) {
+            final String schemePrefix = scheme + " ";
+            if (isTokenScheme(tokenHeader, schemePrefix)) {
+                return tokenHeader.substring(schemePrefix.length());
+            }
+        }
+        return null;
+    }
+
+    private static boolean isTokenScheme(String authorizationHeader, String schemePrefix) {
+        if (authorizationHeader.length() < schemePrefix.length()) {
             return false;
         }
 
-        String scheme = authorizationHeader.substring(0, BEARER_SCHEME_PREFIX.length());
+        String scheme = authorizationHeader.substring(0, schemePrefix.length());
 
-        return BEARER_SCHEME_PREFIX.equalsIgnoreCase(scheme);
+        return schemePrefix.equalsIgnoreCase(scheme);
     }
 
     /**
