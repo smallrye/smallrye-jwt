@@ -102,7 +102,7 @@ public final class KeyUtils {
      * @throws GeneralSecurityException - on failure to decode and create key
      */
     public static PrivateKey decodePrivateKey(String pemEncoded) throws GeneralSecurityException {
-        pemEncoded = removeKeyBeginEnd(pemEncoded);
+        pemEncoded = removePemKeyBeginEnd(pemEncoded);
         byte[] pkcs8EncodedBytes = Base64.getDecoder().decode(pemEncoded);
 
         // extract the private key
@@ -165,7 +165,7 @@ public final class KeyUtils {
      * @throws GeneralSecurityException on decode failure
      */
     public static PublicKey decodePublicKey(String pemEncoded) throws GeneralSecurityException {
-        pemEncoded = removeKeyBeginEnd(pemEncoded);
+        pemEncoded = removePemKeyBeginEnd(pemEncoded);
         byte[] encodedBytes = Base64.getDecoder().decode(pemEncoded);
 
         X509EncodedKeySpec spec = new X509EncodedKeySpec(encodedBytes);
@@ -193,7 +193,7 @@ public final class KeyUtils {
      * @param pem encoded string with option header/footer
      * @return a single base64 encoded pem string
      */
-    private static String removeKeyBeginEnd(String pem) {
+    public static String removePemKeyBeginEnd(String pem) {
         pem = pem.replaceAll("-----BEGIN(.*?)KEY-----", "");
         pem = pem.replaceAll("-----END(.*?)KEY-----", "");
         pem = pem.replaceAll("\r\n", "");

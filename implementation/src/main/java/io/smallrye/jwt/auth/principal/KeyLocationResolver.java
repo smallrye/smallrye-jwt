@@ -81,7 +81,10 @@ public class KeyLocationResolver implements VerificationKeyResolver {
         try {
             initializeKeyContent();
         } catch (Exception e) {
-            throw new UnresolvableKeyException("Failed to load a key from: " + authContextInfo.getPublicKeyLocation(), e);
+            throw new UnresolvableKeyException("Failed to load a key from "
+                    + (authContextInfo.getPublicKeyContent() != null ? " the 'mp.jwt.verify.publickey' property"
+                            : authContextInfo.getPublicKeyLocation()),
+                    e);
         }
     }
 
@@ -100,7 +103,9 @@ public class KeyLocationResolver implements VerificationKeyResolver {
         PublicKey key = tryAsJwk(jws);
 
         if (key == null) {
-            throw new UnresolvableKeyException("Failed to resolve a key from: " + authContextInfo.getPublicKeyLocation());
+            throw new UnresolvableKeyException("Failed to load a key from "
+                    + (authContextInfo.getPublicKeyContent() != null ? " the 'mp.jwt.verify.publickey' property"
+                            : authContextInfo.getPublicKeyLocation()));
         }
         return key;
     }
@@ -155,7 +160,8 @@ public class KeyLocationResolver implements VerificationKeyResolver {
     }
 
     protected void initializeKeyContent() throws Exception {
-        if (authContextInfo.getPublicKeyLocation().startsWith(HTTPS_SCHEME)) {
+
+        if (authContextInfo.getPublicKeyLocation() != null && authContextInfo.getPublicKeyLocation().startsWith(HTTPS_SCHEME)) {
             LOGGER.debugf("Trying to load the keys from the HTTPS JWK(S)...");
             httpsJwks = initializeHttpsJwks();
             httpsJwks.setDefaultCacheDuration(authContextInfo.getJwksRefreshInterval().longValue() * 60L);
@@ -167,7 +173,9 @@ public class KeyLocationResolver implements VerificationKeyResolver {
             }
         }
 
-        String content = readKeyContent(authContextInfo.getPublicKeyLocation());
+        String content = authContextInfo.getPublicKeyContent() != null
+                ? authContextInfo.getPublicKeyContent()
+                : readKeyContent(authContextInfo.getPublicKeyLocation());
         // Try to init the verification key from the local PEM or JWK(S) content
         verificationKey = tryAsPEMPublicKey(content);
         if (verificationKey == null) {

@@ -10,7 +10,6 @@ import java.util.Collections;
 import java.util.Optional;
 import java.util.Scanner;
 
-import org.eclipse.microprofile.jwt.tck.util.TokenUtils;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -65,7 +64,7 @@ public class JWTAuthContextInfoProviderTest {
         Optional<JWTAuthContextInfo> info = provider.getOptionalContextInfo();
         assertNotNull(info);
         assertTrue(info.isPresent());
-        assertEquals(TokenUtils.readPublicKey("/publicKey4k.pem"), info.get().getSignerKey());
+        assertEquals(signerKeyJwk, info.get().getPublicKeyContent());
     }
 
     @Test
@@ -74,7 +73,7 @@ public class JWTAuthContextInfoProviderTest {
         Optional<JWTAuthContextInfo> info = provider.getOptionalContextInfo();
         assertNotNull(info);
         assertTrue(info.isPresent());
-        assertEquals(TokenUtils.readPublicKey("/publicKey4k.pem"), info.get().getSignerKey());
+        assertEquals(signerKeyPem, info.get().getPublicKeyContent());
     }
 
     @Test
