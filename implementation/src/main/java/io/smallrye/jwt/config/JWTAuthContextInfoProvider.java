@@ -85,6 +85,7 @@ public class JWTAuthContextInfoProvider {
         provider.defaultGroupsClaim = Optional.empty();
         provider.groupsPath = Optional.empty();
         provider.expGracePeriodSecs = Optional.of(60);
+        provider.maxTimeToLiveSecs = Optional.empty();
         provider.jwksRefreshInterval = Optional.empty();
         provider.whitelistAlgorithms = Optional.empty();
         provider.expectedAudience = Optional.empty();
@@ -207,6 +208,14 @@ public class JWTAuthContextInfoProvider {
     private Optional<Integer> expGracePeriodSecs;
 
     /**
+     * The maximum number of seconds that a JWT may be issued for use. Effectively, the difference
+     * between the expiration date of the JWT and the issued at date must not exceed this value.
+     */
+    @Inject
+    @ConfigProperty(name = "smallrye.jwt.time-to-live.max")
+    Optional<Integer> maxTimeToLiveSecs;
+
+    /**
      * JWK cache refresh interval in minutes. It will be ignored unless the 'mp.jwt.verify.publickey.location' property points
      * to the HTTPS URL based JWK set.
      * Note this property will only be used if no HTTP Cache-Control response header with a positive 'max-age' parameter value
@@ -284,6 +293,7 @@ public class JWTAuthContextInfoProvider {
         contextInfo.setDefaultGroupsClaim(defaultGroupsClaim.orElse(null));
         SmallryeJwtUtils.setContextGroupsPath(contextInfo, groupsPath);
         contextInfo.setExpGracePeriodSecs(expGracePeriodSecs.orElse(null));
+        contextInfo.setMaxTimeToLiveSecs(maxTimeToLiveSecs.orElse(null));
         contextInfo.setJwksRefreshInterval(jwksRefreshInterval.orElse(null));
         SmallryeJwtUtils.setWhitelistAlgorithms(contextInfo, whitelistAlgorithms);
         contextInfo.setExpectedAudience(expectedAudience.orElse(null));
@@ -350,6 +360,10 @@ public class JWTAuthContextInfoProvider {
 
     public Optional<Integer> getExpGracePeriodSecs() {
         return expGracePeriodSecs;
+    }
+
+    public Optional<Integer> getMaxTimeToLiveSecs() {
+        return maxTimeToLiveSecs;
     }
 
     public Optional<Integer> getJwksRefreshInterval() {

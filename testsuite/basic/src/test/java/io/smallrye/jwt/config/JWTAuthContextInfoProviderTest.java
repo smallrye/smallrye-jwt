@@ -88,4 +88,15 @@ public class JWTAuthContextInfoProviderTest {
         assertEquals(1, info.get().getExpectedAudience().size());
         assertEquals("expected.aud", info.get().getExpectedAudience().stream().findFirst().get());
     }
+
+    @Test
+    public void testGetOptionalContextInfoWithMaxTimeToLive() throws Exception {
+        JWTAuthContextInfoProvider provider = JWTAuthContextInfoProvider.createWithKey(signerKeyPem, TEST_ISS);
+        provider.maxTimeToLiveSecs = Optional.of(60); // 60 minutes
+        Optional<JWTAuthContextInfo> info = provider.getOptionalContextInfo();
+        assertNotNull(info);
+        assertTrue(info.isPresent());
+        assertNotNull(info.get().getMaxTimeToLiveSecs());
+        assertEquals(Integer.valueOf(60), info.get().getMaxTimeToLiveSecs());
+    }
 }
