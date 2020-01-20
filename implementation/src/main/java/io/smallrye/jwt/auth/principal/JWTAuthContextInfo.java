@@ -28,6 +28,7 @@ public class JWTAuthContextInfo {
     private RSAPublicKey signerKey;
     private String issuedBy;
     private int expGracePeriodSecs = 60;
+    private Long maxTimeToLiveSecs;
     private String publicKeyLocation;
     private Integer jwksRefreshInterval;
     private String tokenHeader = "Authorization";
@@ -102,6 +103,14 @@ public class JWTAuthContextInfo {
 
     public void setExpGracePeriodSecs(int expGracePeriodSecs) {
         this.expGracePeriodSecs = expGracePeriodSecs;
+    }
+
+    public Long getMaxTimeToLiveSecs() {
+        return maxTimeToLiveSecs;
+    }
+
+    public void setMaxTimeToLiveSecs(Long maxTimeToLiveSecs) {
+        this.maxTimeToLiveSecs = maxTimeToLiveSecs;
     }
 
     public String getPublicKeyLocation() {

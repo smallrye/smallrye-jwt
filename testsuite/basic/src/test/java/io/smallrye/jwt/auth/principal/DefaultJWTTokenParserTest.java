@@ -2,6 +2,7 @@ package io.smallrye.jwt.auth.principal;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 
 import java.security.interfaces.RSAPublicKey;
 import java.util.Arrays;
@@ -58,6 +59,33 @@ public class DefaultJWTTokenParserTest {
     @Test(expected = ParseException.class)
     public void testParseMultipleMissingExpectedAudienceValues() throws Exception {
         config.setExpectedAudience(new HashSet<>(Arrays.asList("MISSING1", "MISSING2")));
+        parser.parse(TokenUtils.generateTokenString("/Token1.json"), config);
+    }
+
+    @Test
+    public void testParseMaxTimeToLiveNull() throws Exception {
+        assertNull(config.getMaxTimeToLiveSecs());
+        JwtContext context = parser.parse(TokenUtils.generateTokenString("/Token1.json"), config);
+        assertNotNull(context);
+    }
+
+    @Test
+    public void testParseMaxTimeToLiveGreaterThanExpAge() throws Exception {
+        config.setMaxTimeToLiveSecs(Long.valueOf(301));
+        JwtContext context = parser.parse(TokenUtils.generateTokenString("/Token1.json"), config);
+        assertNotNull(context);
+    }
+
+    @Test
+    public void testParseMaxTimeToLiveEqualToExpAge() throws Exception {
+        config.setMaxTimeToLiveSecs(Long.valueOf(300));
+        JwtContext context = parser.parse(TokenUtils.generateTokenString("/Token1.json"), config);
+        assertNotNull(context);
+    }
+
+    @Test(expected = ParseException.class)
+    public void testParseMaxTimeToLiveLessThanExpAge() throws Exception {
+        config.setMaxTimeToLiveSecs(Long.valueOf(299));
         parser.parse(TokenUtils.generateTokenString("/Token1.json"), config);
     }
 }

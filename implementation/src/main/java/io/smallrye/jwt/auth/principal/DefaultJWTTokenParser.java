@@ -51,6 +51,10 @@ public class DefaultJWTTokenParser {
             JwtConsumerBuilder builder = new JwtConsumerBuilder()
                     .setRequireExpirationTime();
 
+            if (authContextInfo.getMaxTimeToLiveSecs() != null) {
+                builder.setRequireIssuedAt();
+            }
+
             if (authContextInfo.getWhitelistAlgorithms().isEmpty()) {
                 builder.setJwsAlgorithmConstraints(
                         new AlgorithmConstraints(AlgorithmConstraints.ConstraintType.WHITELIST,
@@ -85,6 +89,8 @@ public class DefaultJWTTokenParser {
             //  Validate the JWT and process it to the Claims
             JwtContext jwtContext = jwtConsumer.process(token);
             JwtClaims claimsSet = jwtContext.getJwtClaims();
+
+            verifyTimeToLive(authContextInfo, claimsSet);
 
             claimsSet.setClaim(Claims.raw_token.name(), token);
 
@@ -218,6 +224,30 @@ public class DefaultJWTTokenParser {
             }
         }
         return claimValue;
+    }
+
+    private void verifyTimeToLive(JWTAuthContextInfo authContextInfo, JwtClaims claimsSet) throws ParseException {
+        final Long maxTimeToLiveSecs = authContextInfo.getMaxTimeToLiveSecs();
+
+        if (maxTimeToLiveSecs != null) {
+            final NumericDate iat;
+            final NumericDate exp;
+
+            try {
+                iat = claimsSet.getIssuedAt();
+                exp = claimsSet.getExpirationTime();
+            } catch (Exception e) {
+                throw new ParseException("Failed to verify max TTL", e);
+            }
+
+            if (exp.getValue() - iat.getValue() > maxTimeToLiveSecs) {
+                String msg = "The Expiration Time (exp=" + exp + ") claim value cannot be more than " + maxTimeToLiveSecs
+                        + " minutes in the future relative to Issued At (iat=" + iat + ")";
+                throw new ParseException(msg);
+            }
+        } else {
+            LOGGER.debugf("No max TTL has been specified in configuration");
+        }
     }
 
     protected VerificationKeyResolver getKeyResolver(JWTAuthContextInfo authContextInfo) throws UnresolvableKeyException {
