@@ -71,21 +71,21 @@ public class DefaultJWTTokenParserTest {
 
     @Test
     public void testParseMaxTimeToLiveGreaterThanExpAge() throws Exception {
-        config.setMaxTimeToLiveSecs(Integer.valueOf(301));
+        config.setMaxTimeToLiveSecs(Long.valueOf(301));
         JwtContext context = parser.parse(TokenUtils.generateTokenString("/Token1.json"), config);
         assertNotNull(context);
     }
 
     @Test
     public void testParseMaxTimeToLiveEqualToExpAge() throws Exception {
-        config.setMaxTimeToLiveSecs(Integer.valueOf(300));
+        config.setMaxTimeToLiveSecs(Long.valueOf(300));
         JwtContext context = parser.parse(TokenUtils.generateTokenString("/Token1.json"), config);
         assertNotNull(context);
     }
 
     @Test(expected = ParseException.class)
     public void testParseMaxTimeToLiveLessThanExpAge() throws Exception {
-        config.setMaxTimeToLiveSecs(Integer.valueOf(299));
+        config.setMaxTimeToLiveSecs(Long.valueOf(299));
         parser.parse(TokenUtils.generateTokenString("/Token1.json"), config);
     }
 }

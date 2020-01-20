@@ -227,7 +227,7 @@ public class DefaultJWTTokenParser {
     }
 
     private void verifyTimeToLive(JWTAuthContextInfo authContextInfo, JwtClaims claimsSet) throws ParseException {
-        final Integer maxTimeToLiveSecs = authContextInfo.getMaxTimeToLiveSecs();
+        final Long maxTimeToLiveSecs = authContextInfo.getMaxTimeToLiveSecs();
 
         if (maxTimeToLiveSecs != null) {
             final NumericDate iat;

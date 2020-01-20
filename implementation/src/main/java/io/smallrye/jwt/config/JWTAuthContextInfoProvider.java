@@ -212,8 +212,8 @@ public class JWTAuthContextInfoProvider {
      * between the expiration date of the JWT and the issued at date must not exceed this value.
      */
     @Inject
-    @ConfigProperty(name = "smallrye.jwt.time-to-live.max")
-    Optional<Integer> maxTimeToLiveSecs;
+    @ConfigProperty(name = "smallrye.jwt.time-to-live")
+    Optional<Long> maxTimeToLiveSecs;
 
     /**
      * JWK cache refresh interval in minutes. It will be ignored unless the 'mp.jwt.verify.publickey.location' property points
@@ -362,7 +362,7 @@ public class JWTAuthContextInfoProvider {
         return expGracePeriodSecs;
     }
 
-    public Optional<Integer> getMaxTimeToLiveSecs() {
+    public Optional<Long> getMaxTimeToLiveSecs() {
         return maxTimeToLiveSecs;
     }
 
