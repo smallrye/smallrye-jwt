@@ -30,6 +30,7 @@ public class JWTAuthContextInfo {
     private int expGracePeriodSecs = 60;
     private Long maxTimeToLiveSecs;
     private String publicKeyLocation;
+    private String publicKeyContent;
     private Integer jwksRefreshInterval;
     private String tokenHeader = "Authorization";
     private String tokenCookie;
@@ -81,10 +82,12 @@ public class JWTAuthContextInfo {
         this.jwksRefreshInterval = orig.jwksRefreshInterval;
     }
 
+    @Deprecated
     public RSAPublicKey getSignerKey() {
         return signerKey;
     }
 
+    @Deprecated
     public void setSignerKey(RSAPublicKey signerKey) {
         this.signerKey = signerKey;
     }
@@ -119,6 +122,14 @@ public class JWTAuthContextInfo {
 
     public void setPublicKeyLocation(String publicKeyLocation) {
         this.publicKeyLocation = publicKeyLocation;
+    }
+
+    public String getPublicKeyContent() {
+        return this.publicKeyContent;
+    }
+
+    public void setPublicKeyContent(String publicKeyContent) {
+        this.publicKeyContent = publicKeyContent;
     }
 
     public Integer getJwksRefreshInterval() {

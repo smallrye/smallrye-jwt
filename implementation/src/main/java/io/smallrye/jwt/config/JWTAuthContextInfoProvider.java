@@ -263,8 +263,6 @@ public class JWTAuthContextInfoProvider {
         }
 
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo();
-        // Look to MP-JWT values first
-        decodeMpJwtPublicKey(contextInfo);
 
         if (mpJwtIssuer != null && !mpJwtIssuer.equals(NONE)) {
             contextInfo.setIssuedBy(mpJwtIssuer);
@@ -277,7 +275,9 @@ public class JWTAuthContextInfoProvider {
         contextInfo.setRequireIssuer(mpJwtRequireIss.orElse(true));
 
         // The MP-JWT location can be a PEM, JWK or JWKS
-        if (mpJwtLocation.isPresent() && !NONE.equals(mpJwtLocation.get())) {
+        if (mpJwtPublicKey.isPresent() && !NONE.equals(mpJwtPublicKey.get())) {
+            contextInfo.setPublicKeyContent(mpJwtPublicKey.get());
+        } else if (mpJwtLocation.isPresent() && !NONE.equals(mpJwtLocation.get())) {
             contextInfo.setPublicKeyLocation(mpJwtLocation.get());
         }
         if (tokenHeader != null) {
@@ -302,6 +302,7 @@ public class JWTAuthContextInfoProvider {
         return Optional.of(contextInfo);
     }
 
+    @SuppressWarnings("deprecation")
     protected void decodeMpJwtPublicKey(JWTAuthContextInfo contextInfo) {
         if (!mpJwtPublicKey.isPresent() || NONE.equals(mpJwtPublicKey.get())) {
             return;
