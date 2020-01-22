@@ -46,11 +46,13 @@ public class JwtSignTest {
 
     @Test
     public void testSignClaims() throws Exception {
-        String jwt = Jwt.claims()
-                .claim("customClaim", "custom-value")
-                .sign(getPrivateKey());
-
+        JwtClaimsBuilder builder = Jwt.claims().claim("customClaim", "custom-value");
+        String jsonBeforeSign = builder.json();
+        String jwt = builder.sign(getPrivateKey());
+        String jsonAfterSign = builder.json();
+        Assert.assertEquals(jsonBeforeSign, jsonAfterSign);
         JsonWebSignature jws = getVerifiedJws(jwt);
+        Assert.assertEquals(jsonAfterSign, jws.getPayload());
         JwtClaims claims = JwtClaims.parse(jws.getPayload());
 
         Assert.assertEquals(4, claims.getClaimsMap().size());
