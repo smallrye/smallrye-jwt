@@ -28,10 +28,7 @@ public interface JwtSignature {
     String sign(SecretKey signingKey) throws JwtSignatureException;
 
     /**
-     * Sign the claims with a key loaded from the location set with the "smallrye.jwt.sign.private-key-location" property.
-     * 
-     * Note that if the "smallrye.jwt.sign.key-id" property is set then its value has to be used for
-     * the token 'kid' header unless this header has already been initialized.
+     * Sign the claims with a key loaded from the location set with the "smallrye.jwt.sign.key-location" property.
      * 
      * @return signed JWT token
      * @throws JwtSignatureException the exception if the signing operation has failed
