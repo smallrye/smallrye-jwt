@@ -51,6 +51,7 @@ import org.jose4j.lang.JoseException;
 import org.jose4j.lang.UnresolvableKeyException;
 
 import io.smallrye.jwt.KeyUtils;
+import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 
 /**
  * This implements the MP-JWT 1.1 mp.jwt.verify.publickey.location config property resolution logic
@@ -126,7 +127,7 @@ public class KeyLocationResolver implements VerificationKeyResolver {
         LOGGER.debugf("Trying to create a key from the HTTPS JWK(S)...");
 
         try {
-            return getKeyFromJsonWebKeys(kid, httpsJwks.getJsonWebKeys());
+            return getKeyFromJsonWebKeys(kid, httpsJwks.getJsonWebKeys(), authContextInfo.getSignatureAlgorithm());
         } catch (Exception e) {
             LOGGER.debug("Failed to create a key from the HTTPS JWK(S)", e);
         }
@@ -137,7 +138,7 @@ public class KeyLocationResolver implements VerificationKeyResolver {
         LOGGER.debugf("Trying the create a key from the JWK(S)...");
 
         try {
-            return getKeyFromJsonWebKeys(kid, jsonWebKeys);
+            return getKeyFromJsonWebKeys(kid, jsonWebKeys, authContextInfo.getSignatureAlgorithm());
         } catch (Exception e) {
             LOGGER.debug("Failed to create a key from the JWK(S)", e);
         }
@@ -177,30 +178,36 @@ public class KeyLocationResolver implements VerificationKeyResolver {
                 ? authContextInfo.getPublicKeyContent()
                 : readKeyContent(authContextInfo.getPublicKeyLocation());
         // Try to init the verification key from the local PEM or JWK(S) content
-        verificationKey = tryAsPEMPublicKey(content);
+        verificationKey = tryAsPEMPublicKey(content, authContextInfo.getSignatureAlgorithm());
         if (verificationKey == null) {
             verificationKey = tryAsPEMCertificate(content);
         }
         if (verificationKey == null) {
-            tryJWKContent(content);
+            LOGGER.debugf("Checking if the key content is a JWK key or JWK key set");
+            tryJWKContent(content, false);
         }
 
         if (verificationKey == null && jsonWebKeys == null) {
             // Try Base64 Decoding
             try {
+                LOGGER.debugf("Checking if the key content is a Base64URL encoded JWK key or JWK key set");
                 content = new String(Base64.getUrlDecoder().decode(content.getBytes(StandardCharsets.UTF_8)),
                         StandardCharsets.UTF_8);
-                tryJWKContent(content);
+                tryJWKContent(content, true);
             } catch (IllegalArgumentException e) {
                 LOGGER.debug("Unable to decode content using Base64 decoder", e);
             }
         }
     }
 
-    private void tryJWKContent(final String content) {
+    private void tryJWKContent(final String content, boolean encoded) {
         jsonWebKeys = loadJsonWebKeys(content);
         if (jsonWebKeys != null && authContextInfo.getTokenKeyId() != null) {
             verificationKey = getJsonWebKey(authContextInfo.getTokenKeyId());
+            if (verificationKey != null) {
+                LOGGER.debugf("PublicKey has been created from"
+                        + (encoded ? " the encoded " : " ") + "JWK key or JWK key set");
+            }
         }
     }
 
@@ -247,24 +254,28 @@ public class KeyLocationResolver implements VerificationKeyResolver {
         return new UrlStreamResolver();
     }
 
-    static PublicKey tryAsPEMPublicKey(String content) {
-        LOGGER.debugf("Trying to create a key from the encoded PEM key...");
+    static PublicKey tryAsPEMPublicKey(String content, SignatureAlgorithm algo) {
+        LOGGER.debugf("Checking if the key content is a Base64 encoded PEM key");
+        PublicKey key = null;
         try {
-            return KeyUtils.decodePublicKey(content);
+            key = KeyUtils.decodePublicKey(content, algo);
+            LOGGER.debug("PublicKey has been created from the encoded PEM key");
         } catch (Exception e) {
-            LOGGER.debug("Failed to create a key from the encoded PEM key", e);
+            LOGGER.debug("The key content is not a valid encoded PEM key", e);
         }
-        return null;
+        return key;
     }
 
     static PublicKey tryAsPEMCertificate(String content) {
-        LOGGER.debugf("Trying to create a key from the encoded PEM certificate...");
+        LOGGER.debugf("Checking if the key content is a Base64 encoded PEM certificate");
+        PublicKey key = null;
         try {
-            return KeyUtils.decodeCertificate(content);
+            key = KeyUtils.decodeCertificate(content);
+            LOGGER.debug("PublicKey has been created from the encoded PEM certificate");
         } catch (Exception e) {
-            LOGGER.debug("Failed to to create a key from the encoded PEM certificate", e);
+            LOGGER.debug("The key content is not a valid encoded PEM certificate", e);
         }
-        return null;
+        return key;
     }
 
     static List<JsonWebKey> loadJsonWebKeys(String content) {
@@ -299,17 +310,19 @@ public class KeyLocationResolver implements VerificationKeyResolver {
         return localKeys;
     }
 
-    static PublicKey getKeyFromJsonWebKeys(String kid, List<JsonWebKey> keys) {
+    static PublicKey getKeyFromJsonWebKeys(String kid, List<JsonWebKey> keys, SignatureAlgorithm algo) {
         if (kid != null) {
             for (JsonWebKey currentJwk : keys) {
-                if (kid.equals(currentJwk.getKeyId())) {
+                if (kid.equals(currentJwk.getKeyId())
+                        && (currentJwk.getAlgorithm() == null || algo.getAlgorithm().equals(currentJwk.getAlgorithm()))) {
                     return PublicJsonWebKey.class.cast(currentJwk).getPublicKey();
                 }
             }
         }
         // if JWK set contains a single JWK only then try to use it
         // but only if 'kid' is not set in both the token and this JWK
-        if (keys.size() == 1 && (kid == null || keys.get(0).getKeyId() == null)) {
+        if (keys.size() == 1 && (kid == null || keys.get(0).getKeyId() == null)
+                && (keys.get(0).getAlgorithm() == null || algo.getAlgorithm().equals(keys.get(0).getAlgorithm()))) {
             return PublicJsonWebKey.class.cast(keys.get(0)).getPublicKey();
         }
         return null;

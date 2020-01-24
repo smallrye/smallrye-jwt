@@ -21,6 +21,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
+import io.smallrye.jwt.algorithm.SignatureAlgorithm;
+
 /**
  * The public key and expected issuer needed to validate a token.
  */
@@ -42,6 +44,7 @@ public class JWTAuthContextInfo {
     private String defaultGroupsClaim;
     private String groupsPath;
     private List<String> whitelistAlgorithms = new ArrayList<>();
+    private SignatureAlgorithm signatureAlgorithm = SignatureAlgorithm.RS256;
     private Set<String> expectedAudience;
     private String groupsSeparator = " ";
 
@@ -204,10 +207,12 @@ public class JWTAuthContextInfo {
         this.groupsPath = groupsPath;
     }
 
+    @Deprecated
     public List<String> getWhitelistAlgorithms() {
         return whitelistAlgorithms;
     }
 
+    @Deprecated
     public void setWhitelistAlgorithms(final List<String> whitelistAlgorithms) {
         this.whitelistAlgorithms = whitelistAlgorithms;
     }
@@ -242,5 +247,13 @@ public class JWTAuthContextInfo {
 
     public void setGroupsSeparator(String groupsSeparator) {
         this.groupsSeparator = groupsSeparator;
+    }
+
+    public SignatureAlgorithm getSignatureAlgorithm() {
+        return signatureAlgorithm;
+    }
+
+    public void setSignatureAlgorithm(SignatureAlgorithm signatureAlgorithm) {
+        this.signatureAlgorithm = signatureAlgorithm;
     }
 }

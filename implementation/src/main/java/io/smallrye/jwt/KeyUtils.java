@@ -58,6 +58,7 @@ import org.jose4j.jwk.JsonWebKeySet;
 import org.jose4j.jwk.OctetSequenceJsonWebKey;
 import org.jose4j.jwk.PublicJsonWebKey;
 
+import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 import io.smallrye.jwt.auth.principal.KeyLocationResolver;
 
 /**
@@ -70,26 +71,41 @@ public final class KeyUtils {
     private static final String CLASSPATH_SCHEME = "classpath:";
     private static final String FILE_SCHEME = "file:";
     private static final String RSA = "RSA";
+    private static final String EC = "EC";
 
     private KeyUtils() {
     }
 
     public static PrivateKey readPrivateKey(String pemResName) throws IOException, GeneralSecurityException {
+        return readPrivateKey(pemResName, SignatureAlgorithm.RS256);
+    }
+
+    public static PrivateKey readPrivateKey(String pemResName, SignatureAlgorithm algo)
+            throws IOException, GeneralSecurityException {
         InputStream contentIS = KeyUtils.class.getResourceAsStream(pemResName);
         byte[] tmp = new byte[4096];
         int length = contentIS.read(tmp);
-        return decodePrivateKey(new String(tmp, 0, length));
+        return decodePrivateKey(new String(tmp, 0, length), algo);
     }
 
     public static PublicKey readPublicKey(String pemResName) throws IOException, GeneralSecurityException {
+        return readPublicKey(pemResName, SignatureAlgorithm.RS256);
+    }
+
+    public static PublicKey readPublicKey(String pemResName, SignatureAlgorithm algo)
+            throws IOException, GeneralSecurityException {
         InputStream contentIS = KeyUtils.class.getResourceAsStream(pemResName);
         byte[] tmp = new byte[4096];
         int length = contentIS.read(tmp);
-        return decodePublicKey(new String(tmp, 0, length));
+        return decodePublicKey(new String(tmp, 0, length), algo);
     }
 
     public static KeyPair generateKeyPair(int keySize) throws NoSuchAlgorithmException {
-        KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance(RSA);
+        return generateKeyPair(keySize, SignatureAlgorithm.RS256);
+    }
+
+    public static KeyPair generateKeyPair(int keySize, SignatureAlgorithm algo) throws NoSuchAlgorithmException {
+        KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance(keyFactoryAlgorithm(algo));
         keyPairGenerator.initialize(keySize);
         return keyPairGenerator.genKeyPair();
     }
@@ -102,13 +118,24 @@ public final class KeyUtils {
      * @throws GeneralSecurityException - on failure to decode and create key
      */
     public static PrivateKey decodePrivateKey(String pemEncoded) throws GeneralSecurityException {
+        return decodePrivateKey(pemEncoded, SignatureAlgorithm.RS256);
+    }
+
+    /**
+     * Decode a PEM private key
+     * 
+     * @param pemEncoded - pem string for key
+     * @return Private key instance
+     * @throws GeneralSecurityException - on failure to decode and create key
+     */
+    public static PrivateKey decodePrivateKey(String pemEncoded, SignatureAlgorithm algo) throws GeneralSecurityException {
         pemEncoded = removePemKeyBeginEnd(pemEncoded);
         byte[] pkcs8EncodedBytes = Base64.getDecoder().decode(pemEncoded);
 
         // extract the private key
 
         PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(pkcs8EncodedBytes);
-        KeyFactory kf = KeyFactory.getInstance(RSA);
+        KeyFactory kf = KeyFactory.getInstance(keyFactoryAlgorithm(algo));
         return kf.generatePrivate(keySpec);
     }
 
@@ -120,6 +147,7 @@ public final class KeyUtils {
      * @return PublicKey from RSAPublicKeySpec
      * @throws GeneralSecurityException when RSA security is not supported or public key cannot be decoded
      */
+    @Deprecated
     public static PublicKey decodeJWKSPublicKey(String jwksValue) throws GeneralSecurityException {
         JsonObject jwks;
 
@@ -165,12 +193,33 @@ public final class KeyUtils {
      * @throws GeneralSecurityException on decode failure
      */
     public static PublicKey decodePublicKey(String pemEncoded) throws GeneralSecurityException {
+        return decodePublicKey(pemEncoded, SignatureAlgorithm.RS256);
+    }
+
+    /**
+     * Decode a PEM encoded public key string to an RSA or EllipticCurve PublicKey
+     * 
+     * @param pemEncoded - PEM string for public key
+     * @return PublicKey
+     * @throws GeneralSecurityException on decode failure
+     */
+    public static PublicKey decodePublicKey(String pemEncoded, SignatureAlgorithm algo) throws GeneralSecurityException {
         pemEncoded = removePemKeyBeginEnd(pemEncoded);
         byte[] encodedBytes = Base64.getDecoder().decode(pemEncoded);
 
         X509EncodedKeySpec spec = new X509EncodedKeySpec(encodedBytes);
-        KeyFactory kf = KeyFactory.getInstance(RSA);
+        KeyFactory kf = KeyFactory.getInstance(keyFactoryAlgorithm(algo));
         return kf.generatePublic(spec);
+    }
+
+    static String keyFactoryAlgorithm(SignatureAlgorithm algo) throws NoSuchAlgorithmException {
+        if (algo.name().startsWith("RS")) {
+            return RSA;
+        }
+        if (algo.name().startsWith("ES")) {
+            return EC;
+        }
+        throw new NoSuchAlgorithmException("Unsupported key type" + algo.name());
     }
 
     /**

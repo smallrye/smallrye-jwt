@@ -18,12 +18,18 @@
 package io.smallrye.jwt.auth.principal;
 
 import java.security.PrivateKey;
+import java.time.Instant;
 
 import org.eclipse.microprofile.jwt.tck.util.TokenUtils;
+import org.jose4j.lang.InvalidAlgorithmException;
 import org.jose4j.lang.UnresolvableKeyException;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
+import io.smallrye.jwt.KeyUtils;
+import io.smallrye.jwt.algorithm.SignatureAlgorithm;
+import io.smallrye.jwt.build.Jwt;
+import io.smallrye.jwt.build.JwtClaimsBuilder;
 import io.smallrye.jwt.config.JWTAuthContextInfoProvider;
 
 public class KeyLocationResolverTest {
@@ -108,4 +114,51 @@ public class KeyLocationResolverTest {
         Assert.assertNotNull(new DefaultJWTTokenParser().parse(token, contextInfo));
     }
 
+    @Test
+    public void testVerifyEcSignedTokenWithEcKey() throws Exception {
+        JwtClaimsBuilder builder = Jwt.claims("/Token1.json");
+        builder.issuedAt(Instant.now().getEpochSecond());
+        builder.expiresAt(Instant.now().getEpochSecond() + 300);
+        String jwt = builder.sign(KeyUtils.readPrivateKey("/ecPrivateKey.pem", SignatureAlgorithm.ES256));
+        JWTAuthContextInfoProvider provider = JWTAuthContextInfoProvider.createWithKeyLocation("ecPublicKey.pem",
+                "https://server.example.com");
+        JWTAuthContextInfo contextInfo = provider.getContextInfo();
+        contextInfo.setSignatureAlgorithm(SignatureAlgorithm.ES256);
+        Assert.assertNotNull(new DefaultJWTTokenParser().parse(jwt, contextInfo));
+    }
+
+    @Test
+    public void testVerifyEcSignedTokenWithWrongKey() throws Exception {
+        JwtClaimsBuilder builder = Jwt.claims("/Token1.json");
+        builder.issuedAt(Instant.now().getEpochSecond());
+        builder.expiresAt(Instant.now().getEpochSecond() + 300);
+        String jwt = builder.sign(KeyUtils.readPrivateKey("/ecPrivateKey.pem", SignatureAlgorithm.ES256));
+        JWTAuthContextInfoProvider provider = JWTAuthContextInfoProvider.createWithKeyLocation("publicKey.pem",
+                "https://server.example.com");
+        JWTAuthContextInfo contextInfo = provider.getContextInfo();
+        contextInfo.setSignatureAlgorithm(SignatureAlgorithm.ES256);
+        try {
+            new DefaultJWTTokenParser().parse(jwt, contextInfo);
+            Assert.fail("ParseException is expected due to the wrong key type");
+        } catch (ParseException ex) {
+            Assert.assertTrue(ex.getCause().getCause() instanceof UnresolvableKeyException);
+        }
+    }
+
+    @Test
+    public void testVerifyEcSignedTokenWithWrongAlgo() throws Exception {
+        JwtClaimsBuilder builder = Jwt.claims("/Token1.json");
+        builder.issuedAt(Instant.now().getEpochSecond());
+        builder.expiresAt(Instant.now().getEpochSecond() + 300);
+        String jwt = builder.sign(KeyUtils.readPrivateKey("/ecPrivateKey.pem", SignatureAlgorithm.ES256));
+        JWTAuthContextInfoProvider provider = JWTAuthContextInfoProvider.createWithKeyLocation("publicKey.pem",
+                "https://server.example.com");
+        // default is RS256
+        try {
+            new DefaultJWTTokenParser().parse(jwt, provider.getContextInfo());
+            Assert.fail("ParseException is expected due to the wrong expected algorithm");
+        } catch (ParseException ex) {
+            Assert.assertTrue(ex.getCause().getCause() instanceof InvalidAlgorithmException);
+        }
+    }
 }
