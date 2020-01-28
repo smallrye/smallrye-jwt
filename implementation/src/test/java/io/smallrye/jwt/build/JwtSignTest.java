@@ -17,6 +17,7 @@
 package io.smallrye.jwt.build;
 
 import java.security.Key;
+import java.security.KeyPairGenerator;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.util.Arrays;
@@ -73,6 +74,34 @@ public class JwtSignTest {
         checkDefaultClaimsAndHeaders(getJwsHeaders(jwt, 2), claims);
 
         Assert.assertEquals("custom-value", claims.getClaimValue("customClaim"));
+    }
+
+    @Test
+    public void testSignMapOfClaimsWithKeyLocation() throws Exception {
+        String jwt = Jwt.claims(Collections.singletonMap("customClaim", "custom-value"))
+                .sign("/privateKey.pem");
+
+        JsonWebSignature jws = getVerifiedJws(jwt);
+        JwtClaims claims = JwtClaims.parse(jws.getPayload());
+
+        Assert.assertEquals(4, claims.getClaimsMap().size());
+        checkDefaultClaimsAndHeaders(getJwsHeaders(jwt, 2), claims);
+
+        Assert.assertEquals("custom-value", claims.getClaimValue("customClaim"));
+    }
+
+    @Test
+    public void testSignWithInvalidRSAKey() throws Exception {
+        KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
+        keyPairGenerator.initialize(1024);
+        PrivateKey key = keyPairGenerator.generateKeyPair().getPrivate();
+        try {
+            Jwt.claims().sign(key);
+            Assert.fail("JwtSignatureException is expected due to the invalid key size");
+        } catch (JwtSignatureException ex) {
+            Assert.assertEquals("A key of size 2048 bits or larger MUST be used with the 'RS256' algorithm",
+                    ex.getMessage());
+        }
     }
 
     @Test

@@ -7,7 +7,8 @@ package io.smallrye.jwt.algorithm;
  */
 public enum ContentEncryptionAlgorithm {
     A256GCM("A256GCM"),
-    A128CBC_HS256("A128CBC-HS256");
+    A128CBC_HS256("A128CBC-HS256"),
+    A256CBC_HS512("A256CBC-HS512");
 
     private String algorithmName;
 

@@ -17,7 +17,9 @@
 package io.smallrye.jwt.build;
 
 import java.security.Key;
+import java.security.KeyPairGenerator;
 import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.util.Map;
 
 import javax.crypto.SecretKey;
@@ -52,6 +54,36 @@ public class JwtEncryptTest {
 
         JwtClaims claims = JwtClaims.parse(jwe.getPlaintextString());
         checkJwtClaims(claims);
+    }
+
+    @Test
+    public void testEncryptWithRsaPublicKeyLocation() throws Exception {
+        String jweCompact = Jwt.claims()
+                .claim("customClaim", "custom-value")
+                .jwe()
+                .keyEncryptionKeyId("key-enc-key-id")
+                .encrypt("publicKey.pem");
+
+        checkJweHeaders(jweCompact);
+
+        JsonWebEncryption jwe = getJsonWebEncryption(jweCompact);
+
+        JwtClaims claims = JwtClaims.parse(jwe.getPlaintextString());
+        checkJwtClaims(claims);
+    }
+
+    @Test
+    public void testEncryptWithInvalidRSAKey() throws Exception {
+        KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
+        keyPairGenerator.initialize(1024);
+        PublicKey key = keyPairGenerator.generateKeyPair().getPublic();
+        try {
+            Jwt.claims().jwe().encrypt(key);
+            Assert.fail("JwtEncryptionException is expected due to the invalid key size");
+        } catch (JwtEncryptionException ex) {
+            Assert.assertEquals("A key of size 2048 bits or larger MUST be used with the 'RSA-OAEP-256' algorithm",
+                    ex.getMessage());
+        }
     }
 
     @Test

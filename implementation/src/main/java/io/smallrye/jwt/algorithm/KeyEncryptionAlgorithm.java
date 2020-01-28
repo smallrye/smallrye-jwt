@@ -6,7 +6,9 @@ package io.smallrye.jwt.algorithm;
  * @see <a href="https://tools.ietf.org/html/rfc7518#section-4">https://tools.ietf.org/html/rfc7518#section-4</a>
  */
 public enum KeyEncryptionAlgorithm {
+    RSA_OAEP("RSA-OAEP"),
     RSA_OAEP_256("RSA-OAEP-256"),
+    ECDH_ES("ECDH-ES"),
     ECDH_ES_A256KW("ECDH-ES+A256KW"),
     A256KW("A256KW");
 
