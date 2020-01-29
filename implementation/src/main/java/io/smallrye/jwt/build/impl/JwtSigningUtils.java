@@ -29,6 +29,7 @@ import org.jose4j.jwt.NumericDate;
 import io.smallrye.jwt.KeyUtils;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 import io.smallrye.jwt.build.JwtException;
+import io.smallrye.jwt.build.JwtSignatureException;
 
 /**
  * JWT Token Signing Utilities
@@ -174,25 +175,31 @@ public class JwtSigningUtils {
 
         setDefaultJwtClaims(claims);
         JsonWebSignature jws = new JsonWebSignature();
-        jws.setPayload(claims.toJson());
-        jws.setKey(signingKey);
         for (Map.Entry<String, Object> entry : headers.entrySet()) {
             jws.setHeader(entry.getKey(), entry.getValue());
         }
         if (!headers.containsKey("typ")) {
             jws.setHeader("typ", "JWT");
         }
-        if (!headers.containsKey("alg")) {
-            jws.setAlgorithmHeaderValue(keyAlgorithm(headers, signingKey));
+        String algorithm = (String) headers.get("alg");
+        if (algorithm == null) {
+            algorithm = keyAlgorithm(headers, signingKey);
+            jws.setAlgorithmHeaderValue(algorithm);
         }
-        if ("none".equals(headers.get("alg"))) {
+        if ("none".equals(algorithm)) {
             jws.setAlgorithmConstraints(AlgorithmConstraints.ALLOW_ONLY_NONE);
         }
-
+        jws.setPayload(claims.toJson());
+        if (signingKey instanceof RSAPrivateKey && algorithm.startsWith("RS")
+                && ((RSAPrivateKey) signingKey).getModulus().bitLength() < 2048) {
+            throw new JwtSignatureException("A key of size 2048 bits or larger MUST be used with the '"
+                    + algorithm + "' algorithm");
+        }
+        jws.setKey(signingKey);
         try {
             return jws.getCompactSerialization();
         } catch (Exception ex) {
-            throw new JwtException("Failure to create a signed JWT token: " + ex, ex);
+            throw new JwtSignatureException("Failure to create a signed JWT token: " + ex, ex);
         }
     }
 

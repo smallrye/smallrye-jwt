@@ -20,7 +20,8 @@ import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 public interface JwtSignatureBuilder extends JwtSignature {
 
     /**
-     * Set a signature algorithm
+     * Set a signature algorithm.
+     * Note that only 'RS256' (default), 'ES256' and 'HS256' algorithms must be supported.
      * 
      * @param algorithm the signature algorithm
      * @return JwtSignatureBuilder
@@ -36,7 +37,7 @@ public interface JwtSignatureBuilder extends JwtSignature {
     JwtSignatureBuilder signatureKeyId(String keyId);
 
     /**
-     * Custom JWT signature header
+     * Custom JWT signature header.
      * 
      * If the 'alg' (algorithm) header is set with this method then it
      * has to match one of the {@link SignatureAlgorithm} values.

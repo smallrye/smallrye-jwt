@@ -18,7 +18,9 @@ import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
 public interface JwtEncryptionBuilder extends JwtEncryption {
 
     /**
-     * Set an 'alg' key encryption algorithm
+     * Set an 'alg' key encryption algorithm.
+     * Note that only 'RSA-OAEP-256' (default), 'ECDH-ES+A256KW' and 'A256KW' algorithms must be supported.
+     * A key of size 2048 bits or larger MUST be used with 'RSA-OAEP-256' algorithm.
      * 
      * @param algorithm the key encryption algorithm
      * @return JwtEncryptionBuilder
@@ -26,7 +28,8 @@ public interface JwtEncryptionBuilder extends JwtEncryption {
     JwtEncryptionBuilder keyEncryptionAlgorithm(KeyEncryptionAlgorithm algorithm);
 
     /**
-     * Set an 'enc' content encryption algorithm
+     * Set an 'enc' content encryption algorithm.
+     * Note that only 'A256GCM' (default) and 'A128CBC-HS256' algorithms must be supported.
      * 
      * @param algorithm the content encryption algorithm
      * @return JwtEncryptionBuilder
@@ -34,7 +37,7 @@ public interface JwtEncryptionBuilder extends JwtEncryption {
     JwtEncryptionBuilder contentEncryptionAlgorithm(ContentEncryptionAlgorithm algorithm);
 
     /**
-     * Set a 'kid' key encryption key id
+     * Set a 'kid' key encryption key id.
      * 
      * @param keyId the key id
      * @return JwtEncryptionBuilder
@@ -42,7 +45,7 @@ public interface JwtEncryptionBuilder extends JwtEncryption {
     JwtEncryptionBuilder keyEncryptionKeyId(String keyId);
 
     /**
-     * Custom JWT encryption header
+     * Custom JWT encryption header.
      * 
      * If the 'alg' (algorithm) header is set with this method then it
      * has to match one of the {@link KeyEncryptionAlgorithm} values.

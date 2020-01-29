@@ -37,16 +37,39 @@ class JwtEncryptionImpl implements JwtEncryptionBuilder {
         this.innerSigned = innerSigned;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public String encrypt(PublicKey keyEncryptionKey) throws JwtEncryptionException {
         return encryptInternal(keyEncryptionKey);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public String encrypt(SecretKey keyEncryptionKey) throws JwtEncryptionException {
         return encryptInternal(keyEncryptionKey);
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public String encrypt(String keyLocation) throws JwtEncryptionException {
+        Key key = null;
+        try {
+            key = KeyUtils.readEncryptionKey(keyLocation, (String) headers.get("kid"));
+        } catch (Exception ex) {
+            throw new JwtEncryptionException(ex);
+        }
+        return key instanceof PublicKey ? encryptInternal((PublicKey) key) : encryptInternal((SecretKey) key);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public String encrypt() throws JwtSignatureException {
         return encryptInternal(getKeyEncryptionKeyFromConfig((String) headers.get("kid")));
@@ -103,8 +126,15 @@ class JwtEncryptionImpl implements JwtEncryptionBuilder {
         if (innerSigned && !headers.containsKey("cty")) {
             jwe.getHeaders().setObjectHeaderValue("cty", "JWT");
         }
-        jwe.setAlgorithmHeaderValue(getKeyEncryptionAlgorithm(key));
+        String keyAlgorithm = getKeyEncryptionAlgorithm(key);
+        jwe.setAlgorithmHeaderValue(keyAlgorithm);
         jwe.setEncryptionMethodHeaderParameter(getContentEncryptionAlgorithm());
+
+        if (key instanceof RSAPublicKey && keyAlgorithm.startsWith(KeyEncryptionAlgorithm.RSA_OAEP.getAlgorithm())
+                && ((RSAPublicKey) key).getModulus().bitLength() < 2048) {
+            throw new JwtEncryptionException(
+                    "A key of size 2048 bits or larger MUST be used with the '" + keyAlgorithm + "' algorithm");
+        }
         jwe.setKey(key);
         try {
             return jwe.getCompactSerialization();

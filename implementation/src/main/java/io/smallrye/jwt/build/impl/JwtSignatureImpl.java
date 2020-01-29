@@ -1,5 +1,6 @@
 package io.smallrye.jwt.build.impl;
 
+import java.security.Key;
 import java.security.PrivateKey;
 import java.util.HashMap;
 import java.util.Map;
@@ -11,8 +12,8 @@ import org.eclipse.microprofile.config.ConfigProvider;
 import org.jose4j.jws.AlgorithmIdentifiers;
 import org.jose4j.jwt.JwtClaims;
 
+import io.smallrye.jwt.KeyUtils;
 import io.smallrye.jwt.build.JwtEncryptionBuilder;
-import io.smallrye.jwt.build.JwtException;
 import io.smallrye.jwt.build.JwtSignature;
 import io.smallrye.jwt.build.JwtSignatureException;
 
@@ -33,21 +34,35 @@ class JwtSignatureImpl implements JwtSignature {
     /**
      * {@inheritDoc}
      */
-    public String sign(PrivateKey signingKey) throws JwtException {
+    public String sign(PrivateKey signingKey) throws JwtSignatureException {
         return JwtSigningUtils.signJwtClaimsInternal(signingKey, headers, claims);
     }
 
     /**
      * {@inheritDoc}
      */
-    public String sign(SecretKey signingKey) throws JwtException {
+    public String sign(SecretKey signingKey) throws JwtSignatureException {
         return JwtSigningUtils.signJwtClaimsInternal(signingKey, headers, claims);
     }
 
     /**
      * {@inheritDoc}
      */
-    public String sign() throws JwtException {
+    public String sign(String keyLocation) throws JwtSignatureException {
+        Key key = null;
+        try {
+            key = KeyUtils.readSigningKey(keyLocation, (String) headers.get("kid"));
+        } catch (Exception ex) {
+            throw new JwtSignatureException(ex);
+        }
+        return key instanceof PrivateKey ? sign((PrivateKey) key) : sign((SecretKey) key);
+
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public String sign() throws JwtSignatureException {
         return JwtSigningUtils.signJwtClaimsInternal(headers, claims);
     }
 
@@ -65,6 +80,14 @@ class JwtSignatureImpl implements JwtSignature {
     @Override
     public JwtEncryptionBuilder innerSign(SecretKey signingKey) throws JwtSignatureException {
         return new JwtEncryptionImpl(sign(signingKey), true);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public JwtEncryptionBuilder innerSign(String keyLocation) throws JwtSignatureException {
+        return new JwtEncryptionImpl(sign(keyLocation), true);
     }
 
     /**
