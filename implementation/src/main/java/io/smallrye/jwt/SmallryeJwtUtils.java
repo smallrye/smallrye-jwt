@@ -83,6 +83,7 @@ public class SmallryeJwtUtils {
         }
     }
 
+    @Deprecated
     public static void setWhitelistAlgorithms(JWTAuthContextInfo contextInfo, Optional<String> whitelistAlgorithms) {
         if (whitelistAlgorithms.isPresent()) {
             final List<String> algorithms = Arrays.stream(whitelistAlgorithms.get().split(","))

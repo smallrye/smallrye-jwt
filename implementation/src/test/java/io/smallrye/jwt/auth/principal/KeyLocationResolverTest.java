@@ -38,6 +38,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
 
+import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 import io.smallrye.jwt.auth.principal.KeyLocationResolver.UrlStreamResolver;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -126,7 +127,8 @@ public class KeyLocationResolverTest {
         assertNotNull(keyLocationResolver.verificationKey);
         assertEquals(keyLocationResolver.verificationKey, keyLocationResolver.resolveKey(signature, emptyList()));
         assertEquals(keyLocationResolver.verificationKey,
-                KeyLocationResolver.tryAsPEMPublicKey(keyLocationResolver.readKeyContent("publicKey.pem")));
+                KeyLocationResolver.tryAsPEMPublicKey(keyLocationResolver.readKeyContent("publicKey.pem"),
+                        SignatureAlgorithm.RS256));
     }
 
     @Test

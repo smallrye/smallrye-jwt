@@ -32,6 +32,7 @@ import org.jboss.logging.Logger;
 
 import io.smallrye.jwt.KeyUtils;
 import io.smallrye.jwt.SmallryeJwtUtils;
+import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
 
 /**
@@ -87,7 +88,7 @@ public class JWTAuthContextInfoProvider {
         provider.expGracePeriodSecs = Optional.of(60);
         provider.maxTimeToLiveSecs = Optional.empty();
         provider.jwksRefreshInterval = Optional.empty();
-        provider.whitelistAlgorithms = Optional.empty();
+        provider.signatureAlgorithm = Optional.of(SignatureAlgorithm.RS256);
         provider.expectedAudience = Optional.empty();
         provider.groupsSeparator = DEFAULT_GROUPS_SEPARATOR;
 
@@ -230,7 +231,15 @@ public class JWTAuthContextInfoProvider {
      */
     @Inject
     @ConfigProperty(name = "smallrye.jwt.whitelist.algorithms")
+    @Deprecated
     private Optional<String> whitelistAlgorithms;
+
+    /**
+     * Supported JSON Web Algorithm asymmetric signature algorithm (RS256 or ES256), default is RS256.
+     */
+    @Inject
+    @ConfigProperty(name = "smallrye.jwt.verify.algorithm", defaultValue = "RS256")
+    private Optional<SignatureAlgorithm> signatureAlgorithm;
 
     /**
      * The audience value(s) that identify valid recipient(s) of a JWT. Audience validation
@@ -295,7 +304,10 @@ public class JWTAuthContextInfoProvider {
         contextInfo.setExpGracePeriodSecs(expGracePeriodSecs.orElse(null));
         contextInfo.setMaxTimeToLiveSecs(maxTimeToLiveSecs.orElse(null));
         contextInfo.setJwksRefreshInterval(jwksRefreshInterval.orElse(null));
-        SmallryeJwtUtils.setWhitelistAlgorithms(contextInfo, whitelistAlgorithms);
+        if (signatureAlgorithm.orElse(null) == SignatureAlgorithm.HS256) {
+            throw new DeploymentException("HS256 verification algorithm is currently not supported");
+        }
+        contextInfo.setSignatureAlgorithm(signatureAlgorithm.orElse(SignatureAlgorithm.RS256));
         contextInfo.setExpectedAudience(expectedAudience.orElse(null));
         contextInfo.setGroupsSeparator(groupsSeparator);
 
@@ -391,8 +403,13 @@ public class JWTAuthContextInfoProvider {
         return defaultSubClaim;
     }
 
+    @Deprecated
     public Optional<String> getWhitelistAlgorithms() {
         return whitelistAlgorithms;
+    }
+
+    public Optional<SignatureAlgorithm> getSignatureAlgorithm() {
+        return signatureAlgorithm;
     }
 
     public Optional<Set<String>> getExpectedAudience() {

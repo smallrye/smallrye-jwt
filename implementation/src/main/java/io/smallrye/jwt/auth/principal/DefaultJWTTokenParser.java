@@ -26,7 +26,6 @@ import java.util.Set;
 import org.eclipse.microprofile.jwt.Claims;
 import org.jboss.logging.Logger;
 import org.jose4j.jwa.AlgorithmConstraints;
-import org.jose4j.jws.AlgorithmIdentifiers;
 import org.jose4j.jwt.JwtClaims;
 import org.jose4j.jwt.NumericDate;
 import org.jose4j.jwt.consumer.InvalidJwtException;
@@ -55,15 +54,9 @@ public class DefaultJWTTokenParser {
                 builder.setRequireIssuedAt();
             }
 
-            if (authContextInfo.getWhitelistAlgorithms().isEmpty()) {
-                builder.setJwsAlgorithmConstraints(
-                        new AlgorithmConstraints(AlgorithmConstraints.ConstraintType.WHITELIST,
-                                AlgorithmIdentifiers.RSA_USING_SHA256));
-            } else {
-                builder.setJwsAlgorithmConstraints(
-                        new AlgorithmConstraints(AlgorithmConstraints.ConstraintType.WHITELIST,
-                                authContextInfo.getWhitelistAlgorithms().toArray(new String[0])));
-            }
+            builder.setJwsAlgorithmConstraints(
+                    new AlgorithmConstraints(AlgorithmConstraints.ConstraintType.WHITELIST,
+                            authContextInfo.getSignatureAlgorithm().getAlgorithm()));
 
             if (authContextInfo.isRequireIssuer()) {
                 builder.setExpectedIssuer(true, authContextInfo.getIssuedBy());
@@ -114,9 +107,12 @@ public class DefaultJWTTokenParser {
             }
 
             return jwtContext;
-        } catch (InvalidJwtException | UnresolvableKeyException e) {
+        } catch (InvalidJwtException e) {
             LOGGER.debug("Token is invalid");
-            throw new ParseException("Failed to verify token", e);
+            throw new ParseException("Failed to verify a token", e);
+        } catch (UnresolvableKeyException e) {
+            LOGGER.debug("Verification key is unresolvable");
+            throw new ParseException("Failed to verify a token", e);
         }
 
     }
