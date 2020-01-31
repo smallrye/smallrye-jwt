@@ -65,6 +65,17 @@ public class TestTokenWithGroupsPath extends Arquillian {
         Assert.assertTrue(groups.contains("microprofile_jwt_user"));
     }
 
+    @Test(groups = TEST_GROUP_JWT, description = "validate the groups claim can be mapped from a custom array claim with namespace")
+    public void groupsIsAvailableInCustomArrayWithNamespace() throws Exception {
+        JWTAuthContextInfo contextInfo = new JWTAuthContextInfo((RSAPublicKey) publicKey, TEST_ISSUER);
+        contextInfo.setGroupsPath("realm/access/\"https://idp/groups\"/array");
+        JWTCallerPrincipalFactory factory = JWTCallerPrincipalFactory.instance();
+        JsonWebToken jwt = factory.parse(token, contextInfo);
+        Set<String> groups = jwt.getGroups();
+        Assert.assertEquals(groups.size(), 1);
+        Assert.assertTrue(groups.contains("namespace_microprofile_jwt_user"));
+    }
+
     @Test(groups = TEST_GROUP_JWT, description = "validate the groups claim can be mapped from a standard scope claim")
     public void groupsIsAvailableInScopeStringClaim() throws Exception {
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo((RSAPublicKey) publicKey, TEST_ISSUER);

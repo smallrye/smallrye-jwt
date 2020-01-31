@@ -41,6 +41,16 @@ public class TestTokenWithSubPath extends Arquillian {
         Assert.assertEquals(sub, "microprofile_jwt_principal");
     }
 
+    @Test(groups = TEST_GROUP_JWT, description = "validate the custom sub claim is available on the path with namespace")
+    public void subClaimIsAvailableOnPathWithNamespace() throws Exception {
+        JWTAuthContextInfo contextInfo = new JWTAuthContextInfo((RSAPublicKey) publicKey, TEST_ISSUER);
+        contextInfo.setSubjectPath("realm/\"https://idp/access\"/sub/principal");
+        JWTCallerPrincipalFactory factory = JWTCallerPrincipalFactory.instance();
+        JsonWebToken jwt = factory.parse(token, contextInfo);
+        String sub = jwt.getSubject();
+        Assert.assertEquals(sub, "namespace_microprofile_jwt_principal");
+    }
+
     @Test(groups = TEST_GROUP_JWT, description = "validate the custom sub claim is not available on the long path")
     public void subClaimIsNotAvailableOnTooDeepPath() throws Exception {
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo((RSAPublicKey) publicKey, TEST_ISSUER);
