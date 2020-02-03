@@ -173,6 +173,7 @@ public class JWTAuthContextInfoProvider {
     /**
      * Path to the claim containing the sub. It starts from the top level JSON object and
      * can contain multiple segments where each segment represents a JSON object name only, example: "realm/sub".
+     * Use double quotes with the namespace qualified claim names.
      * This property can be used if a token has no 'sub' claim but has the sub set in a different claim.
      */
     @Inject
@@ -189,6 +190,7 @@ public class JWTAuthContextInfoProvider {
     /**
      * Path to the claim containing an array of groups. It starts from the top level JSON object and
      * can contain multiple segments where each segment represents a JSON object name only, example: "realm/groups".
+     * Use double quotes with the namespace qualified claim names.
      * This property can be used if a token has no 'groups' claim but has the groups set in a different claim.
      */
     @Inject

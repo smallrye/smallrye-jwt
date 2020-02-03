@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 import org.eclipse.microprofile.jwt.Claims;
 import org.jboss.logging.Logger;
@@ -42,6 +43,12 @@ import org.jose4j.lang.UnresolvableKeyException;
 public class DefaultJWTTokenParser {
     private static final Logger LOGGER = Logger.getLogger(DefaultJWTTokenParser.class);
     private static final String ROLE_MAPPINGS = "roleMappings";
+    /**
+     * This pattern uses a positive lookahead to split an expression around the forward slashes
+     * ignoring those which are located inside a pair of the double quotes.
+     */
+    private static final Pattern CLAIM_PATH_PATTERN = Pattern.compile("\\/(?=(?:(?:[^\"]*\"){2})*[^\"]*$)");
+
     private volatile VerificationKeyResolver keyResolver;
 
     public JwtContext parse(final String token, final JWTAuthContextInfo authContextInfo) throws ParseException {
@@ -141,7 +148,7 @@ public class DefaultJWTTokenParser {
 
     private String findSubject(JWTAuthContextInfo authContextInfo, JwtClaims claimsSet) {
         if (authContextInfo.getSubjectPath() != null) {
-            final String[] pathSegments = authContextInfo.getSubjectPath().split("/");
+            final String[] pathSegments = splitClaimPath(authContextInfo.getSubjectPath());
             Object claimValue = findClaimValue(authContextInfo.getSubjectPath(), claimsSet.getClaimsMap(), pathSegments, 0);
             if (claimValue instanceof String) {
                 return (String) claimValue;
@@ -157,7 +164,7 @@ public class DefaultJWTTokenParser {
 
     private List<String> findGroups(JWTAuthContextInfo authContextInfo, JwtClaims claimsSet) {
         if (authContextInfo.getGroupsPath() != null) {
-            final String[] pathSegments = authContextInfo.getGroupsPath().split("/");
+            final String[] pathSegments = splitClaimPath(authContextInfo.getGroupsPath());
             Object claimValue = findClaimValue(authContextInfo.getGroupsPath(), claimsSet.getClaimsMap(), pathSegments, 0);
 
             if (claimValue instanceof List) {
@@ -184,6 +191,10 @@ public class DefaultJWTTokenParser {
         return null;
     }
 
+    private static String[] splitClaimPath(String claimPath) {
+        return claimPath.indexOf('/') > 0 ? CLAIM_PATH_PATTERN.split(claimPath) : new String[] { claimPath };
+    }
+
     private void mapRoles(JwtClaims claimsSet) {
         try {
             @SuppressWarnings("unchecked")
@@ -205,7 +216,7 @@ public class DefaultJWTTokenParser {
     }
 
     private Object findClaimValue(String claimPath, Map<String, Object> claimsMap, String[] pathArray, int step) {
-        Object claimValue = claimsMap.get(pathArray[step]);
+        Object claimValue = claimsMap.get(pathArray[step].replace("\"", ""));
         if (claimValue == null) {
             LOGGER.debugf("No claim exists at the path %s at segment %s", claimPath, pathArray[step]);
         } else if (step + 1 < pathArray.length) {

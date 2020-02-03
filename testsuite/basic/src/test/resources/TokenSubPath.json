@@ -10,6 +10,11 @@
       "sub": {
         "principal": "microprofile_jwt_principal"
       }
+    },
+    "https://idp/access": {
+      "sub": {
+        "principal": "namespace_microprofile_jwt_principal"
+      }
     }
   },
   "groups": [
