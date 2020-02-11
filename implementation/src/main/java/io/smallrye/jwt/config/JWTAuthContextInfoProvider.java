@@ -30,6 +30,7 @@ import javax.inject.Inject;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
+import io.smallrye.jwt.KeyFormat;
 import io.smallrye.jwt.KeyUtils;
 import io.smallrye.jwt.SmallryeJwtUtils;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
@@ -89,6 +90,7 @@ public class JWTAuthContextInfoProvider {
         provider.maxTimeToLiveSecs = Optional.empty();
         provider.jwksRefreshInterval = Optional.empty();
         provider.signatureAlgorithm = Optional.of(SignatureAlgorithm.RS256);
+        provider.keyFormat = KeyFormat.ANY;
         provider.expectedAudience = Optional.empty();
         provider.groupsSeparator = DEFAULT_GROUPS_SEPARATOR;
 
@@ -244,6 +246,14 @@ public class JWTAuthContextInfoProvider {
     private Optional<SignatureAlgorithm> signatureAlgorithm;
 
     /**
+     * Supported key format. By default a key can be in any of the supported formats:
+     * PEM key, PEM certificate, JWK key set or single JWK (possibly Base64URL-encoded).
+     */
+    @Inject
+    @ConfigProperty(name = "smallrye.jwt.verify.key-format", defaultValue = "ANY")
+    private KeyFormat keyFormat;
+
+    /**
      * The audience value(s) that identify valid recipient(s) of a JWT. Audience validation
      * will succeed, if any one of the provided values is equal to any one of the values of
      * the "aud" claim in the JWT. The config value should be specified as a comma-separated
@@ -310,6 +320,7 @@ public class JWTAuthContextInfoProvider {
             throw new DeploymentException("HS256 verification algorithm is currently not supported");
         }
         contextInfo.setSignatureAlgorithm(signatureAlgorithm.orElse(SignatureAlgorithm.RS256));
+        contextInfo.setKeyFormat(keyFormat);
         contextInfo.setExpectedAudience(expectedAudience.orElse(null));
         contextInfo.setGroupsSeparator(groupsSeparator);
 
@@ -412,6 +423,10 @@ public class JWTAuthContextInfoProvider {
 
     public Optional<SignatureAlgorithm> getSignatureAlgorithm() {
         return signatureAlgorithm;
+    }
+
+    public KeyFormat getKeyFormat() {
+        return keyFormat;
     }
 
     public Optional<Set<String>> getExpectedAudience() {

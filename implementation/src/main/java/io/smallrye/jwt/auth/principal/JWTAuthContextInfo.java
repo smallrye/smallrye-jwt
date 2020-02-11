@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
+import io.smallrye.jwt.KeyFormat;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 
 /**
@@ -45,6 +46,7 @@ public class JWTAuthContextInfo {
     private String groupsPath;
     private List<String> whitelistAlgorithms = new ArrayList<>();
     private SignatureAlgorithm signatureAlgorithm = SignatureAlgorithm.RS256;
+    private KeyFormat keyFormat = KeyFormat.ANY;
     private Set<String> expectedAudience;
     private String groupsSeparator = " ";
 
@@ -255,5 +257,13 @@ public class JWTAuthContextInfo {
 
     public void setSignatureAlgorithm(SignatureAlgorithm signatureAlgorithm) {
         this.signatureAlgorithm = signatureAlgorithm;
+    }
+
+    public KeyFormat getKeyFormat() {
+        return keyFormat;
+    }
+
+    public void setKeyFormat(KeyFormat keyFormat) {
+        this.keyFormat = keyFormat;
     }
 }

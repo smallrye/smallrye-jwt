@@ -50,6 +50,7 @@ import org.jose4j.keys.resolvers.VerificationKeyResolver;
 import org.jose4j.lang.JoseException;
 import org.jose4j.lang.UnresolvableKeyException;
 
+import io.smallrye.jwt.KeyFormat;
 import io.smallrye.jwt.KeyUtils;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 
@@ -162,7 +163,8 @@ public class KeyLocationResolver implements VerificationKeyResolver {
 
     protected void initializeKeyContent() throws Exception {
 
-        if (authContextInfo.getPublicKeyLocation() != null && authContextInfo.getPublicKeyLocation().startsWith(HTTPS_SCHEME)) {
+        if (mayBeFormat(KeyFormat.JWK) && authContextInfo.getPublicKeyLocation() != null
+                && authContextInfo.getPublicKeyLocation().startsWith(HTTPS_SCHEME)) {
             LOGGER.debugf("Trying to load the keys from the HTTPS JWK(S)...");
             httpsJwks = initializeHttpsJwks();
             httpsJwks.setDefaultCacheDuration(authContextInfo.getJwksRefreshInterval().longValue() * 60L);
@@ -177,17 +179,28 @@ public class KeyLocationResolver implements VerificationKeyResolver {
         String content = authContextInfo.getPublicKeyContent() != null
                 ? authContextInfo.getPublicKeyContent()
                 : readKeyContent(authContextInfo.getPublicKeyLocation());
+
         // Try to init the verification key from the local PEM or JWK(S) content
-        verificationKey = tryAsPEMPublicKey(content, authContextInfo.getSignatureAlgorithm());
-        if (verificationKey == null) {
-            verificationKey = tryAsPEMCertificate(content);
+        if (mayBeFormat(KeyFormat.PEM_KEY)) {
+            verificationKey = tryAsPEMPublicKey(content, authContextInfo.getSignatureAlgorithm());
+            if (verificationKey != null || isFormat(KeyFormat.PEM_KEY)) {
+                return;
+            }
         }
-        if (verificationKey == null) {
+        if (mayBeFormat(KeyFormat.PEM_CERTIFICATE)) {
+            verificationKey = tryAsPEMCertificate(content);
+            if (verificationKey != null || isFormat(KeyFormat.PEM_CERTIFICATE)) {
+                return;
+            }
+        }
+        if (mayBeFormat(KeyFormat.JWK)) {
             LOGGER.debugf("Checking if the key content is a JWK key or JWK key set");
             tryJWKContent(content, false);
+            if (verificationKey != null || isFormat(KeyFormat.JWK)) {
+                return;
+            }
         }
-
-        if (verificationKey == null && jsonWebKeys == null) {
+        if (jsonWebKeys == null && mayBeFormat(KeyFormat.JWK_BASE64URL)) {
             // Try Base64 Decoding
             try {
                 LOGGER.debugf("Checking if the key content is a Base64URL encoded JWK key or JWK key set");
@@ -348,5 +361,13 @@ public class KeyLocationResolver implements VerificationKeyResolver {
         public InputStream resolve(String keyLocation) throws IOException {
             return new URL(keyLocation).openStream();
         }
+    }
+
+    boolean mayBeFormat(KeyFormat format) {
+        return isFormat(format) || authContextInfo.getKeyFormat() == KeyFormat.ANY;
+    }
+
+    boolean isFormat(KeyFormat format) {
+        return authContextInfo.getKeyFormat() == format;
     }
 }
