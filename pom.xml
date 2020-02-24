@@ -39,7 +39,7 @@
     <version.microprofile.config>1.3</version.microprofile.config>
     <version.io.smallrye.config>1.5.1</version.io.smallrye.config>
     <version.jose4j>0.7.0</version.jose4j>
-    <version.mokito>3.2.4</version.mokito>
+    <version.mokito>3.3.0</version.mokito>
     <version.weld-junit4>2.0.1.Final</version.weld-junit4>
     <sonar.coverage.jacoco.xmlReportPaths>${project.basedir}/testsuite/basic/target/site/jacoco-aggregate/jacoco.xml,${project.basedir}/../testsuite/basic/target/site/jacoco-aggregate/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
   </properties>
