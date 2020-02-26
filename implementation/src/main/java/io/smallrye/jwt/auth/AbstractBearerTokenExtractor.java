@@ -52,12 +52,18 @@ public abstract class AbstractBearerTokenExtractor {
      */
     public String getBearerToken() {
         final String tokenHeaderName = authContextInfo.getTokenHeader();
+        final boolean fallbackToHeader = authContextInfo.isAlwaysCheckAutorization();
         LOGGER.debugf("tokenHeaderName = %s", tokenHeaderName);
 
         final String bearerValue;
 
         if (COOKIE_HEADER.equals(tokenHeaderName)) {
-            bearerValue = getBearerTokenCookie();
+            String intermediateBearerValue = getBearerTokenCookie();
+            if (intermediateBearerValue == null && fallbackToHeader) {
+                bearerValue = getBearerTokenAuthHeader();
+            } else {
+                bearerValue = intermediateBearerValue;
+            }
         } else if (AUTHORIZATION_HEADER.equals(tokenHeaderName)) {
             bearerValue = getBearerTokenAuthHeader();
         } else {

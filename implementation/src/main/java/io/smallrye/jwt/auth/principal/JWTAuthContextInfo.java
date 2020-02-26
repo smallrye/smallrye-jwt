@@ -37,6 +37,7 @@ public class JWTAuthContextInfo {
     private Integer jwksRefreshInterval;
     private String tokenHeader = "Authorization";
     private String tokenCookie;
+    private boolean alwaysCheckAutorization;
     private String tokenKeyId;
     private List<String> tokenSchemes = Collections.singletonList("Bearer");
     private boolean requireNamedPrincipal = true;
@@ -266,4 +267,13 @@ public class JWTAuthContextInfo {
     public void setKeyFormat(KeyFormat keyFormat) {
         this.keyFormat = keyFormat;
     }
+
+    public boolean isAlwaysCheckAutorization() {
+        return alwaysCheckAutorization;
+    }
+
+    public void setAlwaysCheckAutorization(boolean alwaysCheckAutorization) {
+        this.alwaysCheckAutorization = alwaysCheckAutorization;
+    }
+
 }
