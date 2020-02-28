@@ -53,6 +53,17 @@ public class JWTHttpAuthenticationMechanism implements HttpAuthenticationMechani
     @Inject
     private PrincipalProducer producer;
 
+    public JWTHttpAuthenticationMechanism() {
+    }
+
+    public JWTHttpAuthenticationMechanism(JWTAuthContextInfo authContextInfo,
+                                          JWTParser jwtParser,
+                                          PrincipalProducer producer) {
+        this.authContextInfo = authContextInfo;
+        this.jwtParser = jwtParser;
+        this.producer = producer;
+    }
+
     @Override
     public AuthenticationStatus validateRequest(HttpServletRequest request,
             HttpServletResponse response,
