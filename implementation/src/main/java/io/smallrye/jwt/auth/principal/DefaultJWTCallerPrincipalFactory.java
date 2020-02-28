@@ -16,21 +16,22 @@
  */
 package io.smallrye.jwt.auth.principal;
 
+import javax.enterprise.context.ApplicationScoped;
+
 import org.jose4j.jwt.consumer.JwtContext;
 
 /**
  * A default implementation of the abstract JWTCallerPrincipalFactory that uses the Keycloak token parsing classes.
  */
+@ApplicationScoped
 public class DefaultJWTCallerPrincipalFactory extends JWTCallerPrincipalFactory {
 
     private final DefaultJWTTokenParser parser = new DefaultJWTTokenParser();
 
     @Override
     public JWTCallerPrincipal parse(final String token, final JWTAuthContextInfo authContextInfo) throws ParseException {
-
         JwtContext jwtContext = parser.parse(token, authContextInfo);
         String type = jwtContext.getJoseObjects().get(0).getHeader("typ");
         return new DefaultJWTCallerPrincipal(type, jwtContext.getJwtClaims());
     }
-
 }

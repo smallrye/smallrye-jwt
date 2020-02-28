@@ -38,18 +38,23 @@ public class DefaultJWTParser implements JWTParser {
 
     @Inject
     private JWTAuthContextInfo authContextInfo;
-
-    private volatile JWTCallerPrincipalFactory callerPrincipalFactory;
+    @Inject
+    private JWTCallerPrincipalFactory callerPrincipalFactory;
 
     public DefaultJWTParser() {
     }
 
     public DefaultJWTParser(JWTAuthContextInfo authContextInfo) {
+        this(authContextInfo, JWTCallerPrincipalFactory.instance());
+    }
+
+    public DefaultJWTParser(JWTAuthContextInfo authContextInfo, JWTCallerPrincipalFactory callerPrincipalFactory) {
         this.authContextInfo = authContextInfo;
+        this.callerPrincipalFactory = callerPrincipalFactory;
     }
 
     public JsonWebToken parse(final String bearerToken) throws ParseException {
-        return getCallerPrincipalFactory().parse(bearerToken, authContextInfo);
+        return callerPrincipalFactory.parse(bearerToken, authContextInfo);
     }
 
     @Override
@@ -99,11 +104,7 @@ public class DefaultJWTParser implements JWTParser {
 
     private JWTCallerPrincipalFactory getCallerPrincipalFactory() {
         if (callerPrincipalFactory == null) {
-            synchronized (this) {
-                if (callerPrincipalFactory == null) {
-                    callerPrincipalFactory = JWTCallerPrincipalFactory.instance();
-                }
-            }
+            return JWTCallerPrincipalFactory.instance();
         }
         return callerPrincipalFactory;
     }

@@ -25,6 +25,7 @@ import javax.enterprise.inject.spi.Extension;
 
 import io.smallrye.jwt.auth.jaxrs.JWTAuthenticationFilter;
 import io.smallrye.jwt.auth.mechanism.JWTHttpAuthenticationMechanism;
+import io.smallrye.jwt.auth.principal.DefaultJWTCallerPrincipalFactory;
 import io.smallrye.jwt.auth.principal.DefaultJWTParser;
 import io.smallrye.jwt.config.JWTAuthContextInfoProvider;
 
@@ -80,6 +81,7 @@ public class SmallRyeJWTAuthCDIExtension implements Extension {
         addAnnotatedType(event, beanManager, ClaimValueProducer.class);
         addAnnotatedType(event, beanManager, CommonJwtProducer.class);
         addAnnotatedType(event, beanManager, DefaultJWTParser.class);
+        addAnnotatedType(event, beanManager, DefaultJWTCallerPrincipalFactory.class);
         addAnnotatedType(event, beanManager, JsonValueProducer.class);
         addAnnotatedType(event, beanManager, JWTAuthContextInfoProvider.class);
         addAnnotatedType(event, beanManager, JWTAuthenticationFilter.class);
