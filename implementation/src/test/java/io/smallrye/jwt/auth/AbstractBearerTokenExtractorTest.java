@@ -168,4 +168,24 @@ public class AbstractBearerTokenExtractorTest {
         String bearerToken = target.getBearerToken();
         assertNull(bearerToken);
     }
+
+    @Test
+    public void testGetBearerTokenFallbackToHeaderWithCookieHeader() {
+        when(authContextInfo.getTokenHeader()).thenReturn(COOKIE);
+        when(authContextInfo.isAlwaysCheckAuthorization()).thenReturn(true);
+        AbstractBearerTokenExtractor target = newTarget(h -> "Bearer THE_HEADER_TOKEN", c -> "THE_COOKIE_TOKEN");
+        String bearerToken = target.getBearerToken();
+        assertEquals("THE_COOKIE_TOKEN", bearerToken);
+    }
+
+    @Test
+    public void testGetBearerTokenFallbackToHeaderWithEmptyCookie() {
+        when(authContextInfo.getTokenHeader()).thenReturn(COOKIE);
+        when(authContextInfo.getTokenSchemes()).thenReturn(BEARER_SCHEME);
+        when(authContextInfo.isAlwaysCheckAuthorization()).thenReturn(true);
+
+        AbstractBearerTokenExtractor target = newTarget(h -> "Bearer THE_TOKEN", c -> null);
+        String bearerToken = target.getBearerToken();
+        assertEquals("THE_TOKEN", bearerToken);
+    }
 }

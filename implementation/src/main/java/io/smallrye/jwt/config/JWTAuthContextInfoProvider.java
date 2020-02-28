@@ -142,6 +142,14 @@ public class JWTAuthContextInfoProvider {
     private Optional<String> tokenCookie;
 
     /**
+     * If `true` then `Authorization` header will be checked even if the `smallrye.jwt.token.header` is set to `Cookie` but no
+     * cookie with a `smallrye.jwt.token.cookie` name exists.
+     */
+    @Inject
+    @ConfigProperty(name = "smallrye.jwt.always-check-authorization", defaultValue = "false")
+    private boolean alwaysCheckAuthorization;
+
+    /**
      * The key identifier ('kid'). If it is set then if the token contains 'kid' then both values must match. It will also be
      * used to
      * select a JWK key from a JWK set.
@@ -305,6 +313,8 @@ public class JWTAuthContextInfoProvider {
             contextInfo.setTokenHeader(tokenHeader);
         }
 
+        contextInfo.setAlwaysCheckAuthorization(alwaysCheckAuthorization);
+
         contextInfo.setTokenKeyId(tokenKeyId.orElse(null));
         contextInfo.setRequireNamedPrincipal(requireNamedPrincipal.orElse(null));
         SmallryeJwtUtils.setContextTokenCookie(contextInfo, tokenCookie);
@@ -374,6 +384,10 @@ public class JWTAuthContextInfoProvider {
 
     public Optional<String> getTokenCookie() {
         return tokenCookie;
+    }
+
+    public boolean isAlwaysCheckAuthorization() {
+        return alwaysCheckAuthorization;
     }
 
     public Optional<String> getTokenKeyId() {
