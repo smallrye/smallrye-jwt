@@ -40,10 +40,10 @@ public class DefaultJWTParser implements JWTParser {
     }
 
     public JsonWebToken parse(final String bearerToken) throws ParseException {
-        return getcallerPrincipalFactory().parse(bearerToken, authContextInfo);
+        return getCallerPrincipalFactory().parse(bearerToken, authContextInfo);
     }
 
-    private JWTCallerPrincipalFactory getcallerPrincipalFactory() {
+    private JWTCallerPrincipalFactory getCallerPrincipalFactory() {
         if (callerPrincipalFactory == null) {
             synchronized (this) {
                 if (callerPrincipalFactory == null) {
