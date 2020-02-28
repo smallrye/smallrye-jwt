@@ -79,7 +79,6 @@ public class JWTAuthContextInfoProvider {
         provider.mpJwtRequireIss = Optional.of(Boolean.TRUE);
         provider.tokenHeader = AUTHORIZATION_HEADER;
         provider.tokenCookie = Optional.empty();
-        provider.alwaysCheckAuthorization = false;
         provider.tokenKeyId = Optional.empty();
         provider.tokenSchemes = Optional.of(BEARER_SCHEME);
         provider.requireNamedPrincipal = Optional.of(Boolean.TRUE);
