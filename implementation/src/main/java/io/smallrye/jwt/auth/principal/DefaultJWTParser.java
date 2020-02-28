@@ -32,6 +32,13 @@ public class DefaultJWTParser implements JWTParser {
 
     private volatile JWTCallerPrincipalFactory callerPrincipalFactory;
 
+    public DefaultJWTParser() {
+    }
+
+    public DefaultJWTParser(JWTAuthContextInfo authContextInfo) {
+        this.authContextInfo = authContextInfo;
+    }
+
     public JsonWebToken parse(final String bearerToken) throws ParseException {
         return getcallerPrincipalFactory().parse(bearerToken, authContextInfo);
     }
