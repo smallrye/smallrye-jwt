@@ -79,6 +79,7 @@ public class JWTAuthContextInfoProvider {
         provider.mpJwtRequireIss = Optional.of(Boolean.TRUE);
         provider.tokenHeader = AUTHORIZATION_HEADER;
         provider.tokenCookie = Optional.empty();
+        provider.alwaysCheckAuthorization = false;
         provider.tokenKeyId = Optional.empty();
         provider.tokenSchemes = Optional.of(BEARER_SCHEME);
         provider.requireNamedPrincipal = Optional.of(Boolean.TRUE);
@@ -142,8 +143,8 @@ public class JWTAuthContextInfoProvider {
     private Optional<String> tokenCookie;
 
     /**
-     * Should check `Authorization` header if cookie didn't contain a token. This property is ignored unless the
-     * "smallrye.jwt.token.header" is set to 'Cookie'
+     * If `true` then `Authorization` header will be checked even if the `smallrye.jwt.token.header` is set to `Cookie` but no
+     * cookie with a `smallrye.jwt.token.cookie` name exists.
      */
     @Inject
     @ConfigProperty(name = "smallrye.jwt.always-check-authorization", defaultValue = "false")
@@ -313,7 +314,7 @@ public class JWTAuthContextInfoProvider {
             contextInfo.setTokenHeader(tokenHeader);
         }
 
-        contextInfo.setAlwaysCheckAutorization(alwaysCheckAuthorization);
+        contextInfo.setAlwaysCheckAuthorization(alwaysCheckAuthorization);
 
         contextInfo.setTokenKeyId(tokenKeyId.orElse(null));
         contextInfo.setRequireNamedPrincipal(requireNamedPrincipal.orElse(null));
@@ -384,6 +385,10 @@ public class JWTAuthContextInfoProvider {
 
     public Optional<String> getTokenCookie() {
         return tokenCookie;
+    }
+
+    public boolean isAlwaysCheckAuthorization() {
+        return alwaysCheckAuthorization;
     }
 
     public Optional<String> getTokenKeyId() {

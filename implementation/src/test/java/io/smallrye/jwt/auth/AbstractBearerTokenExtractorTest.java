@@ -172,7 +172,7 @@ public class AbstractBearerTokenExtractorTest {
     @Test
     public void testGetBearerTokenFallbackToHeaderWithCookieHeader() {
         when(authContextInfo.getTokenHeader()).thenReturn(COOKIE);
-        when(authContextInfo.isAlwaysCheckAutorization()).thenReturn(true);
+        when(authContextInfo.isAlwaysCheckAuthorization()).thenReturn(true);
         AbstractBearerTokenExtractor target = newTarget(h -> "Bearer THE_HEADER_TOKEN", c -> "THE_COOKIE_TOKEN");
         String bearerToken = target.getBearerToken();
         assertEquals("THE_COOKIE_TOKEN", bearerToken);
@@ -182,7 +182,7 @@ public class AbstractBearerTokenExtractorTest {
     public void testGetBearerTokenFallbackToHeaderWithEmptyCookie() {
         when(authContextInfo.getTokenHeader()).thenReturn(COOKIE);
         when(authContextInfo.getTokenSchemes()).thenReturn(BEARER_SCHEME);
-        when(authContextInfo.isAlwaysCheckAutorization()).thenReturn(true);
+        when(authContextInfo.isAlwaysCheckAuthorization()).thenReturn(true);
 
         AbstractBearerTokenExtractor target = newTarget(h -> "Bearer THE_TOKEN", c -> null);
         String bearerToken = target.getBearerToken();

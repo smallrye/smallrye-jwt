@@ -52,7 +52,7 @@ public abstract class AbstractBearerTokenExtractor {
      */
     public String getBearerToken() {
         final String tokenHeaderName = authContextInfo.getTokenHeader();
-        final boolean fallbackToHeader = authContextInfo.isAlwaysCheckAutorization();
+        final boolean fallbackToHeader = authContextInfo.isAlwaysCheckAuthorization();
         LOGGER.debugf("tokenHeaderName = %s", tokenHeaderName);
 
         final String bearerValue;
