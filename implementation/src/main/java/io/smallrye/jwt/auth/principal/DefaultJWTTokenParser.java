@@ -103,9 +103,13 @@ public class DefaultJWTTokenParser {
                 checkNameClaims(jwtContext);
             }
 
-            if (!claimsSet.hasClaim(Claims.groups.name())) {
+            Object groupsClaim = claimsSet.getClaimValue(Claims.groups.name());
+            if (groupsClaim == null || groupsClaim instanceof Map) {
                 List<String> groups = findGroups(authContextInfo, claimsSet);
                 claimsSet.setClaim(Claims.groups.name(), groups);
+            } else if (groupsClaim instanceof String) {
+                claimsSet.setClaim(Claims.groups.name(),
+                        splitStringClaimValue(groupsClaim.toString(), authContextInfo));
             }
 
             // Process the rolesMapping claim
@@ -178,7 +182,7 @@ public class DefaultJWTTokenParser {
                             authContextInfo.getGroupsPath());
                 }
             } else if (claimValue instanceof String) {
-                return Arrays.asList(((String) claimValue).split(authContextInfo.getGroupsSeparator()));
+                return splitStringClaimValue(claimValue.toString(), authContextInfo);
             } else {
                 LOGGER.debugf("Claim value at the path %s is neither an array of strings nor string",
                         authContextInfo.getGroupsPath());
@@ -189,6 +193,10 @@ public class DefaultJWTTokenParser {
         }
 
         return null;
+    }
+
+    private List<String> splitStringClaimValue(String claimValue, JWTAuthContextInfo authContextInfo) {
+        return Arrays.asList(claimValue.split(authContextInfo.getGroupsSeparator()));
     }
 
     private static String[] splitClaimPath(String claimPath) {
