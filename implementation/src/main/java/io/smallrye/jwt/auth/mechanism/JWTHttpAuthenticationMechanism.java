@@ -57,8 +57,8 @@ public class JWTHttpAuthenticationMechanism implements HttpAuthenticationMechani
     }
 
     public JWTHttpAuthenticationMechanism(JWTAuthContextInfo authContextInfo,
-                                          JWTParser jwtParser,
-                                          PrincipalProducer producer) {
+            JWTParser jwtParser,
+            PrincipalProducer producer) {
         this.authContextInfo = authContextInfo;
         this.jwtParser = jwtParser;
         this.producer = producer;
