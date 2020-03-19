@@ -23,6 +23,10 @@ public class SmallRyeJWTArchiveProcessor implements ApplicationArchiveProcessor 
                 war.addAsManifestResource("microprofile-config-local.properties", "microprofile-config.properties");
             }
 
+            // A few tests require the apps to be deployed in the root. Check PublicKeyAsJWKLocationURLTest and PublicKeyAsPEMLocationURLTest
+            // Both tests set the public key location url to be in root.
+            war.addAsWebInfResource("jboss-web.xml");
+
             String[] deps = {
                     "io.smallrye:smallrye-jwt",
                     "io.smallrye.config:smallrye-config",
