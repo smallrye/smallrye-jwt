@@ -276,4 +276,32 @@ public class JWTAuthContextInfo {
         this.alwaysCheckAuthorization = alwaysCheckAuthorization;
     }
 
+    @Override
+    public String toString() {
+        return "JWTAuthContextInfo{" +
+            "signerKey=" + signerKey +
+            ", issuedBy='" + issuedBy + '\'' +
+            ", expGracePeriodSecs=" + expGracePeriodSecs +
+            ", maxTimeToLiveSecs=" + maxTimeToLiveSecs +
+            ", publicKeyLocation='" + publicKeyLocation + '\'' +
+            ", publicKeyContent='" + publicKeyContent + '\'' +
+            ", jwksRefreshInterval=" + jwksRefreshInterval +
+            ", tokenHeader='" + tokenHeader + '\'' +
+            ", tokenCookie='" + tokenCookie + '\'' +
+            ", alwaysCheckAuthorization=" + alwaysCheckAuthorization +
+            ", tokenKeyId='" + tokenKeyId + '\'' +
+            ", tokenSchemes=" + tokenSchemes +
+            ", requireNamedPrincipal=" + requireNamedPrincipal +
+            ", defaultSubClaim='" + defaultSubClaim + '\'' +
+            ", subPath='" + subPath + '\'' +
+            ", defaultGroupsClaim='" + defaultGroupsClaim + '\'' +
+            ", groupsPath='" + groupsPath + '\'' +
+            ", whitelistAlgorithms=" + whitelistAlgorithms +
+            ", signatureAlgorithm=" + signatureAlgorithm +
+            ", keyFormat=" + keyFormat +
+            ", expectedAudience=" + expectedAudience +
+            ", groupsSeparator='" + groupsSeparator + '\'' +
+            ", requireIssuer=" + requireIssuer +
+            '}';
+    }
 }

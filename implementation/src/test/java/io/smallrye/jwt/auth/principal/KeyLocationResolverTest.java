@@ -142,5 +142,4 @@ public class KeyLocationResolverTest {
         assertEquals(keyLocationResolver.verificationKey, keyLocationResolver.resolveKey(signature, emptyList()));
         assertEquals(keyLocationResolver.verificationKey, keyLocationResolver.getJsonWebKey("key1"));
     }
-
 }

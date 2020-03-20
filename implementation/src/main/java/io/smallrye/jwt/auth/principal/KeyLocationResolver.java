@@ -80,11 +80,13 @@ public class KeyLocationResolver implements VerificationKeyResolver {
 
     public KeyLocationResolver(JWTAuthContextInfo authContextInfo) throws UnresolvableKeyException {
         this.authContextInfo = authContextInfo;
+        LOGGER.debugf("AuthContextInfo is: %s", authContextInfo);
+
         try {
             initializeKeyContent();
         } catch (Exception e) {
             throw new UnresolvableKeyException("Failed to load a key from "
-                    + (authContextInfo.getPublicKeyContent() != null ? " the 'mp.jwt.verify.publickey' property"
+                    + (authContextInfo.getPublicKeyContent() != null ? "the 'mp.jwt.verify.publickey' property"
                             : authContextInfo.getPublicKeyLocation()),
                     e);
         }
@@ -106,13 +108,13 @@ public class KeyLocationResolver implements VerificationKeyResolver {
 
         if (key == null) {
             throw new UnresolvableKeyException("Failed to load a key from "
-                    + (authContextInfo.getPublicKeyContent() != null ? " the 'mp.jwt.verify.publickey' property"
-                            : authContextInfo.getPublicKeyLocation()));
+                    + (authContextInfo.getPublicKeyContent() != null ? "the 'mp.jwt.verify.publickey' property"
+                            : authContextInfo.getPublicKeyLocation()) + " while resolving");
         }
         return key;
     }
 
-    private PublicKey tryAsJwk(JsonWebSignature jws) throws UnresolvableKeyException {
+    private PublicKey tryAsJwk(JsonWebSignature jws) {
         String kid = getKid(jws);
 
         if (httpsJwks != null) {
@@ -136,7 +138,7 @@ public class KeyLocationResolver implements VerificationKeyResolver {
     }
 
     PublicKey getJsonWebKey(String kid) {
-        LOGGER.debugf("Trying the create a key from the JWK(S)...");
+        LOGGER.debugf("Trying to create a key from the JWK(S)...");
 
         try {
             return getKeyFromJsonWebKeys(kid, jsonWebKeys, authContextInfo.getSignatureAlgorithm());
@@ -157,7 +159,7 @@ public class KeyLocationResolver implements VerificationKeyResolver {
         }
     }
 
-    private static String getKid(JsonWebSignature jws) throws UnresolvableKeyException {
+    private static String getKid(JsonWebSignature jws) {
         return jws.getHeaders().getStringHeaderValue(JsonWebKey.KEY_ID_PARAMETER);
     }
 
@@ -345,7 +347,7 @@ public class KeyLocationResolver implements VerificationKeyResolver {
         return JsonWebKey.Factory.newJwk(JsonUtil.parseJson(jsonObject.toString()));
     }
 
-    static InputStream getAsFileSystemResource(String publicKeyLocation) throws IOException {
+    static InputStream getAsFileSystemResource(String publicKeyLocation) {
         try {
             return new FileInputStream(publicKeyLocation);
         } catch (FileNotFoundException e) {
