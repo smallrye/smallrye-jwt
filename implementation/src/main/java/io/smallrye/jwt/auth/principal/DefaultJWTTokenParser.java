@@ -29,14 +29,19 @@ import java.util.stream.Collectors;
 
 import org.eclipse.microprofile.jwt.Claims;
 import org.jose4j.jwa.AlgorithmConstraints;
+import org.jose4j.jwe.JsonWebEncryption;
 import org.jose4j.jwt.JwtClaims;
 import org.jose4j.jwt.NumericDate;
 import org.jose4j.jwt.consumer.InvalidJwtException;
 import org.jose4j.jwt.consumer.JwtConsumer;
 import org.jose4j.jwt.consumer.JwtConsumerBuilder;
 import org.jose4j.jwt.consumer.JwtContext;
+import org.jose4j.keys.resolvers.DecryptionKeyResolver;
 import org.jose4j.keys.resolvers.VerificationKeyResolver;
+import org.jose4j.lang.JoseException;
 import org.jose4j.lang.UnresolvableKeyException;
+
+import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
 
 /**
  * Default JWT token validator
@@ -51,30 +56,54 @@ public class DefaultJWTTokenParser {
     private static final Pattern CLAIM_PATH_PATTERN = Pattern.compile("\\/(?=(?:(?:[^\"]*\"){2})*[^\"]*$)");
 
     private volatile VerificationKeyResolver keyResolver;
+    private volatile DecryptionKeyResolver decryptionKeyResolver;
 
     public JwtContext parse(final String token, final JWTAuthContextInfo authContextInfo) throws ParseException {
 
+        String tokenSequence = token;
+        ProtectionLevel level = getProtectionLevel(authContextInfo);
+
+        if (level == ProtectionLevel.SIGN_ENCRYPT) {
+            tokenSequence = decryptSignedToken(tokenSequence, authContextInfo);
+            level = ProtectionLevel.SIGN;
+        }
+        return parseClaims(tokenSequence, authContextInfo, level);
+
+    }
+
+    private JwtContext parseClaims(String token, JWTAuthContextInfo authContextInfo, ProtectionLevel level)
+            throws ParseException {
         try {
-            JwtConsumerBuilder builder = new JwtConsumerBuilder()
-                    .setRequireExpirationTime();
+            JwtConsumerBuilder builder = new JwtConsumerBuilder();
+
+            if (level == ProtectionLevel.SIGN) {
+                if (authContextInfo.getSignerKey() != null) {
+                    builder.setVerificationKey(authContextInfo.getSignerKey());
+                } else {
+                    builder.setVerificationKeyResolver(getKeyResolver(authContextInfo));
+                }
+                builder.setJwsAlgorithmConstraints(
+                        new AlgorithmConstraints(AlgorithmConstraints.ConstraintType.WHITELIST,
+                                authContextInfo.getSignatureAlgorithm().getAlgorithm()));
+            } else {
+                builder.setEnableRequireEncryption();
+                builder.setDisableRequireSignature();
+                builder.setDecryptionKeyResolver(getDecryptionKeyResolver(authContextInfo));
+                builder.setJwsAlgorithmConstraints(
+                        new AlgorithmConstraints(AlgorithmConstraints.ConstraintType.WHITELIST,
+                                KeyEncryptionAlgorithm.RSA_OAEP.getAlgorithm()));
+            }
+
+            builder.setRequireExpirationTime();
 
             if (authContextInfo.getMaxTimeToLiveSecs() != null) {
                 builder.setRequireIssuedAt();
             }
 
-            builder.setJwsAlgorithmConstraints(
-                    new AlgorithmConstraints(AlgorithmConstraints.ConstraintType.WHITELIST,
-                            authContextInfo.getSignatureAlgorithm().getAlgorithm()));
-
             if (authContextInfo.isRequireIssuer()) {
                 builder.setExpectedIssuer(true, authContextInfo.getIssuedBy());
             } else {
                 builder.setExpectedIssuer(false, null);
-            }
-            if (authContextInfo.getSignerKey() != null) {
-                builder.setVerificationKey(authContextInfo.getSignerKey());
-            } else {
-                builder.setVerificationKeyResolver(getKeyResolver(authContextInfo));
             }
 
             if (authContextInfo.getExpGracePeriodSecs() > 0) {
@@ -130,7 +159,22 @@ public class DefaultJWTTokenParser {
             PrincipalLogging.log.verificationKeyUnresolvable();
             throw PrincipalMessages.msg.failedToVerifyToken(e);
         }
+    }
 
+    private String decryptSignedToken(String token, JWTAuthContextInfo authContextInfo) throws ParseException {
+        try {
+            JsonWebEncryption jwe = new JsonWebEncryption();
+            jwe.setAlgorithmConstraints(
+                    new AlgorithmConstraints(AlgorithmConstraints.ConstraintType.WHITELIST,
+                            KeyEncryptionAlgorithm.RSA_OAEP.getAlgorithm()));
+            jwe.setKey(getDecryptionKeyResolver(authContextInfo).resolveKey(jwe, null));
+            jwe.setCompactSerialization(token);
+            return jwe.getPlaintextString();
+        } catch (UnresolvableKeyException e) {
+            throw new ParseException("Key is unresolvable", e);
+        } catch (JoseException e) {
+            throw new ParseException("Encrypted token sequence is invalid", e);
+        }
     }
 
     void setExpectedAudience(JwtConsumerBuilder builder, JWTAuthContextInfo authContextInfo) {
@@ -289,5 +333,32 @@ public class DefaultJWTTokenParser {
             }
         }
         return keyResolver;
+    }
+
+    protected DecryptionKeyResolver getDecryptionKeyResolver(JWTAuthContextInfo authContextInfo)
+            throws UnresolvableKeyException {
+        if (decryptionKeyResolver == null) {
+            synchronized (this) {
+                if (decryptionKeyResolver == null)
+                    decryptionKeyResolver = new DecryptionKeyLocationResolver(authContextInfo);
+            }
+        }
+        return decryptionKeyResolver;
+    }
+
+    protected ProtectionLevel getProtectionLevel(JWTAuthContextInfo authContextInfo) {
+        if (authContextInfo.getDecryptKeyLocation() != null) {
+            boolean sign = authContextInfo.getSignerKey() != null
+                    || authContextInfo.getPublicKeyContent() != null || authContextInfo.getPublicKeyLocation() != null;
+            return sign ? ProtectionLevel.SIGN_ENCRYPT : ProtectionLevel.ENCRYPT;
+        } else {
+            return ProtectionLevel.SIGN;
+        }
+    }
+
+    protected enum ProtectionLevel {
+        SIGN,
+        ENCRYPT,
+        SIGN_ENCRYPT
     }
 }

@@ -115,17 +115,33 @@ public final class KeyUtils {
      * Decode a PEM private key
      * 
      * @param pemEncoded - pem string for key
+     * @param algo - signature algorithm
      * @return Private key instance
      * @throws GeneralSecurityException - on failure to decode and create key
      */
     public static PrivateKey decodePrivateKey(String pemEncoded, SignatureAlgorithm algo) throws GeneralSecurityException {
+        return decodePrivateKeyInternal(pemEncoded, keyFactoryAlgorithm(algo));
+    }
+
+    /**
+     * Decode a decryption PEM private key
+     *
+     * @param pemEncoded - pem string for key
+     * @return Private key instance
+     * @throws GeneralSecurityException - on failure to decode and create key
+     */
+    public static PrivateKey decodeDecryptionPrivateKey(String pemEncoded) throws GeneralSecurityException {
+        return decodePrivateKeyInternal(pemEncoded, "RSA");
+    }
+
+    public static PrivateKey decodePrivateKeyInternal(String pemEncoded, String algo) throws GeneralSecurityException {
         pemEncoded = removePemKeyBeginEnd(pemEncoded);
         byte[] pkcs8EncodedBytes = Base64.getDecoder().decode(pemEncoded);
 
         // extract the private key
 
         PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(pkcs8EncodedBytes);
-        KeyFactory kf = KeyFactory.getInstance(keyFactoryAlgorithm(algo));
+        KeyFactory kf = KeyFactory.getInstance(algo);
         return kf.generatePrivate(keySpec);
     }
 

@@ -34,12 +34,14 @@ public class JWTAuthContextInfo {
     private Long maxTimeToLiveSecs;
     private String publicKeyLocation;
     private String publicKeyContent;
+    private String decryptKeyLocation;
     private Integer jwksRefreshInterval;
     private int forcedJwksRefreshInterval = 30;
     private String tokenHeader = "Authorization";
     private String tokenCookie;
     private boolean alwaysCheckAuthorization;
     private String tokenKeyId;
+    private String tokenDecryptionKeyId;
     private List<String> tokenSchemes = Collections.singletonList("Bearer");
     private boolean requireNamedPrincipal = true;
     private String defaultSubClaim;
@@ -331,5 +333,21 @@ public class JWTAuthContextInfo {
 
     public void setRelaxVerificationKeyValidation(boolean relaxVerificationKeyValidation) {
         this.relaxVerificationKeyValidation = relaxVerificationKeyValidation;
+    }
+
+    public void setDecryptKeyLocation(String decryptKeyLocation) {
+        this.decryptKeyLocation = decryptKeyLocation;
+    }
+
+    public String getDecryptKeyLocation() {
+        return decryptKeyLocation;
+    }
+
+    public void setTokenDecryptionKeyId(String decryptoinKeyId) {
+        this.tokenDecryptionKeyId = decryptoinKeyId;
+    }
+
+    public String getTokenDecryptionKeyId() {
+        return tokenDecryptionKeyId;
     }
 }

@@ -16,10 +16,18 @@
  */
 package io.smallrye.jwt.auth.principal;
 
+import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.StringReader;
+import java.io.StringWriter;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
+import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -31,34 +39,38 @@ import javax.json.JsonArray;
 import javax.json.JsonObject;
 import javax.json.JsonReader;
 
+import org.jboss.logging.Logger;
 import org.jose4j.json.JsonUtil;
+import org.jose4j.jwe.JsonWebEncryption;
 import org.jose4j.jwk.HttpsJwks;
 import org.jose4j.jwk.JsonWebKey;
 import org.jose4j.jwk.JsonWebKeySet;
 import org.jose4j.jwk.PublicJsonWebKey;
-import org.jose4j.jws.JsonWebSignature;
 import org.jose4j.jwx.JsonWebStructure;
-import org.jose4j.keys.resolvers.VerificationKeyResolver;
+import org.jose4j.keys.resolvers.DecryptionKeyResolver;
 import org.jose4j.lang.JoseException;
 import org.jose4j.lang.UnresolvableKeyException;
 
 import io.smallrye.jwt.KeyFormat;
 import io.smallrye.jwt.KeyUtils;
-import io.smallrye.jwt.ResourceUtils;
-import io.smallrye.jwt.ResourceUtils.UrlStreamResolver;
+import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 
 /**
- * VerificationKeyResolver which checks the MP-JWT 1.1 mp.jwt.verify.publickey and mp.jwt.verify.publickey.location
- * configuration properties to resolve a verification key.
+ * DecryptionKeyResolver which checks the MP-JWT 1.1 mp.jwt.decrypt.key.location configuration
+ * property to resolve a decryption key.
  */
-public class KeyLocationResolver implements VerificationKeyResolver {
+public class DecryptionKeyLocationResolver implements DecryptionKeyResolver {
+    private static final Logger LOGGER = Logger.getLogger(DecryptionKeyLocationResolver.class);
     private static final String HTTPS_SCHEME = "https:";
+    private static final String HTTP_BASED_SCHEME = "http";
+    private static final String CLASSPATH_SCHEME = "classpath:";
+    private static final String FILE_SCHEME = "file:";
 
-    // The verification key can be calculated only once and used for all the token verification requests.
+    // The decryption key can be calculated only once and used for all the token verification requests.
     // It will be created in the constructor if the PEM or the local JWK(S) content is available.
     // 'smallrye.jwt.token.kid' has to be set for the verificationKey to be created from the local JWK(S).
-    PublicKey verificationKey;
+    PrivateKey decryptionKey;
 
     // The 'jsonWebKeys' and 'httpsJwks' fields represent the JWK key content and are mutually exclusive.
     // 'httpsJwks' only deals with the HTTPS URL based JWK sets while 'jsonWebKeys' represents the JWK key(s)
@@ -66,53 +78,43 @@ public class KeyLocationResolver implements VerificationKeyResolver {
     private List<JsonWebKey> jsonWebKeys;
     // 'httpsJwks' represents the JWK set loaded from the HTTPS URL.
     private HttpsJwks httpsJwks;
-    private long lastForcedRefreshTime;
-    private Object forcedRefreshLock = new Object();
 
     private JWTAuthContextInfo authContextInfo;
 
-    public KeyLocationResolver(JWTAuthContextInfo authContextInfo) throws UnresolvableKeyException {
+    public DecryptionKeyLocationResolver(JWTAuthContextInfo authContextInfo) throws UnresolvableKeyException {
         this.authContextInfo = authContextInfo;
-        PrincipalLogging.log.authContextInfo(authContextInfo);
-
         try {
             initializeKeyContent();
         } catch (Exception e) {
-            if (authContextInfo.getPublicKeyContent() != null) {
-                throw PrincipalMessages.msg.failedToLoadPublicKey(e);
-            } else {
-                throw PrincipalMessages.msg.failedToLoadPublicKeyFromLocation(authContextInfo.getPublicKeyLocation(), e);
-            }
+            throw new UnresolvableKeyException(
+                    "Failed to load a decryption key from the 'mp.jwt.decrypt.key.location' property", e);
         }
     }
 
     @Override
-    public Key resolveKey(JsonWebSignature jws, List<JsonWebStructure> nestingContext) throws UnresolvableKeyException {
-        verifyKid(jws, authContextInfo.getTokenKeyId());
+    public Key resolveKey(JsonWebEncryption jwe, List<JsonWebStructure> nestingContext)
+            throws UnresolvableKeyException {
+        verifyKid(jwe, authContextInfo.getTokenDecryptionKeyId());
 
         // The verificationKey may have been calculated in the constructor from the local PEM, or,
         // if authContextInfo.getTokenKeyId() is not null - from the local JWK(S) content.
-        if (verificationKey != null) {
-            return verificationKey;
+        if (decryptionKey != null) {
+            return decryptionKey;
         }
 
         // At this point the key can be loaded from either the HTTPS or local JWK(s) content using
         // the current token kid to select the key.
-        PublicKey key = tryAsJwk(jws);
+        PrivateKey key = tryAsJwk(jwe);
 
         if (key == null) {
-            if (authContextInfo.getPublicKeyContent() != null) {
-                throw PrincipalMessages.msg.failedToLoadPublicKeyWhileResolving();
-            } else {
-                throw PrincipalMessages.msg
-                        .failedToLoadPublicKeyFromLocationWhileResolving(authContextInfo.getPublicKeyLocation());
-            }
+            throw new UnresolvableKeyException(
+                    "Failed to load a decryption key from the 'mp.jwt.decrypt.key.location' property");
         }
         return key;
     }
 
-    private PublicKey tryAsJwk(JsonWebSignature jws) {
-        String kid = getKid(jws);
+    private PrivateKey tryAsJwk(JsonWebEncryption jwe) throws UnresolvableKeyException {
+        String kid = getKid(jwe);
 
         if (httpsJwks != null) {
             return getHttpsJwk(kid);
@@ -123,86 +125,48 @@ public class KeyLocationResolver implements VerificationKeyResolver {
         }
     }
 
-    PublicKey getHttpsJwk(String kid) {
-        try {
-            List<JsonWebKey> theKeys = httpsJwks.getJsonWebKeys();
-            PublicKey theKey = getKeyFromJsonWebKeys(kid, theKeys, authContextInfo.getSignatureAlgorithm());
-            if (theKey != null || isMatchingJwkAvailable(theKeys, kid)) {
-                return theKey;
-            }
-        } catch (Exception e) {
-            PrincipalLogging.log.failedToCreateKeyFromJWKSet(e);
-            return null;
-        }
-
-        synchronized (forcedRefreshLock) {
-            final long now = System.currentTimeMillis();
-            if (lastForcedRefreshTime == 0
-                    || now > lastForcedRefreshTime + authContextInfo.getForcedJwksRefreshInterval() * 60 * 1000) {
-                lastForcedRefreshTime = now;
-                try {
-                    PrincipalLogging.log.kidIsNotAvailableRefreshingJWKSet();
-                    httpsJwks.refresh();
-                } catch (JoseException | IOException e) {
-                    PrincipalLogging.log.failedToRefreshJWKSet(e);
-                    return null;
-                }
-            } else {
-                PrincipalLogging.log.matchingKidIsNotAvailableButJWTSRefreshed(authContextInfo.getForcedJwksRefreshInterval());
-            }
-        }
+    PrivateKey getHttpsJwk(String kid) {
+        LOGGER.debugf("Trying to create a key from the HTTPS JWK(S)...");
 
         try {
-            PrincipalLogging.log.tryCreateKeyFromJWKSAfterRefresh();
-            return getKeyFromJsonWebKeys(kid, httpsJwks.getJsonWebKeys(), authContextInfo.getSignatureAlgorithm());
+            return getDecryptionKeyFromJsonWebKeys(kid, httpsJwks.getJsonWebKeys());
         } catch (Exception e) {
-            PrincipalLogging.log.failedToCreateKeyFromJWKSAfterRefresh(e);
+            LOGGER.debug("Failed to create a key from the HTTPS JWK(S)", e);
         }
         return null;
     }
 
-    private static boolean isMatchingJwkAvailable(List<JsonWebKey> keys, String kid) {
-        if (kid != null) {
-            for (JsonWebKey currentJwk : keys) {
-                if (kid.equals(currentJwk.getKeyId())) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    PublicKey getJsonWebKey(String kid) {
-        PrincipalLogging.log.tryCreateKeyFromJWKS();
+    PrivateKey getJsonWebKey(String kid) {
+        LOGGER.debugf("Trying the create a key from the JWK(S)...");
 
         try {
-            return getKeyFromJsonWebKeys(kid, jsonWebKeys, authContextInfo.getSignatureAlgorithm());
+            return getDecryptionKeyFromJsonWebKeys(kid, jsonWebKeys);
         } catch (Exception e) {
-            PrincipalLogging.log.failedToCreateKeyFromJWKS(e);
+            LOGGER.debug("Failed to create a key from the JWK(S)", e);
         }
 
         return null;
     }
 
-    private static void verifyKid(JsonWebSignature jws, String expectedKid) throws UnresolvableKeyException {
+    private static void verifyKid(JsonWebEncryption jwe, String expectedKid) throws UnresolvableKeyException {
         if (expectedKid != null) {
-            String kid = getKid(jws);
+            String kid = getKid(jwe);
             if (kid != null && !kid.equals(expectedKid)) {
-                PrincipalLogging.log.invalidTokenKidHeader(kid, expectedKid);
-                throw PrincipalMessages.msg.invalidTokenKid();
+                LOGGER.debugf("Invalid token 'kid' header: %s, expected: %s", kid, expectedKid);
+                throw new UnresolvableKeyException("Invalid token 'kid' header");
             }
         }
     }
 
-    private static String getKid(JsonWebSignature jws) {
-        return jws.getHeaders().getStringHeaderValue(JsonWebKey.KEY_ID_PARAMETER);
+    private static String getKid(JsonWebEncryption jwe) throws UnresolvableKeyException {
+        return jwe.getHeaders().getStringHeaderValue(JsonWebKey.KEY_ID_PARAMETER);
     }
 
     protected void initializeKeyContent() throws Exception {
 
         if (mayBeFormat(KeyFormat.JWK) && authContextInfo.getPublicKeyLocation() != null
                 && authContextInfo.getPublicKeyLocation().startsWith(HTTPS_SCHEME)) {
-            PrincipalLogging.log.tryLoadKeyFromJWKS();
+            LOGGER.debugf("Trying to load the keys from the HTTPS JWK(S)...");
             httpsJwks = initializeHttpsJwks();
             httpsJwks.setDefaultCacheDuration(authContextInfo.getJwksRefreshInterval().longValue() * 60L);
             try {
@@ -213,39 +177,31 @@ public class KeyLocationResolver implements VerificationKeyResolver {
             }
         }
 
-        String content = authContextInfo.getPublicKeyContent() != null
-                ? authContextInfo.getPublicKeyContent()
-                : readKeyContent(authContextInfo.getPublicKeyLocation());
+        String content = readKeyContent(authContextInfo.getDecryptKeyLocation());
 
         // Try to init the verification key from the local PEM or JWK(S) content
         if (mayBeFormat(KeyFormat.PEM_KEY)) {
-            verificationKey = tryAsPEMPublicKey(content, authContextInfo.getSignatureAlgorithm());
-            if (verificationKey != null || isFormat(KeyFormat.PEM_KEY)) {
-                return;
-            }
-        }
-        if (mayBeFormat(KeyFormat.PEM_CERTIFICATE)) {
-            verificationKey = tryAsPEMCertificate(content);
-            if (verificationKey != null || isFormat(KeyFormat.PEM_CERTIFICATE)) {
+            decryptionKey = tryAsPEMPrivateKey(content);
+            if (decryptionKey != null || isFormat(KeyFormat.PEM_KEY)) {
                 return;
             }
         }
         if (mayBeFormat(KeyFormat.JWK)) {
-            PrincipalLogging.log.checkKeyContentIsJWKKeyOrJWKKeySet();
+            LOGGER.debugf("Checking if the key content is a JWK key or JWK key set");
             tryJWKContent(content, false);
-            if (verificationKey != null || isFormat(KeyFormat.JWK)) {
+            if (decryptionKey != null || isFormat(KeyFormat.JWK)) {
                 return;
             }
         }
         if (jsonWebKeys == null && mayBeFormat(KeyFormat.JWK_BASE64URL)) {
             // Try Base64 Decoding
             try {
-                PrincipalLogging.log.checkKeyContentIsBase64EncodedJWKKeyOrJWKKeySet();
+                LOGGER.debugf("Checking if the key content is a Base64URL encoded JWK key or JWK key set");
                 content = new String(Base64.getUrlDecoder().decode(content.getBytes(StandardCharsets.UTF_8)),
                         StandardCharsets.UTF_8);
                 tryJWKContent(content, true);
             } catch (IllegalArgumentException e) {
-                PrincipalLogging.log.unableToDecodeContentUsingBase64(e);
+                LOGGER.debug("Unable to decode content using Base64 decoder", e);
             }
         }
     }
@@ -253,13 +209,10 @@ public class KeyLocationResolver implements VerificationKeyResolver {
     private void tryJWKContent(final String content, boolean encoded) {
         jsonWebKeys = loadJsonWebKeys(content);
         if (jsonWebKeys != null && authContextInfo.getTokenKeyId() != null) {
-            verificationKey = getJsonWebKey(authContextInfo.getTokenKeyId());
-            if (verificationKey != null) {
-                if (encoded) {
-                    PrincipalLogging.log.publicKeyCreatedFromEncodedJWKKeyOrJWKKeySet();
-                } else {
-                    PrincipalLogging.log.publicKeyCreatedFromJWKKeyOrJWKKeySet();
-                }
+            decryptionKey = getJsonWebKey(authContextInfo.getTokenKeyId());
+            if (decryptionKey != null) {
+                LOGGER.debugf("PrivateKey has been created from"
+                        + (encoded ? " the encoded " : " ") + "JWK key or JWK key set");
             }
         }
     }
@@ -270,49 +223,63 @@ public class KeyLocationResolver implements VerificationKeyResolver {
 
     protected String readKeyContent(String keyLocation) throws IOException {
 
-        String content = ResourceUtils.readResource(keyLocation, getUrlResolver());
-        if (content == null) {
-            throw PrincipalMessages.msg.resourceNotFound(keyLocation);
+        InputStream is = null;
+
+        if (keyLocation.startsWith(HTTP_BASED_SCHEME)) {
+            // It can be PEM key at HTTP or HTTPS URL, JWK set at HTTP URL or single JWK at either HTTP or HTTPS URL
+            is = getUrlResolver().resolve(keyLocation);
+        } else if (keyLocation.startsWith(FILE_SCHEME)) {
+            is = getAsFileSystemResource(keyLocation.substring(FILE_SCHEME.length()));
+        } else if (keyLocation.startsWith(CLASSPATH_SCHEME)) {
+            is = getAsClasspathResource(keyLocation.substring(CLASSPATH_SCHEME.length()));
+        } else {
+            is = getAsFileSystemResource(keyLocation);
+            if (is == null) {
+                is = getAsClasspathResource(keyLocation);
+            }
+            if (is == null) {
+                is = getUrlResolver().resolve(keyLocation);
+            }
         }
-        return content;
+
+        if (is == null) {
+            throw new IOException("No resource with the named " + keyLocation + " location exists");
+        }
+
+        StringWriter contents = new StringWriter();
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(is))) {
+            String line = null;
+            while ((line = reader.readLine()) != null) {
+                contents.write(line);
+            }
+        }
+        return contents.toString();
     }
 
     protected UrlStreamResolver getUrlResolver() {
         return new UrlStreamResolver();
     }
 
-    static PublicKey tryAsPEMPublicKey(String content, SignatureAlgorithm algo) {
-        PrincipalLogging.log.checkKeyContentIsBase64EncodedPEMKey();
-        PublicKey key = null;
+    static PrivateKey tryAsPEMPrivateKey(String content) {
+        LOGGER.debugf("Checking if the key content is a Base64 encoded PEM key");
+        PrivateKey key = null;
         try {
-            key = KeyUtils.decodePublicKey(content, algo);
-            PrincipalLogging.log.publicKeyCreatedFromEncodedPEMKey();
+            key = KeyUtils.decodeDecryptionPrivateKey(content);
+            LOGGER.debug("PublicKey has been created from the encoded PEM key");
         } catch (Exception e) {
-            PrincipalLogging.log.keyContentIsNotValidEncodedPEMKey(e);
-        }
-        return key;
-    }
-
-    static PublicKey tryAsPEMCertificate(String content) {
-        PrincipalLogging.log.checkKeyContentIsBase64EncodedPEMCertificate();
-        PublicKey key = null;
-        try {
-            key = KeyUtils.decodeCertificate(content);
-            PrincipalLogging.log.publicKeyCreatedFromEncodedPEMCertificate();
-        } catch (Exception e) {
-            PrincipalLogging.log.keyContentIsNotValidEncodedPEMCertificate(e);
+            LOGGER.debug("The key content is not a valid encoded PEM key", e);
         }
         return key;
     }
 
     static List<JsonWebKey> loadJsonWebKeys(String content) {
-        PrincipalLogging.log.tryLoadLocalJWKS();
+        LOGGER.debugf("Trying to load the local JWK(S)...");
 
         JsonObject jwks = null;
         try (JsonReader reader = Json.createReader(new StringReader(content))) {
             jwks = reader.readObject();
         } catch (Exception ex) {
-            PrincipalLogging.log.failedToLoadJWKS();
+            LOGGER.debug("Failed to load the JWK(S)");
             return null;
         }
 
@@ -331,7 +298,7 @@ public class KeyLocationResolver implements VerificationKeyResolver {
                 localKeys = Collections.singletonList(createJsonWebKey(jwks));
             }
         } catch (Exception ex) {
-            PrincipalLogging.log.failedToParseJWKJsonRepresentation();
+            LOGGER.debug("Failed to parse the JWK JSON representation");
             return null;
         }
         return localKeys;
@@ -355,8 +322,46 @@ public class KeyLocationResolver implements VerificationKeyResolver {
         return null;
     }
 
+    static PrivateKey getDecryptionKeyFromJsonWebKeys(String kid, List<JsonWebKey> keys) {
+        if (kid != null) {
+            for (JsonWebKey currentJwk : keys) {
+                if (kid.equals(currentJwk.getKeyId())
+                        && (currentJwk.getAlgorithm() == null
+                                || KeyEncryptionAlgorithm.RSA_OAEP.getAlgorithm().equals(currentJwk.getAlgorithm()))) {
+                    return PublicJsonWebKey.class.cast(currentJwk).getPrivateKey();
+                }
+            }
+        }
+        // if JWK set contains a single JWK only then try to use it
+        // but only if 'kid' is not set in both the token and this JWK
+        if (keys.size() == 1 && (kid == null || keys.get(0).getKeyId() == null)
+                && (keys.get(0).getAlgorithm() == null
+                        || KeyEncryptionAlgorithm.RSA_OAEP.getAlgorithm().equals(keys.get(0).getAlgorithm()))) {
+            return PublicJsonWebKey.class.cast(keys.get(0)).getPrivateKey();
+        }
+        return null;
+    }
+
     static JsonWebKey createJsonWebKey(JsonObject jsonObject) throws Exception {
         return JsonWebKey.Factory.newJwk(JsonUtil.parseJson(jsonObject.toString()));
+    }
+
+    static InputStream getAsFileSystemResource(String publicKeyLocation) throws IOException {
+        try {
+            return new FileInputStream(publicKeyLocation);
+        } catch (FileNotFoundException e) {
+            return null;
+        }
+    }
+
+    static InputStream getAsClasspathResource(String location) {
+        return Thread.currentThread().getContextClassLoader().getResourceAsStream(location);
+    }
+
+    static class UrlStreamResolver {
+        public InputStream resolve(String keyLocation) throws IOException {
+            return new URL(keyLocation).openStream();
+        }
     }
 
     boolean mayBeFormat(KeyFormat format) {

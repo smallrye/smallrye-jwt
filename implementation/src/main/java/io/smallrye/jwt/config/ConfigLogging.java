@@ -30,4 +30,8 @@ public interface ConfigLogging extends BasicLogger {
     @LogMessage(level = Logger.Level.DEBUG)
     @Message(id = 3004, value = "mpJwtPublicKey parsed as PEM")
     void publicKeyParsedAsPem();
+
+    @LogMessage(level = Logger.Level.DEBUG)
+    @Message(id = 3005, value = "Unsupported key format")
+    void unsupportedKeyFormat();
 }
