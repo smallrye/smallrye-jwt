@@ -33,7 +33,8 @@ import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 import io.smallrye.jwt.util.KeyUtils;
 
 /**
- * This implements the MP-JWT 1.1 mp.jwt.verify.publickey.location config property resolution logic
+ * VerificationKeyResolver which checks the MP-JWT 1.1 mp.jwt.verify.publickey and mp.jwt.verify.publickey.location
+ * configuration properties to resolve a verification key.
  */
 public class KeyLocationResolver extends AbstractKeyLocationResolver implements VerificationKeyResolver {
 
