@@ -23,6 +23,7 @@ import java.security.PublicKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -61,13 +62,12 @@ public class TestTokenClaimTypes extends Arquillian {
 
     @BeforeClass(alwaysRun = true)
     public static void generateToken() throws Exception {
-        HashMap<String, Long> timeClaims = new HashMap<>();
-        token = TokenUtils.generateTokenString("/Token1.json", null, timeClaims);
+        Map<String, Long> timeClaims = new HashMap<>();
+        token = TokenUtils.signClaims("/Token1.json", null, timeClaims);
         iatClaim = timeClaims.get(Claims.iat.name());
         authTimeClaim = timeClaims.get(Claims.auth_time.name());
         expClaim = timeClaims.get(Claims.exp.name());
 
-        System.out.printf("TokenValidationTest.initClass\n");
         publicKey = TokenUtils.readPublicKey("/publicKey.pem");
         if (publicKey == null) {
             throw new IllegalStateException("Failed to load /publicKey.pem resource");
@@ -240,7 +240,7 @@ public class TestTokenClaimTypes extends Arquillian {
 
     @Test(groups = TEST_GROUP_JWT, description = "validate the name comes from the upn claim")
     public void validateNameIsPreferredName() throws Exception {
-        String token2 = TokenUtils.generateTokenString("/usePreferredName.json");
+        String token2 = TokenUtils.signClaims("/usePreferredName.json");
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo((RSAPublicKey) publicKey, TEST_ISSUER);
         JWTCallerPrincipalFactory factory = JWTCallerPrincipalFactory.instance();
         JsonWebToken jwt2 = factory.parse(token2, contextInfo);
@@ -249,7 +249,7 @@ public class TestTokenClaimTypes extends Arquillian {
 
     @Test(groups = TEST_GROUP_JWT, description = "validate the name comes from the sub claim")
     public void validateNameIsSubject() throws Exception {
-        String token2 = TokenUtils.generateTokenString("/useSubject.json");
+        String token2 = TokenUtils.signClaims("/useSubject.json");
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo((RSAPublicKey) publicKey, TEST_ISSUER);
         JWTCallerPrincipalFactory factory = JWTCallerPrincipalFactory.instance();
         JsonWebToken jwt2 = factory.parse(token2, contextInfo);

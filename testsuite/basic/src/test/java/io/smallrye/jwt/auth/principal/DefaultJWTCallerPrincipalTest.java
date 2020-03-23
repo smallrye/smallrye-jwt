@@ -25,7 +25,7 @@ public class DefaultJWTCallerPrincipalTest {
         publicKey = (RSAPublicKey) TokenUtils.readPublicKey("/publicKey.pem");
         parser = new DefaultJWTTokenParser();
         config = new JWTAuthContextInfo(publicKey, "https://server.example.com");
-        context = parser.parse(TokenUtils.generateTokenString("/Token1.json"), config);
+        context = parser.parse(TokenUtils.signClaims("/Token1.json"), config);
     }
 
     @Test
