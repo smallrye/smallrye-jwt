@@ -54,7 +54,7 @@ public class JWTAuthContextInfoProvider {
      * @return a new instance of JWTAuthContextInfoProvider
      */
     public static JWTAuthContextInfoProvider createWithKey(String publicKey, String issuer) {
-        return create(publicKey, NONE, issuer);
+        return create(publicKey, NONE, NONE, issuer);
     }
 
     /**
@@ -65,19 +65,46 @@ public class JWTAuthContextInfoProvider {
      * @return a new instance of JWTAuthContextInfoProvider
      */
     public static JWTAuthContextInfoProvider createWithKeyLocation(String publicKeyLocation, String issuer) {
-        return create(NONE, publicKeyLocation, issuer);
+        return create(NONE, publicKeyLocation, NONE, issuer);
     }
 
-    private static JWTAuthContextInfoProvider create(String publicKey, String publicKeyLocation, String issuer) {
+    /**
+     * Create JWTAuthContextInfoProvider with the decrypt key location and issuer
+     *
+     * @param decryptKeyLocation the decrypt key location
+     * @param issuer the issuer
+     * @return a new instance of JWTAuthContextInfoProvider
+     */
+    public static JWTAuthContextInfoProvider createWithDecryptKeyLocation(String decryptKeyLocation, String issuer) {
+        return create(NONE, NONE, decryptKeyLocation, issuer);
+    }
+
+    /**
+     * Create JWTAuthContextInfoProvider with the verify and decrypt key locations and issuer
+     *
+     * @param publicKeyLocation the public verification key location
+     * @param decryptKeyLocation the decrypt key location
+     * @param issuer the issuer
+     * @return a new instance of JWTAuthContextInfoProvider
+     */
+    public static JWTAuthContextInfoProvider createWithVerifyDecryptKeyLocations(String publicKeyLocation,
+            String decryptKeyLocation, String issuer) {
+        return create(NONE, publicKeyLocation, decryptKeyLocation, issuer);
+    }
+
+    private static JWTAuthContextInfoProvider create(String publicKey, String publicKeyLocation,
+            String decryptKeyLocation, String issuer) {
         JWTAuthContextInfoProvider provider = new JWTAuthContextInfoProvider();
         provider.mpJwtPublicKey = Optional.of(publicKey);
         provider.mpJwtLocation = Optional.of(publicKeyLocation);
+        provider.mpJwtDecryptKeyLocation = Optional.of(decryptKeyLocation);
         provider.mpJwtIssuer = issuer;
 
         provider.mpJwtRequireIss = Optional.of(Boolean.TRUE);
         provider.tokenHeader = AUTHORIZATION_HEADER;
         provider.tokenCookie = Optional.empty();
         provider.tokenKeyId = Optional.empty();
+        provider.tokenDecryptionKeyId = Optional.empty();
         provider.tokenSchemes = Optional.of(BEARER_SCHEME);
         provider.requireNamedPrincipal = Optional.of(Boolean.TRUE);
         provider.defaultSubClaim = Optional.empty();
@@ -104,21 +131,28 @@ public class JWTAuthContextInfoProvider {
     @Inject
     @ConfigProperty(name = "mp.jwt.verify.publickey", defaultValue = NONE)
     private Optional<String> mpJwtPublicKey;
+
+    /**
+     * @since 1.1
+     */
+    @Inject
+    @ConfigProperty(name = "mp.jwt.verify.publickey.location", defaultValue = NONE)
+    private Optional<String> mpJwtLocation;
+
+    /**
+     * @since 1.1
+     */
+    @Inject
+    @ConfigProperty(name = "mp.jwt.decrypt.key.location", defaultValue = NONE)
+    private Optional<String> mpJwtDecryptKeyLocation;
+
     /**
      * @since 1.1
      */
     @Inject
     @ConfigProperty(name = "mp.jwt.verify.issuer", defaultValue = NONE)
     private String mpJwtIssuer;
-    /**
-     * @since 1.1
-     */
-    @Inject
-    @ConfigProperty(name = "mp.jwt.verify.publickey.location", defaultValue = NONE)
-    /**
-     * @since 1.1
-     */
-    private Optional<String> mpJwtLocation;
+
     /**
      * Not part of the 1.1 release, but talked about.
      */
@@ -150,13 +184,22 @@ public class JWTAuthContextInfoProvider {
     private boolean alwaysCheckAuthorization;
 
     /**
-     * The key identifier ('kid'). If it is set then if the token contains 'kid' then both values must match. It will also be
-     * used to
-     * select a JWK key from a JWK set.
+     * Verification key identifier ('kid'). If it is set then if a signed JWT token contains 'kid' then both values must
+     * match.
+     * It will also be used to select a verification JWK key from a JWK set.
      */
     @Inject
     @ConfigProperty(name = "smallrye.jwt.token.kid")
     private Optional<String> tokenKeyId;
+
+    /**
+     * Decryption key identifier ('kid'). If it is set then if an encrypted JWT token contains 'kid' then both values must
+     * match.
+     * It will also be used to select a decryption JWK key from a JWK set.
+     */
+    @Inject
+    @ConfigProperty(name = "smallrye.jwt.token.decryption.kid")
+    private Optional<String> tokenDecryptionKeyId;
 
     /**
      * The scheme used with an HTTP Authorization header.
@@ -294,7 +337,15 @@ public class JWTAuthContextInfoProvider {
     @Produces
     Optional<JWTAuthContextInfo> getOptionalContextInfo() {
         // Log the config values
+        // TODO: log decryption key location as well
         ConfigLogging.log.configValues(mpJwtPublicKey.orElse("missing"), mpJwtIssuer, mpJwtLocation.orElse("missing"));
+
+        if (mpJwtDecryptKeyLocation.isPresent() && KeyFormat.PEM_CERTIFICATE == keyFormat) {
+            log.debugf("Unsupported key format");
+            // TODO: throw the exception 
+            return Optional.empty();
+        }
+
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo();
 
         if (mpJwtIssuer != null && !mpJwtIssuer.equals(NONE)) {
@@ -312,7 +363,10 @@ public class JWTAuthContextInfoProvider {
             contextInfo.setPublicKeyContent(mpJwtPublicKey.get());
         } else if (mpJwtLocation.isPresent() && !NONE.equals(mpJwtLocation.get())) {
             contextInfo.setPublicKeyLocation(mpJwtLocation.get().trim());
+        } else if (mpJwtDecryptKeyLocation.isPresent() && !NONE.equals(mpJwtDecryptKeyLocation.get())) {
+            contextInfo.setDecryptKeyLocation(mpJwtDecryptKeyLocation.get().trim());
         }
+
         if (tokenHeader != null) {
             contextInfo.setTokenHeader(tokenHeader);
         }
@@ -320,6 +374,7 @@ public class JWTAuthContextInfoProvider {
         contextInfo.setAlwaysCheckAuthorization(alwaysCheckAuthorization);
 
         contextInfo.setTokenKeyId(tokenKeyId.orElse(null));
+        contextInfo.setTokenDecryptionKeyId(tokenDecryptionKeyId.orElse(null));
         contextInfo.setRequireNamedPrincipal(requireNamedPrincipal.orElse(null));
         SmallryeJwtUtils.setContextTokenCookie(contextInfo, tokenCookie);
         SmallryeJwtUtils.setTokenSchemes(contextInfo, tokenSchemes);
@@ -372,12 +427,16 @@ public class JWTAuthContextInfoProvider {
         return mpJwtPublicKey;
     }
 
-    public String getMpJwtIssuer() {
-        return mpJwtIssuer;
-    }
-
     public Optional<String> getMpJwtLocation() {
         return mpJwtLocation;
+    }
+
+    public Optional<String> getMpJwtDecryptKeyLocation() {
+        return mpJwtDecryptKeyLocation;
+    }
+
+    public String getMpJwtIssuer() {
+        return mpJwtIssuer;
     }
 
     public Optional<Boolean> getMpJwtRequireIss() {
@@ -398,6 +457,10 @@ public class JWTAuthContextInfoProvider {
 
     public Optional<String> getTokenKeyId() {
         return tokenKeyId;
+    }
+
+    public Optional<String> getTokenDecryptionKeyId() {
+        return tokenDecryptionKeyId;
     }
 
     public Optional<String> getTokenSchemes() {
@@ -438,11 +501,6 @@ public class JWTAuthContextInfoProvider {
 
     public Optional<String> getDefaultSubjectClaim() {
         return defaultSubClaim;
-    }
-
-    @Deprecated
-    public Optional<String> getWhitelistAlgorithms() {
-        return whitelistAlgorithms;
     }
 
     public Optional<SignatureAlgorithm> getSignatureAlgorithm() {

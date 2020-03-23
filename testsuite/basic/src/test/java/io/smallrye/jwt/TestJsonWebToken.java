@@ -19,10 +19,13 @@ package io.smallrye.jwt;
 import java.security.interfaces.RSAPublicKey;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 import org.eclipse.microprofile.jwt.Claims;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.eclipse.microprofile.jwt.tck.util.TokenUtils;
+import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
@@ -36,71 +39,71 @@ import io.smallrye.jwt.auth.principal.ParseException;
 public class TestJsonWebToken {
     @Test
     public void testValidation() throws Exception {
-        String token = TokenUtils.generateTokenString("/Token1.json");
+        String token = TokenUtils.signClaims("/Token1.json");
         RSAPublicKey publicKey = (RSAPublicKey) TokenUtils.readPublicKey("/publicKey.pem");
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo(publicKey, "https://server.example.com");
         contextInfo.setExpGracePeriodSecs(60);
-        JsonWebToken jwt = validateToken(token, contextInfo);
+        Assert.assertNotNull(validateToken(token, contextInfo));
     }
 
     @Test(expectedExceptions = { ParseException.class }, description = "Illustrate validation of issuer")
     public void testFailIssuer() throws Exception {
-        HashSet<TokenUtils.InvalidClaims> invalidFields = new HashSet<>();
+        Set<TokenUtils.InvalidClaims> invalidFields = new HashSet<>();
         invalidFields.add(TokenUtils.InvalidClaims.ISSUER);
-        String token = TokenUtils.generateTokenString("/Token1.json", invalidFields);
+        String token = TokenUtils.signClaims("/Token1.json", invalidFields);
         RSAPublicKey publicKey = (RSAPublicKey) TokenUtils.readPublicKey("/publicKey.pem");
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo(publicKey, "https://server.example.com");
         contextInfo.setExpGracePeriodSecs(60);
-        JsonWebToken jwt = validateToken(token, contextInfo);
+        validateToken(token, contextInfo);
     }
 
     @Test(expectedExceptions = { ParseException.class }, description = "Illustrate validation of signer")
-    public void testNimbusFailSignature() throws Exception {
-        HashSet<TokenUtils.InvalidClaims> invalidFields = new HashSet<>();
+    public void testFailSignature() throws Exception {
+        Set<TokenUtils.InvalidClaims> invalidFields = new HashSet<>();
         invalidFields.add(TokenUtils.InvalidClaims.SIGNER);
-        String token = TokenUtils.generateTokenString("/Token1.json", invalidFields);
+        String token = TokenUtils.signClaims("/Token1.json", invalidFields);
         RSAPublicKey publicKey = (RSAPublicKey) TokenUtils.readPublicKey("/publicKey.pem");
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo(publicKey, "https://server.example.com");
         contextInfo.setExpGracePeriodSecs(60);
-        JsonWebToken jwt = validateToken(token, contextInfo);
+        validateToken(token, contextInfo);
     }
 
     @Test(expectedExceptions = { ParseException.class }, description = "Illustrate validation of exp")
-    public void testNimbusFailExpired() throws Exception {
-        HashMap<String, Long> timeClaims = new HashMap<>();
-        HashSet<TokenUtils.InvalidClaims> invalidFields = new HashSet<>();
+    public void testFailExpired() throws Exception {
+        Map<String, Long> timeClaims = new HashMap<>();
+        Set<TokenUtils.InvalidClaims> invalidFields = new HashSet<>();
         invalidFields.add(TokenUtils.InvalidClaims.EXP);
-        String token = TokenUtils.generateTokenString("/Token1.json", invalidFields, timeClaims);
+        String token = TokenUtils.signClaims("/Token1.json", invalidFields, timeClaims);
         RSAPublicKey publicKey = (RSAPublicKey) TokenUtils.readPublicKey("/publicKey.pem");
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo(publicKey, "https://server.example.com");
         contextInfo.setExpGracePeriodSecs(60);
-        JsonWebToken jwt = validateToken(token, contextInfo);
+        validateToken(token, contextInfo);
     }
 
     @Test(expectedExceptions = { ParseException.class }, description = "Illustrate validation of exp that has just expired")
-    public void testNimbusFailJustExpired() throws Exception {
-        HashMap<String, Long> timeClaims = new HashMap<>();
+    public void testFailJustExpired() throws Exception {
+        Map<String, Long> timeClaims = new HashMap<>();
         // Set exp to 61 seconds in past
         long exp = TokenUtils.currentTimeInSecs() - 61;
         timeClaims.put(Claims.exp.name(), exp);
-        String token = TokenUtils.generateTokenString("/Token1.json", null, timeClaims);
+        String token = TokenUtils.signClaims("/Token1.json", null, timeClaims);
         RSAPublicKey publicKey = (RSAPublicKey) TokenUtils.readPublicKey("/publicKey.pem");
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo(publicKey, "https://server.example.com");
         contextInfo.setExpGracePeriodSecs(60);
-        JsonWebToken jwt = validateToken(token, contextInfo);
+        validateToken(token, contextInfo);
     }
 
     @Test(description = "Illustrate validation of exp that is in grace period")
-    public void testNimbusExpGrace() throws Exception {
-        HashMap<String, Long> timeClaims = new HashMap<>();
+    public void testExpGrace() throws Exception {
+        Map<String, Long> timeClaims = new HashMap<>();
         // Set exp to 45 seconds in past
         long exp = TokenUtils.currentTimeInSecs() - 45;
         timeClaims.put(Claims.exp.name(), exp);
-        String token = TokenUtils.generateTokenString("/Token1.json", null, timeClaims);
+        String token = TokenUtils.signClaims("/Token1.json", null, timeClaims);
         RSAPublicKey publicKey = (RSAPublicKey) TokenUtils.readPublicKey("/publicKey.pem");
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo(publicKey, "https://server.example.com");
         contextInfo.setExpGracePeriodSecs(60);
-        JsonWebToken jwt = validateToken(token, contextInfo);
+        validateToken(token, contextInfo);
     }
 
     private JsonWebToken validateToken(String token, JWTAuthContextInfo contextInfo) throws ParseException {
