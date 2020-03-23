@@ -47,7 +47,7 @@ public class TestTokenWithGroupsPath extends Arquillian {
     @BeforeClass(alwaysRun = true)
     public static void generateToken() throws Exception {
         HashMap<String, Long> timeClaims = new HashMap<>();
-        token = TokenUtils.generateTokenString("/TokenGroupsPath.json", null, timeClaims);
+        token = TokenUtils.signClaims("/TokenGroupsPath.json", null, timeClaims);
         publicKey = TokenUtils.readPublicKey("/publicKey.pem");
         if (publicKey == null) {
             throw new IllegalStateException("Failed to load /publicKey.pem resource");
