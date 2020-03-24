@@ -113,7 +113,7 @@ public interface JwtClaimsBuilder extends JwtSignature {
 
     /**
      * Return a JSON representation of the claims before they have been signed or encrypted.
-     * Note that the 'iat' (issued at time), 'exp' (expiration time) and 'jit' (unique token identifier) claims
+     * Note that the 'iat' (issued at time), 'exp' (expiration time) and 'jti' (unique token identifier) claims
      * must be set if they have not already been set before creating a JSON representation to ensure it is consistent
      * with what will be signed or encrypted.
      * This method will return the same JSON representation if called multiple times unless some new claims have
