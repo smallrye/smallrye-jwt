@@ -81,10 +81,15 @@
       <artifactId>microprofile-jwt-auth-tck</artifactId>
       <type>test-jar</type>
     </dependency>
-
     <dependency>
       <groupId>org.jboss.arquillian.container</groupId>
       <artifactId>arquillian-container-spi</artifactId>
+    </dependency>
+
+    <!-- Internal Tests -->
+    <dependency>
+      <groupId>io.rest-assured</groupId>
+      <artifactId>rest-assured</artifactId>
     </dependency>
   </dependencies>
 

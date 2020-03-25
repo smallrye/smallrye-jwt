@@ -16,7 +16,10 @@
  */
 package io.smallrye.jwt.auth.cdi;
 
+import java.util.Optional;
+
 import javax.annotation.Priority;
+import javax.enterprise.context.Dependent;
 import javax.enterprise.context.RequestScoped;
 import javax.enterprise.inject.Alternative;
 import javax.enterprise.inject.Produces;
@@ -41,9 +44,15 @@ public class PrincipalProducer {
      *
      * @return JsonWebToken
      */
-    @Produces
     @RequestScoped
+    @Produces
     JsonWebToken currentJWTPrincipalOrNull() {
         return token == null ? new NullJsonWebToken() : token;
+    }
+
+    @Dependent
+    @Produces
+    Optional<JsonWebToken> optionalJWTPrincipal() {
+        return token != null ? Optional.of(token) : Optional.empty();
     }
 }
