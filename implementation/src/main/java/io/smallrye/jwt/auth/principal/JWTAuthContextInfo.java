@@ -50,6 +50,7 @@ public class JWTAuthContextInfo {
     private KeyFormat keyFormat = KeyFormat.ANY;
     private Set<String> expectedAudience;
     private String groupsSeparator = " ";
+    private Set<String> requiredClaims;
 
     /**
      * Flag that indicates whether the issuer is required and validated, or ignored, new in MP-JWT 1.1.
@@ -274,6 +275,14 @@ public class JWTAuthContextInfo {
 
     public void setAlwaysCheckAuthorization(boolean alwaysCheckAuthorization) {
         this.alwaysCheckAuthorization = alwaysCheckAuthorization;
+    }
+
+    public Set<String> getRequiredClaims() {
+        return requiredClaims;
+    }
+
+    public void setRequiredClaims(final Set<String> requiredClaims) {
+        this.requiredClaims = requiredClaims;
     }
 
     @Override

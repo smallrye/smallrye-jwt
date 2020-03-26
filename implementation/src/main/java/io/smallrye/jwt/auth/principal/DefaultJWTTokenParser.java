@@ -16,6 +16,8 @@
  */
 package io.smallrye.jwt.auth.principal;
 
+import static java.util.Collections.emptyList;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -23,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import org.eclipse.microprofile.jwt.Claims;
 import org.jboss.logging.Logger;
@@ -91,6 +94,7 @@ public class DefaultJWTTokenParser {
             JwtClaims claimsSet = jwtContext.getJwtClaims();
 
             verifyTimeToLive(authContextInfo, claimsSet);
+            verifyRequiredClaims(authContextInfo, jwtContext);
 
             claimsSet.setClaim(Claims.raw_token.name(), token);
 
@@ -145,7 +149,7 @@ public class DefaultJWTTokenParser {
                 claimsSet.getClaimValue(Claims.preferred_username.name()) != null;
 
         if (!hasPrincipalClaim) {
-            throw new InvalidJwtException("No claim exists in sub, upn or preferred_username", Collections.emptyList(),
+            throw new InvalidJwtException("No claim exists in sub, upn or preferred_username", emptyList(),
                     jwtContext);
         }
     }
@@ -262,6 +266,22 @@ public class DefaultJWTTokenParser {
             }
         } else {
             LOGGER.debugf("No max TTL has been specified in configuration");
+        }
+    }
+
+    private void verifyRequiredClaims(JWTAuthContextInfo authContextInfo, JwtContext jwtContext) throws InvalidJwtException {
+        final Set<String> requiredClaims = authContextInfo.getRequiredClaims();
+
+        if (requiredClaims != null) {
+            if (!jwtContext.getJwtClaims().getClaimsMap().keySet().containsAll(requiredClaims)) {
+                if (LOGGER.isDebugEnabled()) {
+                    final String missingClaims = requiredClaims.stream()
+                            .filter(claim -> !jwtContext.getJwtClaims().getClaimsMap().containsKey(claim))
+                            .collect(Collectors.joining(","));
+                    LOGGER.debugf("Required claims %s are not present in the JWT", missingClaims);
+                }
+                throw new InvalidJwtException("Required claims are not present in the JWT", emptyList(), jwtContext);
+            }
         }
     }
 

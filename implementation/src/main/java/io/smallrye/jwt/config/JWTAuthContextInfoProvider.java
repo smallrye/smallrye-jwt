@@ -93,6 +93,7 @@ public class JWTAuthContextInfoProvider {
         provider.keyFormat = KeyFormat.ANY;
         provider.expectedAudience = Optional.empty();
         provider.groupsSeparator = DEFAULT_GROUPS_SEPARATOR;
+        provider.requiredClaims = Optional.empty();
 
         return provider;
     }
@@ -273,6 +274,14 @@ public class JWTAuthContextInfoProvider {
     @ConfigProperty(name = "smallrye.jwt.verify.aud")
     Optional<Set<String>> expectedAudience;
 
+    /**
+     * List of claim names that must be present in the JWT for it to be valid. The configuration should be specified
+     * as a comma-separated list.
+     */
+    @Inject
+    @ConfigProperty(name = "smallrye.jwt.required.claims")
+    Optional<Set<String>> requiredClaims;
+
     @Produces
     Optional<JWTAuthContextInfo> getOptionalContextInfo() {
         // Log the config values
@@ -333,6 +342,7 @@ public class JWTAuthContextInfoProvider {
         contextInfo.setKeyFormat(keyFormat);
         contextInfo.setExpectedAudience(expectedAudience.orElse(null));
         contextInfo.setGroupsSeparator(groupsSeparator);
+        contextInfo.setRequiredClaims(requiredClaims.orElse(null));
 
         return Optional.of(contextInfo);
     }
@@ -445,6 +455,10 @@ public class JWTAuthContextInfoProvider {
 
     public Optional<Set<String>> getExpectedAudience() {
         return expectedAudience;
+    }
+
+    public Optional<Set<String>> getRequiredClaims() {
+        return requiredClaims;
     }
 
     @Produces
