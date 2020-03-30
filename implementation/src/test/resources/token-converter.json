@@ -16,5 +16,10 @@
   "float": 99.9,
   "double": 99.99,
   "boolean": "true",
-  "char": "y"
+  "char": "y",
+
+  "address": {
+    "street": "street",
+    "code": 1000
+  }
 }

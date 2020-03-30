@@ -1,6 +1,7 @@
 package io.smallrye.jwt.auth.cdi;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Member;
@@ -22,6 +23,7 @@ import javax.enterprise.inject.spi.InjectionPoint;
 import javax.enterprise.inject.spi.PassivationCapable;
 import javax.enterprise.util.AnnotationLiteral;
 import javax.inject.Inject;
+import javax.json.bind.JsonbBuilder;
 
 import org.eclipse.microprofile.jwt.Claim;
 import org.eclipse.microprofile.jwt.ClaimValue;
@@ -34,6 +36,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import io.smallrye.converters.SmallRyeConvertersBuilder;
+import io.smallrye.converters.api.Converter;
 import io.smallrye.converters.api.Converters;
 import io.smallrye.jwt.KeyUtils;
 import io.smallrye.jwt.auth.principal.DefaultJWTCallerPrincipal;
@@ -61,6 +64,7 @@ public class ClaimConverterTest {
             .addBeans(new ClaimInjectionBean<>(Double.class))
             .addBeans(new ClaimInjectionBean<>(Boolean.class))
             .addBeans(new ClaimInjectionBean<>(Character.class))
+            .addBeans(new ClaimInjectionBean<>(Address.class))
             .inject(this)
             .build();
 
@@ -87,6 +91,14 @@ public class ClaimConverterTest {
         assertEquals(99.9, raw.getFloatClaim(), 0.001);
         assertEquals(99.99, raw.getDoubeClaim(), 0.001);
         assertEquals(true, raw.getBooleanClaim());
+    }
+
+    @Test
+    public void convertComplexType() {
+        final Address address = raw.getAddress();
+        assertNotNull(address);
+        assertEquals("street", address.getStreet());
+        assertEquals(1000, address.getCode().intValue());
     }
 
     @Produces
@@ -126,6 +138,9 @@ public class ClaimConverterTest {
         @Inject
         @Claim("long")
         private Long longClaim;
+        @Inject
+        @Claim("address")
+        private Address address;
 
         String getName() {
             return name;
@@ -158,6 +173,10 @@ public class ClaimConverterTest {
         public Long getLongClaim() {
             return longClaim;
         }
+
+        public Address getAddress() {
+            return address;
+        }
     }
 
     @RequestScoped
@@ -177,7 +196,11 @@ public class ClaimConverterTest {
 
         public ClaimInjectionBean(final Class klass) {
             this.klass = klass;
-            this.converters = new SmallRyeConvertersBuilder().build();
+            this.converters = new SmallRyeConvertersBuilder()
+                    .withConverter(Address.class, 100,
+                            // Jsonb does not support JsonObject to POJO conversion. You need to call toString on it.
+                            (Converter<Address>) value -> JsonbBuilder.create().fromJson(value, Address.class))
+                    .build();
         }
 
         @Override
@@ -319,6 +342,27 @@ public class ClaimConverterTest {
         @Override
         public Claims standard() {
             return INSTANCE.standard();
+        }
+    }
+
+    public static class Address {
+        private String street;
+        private Integer code;
+
+        public String getStreet() {
+            return street;
+        }
+
+        public void setStreet(final String street) {
+            this.street = street;
+        }
+
+        public Integer getCode() {
+            return code;
+        }
+
+        public void setCode(final Integer code) {
+            this.code = code;
         }
     }
 }
