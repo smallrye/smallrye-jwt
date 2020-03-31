@@ -109,7 +109,8 @@ public class KeyLocationResolver implements VerificationKeyResolver {
         if (key == null) {
             throw new UnresolvableKeyException("Failed to load a key from "
                     + (authContextInfo.getPublicKeyContent() != null ? "the 'mp.jwt.verify.publickey' property"
-                            : authContextInfo.getPublicKeyLocation()) + " while resolving");
+                            : authContextInfo.getPublicKeyLocation())
+                    + " while resolving");
         }
         return key;
     }
