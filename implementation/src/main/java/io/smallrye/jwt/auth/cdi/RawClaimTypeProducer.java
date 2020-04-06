@@ -33,6 +33,8 @@ import org.eclipse.microprofile.jwt.Claims;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.jboss.logging.Logger;
 
+import io.smallrye.jwt.JsonUtils;
+
 public class RawClaimTypeProducer {
     private static Logger log = Logger.getLogger(RawClaimTypeProducer.class);
 
@@ -48,8 +50,7 @@ public class RawClaimTypeProducer {
         }
 
         String name = getName(ip);
-        Optional<Set<String>> value = currentToken.claim(name);
-        return value.orElse(null);
+        return (Set<String>) JsonUtils.convert(Set.class, currentToken.getClaim(name));
     }
 
     @Produces
