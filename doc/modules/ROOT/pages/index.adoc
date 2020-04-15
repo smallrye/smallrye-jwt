@@ -1,0 +1,24 @@
+[[index]]
+= SmallRye JWT Documentation
+
+SmallRye JWT is an implementation of https://github.com/eclipse/microprofile-jwt-auth/[Eclipse MicroProfile JWT RBAC].
+Currently it is focused on supporting the MP-JWT 1.1 spec, and primarily deals with the parsing of the JWT string into
+a JsonWebToken implementation.
+
+In the future, when MP-JWT 2.0 can build on the JSR-375 security APIs, there should be more support for defining the CDI extension and security layer integration.
+
+== Runtimes
+
+Runtimes that currently use it as their JWT RBAC implementation include:
+
+* https://quarkus.io/[Quarkus]
+* https://wildfly.org/[WildFly]
+* https://thorntail.io/[Thorntail]
+
+== References
+
+* https://github.com/eclipse/microprofile-jwt-auth/[MP JWT]
+* https://tools.ietf.org/html/rfc7519[JSON Web Token]
+* https://tools.ietf.org/html/rfc7515[JSON Web Signature]
+* https://tools.ietf.org/html/rfc7516[JSON Web Encryption]
+* https://tools.ietf.org/html/rfc7518[JSON Web Algorithms]
