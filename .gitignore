@@ -61,4 +61,4 @@ client/shade/dependency-reduced-pom.xml
 **/.zanata-cache/
 
 # Antora
-build
+doc/build
