@@ -15,6 +15,18 @@ encrypting the nested JWT token.
 
 SmallRye JWT provides an API for securing the JWT claims using all of these options.
 
+== Configuration
+=== Smallrye JWT properties
+
+Smallrye JWT supports many properties which can be used to customize the token processing:
+
+[cols="<m,<m,<2",options="header"]
+|===
+|Property Name|Default|Description
+|smallrye.jwt.encrypt.key-location|none|Config property allows the location of a key to be specified which will be used to encrypt the claims or inner JWT.
+|smallrye.jwt.sign.key-location|none|Config property allows the location of a private key to be specified which will be used to sign the claims of a JWT.
+|===
+
 == Create JwtClaimsBuilder and set the claims
 
 The first step is to initialize a `JwtClaimsBuilder` using one of the options below and add some claims to it:
