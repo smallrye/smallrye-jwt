@@ -1,0 +1,20 @@
+{
+  "iss": "https://server.example.com",
+  "jti": "a-123",
+  "sub": "24400320",
+  "upn": "jdoe@example.com",
+  "preferred_username": "jdoe",
+  "aud": "s6BhdRkqt3",
+  "exp": 1311281970,
+  "iat": 1311280970,
+  "auth_time": 1311280969,
+
+  "byte": 1,
+  "short": 9,
+  "integer": 99,
+  "long": 999,
+  "float": 99.9,
+  "double": 99.99,
+  "boolean": true,
+  "char": "y"
+}

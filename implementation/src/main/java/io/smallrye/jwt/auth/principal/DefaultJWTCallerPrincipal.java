@@ -25,6 +25,7 @@ import java.util.Set;
 import javax.json.JsonArray;
 import javax.json.JsonNumber;
 import javax.json.JsonObject;
+import javax.json.JsonValue;
 
 import org.eclipse.microprofile.jwt.Claims;
 import org.jboss.logging.Logger;
@@ -161,6 +162,8 @@ public class DefaultJWTCallerPrincipal extends JWTCallerPrincipal {
                 replaceMap(name);
             } else if (claimValue instanceof Number) {
                 replaceNumber(name);
+            } else if (claimValue instanceof Boolean) {
+                replaceBoolean(name);
             }
         }
     }
@@ -214,6 +217,16 @@ public class DefaultJWTCallerPrincipal extends JWTCallerPrincipal {
             Number number = claimsSet.getClaimValue(name, Number.class);
             JsonNumber jsonNumber = (JsonNumber) JsonUtils.wrapValue(number);
             claimsSet.setClaim(name, jsonNumber);
+        } catch (MalformedClaimException e) {
+            LOGGER.warn("replaceNumber failure for: " + name, e);
+        }
+    }
+
+    protected void replaceBoolean(String name) {
+        try {
+            Boolean bool = claimsSet.getClaimValue(name, Boolean.class);
+            JsonValue jsonBoolean = JsonUtils.wrapValue(bool);
+            claimsSet.setClaim(name, jsonBoolean);
         } catch (MalformedClaimException e) {
             LOGGER.warn("replaceNumber failure for: " + name, e);
         }

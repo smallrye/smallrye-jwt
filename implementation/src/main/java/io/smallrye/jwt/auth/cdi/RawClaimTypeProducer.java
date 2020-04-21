@@ -26,6 +26,7 @@ import javax.enterprise.inject.spi.InjectionPoint;
 import javax.inject.Inject;
 import javax.json.JsonNumber;
 import javax.json.JsonString;
+import javax.json.JsonValue;
 
 import org.eclipse.microprofile.jwt.Claim;
 import org.eclipse.microprofile.jwt.Claims;
@@ -115,6 +116,33 @@ public class RawClaimTypeProducer {
                 returnValue = jsonValue.doubleValue();
             } else {
                 returnValue = Double.parseDouble(value.toString());
+            }
+        }
+        return returnValue;
+    }
+
+    @Produces
+    @Claim("")
+    Boolean getClaimAsBoolean(InjectionPoint ip) {
+        log.debugf("getClaimAsBoolean(%s)", ip);
+        if (currentToken == null) {
+            return null;
+        }
+
+        String name = getName(ip);
+        Optional<Object> optValue = currentToken.claim(name);
+        Boolean returnValue = null;
+        if (optValue.isPresent()) {
+            Object value = optValue.get();
+            if (value instanceof JsonValue) {
+                final JsonValue.ValueType valueType = ((JsonValue) value).getValueType();
+                if (valueType.equals(JsonValue.ValueType.TRUE)) {
+                    returnValue = true;
+                } else if (valueType.equals(JsonValue.ValueType.FALSE)) {
+                    returnValue = false;
+                }
+            } else {
+                returnValue = Boolean.valueOf(value.toString());
             }
         }
         return returnValue;
