@@ -59,6 +59,8 @@ Smallrye JWT supports many properties which can be used to customize the token p
 |smallrye.jwt.expiration.grace|60|Expiration grace in seconds. By default an expired token will still be accepted if the current time is no more than 1 min after the token expiry time.
 |smallrye.jwt.verify.aud|none|Comma separated list of the audiences that a token `aud` claim may contain.
 |smallrye.jwt.required.claims|none|Comma separated list of the claims that a token must contain.
+|smallrye.jwt.encrypt.key-location|none|Config property allows the location of a key to be specified which will be used to encrypt the claims or inner JWT.
+|smallrye.jwt.sign.key-location|none|Config property allows the location of a private key to be specified which will be used to sign the claims of a JWT.
 |===
 
 == Instructions
