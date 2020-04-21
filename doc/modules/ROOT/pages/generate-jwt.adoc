@@ -18,7 +18,7 @@ SmallRye JWT provides an API for securing the JWT claims using all of these opti
 == Configuration
 === Smallrye JWT properties
 
-Smallrye JWT supports many properties which can be used to customize the token processing:
+Smallrye JWT supports the following properties which can be used to customize the way claims are signed and encrypted:
 
 [cols="<m,<m,<2",options="header"]
 |===
