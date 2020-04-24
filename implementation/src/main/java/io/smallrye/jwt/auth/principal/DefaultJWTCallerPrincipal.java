@@ -19,13 +19,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-
-import javax.json.JsonArray;
-import javax.json.JsonNumber;
-import javax.json.JsonObject;
-import javax.json.JsonValue;
 
 import org.eclipse.microprofile.jwt.Claims;
 import org.jboss.logging.Logger;
@@ -118,7 +112,7 @@ public class DefaultJWTCallerPrincipal extends JWTCallerPrincipal {
                 try {
                     claim = claimsSet.getClaimValue(claimType.name(), Long.class);
                     if (claim == null) {
-                        claim = Long.valueOf(0L);
+                        claim = 0L;
                     }
                 } catch (MalformedClaimException e) {
                     LOGGER.warn("getClaimValue failure for: " + claimName, e);
@@ -144,27 +138,18 @@ public class DefaultJWTCallerPrincipal extends JWTCallerPrincipal {
      */
     private void fixJoseTypes() {
         if (claimsSet.hasClaim(Claims.address.name())) {
-            replaceMap(Claims.address.name());
+            replaceClaimValueWithJsonValue(Claims.address.name());
         }
         if (claimsSet.hasClaim(Claims.jwk.name())) {
-            replaceMap(Claims.jwk.name());
+            replaceClaimValueWithJsonValue(Claims.jwk.name());
         }
         if (claimsSet.hasClaim(Claims.sub_jwk.name())) {
-            replaceMap(Claims.sub_jwk.name());
+            replaceClaimValueWithJsonValue(Claims.sub_jwk.name());
         }
         // Handle custom claims
         Set<String> customClaimNames = filterCustomClaimNames(claimsSet.getClaimNames());
         for (String name : customClaimNames) {
-            Object claimValue = claimsSet.getClaimValue(name);
-            if (claimValue instanceof List) {
-                replaceList(name);
-            } else if (claimValue instanceof Map) {
-                replaceMap(name);
-            } else if (claimValue instanceof Number) {
-                replaceNumber(name);
-            } else if (claimValue instanceof Boolean) {
-                replaceBoolean(name);
-            }
+            replaceClaimValueWithJsonValue(name);
         }
     }
 
@@ -182,53 +167,14 @@ public class DefaultJWTCallerPrincipal extends JWTCallerPrincipal {
         return customNames;
     }
 
-    /**
-     * Replace the jose4j Map with a JsonObject
-     *
-     * @param name - claim name
-     */
-    protected void replaceMap(String name) {
+    protected void replaceClaimValueWithJsonValue(String name) {
         try {
-            @SuppressWarnings("unchecked")
-            Map<String, Object> map = claimsSet.getClaimValue(name, Map.class);
-            JsonObject jsonObject = JsonUtils.replaceMap(map);
-            claimsSet.setClaim(name, jsonObject);
+            final Object object = claimsSet.getClaimValue(name, Object.class);
+            if (!(object instanceof String)) {
+                claimsSet.setClaim(name, JsonUtils.wrapValue(object));
+            }
         } catch (MalformedClaimException e) {
-            LOGGER.warn("replaceMap failure for: " + name, e);
-        }
-    }
-
-    /**
-     * Replace the jose4j List with a JsonArray
-     *
-     * @param name - claim name
-     */
-    protected void replaceList(String name) {
-        try {
-            JsonArray array = (JsonArray) JsonUtils.wrapValue(claimsSet.getClaimValue(name, List.class));
-            claimsSet.setClaim(name, array);
-        } catch (MalformedClaimException e) {
-            LOGGER.warn("replaceList failure for: " + name, e);
-        }
-    }
-
-    protected void replaceNumber(String name) {
-        try {
-            Number number = claimsSet.getClaimValue(name, Number.class);
-            JsonNumber jsonNumber = (JsonNumber) JsonUtils.wrapValue(number);
-            claimsSet.setClaim(name, jsonNumber);
-        } catch (MalformedClaimException e) {
-            LOGGER.warn("replaceNumber failure for: " + name, e);
-        }
-    }
-
-    protected void replaceBoolean(String name) {
-        try {
-            Boolean bool = claimsSet.getClaimValue(name, Boolean.class);
-            JsonValue jsonBoolean = JsonUtils.wrapValue(bool);
-            claimsSet.setClaim(name, jsonBoolean);
-        } catch (MalformedClaimException e) {
-            LOGGER.warn("replaceNumber failure for: " + name, e);
+            LOGGER.warn("replaceClaimValueWithJsonValue failure for: " + name, e);
         }
     }
 }

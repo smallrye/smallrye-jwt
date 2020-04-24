@@ -18,11 +18,17 @@ package io.smallrye.jwt.auth.cdi;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.security.Provider;
 import java.util.Optional;
+import java.util.Set;
 
+import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.spi.InjectionPoint;
+import javax.json.JsonValue;
 
 import org.eclipse.microprofile.jwt.ClaimValue;
+
+import io.smallrye.jwt.JsonUtils;
 
 /**
  * An implementation of the ClaimValue interface
@@ -33,6 +39,7 @@ public class ClaimValueWrapper<T> implements ClaimValue<T> {
     private final CommonJwtProducer producer;
     private final String name;
     private final boolean optional;
+    private final Class<?> klass;
 
     public ClaimValueWrapper(InjectionPoint ip, CommonJwtProducer producer) {
         this.producer = producer;
@@ -47,6 +54,8 @@ public class ClaimValueWrapper<T> implements ClaimValue<T> {
         } else {
             optional = false;
         }
+
+        this.klass = unwrapType(ip.getType(), ip);
     }
 
     @Override
@@ -57,7 +66,7 @@ public class ClaimValueWrapper<T> implements ClaimValue<T> {
     @Override
     @SuppressWarnings("unchecked")
     public T getValue() {
-        Object value = producer.getValue(getName(), optional);
+        Object value = JsonUtils.convert(klass, producer.getValue(getName(), false));
 
         if (optional) {
             /*
@@ -75,5 +84,48 @@ public class ClaimValueWrapper<T> implements ClaimValue<T> {
         T value = getValue();
         return String.format("ClaimValueWrapper[@%s], name=%s, value[%s]=%s", Integer.toHexString(hashCode()),
                 name, value.getClass(), value);
+    }
+
+    private Class<?> unwrapType(final Type type, final InjectionPoint injectionPoint) {
+        if (type instanceof ParameterizedType) {
+            final ParameterizedType parameterizedType = (ParameterizedType) type;
+            if (parameterizedType.getActualTypeArguments().length == 1) {
+                final Type rawType = parameterizedType.getRawType();
+                final Type actualType = parameterizedType.getActualTypeArguments()[0];
+
+                if (rawType == ClaimValue.class) {
+                    return unwrapType(actualType, injectionPoint);
+                }
+
+                if (rawType == Optional.class) {
+                    // Needs to be improved, so we don't have a separate boolean flag if Optional. Kept this way to minimize code changes.
+                    return unwrapType(actualType, injectionPoint);
+                }
+
+                if (rawType instanceof Class && Set.class.isAssignableFrom((Class<?>) rawType)) {
+                    return (Class<?>) rawType;
+                }
+
+                if (rawType == Provider.class || rawType == Instance.class) {
+                    return unwrapType(actualType, injectionPoint);
+                }
+            }
+        } else if (type instanceof Class) {
+            final Class<?> klass = (Class<?>) type;
+            if (Long.class.isAssignableFrom(klass) || klass == long.class ||
+                    Boolean.class.isAssignableFrom(klass) || klass == boolean.class ||
+                    String.class.isAssignableFrom(klass) ||
+                    JsonValue.class.isAssignableFrom(klass) ||
+                    ClaimValue.class.isAssignableFrom(klass) ||
+                    Optional.class.isAssignableFrom(klass)) {
+
+                return klass;
+            }
+        }
+
+        // We should throw DeploymentException here, but we never had validation on supported injection types, do it is
+        // possible to inject non supported types as long as you get the right type from the claim set.
+        //throw new DeploymentException("Type " + type + " not supported for @ClaimValue injection " + injectionPoint);
+        return null;
     }
 }

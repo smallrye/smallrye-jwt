@@ -13,6 +13,8 @@ import org.eclipse.microprofile.jwt.Claim;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.jboss.logging.Logger;
 
+import io.smallrye.jwt.JsonUtils;
+
 public class OptionalClaimTypeProducer {
     private static Logger log = Logger.getLogger(OptionalClaimTypeProducer.class);
 
@@ -32,7 +34,7 @@ public class OptionalClaimTypeProducer {
         if (currentToken == null) {
             return Optional.empty();
         }
-        return currentToken.claim(getName(ip));
+        return Optional.ofNullable((String) JsonUtils.convert(String.class, currentToken.getClaim(getName(ip))));
     }
 
     /**
@@ -48,7 +50,7 @@ public class OptionalClaimTypeProducer {
         if (currentToken == null) {
             return Optional.empty();
         }
-        return currentToken.claim(getName(ip));
+        return Optional.ofNullable((Set) JsonUtils.convert(Set.class, currentToken.getClaim(getName(ip))));
     }
 
     /**
@@ -64,7 +66,7 @@ public class OptionalClaimTypeProducer {
         if (currentToken == null) {
             return Optional.empty();
         }
-        return currentToken.claim(getName(ip));
+        return Optional.ofNullable((Long) JsonUtils.convert(Long.class, currentToken.getClaim(getName(ip))));
     }
 
     /**
@@ -80,7 +82,7 @@ public class OptionalClaimTypeProducer {
         if (currentToken == null) {
             return Optional.empty();
         }
-        return currentToken.claim(getName(ip));
+        return Optional.ofNullable((Boolean) JsonUtils.convert(Boolean.class, currentToken.getClaim(getName(ip))));
     }
 
 }
