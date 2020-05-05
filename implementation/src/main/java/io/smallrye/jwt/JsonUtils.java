@@ -1,14 +1,18 @@
 package io.smallrye.jwt;
 
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonArrayBuilder;
+import javax.json.JsonNumber;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
+import javax.json.JsonString;
 import javax.json.JsonValue;
 
 public class JsonUtils {
@@ -83,5 +87,52 @@ public class JsonUtils {
         }
 
         return jsonValue;
+    }
+
+    /**
+     * Manual converter to convert Json type to supported Java types in the spec.
+     */
+    public static Object convert(final Class<?> klass, final Object value) {
+        if (klass == null) {
+            return value;
+        }
+
+        if (klass.isAssignableFrom(String.class) && value instanceof JsonString) {
+            return value.toString();
+        }
+
+        // We dont convert String to JsonString in io.smallrye.jwt.auth.principal.DefaultJWTCallerPrincipal.fixJoseTypes
+        if (klass.isAssignableFrom(JsonString.class) && value instanceof String) {
+            return JsonUtils.wrapValue(value);
+        }
+
+        if (klass.isAssignableFrom(Long.class) && value instanceof JsonNumber) {
+            return ((JsonNumber) value).longValue();
+        }
+
+        if (klass.isAssignableFrom(Boolean.class)) {
+            if (value == JsonValue.TRUE) {
+                return Boolean.TRUE;
+            }
+
+            if (value == JsonValue.FALSE) {
+                return Boolean.FALSE;
+            }
+
+            if (value instanceof JsonString) {
+                return Boolean.valueOf(value.toString());
+            }
+        }
+
+        if (klass.isAssignableFrom(Set.class) && value instanceof JsonArray) {
+            return new HashSet<>(((JsonArray) value).getValuesAs(jsonValue -> {
+                if (jsonValue instanceof JsonString) {
+                    return ((JsonString) jsonValue).getString();
+                }
+                return jsonValue.toString();
+            }));
+        }
+
+        return value;
     }
 }

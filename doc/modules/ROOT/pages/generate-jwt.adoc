@@ -94,3 +94,14 @@ import io.smallrye.jwt.build.Jwt;
 // Sign the claims and encrypt the nested token using the private and public keys loaded from the locations set with the 'smallrye.jwt.sign.key-location' and 'smallrye.jwt.encrypt.key-location' properties respectively.
 String jwt = Jwt.claims("/tokenClaims.json").innerSign().encrypt();
 ----
+
+== Configuration
+
+Smallrye JWT supports the following properties which can be used to customize the way claims are signed and encrypted:
+
+[cols="<m,<m,<2",options="header"]
+|===
+|Property Name|Default|Description
+|smallrye.jwt.encrypt.key-location|none|Config property allows the location of a key to be specified which will be used to encrypt the claims or inner JWT.
+|smallrye.jwt.sign.key-location|none|Config property allows the location of a private key to be specified which will be used to sign the claims of a JWT.
+|===

@@ -16,5 +16,51 @@
   "float": 99.9,
   "double": 99.99,
   "boolean": true,
-  "char": "y"
+  "char": "y",
+  "string": "string",
+
+  "stringArray": [
+    "value0",
+    "value1",
+    "value2"
+  ],
+  "integerArray": [
+    0,
+    1,
+    2,
+    3
+  ],
+  "doubleArray": [
+    0.1,
+    1.1,
+    2.2,
+    3.3,
+    4.4
+  ],
+  "address": {
+    "street": "street",
+    "code": "code"
+  },
+  "customObject": {
+    "my-service": {
+      "groups": [
+        "group1",
+        "group2"
+      ],
+      "roles": [
+        "role-in-my-service"
+      ]
+    },
+    "service-B": {
+      "roles": [
+        "role-in-B"
+      ]
+    },
+    "service-C": {
+      "groups": [
+        "groupC",
+        "web-tier"
+      ]
+    }
+  }
 }
