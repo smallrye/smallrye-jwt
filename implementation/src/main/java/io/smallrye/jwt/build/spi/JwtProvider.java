@@ -8,6 +8,8 @@ import java.util.ServiceLoader;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
 
+import org.eclipse.microprofile.jwt.JsonWebToken;
+
 import io.smallrye.jwt.build.JwtClaimsBuilder;
 import io.smallrye.jwt.build.JwtException;
 
@@ -56,7 +58,7 @@ public abstract class JwtProvider {
 
     /**
      * Creates a new instance of {@link JwtClaimsBuilder}
-     * 
+     *
      * @return {@link JwtClaimsBuilder}
      */
     public abstract JwtClaimsBuilder claims();
@@ -73,10 +75,18 @@ public abstract class JwtProvider {
 
     /**
      * Creates a new instance of {@link JwtClaimsBuilder} from a JSON resource.
-     * 
+     *
      * @param jsonLocation JSON resource location
      * @return {@link JwtClaimsBuilder}
      */
     public abstract JwtClaimsBuilder claims(String jsonLocation);
+
+    /**
+     * Creates a new instance of {@link JwtClaimsBuilder} from {@link JsonWebToken}.
+     *
+     * @param jwt JsonWebToken token.
+     * @return {@link JwtClaimsBuilder}
+     */
+    public abstract JwtClaimsBuilder claims(JsonWebToken jwt);
 
 }

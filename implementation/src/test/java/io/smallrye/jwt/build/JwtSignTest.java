@@ -30,6 +30,7 @@ import javax.json.Json;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.spi.ConfigSource;
+import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.jose4j.base64url.Base64Url;
 import org.jose4j.json.JsonUtil;
 import org.jose4j.jwk.EcJwkGenerator;
@@ -42,11 +43,32 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import io.smallrye.jwt.KeyUtils;
+import io.smallrye.jwt.auth.principal.DefaultJWTCallerPrincipal;
 
 public class JwtSignTest {
 
     @Test
     public void testSignClaims() throws Exception {
+        signAndVerifyClaims();
+    }
+
+    @Test
+    public void testEnhanceAndResignToken() throws Exception {
+        JsonWebToken token = new DefaultJWTCallerPrincipal(signAndVerifyClaims());
+
+        String jwt = Jwt.claims(token).claim("newClaim", "new-value").sign();
+
+        // verify
+        JsonWebSignature jws = getVerifiedJws(jwt);
+        JwtClaims claims = JwtClaims.parse(jws.getPayload());
+        Assert.assertEquals(5, claims.getClaimsMap().size());
+        checkDefaultClaimsAndHeaders(getJwsHeaders(jwt, 2), claims);
+        Assert.assertEquals("custom-value", claims.getClaimValue("customClaim"));
+
+        Assert.assertEquals("new-value", claims.getClaimValue("newClaim"));
+    }
+
+    private JwtClaims signAndVerifyClaims() throws Exception {
         JwtClaimsBuilder builder = Jwt.claims().claim("customClaim", "custom-value");
         String jsonBeforeSign = builder.json();
         String jwt = builder.sign(getPrivateKey());
@@ -55,11 +77,11 @@ public class JwtSignTest {
         JsonWebSignature jws = getVerifiedJws(jwt);
         Assert.assertEquals(jsonAfterSign, jws.getPayload());
         JwtClaims claims = JwtClaims.parse(jws.getPayload());
-
         Assert.assertEquals(4, claims.getClaimsMap().size());
         checkDefaultClaimsAndHeaders(getJwsHeaders(jwt, 2), claims);
 
         Assert.assertEquals("custom-value", claims.getClaimValue("customClaim"));
+        return claims;
     }
 
     @Test
