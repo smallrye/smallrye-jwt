@@ -73,8 +73,10 @@ mvn clean install
 === Project structure
 
 * link:implementation[] - Implementation of the {mp-jwt-name} library.
-* link:tck[] - Test suite to run the implementation against the {mp-jwt-name} TCK.
-* link:docs[] - Project documentation.
+* link:testsuite[] - Test suites
+** link:testsuite/basic[] Test suite with basic test cases.
+** link:testsuite/tck[] Test suite to run the implementation against the {mp-jwt-name} TCK.
+* link:doc[] - Project documentation.
 
 === Links
 
