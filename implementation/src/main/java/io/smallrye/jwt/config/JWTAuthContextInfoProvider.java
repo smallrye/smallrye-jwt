@@ -89,6 +89,7 @@ public class JWTAuthContextInfoProvider {
         provider.expGracePeriodSecs = Optional.of(60);
         provider.maxTimeToLiveSecs = Optional.empty();
         provider.jwksRefreshInterval = Optional.empty();
+        provider.forcedJwksRefreshInterval = 30;
         provider.signatureAlgorithm = Optional.of(SignatureAlgorithm.RS256);
         provider.keyFormat = KeyFormat.ANY;
         provider.expectedAudience = Optional.empty();
@@ -240,6 +241,16 @@ public class JWTAuthContextInfoProvider {
     private Optional<Integer> jwksRefreshInterval;
 
     /**
+     * Forced JWK cache refresh interval in minutes which is used to restrict the frequency of the forced refresh attempts which
+     * may happen when the token verification fails due to the cache having no JWK key with a 'kid' property matching the
+     * current token's 'kid' header.
+     * It will be ignored unless the 'mp.jwt.verify.publickey.location' points to the HTTPS URL based JWK set.
+     */
+    @Inject
+    @ConfigProperty(name = "smallrye.jwt.jwks.forced-refresh-interval", defaultValue = "30")
+    private int forcedJwksRefreshInterval;
+
+    /**
      * List of supported JSON Web Algorithm RSA and Elliptic Curve signing algorithms, default is RS256.
      */
     @Inject
@@ -335,6 +346,7 @@ public class JWTAuthContextInfoProvider {
         contextInfo.setExpGracePeriodSecs(expGracePeriodSecs.orElse(null));
         contextInfo.setMaxTimeToLiveSecs(maxTimeToLiveSecs.orElse(null));
         contextInfo.setJwksRefreshInterval(jwksRefreshInterval.orElse(null));
+        contextInfo.setForcedJwksRefreshInterval(forcedJwksRefreshInterval);
         if (signatureAlgorithm.orElse(null) == SignatureAlgorithm.HS256) {
             throw new DeploymentException("HS256 verification algorithm is currently not supported");
         }
@@ -418,6 +430,10 @@ public class JWTAuthContextInfoProvider {
 
     public Optional<Integer> getJwksRefreshInterval() {
         return jwksRefreshInterval;
+    }
+
+    public int getForcedJwksRefreshInterval() {
+        return forcedJwksRefreshInterval;
     }
 
     public Optional<String> getDefaultGroupsClaim() {

@@ -75,6 +75,8 @@ public class KeyLocationResolver implements VerificationKeyResolver {
     private List<JsonWebKey> jsonWebKeys;
     // 'httpsJwks' represents the JWK set loaded from the HTTPS URL.
     private HttpsJwks httpsJwks;
+    private long lastForcedRefreshTime;
+    private Object forcedRefreshLock = new Object();
 
     private JWTAuthContextInfo authContextInfo;
 
@@ -128,18 +130,59 @@ public class KeyLocationResolver implements VerificationKeyResolver {
     }
 
     PublicKey getHttpsJwk(String kid) {
-        LOGGER.debugf("Trying to create a key from the HTTPS JWK(S)...");
+        try {
+            List<JsonWebKey> theKeys = httpsJwks.getJsonWebKeys();
+            PublicKey theKey = getKeyFromJsonWebKeys(kid, theKeys, authContextInfo.getSignatureAlgorithm());
+            if (theKey != null || isMatchingJwkAvailable(theKeys, kid)) {
+                return theKey;
+            }
+        } catch (Exception e) {
+            LOGGER.debug("Failed to create a key from the HTTPS JWK Set", e);
+            return null;
+        }
+
+        synchronized (forcedRefreshLock) {
+            final long now = System.currentTimeMillis();
+            if (lastForcedRefreshTime == 0
+                    || now > lastForcedRefreshTime + authContextInfo.getForcedJwksRefreshInterval() * 60 * 1000) {
+                lastForcedRefreshTime = now;
+                try {
+                    LOGGER.debug("JWK with a matching 'kid' is not available, refreshing HTTPS JWK Set");
+                    httpsJwks.refresh();
+                } catch (JoseException | IOException e) {
+                    LOGGER.debug("Failed to refresh HTTPS JWK Set", e);
+                    return null;
+                }
+            } else {
+                LOGGER.debugf("JWK with a matching 'kid' is not available"
+                        + " but HTTPS JWK Set has been refreshed less than %d minutes ago"
+                        + authContextInfo.getForcedJwksRefreshInterval());
+                LOGGER.debugf("Trying to create a key from the HTTPS JWK Set one more time");
+            }
+        }
 
         try {
+            LOGGER.debugf("Trying to create a key from the HTTPS JWK Set after the refresh");
             return getKeyFromJsonWebKeys(kid, httpsJwks.getJsonWebKeys(), authContextInfo.getSignatureAlgorithm());
         } catch (Exception e) {
-            LOGGER.debug("Failed to create a key from the HTTPS JWK(S)", e);
+            LOGGER.debug("Failed to create a key from the HTTPS JWK Set after the refresh", e);
         }
         return null;
     }
 
+    private static boolean isMatchingJwkAvailable(List<JsonWebKey> keys, String kid) {
+        if (kid != null) {
+            for (JsonWebKey currentJwk : keys) {
+                if (kid.equals(currentJwk.getKeyId())) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     PublicKey getJsonWebKey(String kid) {
-        LOGGER.debugf("Trying to create a key from the JWK(S)...");
+        LOGGER.debugf("Trying to create a key from the JWK(S)");
 
         try {
             return getKeyFromJsonWebKeys(kid, jsonWebKeys, authContextInfo.getSignatureAlgorithm());
@@ -168,7 +211,7 @@ public class KeyLocationResolver implements VerificationKeyResolver {
 
         if (mayBeFormat(KeyFormat.JWK) && authContextInfo.getPublicKeyLocation() != null
                 && authContextInfo.getPublicKeyLocation().startsWith(HTTPS_SCHEME)) {
-            LOGGER.debugf("Trying to load the keys from the HTTPS JWK(S)...");
+            LOGGER.debugf("Trying to load the keys from the HTTPS JWK(S)");
             httpsJwks = initializeHttpsJwks();
             httpsJwks.setDefaultCacheDuration(authContextInfo.getJwksRefreshInterval().longValue() * 60L);
             try {
@@ -295,7 +338,7 @@ public class KeyLocationResolver implements VerificationKeyResolver {
     }
 
     static List<JsonWebKey> loadJsonWebKeys(String content) {
-        LOGGER.debugf("Trying to load the local JWK(S)...");
+        LOGGER.debugf("Trying to load the local JWK(S)");
 
         JsonObject jwks = null;
         try (JsonReader reader = Json.createReader(new StringReader(content))) {
