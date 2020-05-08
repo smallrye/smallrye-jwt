@@ -1,11 +1,12 @@
-
-// Variables
 :microprofile-jwt: https://github.com/eclipse/microprofile-jwt-auth/
 :mp-jwt-name: Eclipse MicroProfile JWT RBAC
+:ci: https://github.com/smallrye/smallrye-config/actions?query=workflow%3A%22SmallRye+Build%22
+:sonar: https://sonarcloud.io/dashboard?id=smallrye_smallrye-config
 
-image:https://semaphoreci.com/api/v1/smallrye/smallrye-jwt/branches/master/badge.svg["Semaphore CI", link="https://semaphoreci.com/smallrye/smallrye-jwt"]
-image:https://sonarcloud.io/api/project_badges/measure?project=smallrye_smallrye-jwt&metric=alert_status["Quality Gate Status", link="https://sonarcloud.io/dashboard?id=smallrye_smallrye-jwt"]
-image:https://img.shields.io/github/license/thorntail/thorntail.svg["License", link="http://www.apache.org/licenses/LICENSE-2.0"]
+image:https://github.com/smallrye/smallrye-jwt/workflows/SmallRye%20Build/badge.svg?branch=master[link={ci}]
+image:https://sonarcloud.io/api/project_badges/measure?project=smallrye_smallrye-jwt&metric=alert_status["Quality Gate Status", link={sonar}]
+image:https://img.shields.io/github/license/smallrye/smallrye-jwt.svg["License", link="http://www.apache.org/licenses/LICENSE-2.0"]
+image:https://img.shields.io/maven-central/v/io.smallrye/smallrye-jwt?color=green[]
 
 = SmallRye JWT
 
@@ -79,8 +80,13 @@ mvn clean install
 ** link:testsuite/tck[] Test suite to run the implementation against the {mp-jwt-name} TCK.
 * link:doc[] - Project documentation.
 
+=== Contributing
+
+Please refer to our Wiki for the https://github.com/smallrye/smallrye-parent/wiki[Contribution Guidelines].
+
 === Links
 
 * http://github.com/smallrye/smallrye-jwt/[Project Homepage]
 * {microprofile-jwt}[{mp-jwt-name}]
+* https://smallrye.io/docs/smallrye-jwt/index.html[Documentation]
 
