@@ -82,7 +82,7 @@ public final class KeyUtils {
 
     public static PrivateKey readPrivateKey(String pemResName, SignatureAlgorithm algo)
             throws IOException, GeneralSecurityException {
-        InputStream contentIS = KeyUtils.class.getResourceAsStream(pemResName);
+        InputStream contentIS = getAsClasspathResource(pemResName);
         byte[] tmp = new byte[4096];
         int length = contentIS.read(tmp);
         return decodePrivateKey(new String(tmp, 0, length), algo);
@@ -94,7 +94,7 @@ public final class KeyUtils {
 
     public static PublicKey readPublicKey(String pemResName, SignatureAlgorithm algo)
             throws IOException, GeneralSecurityException {
-        InputStream contentIS = KeyUtils.class.getResourceAsStream(pemResName);
+        InputStream contentIS = getAsClasspathResource(pemResName);
         byte[] tmp = new byte[4096];
         int length = contentIS.read(tmp);
         return decodePublicKey(new String(tmp, 0, length), algo);

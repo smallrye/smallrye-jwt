@@ -276,8 +276,11 @@ public class JwtSigningUtils {
 
     static String readJsonContent(String jsonResName) {
         try {
-            InputStream contentIS = JwtSigningUtils.class.getResourceAsStream(jsonResName);
-            try (BufferedReader buffer = new BufferedReader(new InputStreamReader(contentIS))) {
+            InputStream is = JwtSigningUtils.class.getResourceAsStream(jsonResName);
+            if (is == null) {
+                is = Thread.currentThread().getContextClassLoader().getResourceAsStream(jsonResName);
+            }
+            try (BufferedReader buffer = new BufferedReader(new InputStreamReader(is))) {
                 return buffer.lines().collect(Collectors.joining("\n"));
             }
         } catch (IOException ex) {
