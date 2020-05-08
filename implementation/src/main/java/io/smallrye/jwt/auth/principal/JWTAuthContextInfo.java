@@ -35,6 +35,7 @@ public class JWTAuthContextInfo {
     private String publicKeyLocation;
     private String publicKeyContent;
     private Integer jwksRefreshInterval;
+    private int forcedJwksRefreshInterval = 30;
     private String tokenHeader = "Authorization";
     private String tokenCookie;
     private boolean alwaysCheckAuthorization;
@@ -145,6 +146,14 @@ public class JWTAuthContextInfo {
 
     public void setJwksRefreshInterval(Integer jwksRefreshInterval) {
         this.jwksRefreshInterval = jwksRefreshInterval;
+    }
+
+    public int getForcedJwksRefreshInterval() {
+        return forcedJwksRefreshInterval;
+    }
+
+    public void setForcedJwksRefreshInterval(int forcedJwksRefreshInterval) {
+        this.forcedJwksRefreshInterval = forcedJwksRefreshInterval;
     }
 
     public boolean isRequireIssuer() {
