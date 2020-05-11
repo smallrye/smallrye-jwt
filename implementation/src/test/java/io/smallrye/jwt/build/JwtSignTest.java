@@ -16,6 +16,7 @@
  */
 package io.smallrye.jwt.build;
 
+import java.net.URL;
 import java.security.Key;
 import java.security.KeyPairGenerator;
 import java.security.PrivateKey;
@@ -246,8 +247,26 @@ public class JwtSignTest {
     }
 
     @Test
-    public void testSignExistingClaims() throws Exception {
-        String jwt = Jwt.claims("/token.json").sign();
+    public void testSignExistingClaimsFromClassPath() throws Exception {
+        doTestSignExistingClaims("/token.json");
+    }
+
+    @Test
+    public void testSignExistingClaimsFromFileSystemWithFileScheme() throws Exception {
+        URL resourceUrl = JwtSignTest.class.getResource("/token.json");
+        Assert.assertEquals("file", resourceUrl.getProtocol());
+        doTestSignExistingClaims(resourceUrl.toString());
+    }
+
+    @Test
+    public void testSignExistingClaimsFromFileSystemWithoutFileScheme() throws Exception {
+        URL resourceUrl = JwtSignTest.class.getResource("/token.json");
+        Assert.assertEquals("file", resourceUrl.getProtocol());
+        doTestSignExistingClaims(resourceUrl.toString().substring(5));
+    }
+
+    private void doTestSignExistingClaims(String jsonResName) throws Exception {
+        String jwt = Jwt.claims(jsonResName).sign();
 
         JsonWebSignature jws = getVerifiedJws(jwt);
         JwtClaims claims = JwtClaims.parse(jws.getPayload());
