@@ -1,6 +1,8 @@
 package io.smallrye.jwt.build.impl;
 
 import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -275,16 +277,29 @@ public class JwtSigningUtils {
     }
 
     static String readJsonContent(String jsonResName) {
-        try {
-            InputStream is = JwtSigningUtils.class.getResourceAsStream(jsonResName);
-            if (is == null) {
-                is = Thread.currentThread().getContextClassLoader().getResourceAsStream(jsonResName);
+        // Try as the class path resource
+        InputStream is = JwtSigningUtils.class.getResourceAsStream(jsonResName);
+        if (is == null) {
+            is = Thread.currentThread().getContextClassLoader().getResourceAsStream(jsonResName);
+        }
+        if (is == null) {
+            // Try as the file system resource
+            if (jsonResName.startsWith("file:")) {
+                jsonResName = jsonResName.substring(5);
             }
-            try (BufferedReader buffer = new BufferedReader(new InputStreamReader(is))) {
-                return buffer.lines().collect(Collectors.joining("\n"));
+            try {
+                is = new FileInputStream(jsonResName);
+            } catch (FileNotFoundException e) {
+                //continue
             }
+        }
+        if (is == null) {
+            throw new JwtException("Failure to open the input stream from " + jsonResName);
+        }
+        try (BufferedReader buffer = new BufferedReader(new InputStreamReader(is))) {
+            return buffer.lines().collect(Collectors.joining("\n"));
         } catch (IOException ex) {
-            throw new JwtException("Failure to read the json content:" + ex, ex);
+            throw new JwtException("Failure to read the json content from " + jsonResName + ":" + ex, ex);
         }
     }
 
