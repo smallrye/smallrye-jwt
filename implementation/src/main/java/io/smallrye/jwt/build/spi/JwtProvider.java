@@ -74,6 +74,14 @@ public abstract class JwtProvider {
     public abstract JwtClaimsBuilder claims(Map<String, Object> claims);
 
     /**
+     * Creates a new instance of {@link JwtClaimsBuilder} from {@link JsonObject}
+     *
+     * @param jsonObject {@link JsonObject} containing the claims.
+     * @return {@link JwtClaimsBuilder}
+     */
+    public abstract JwtClaimsBuilder claims(JsonObject jsonObject);
+
+    /**
      * Creates a new instance of {@link JwtClaimsBuilder} from a JSON resource.
      *
      * @param jsonLocation JSON resource location

@@ -3,6 +3,9 @@ package io.smallrye.jwt.build.impl;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import javax.json.JsonObject;
+import javax.json.JsonValue;
+
 import org.eclipse.microprofile.jwt.Claims;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
@@ -29,6 +32,17 @@ public class JwtProviderImpl extends JwtProvider {
     @Override
     public JwtClaimsBuilder claims(Map<String, Object> claims) {
         return new JwtClaimsBuilderImpl(claims);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public JwtClaimsBuilder claims(JsonObject jsonObject) {
+        Map<String, Object> claims = new LinkedHashMap<>();
+        for (Map.Entry<String, JsonValue> entry : jsonObject.entrySet()) {
+            claims.put(entry.getKey(), entry.getValue());
+        }
+        return claims(claims);
     }
 
     /**
