@@ -100,6 +100,20 @@ public class KeyLocationResolverTest {
     }
 
     @Test
+    public void testVerifyWithoutPrivateKey() throws Exception {
+        PrivateKey privateKey = TokenUtils.readPrivateKey("/privateKey.pem");
+        String token = TokenUtils.generateTokenString(privateKey, "1", "/Token1.json", null, null);
+        JWTAuthContextInfoProvider provider = JWTAuthContextInfoProvider.createWithKeyLocation("NONE",
+                "https://server.example.com");
+        try {
+            Assert.assertNotNull(new DefaultJWTTokenParser().parse(token, provider.getContextInfo()));
+            Assert.fail("UnresolvableKeyException is expected");
+        } catch (ParseException ex) {
+            Assert.assertTrue(ex.getCause() instanceof UnresolvableKeyException);
+        }
+    }
+
+    @Test
     public void testVerifyWithFileSystemPemKey2() throws Exception {
         verifyToken("key3", null, "file:target/test-classes/publicKey.pem");
     }

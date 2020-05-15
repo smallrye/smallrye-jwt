@@ -41,13 +41,13 @@ public class JWTAuthContextInfoProviderTest {
         JWTAuthContextInfoProvider provider = JWTAuthContextInfoProvider.createWithKeyLocation("NONE", TEST_ISS);
         Optional<JWTAuthContextInfo> info = provider.getOptionalContextInfo();
         assertNotNull(info);
-        assertTrue(!info.isPresent());
+        assertTrue(info.isPresent());
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test
     public void testDefaultGetContextInfo() {
         JWTAuthContextInfoProvider provider = JWTAuthContextInfoProvider.createWithKeyLocation("NONE", TEST_ISS);
-        provider.getContextInfo();
+        assertNotNull(provider.getContextInfo());
     }
 
     @Test

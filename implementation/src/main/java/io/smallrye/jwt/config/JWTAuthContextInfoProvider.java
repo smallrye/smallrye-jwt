@@ -19,7 +19,6 @@ package io.smallrye.jwt.config;
 import java.security.interfaces.RSAPublicKey;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Supplier;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.Dependent;
@@ -298,23 +297,10 @@ public class JWTAuthContextInfoProvider {
         // Log the config values
         log.debugf("init, mpJwtPublicKey=%s, mpJwtIssuer=%s, mpJwtLocation=%s",
                 mpJwtPublicKey.orElse("missing"), mpJwtIssuer, mpJwtLocation.orElse("missing"));
-        /*
-         * FIXME Due to a bug in MP-Config (https://github.com/wildfly-extras/wildfly-microprofile-config/issues/43) we need to
-         * set all
-         * values to "NONE" as Optional Strings are populated with a ConfigProperty.defaultValue if they are absent. Fix this
-         * when MP-Config
-         * is repaired.
-         */
-        if (NONE.equals(mpJwtPublicKey.get()) && NONE.equals(mpJwtLocation.get())) {
-            log.debugf("Neither mpJwtPublicKey nor mpJwtLocation properties are configured,"
-                    + " JWTAuthContextInfo will not be available");
-            return Optional.empty();
-        }
-
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo();
 
         if (mpJwtIssuer != null && !mpJwtIssuer.equals(NONE)) {
-            contextInfo.setIssuedBy(mpJwtIssuer);
+            contextInfo.setIssuedBy(mpJwtIssuer.trim());
         } else {
             // If there is no expected issuer configured, don't validate it; new in MP-JWT 1.1
             contextInfo.setRequireIssuer(false);
@@ -327,7 +313,7 @@ public class JWTAuthContextInfoProvider {
         if (mpJwtPublicKey.isPresent() && !NONE.equals(mpJwtPublicKey.get())) {
             contextInfo.setPublicKeyContent(mpJwtPublicKey.get());
         } else if (mpJwtLocation.isPresent() && !NONE.equals(mpJwtLocation.get())) {
-            contextInfo.setPublicKeyLocation(mpJwtLocation.get());
+            contextInfo.setPublicKeyLocation(mpJwtLocation.get().trim());
         }
         if (tokenHeader != null) {
             contextInfo.setTokenHeader(tokenHeader);
@@ -480,12 +466,6 @@ public class JWTAuthContextInfoProvider {
     @Produces
     @ApplicationScoped
     public JWTAuthContextInfo getContextInfo() {
-        return getOptionalContextInfo().orElseThrow(throwException());
-    }
-
-    private static Supplier<IllegalStateException> throwException() {
-        final String error = "JWTAuthContextInfo has not been initialized. Please make sure that either "
-                + "'mp.jwt.verify.publickey' or 'mp.jwt.verify.publickey.location' properties are set.";
-        return () -> new IllegalStateException(error);
+        return getOptionalContextInfo().get();
     }
 }
