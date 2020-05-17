@@ -67,6 +67,16 @@ public final class Jwt {
     }
 
     /**
+     * Creates a new instance of {@link JwtClaimsBuilder} from {@link JsonObject}
+     *
+     * @param jsonObject {@link JsonObject} containing the claims.
+     * @return {@link JwtClaimsBuilder}
+     */
+    public static JwtClaimsBuilder claims(JsonObject jsonObject) {
+        return JwtProvider.provider().claims(jsonObject);
+    }
+
+    /**
      * Creates a new instance of {@link JwtClaimsBuilder} from a JSON resource.
      *
      * @param jsonLocation JSON resource location

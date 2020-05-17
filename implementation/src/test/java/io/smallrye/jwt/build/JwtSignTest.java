@@ -28,6 +28,7 @@ import java.util.Map;
 
 import javax.crypto.SecretKey;
 import javax.json.Json;
+import javax.json.JsonObject;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.spi.ConfigSource;
@@ -111,6 +112,27 @@ public class JwtSignTest {
         checkDefaultClaimsAndHeaders(getJwsHeaders(jwt, 2), claims);
 
         Assert.assertEquals("custom-value", claims.getClaimValue("customClaim"));
+    }
+
+    @Test
+    public void testSignJsonObject() throws Exception {
+        JsonObject userName = Json.createObjectBuilder().add("username", "Alice").build();
+        JsonObject userAddress = Json.createObjectBuilder().add("city", "someCity").add("street", "someStreet").build();
+        JsonObject json = Json.createObjectBuilder(userName).add("address", userAddress).build();
+        String jwt = Jwt.claims(json).sign("/privateKey.pem");
+
+        JsonWebSignature jws = getVerifiedJws(jwt);
+        JwtClaims claims = JwtClaims.parse(jws.getPayload());
+
+        Assert.assertEquals(5, claims.getClaimsMap().size());
+        checkDefaultClaimsAndHeaders(getJwsHeaders(jwt, 2), claims);
+
+        Assert.assertEquals("Alice", claims.getClaimValue("username"));
+        @SuppressWarnings("unchecked")
+        Map<String, String> address = (Map<String, String>) claims.getClaimValue("address");
+        Assert.assertEquals(2, address.size());
+        Assert.assertEquals("someCity", address.get("city"));
+        Assert.assertEquals("someStreet", address.get("street"));
     }
 
     @Test
