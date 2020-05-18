@@ -31,20 +31,17 @@ import javax.json.JsonValue;
 import org.eclipse.microprofile.jwt.Claim;
 import org.eclipse.microprofile.jwt.Claims;
 import org.eclipse.microprofile.jwt.JsonWebToken;
-import org.jboss.logging.Logger;
 
 import io.smallrye.jwt.JsonUtils;
 
 public class RawClaimTypeProducer {
-    private static Logger log = Logger.getLogger(RawClaimTypeProducer.class);
-
     @Inject
     JsonWebToken currentToken;
 
     @Produces
     @Claim("")
     Set<String> getClaimAsSet(InjectionPoint ip) {
-        log.debugf("getClaimAsSet(%s)", ip);
+        CDILogging.log.getClaimAsSet(ip);
         if (currentToken == null) {
             return null;
         }
@@ -56,7 +53,7 @@ public class RawClaimTypeProducer {
     @Produces
     @Claim("")
     String getClaimAsString(InjectionPoint ip) {
-        log.debugf("getClaimAsString(%s)", ip);
+        CDILogging.log.getClaimAsString(ip);
         if (currentToken == null) {
             return null;
         }
@@ -79,7 +76,7 @@ public class RawClaimTypeProducer {
     @Produces
     @Claim("")
     Long getClaimAsLong(InjectionPoint ip) {
-        log.debugf("getClaimAsLong(%s)", ip);
+        CDILogging.log.getClaimAsLong(ip);
         if (currentToken == null) {
             return null;
         }
@@ -102,7 +99,7 @@ public class RawClaimTypeProducer {
     @Produces
     @Claim("")
     Double getClaimAsDouble(InjectionPoint ip) {
-        log.debugf("getClaimAsDouble(%s)", ip);
+        CDILogging.log.getClaimAsDouble(ip);
         if (currentToken == null) {
             return null;
         }
@@ -125,7 +122,7 @@ public class RawClaimTypeProducer {
     @Produces
     @Claim("")
     Boolean getClaimAsBoolean(InjectionPoint ip) {
-        log.debugf("getClaimAsBoolean(%s)", ip);
+        CDILogging.log.getClaimAsBoolean(ip);
         if (currentToken == null) {
             return null;
         }
@@ -159,7 +156,7 @@ public class RawClaimTypeProducer {
     @Claim("")
     @SuppressWarnings("rawtypes")
     public Optional getOptionalValue(InjectionPoint ip) {
-        log.debugf("getOptionalValue(%s)", ip);
+        CDILogging.log.getOptionalValue(ip);
         if (currentToken == null) {
             return Optional.empty();
         }

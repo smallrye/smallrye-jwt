@@ -53,7 +53,7 @@ class JwtSignatureImpl implements JwtSignature {
         try {
             key = KeyUtils.readSigningKey(keyLocation, (String) headers.get("kid"));
         } catch (Exception ex) {
-            throw new JwtSignatureException(ex);
+            throw ImplMessages.msg.signatureException(ex);
         }
         return key instanceof PrivateKey ? sign((PrivateKey) key) : sign((SecretKey) key);
 
@@ -98,12 +98,10 @@ class JwtSignatureImpl implements JwtSignature {
 
         if (!signingKeyConfigured()) {
             if (headers.containsKey("alg") && !"none".equals(headers.get("alg"))) {
-                throw new JwtSignatureException("Inner JWT can not be created, "
-                        + "'smallrye.jwt.sign.key-location' is not set but the 'alg' header is: "
-                        + headers.get("alg").toString());
+                throw ImplMessages.msg.signKeyPropertyRequired(headers.get("alg").toString());
             }
             if (headers.containsKey("kid")) {
-                throw new JwtSignatureException("'none' algorithm is selected but the key id 'kid' header is set");
+                throw ImplMessages.msg.signAlgorithmRequired();
             }
             headers.put("alg", AlgorithmIdentifiers.NONE);
         }

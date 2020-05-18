@@ -27,7 +27,6 @@ import javax.json.JsonValue;
 import org.eclipse.microprofile.jwt.Claim;
 import org.eclipse.microprofile.jwt.Claims;
 import org.eclipse.microprofile.jwt.JsonWebToken;
-import org.jboss.logging.Logger;
 
 import io.smallrye.jwt.JsonUtils;
 
@@ -39,7 +38,6 @@ import io.smallrye.jwt.JsonUtils;
  */
 @RequestScoped
 public class CommonJwtProducer {
-    private static Logger log = Logger.getLogger(CommonJwtProducer.class);
 
     @Inject
     JsonWebToken currentToken;
@@ -58,15 +56,15 @@ public class CommonJwtProducer {
 
     public <T> T getValue(String name, boolean isOptional) {
         if (currentToken == null) {
-            log.debugf("getValue(%s), null JsonWebToken", name);
+            CDILogging.log.getValue(name);
             return null;
         }
 
         Optional<T> claimValue = currentToken.claim(name);
         if (!isOptional && !claimValue.isPresent()) {
-            log.debugf("Failed to find Claim for: %s", name);
+            CDILogging.log.failedToFindClaim(name);
         }
-        log.debugf("getValue(%s), isOptional=%s, claimValue=%s", name, isOptional, claimValue);
+        CDILogging.log.getValueResult(name, isOptional, claimValue);
         return claimValue.orElse(null);
     }
 

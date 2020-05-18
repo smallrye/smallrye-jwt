@@ -29,7 +29,6 @@ import javax.ws.rs.core.Cookie;
 import javax.ws.rs.core.SecurityContext;
 
 import org.eclipse.microprofile.jwt.JsonWebToken;
-import org.jboss.logging.Logger;
 
 import io.smallrye.jwt.auth.AbstractBearerTokenExtractor;
 import io.smallrye.jwt.auth.cdi.PrincipalProducer;
@@ -42,8 +41,6 @@ import io.smallrye.jwt.auth.principal.JWTParser;
 @PreMatching
 @Priority(Priorities.AUTHENTICATION)
 public class JWTAuthenticationFilter implements ContainerRequestFilter {
-
-    private static Logger logger = Logger.getLogger(JWTAuthenticationFilter.class);
 
     @Inject
     private JWTAuthContextInfo authContextInfo;
@@ -71,9 +68,9 @@ public class JWTAuthenticationFilter implements ContainerRequestFilter {
                     // Install the JWT principal as the caller
                     JWTSecurityContext jwtSecurityContext = new JWTSecurityContext(securityContext, jwtPrincipal);
                     requestContext.setSecurityContext(jwtSecurityContext);
-                    logger.debugf("Success");
+                    JAXRSLogging.log.success();
                 } catch (Exception e) {
-                    logger.debug("Unable to parse/validate JWT", e);
+                    JAXRSLogging.log.unableParseJWT(e);
                 }
             }
         }

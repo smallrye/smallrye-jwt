@@ -95,9 +95,7 @@ public class JWTAuthorizationFilterRegistrar implements DynamicFeature {
             case 1:
                 return annotations.iterator().next();
             default:
-                throw new IllegalStateException("Duplicate MicroProfile JWT annotations found on "
-                        + annotationPlacementDescriptor.get() +
-                        ". Expected at most 1 annotation, found: " + annotations);
+                throw JAXRSMessages.msg.duplicateJWTAnnotationsFound(annotationPlacementDescriptor.get(), annotations);
         }
     }
 

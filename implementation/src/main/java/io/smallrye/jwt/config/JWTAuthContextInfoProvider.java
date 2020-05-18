@@ -23,7 +23,6 @@ import java.util.Set;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.Dependent;
 import javax.enterprise.inject.Produces;
-import javax.enterprise.inject.spi.DeploymentException;
 import javax.inject.Inject;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -295,8 +294,7 @@ public class JWTAuthContextInfoProvider {
     @Produces
     Optional<JWTAuthContextInfo> getOptionalContextInfo() {
         // Log the config values
-        log.debugf("init, mpJwtPublicKey=%s, mpJwtIssuer=%s, mpJwtLocation=%s",
-                mpJwtPublicKey.orElse("missing"), mpJwtIssuer, mpJwtLocation.orElse("missing"));
+        ConfigLogging.log.configValues(mpJwtPublicKey.orElse("missing"), mpJwtIssuer, mpJwtLocation.orElse("missing"));
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo();
 
         if (mpJwtIssuer != null && !mpJwtIssuer.equals(NONE)) {
@@ -334,7 +332,7 @@ public class JWTAuthContextInfoProvider {
         contextInfo.setJwksRefreshInterval(jwksRefreshInterval.orElse(null));
         contextInfo.setForcedJwksRefreshInterval(forcedJwksRefreshInterval);
         if (signatureAlgorithm.orElse(null) == SignatureAlgorithm.HS256) {
-            throw new DeploymentException("HS256 verification algorithm is currently not supported");
+            throw ConfigMessages.msg.hs256NotSupported();
         }
         contextInfo.setSignatureAlgorithm(signatureAlgorithm.orElse(SignatureAlgorithm.RS256));
         contextInfo.setKeyFormat(keyFormat);
@@ -355,16 +353,16 @@ public class JWTAuthContextInfoProvider {
         try {
             RSAPublicKey pk = (RSAPublicKey) KeyUtils.decodeJWKSPublicKey(mpJwtPublicKey.get());
             contextInfo.setSignerKey(pk);
-            log.debugf("mpJwtPublicKey parsed as JWK(S)");
+            ConfigLogging.log.publicKeyParsedAsJwk();
         } catch (Exception e) {
             // Try as PEM key value
-            log.debugf("mpJwtPublicKey failed as JWK(S), %s", e.getMessage());
+            ConfigLogging.log.parsingPublicKeyAsJwkFailed(e.getMessage());
             try {
                 RSAPublicKey pk = (RSAPublicKey) KeyUtils.decodePublicKey(mpJwtPublicKey.get());
                 contextInfo.setSignerKey(pk);
-                log.debugf("mpJwtPublicKey parsed as PEM");
+                ConfigLogging.log.publicKeyParsedAsPem();
             } catch (Exception e1) {
-                throw new DeploymentException(e1);
+                throw ConfigMessages.msg.parsingPublicKeyFailed(e1);
             }
         }
 

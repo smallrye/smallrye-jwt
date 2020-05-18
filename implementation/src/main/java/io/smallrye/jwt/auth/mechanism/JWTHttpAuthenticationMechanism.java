@@ -78,14 +78,14 @@ public class JWTHttpAuthenticationMechanism implements HttpAuthenticationMechani
                 JsonWebToken jwtPrincipal = jwtParser.parse(bearerToken);
                 producer.setJsonWebToken(jwtPrincipal);
                 Set<String> groups = jwtPrincipal.getGroups();
-                logger.debugf("Success");
+                MechanismLogging.log.success();
                 return httpMessageContext.notifyContainerAboutLogin(jwtPrincipal, groups);
             } catch (Exception e) {
-                logger.debug("Unable to validate bearer token", e);
+                MechanismLogging.log.unableToValidateBearerToken(e);
                 return httpMessageContext.responseUnauthorized();
             }
         } else {
-            logger.debug("No usable bearer token was found in the request, continuing unauthenticated");
+            MechanismLogging.log.noUsableBearerTokenFound();
             return httpMessageContext.isProtected() ? httpMessageContext.responseUnauthorized()
                     : httpMessageContext.doNothing();
         }

@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Set;
 
 import org.eclipse.microprofile.jwt.Claims;
-import org.jboss.logging.Logger;
 import org.jose4j.jwt.JwtClaims;
 import org.jose4j.jwt.MalformedClaimException;
 
@@ -34,8 +33,6 @@ import io.smallrye.jwt.JsonUtils;
  * @see JwtClaims
  */
 public class DefaultJWTCallerPrincipal extends JWTCallerPrincipal {
-    private static final Logger LOGGER = Logger.getLogger(DefaultJWTCallerPrincipal.class);
-
     private final JwtClaims claimsSet;
 
     /**
@@ -72,7 +69,7 @@ public class DefaultJWTCallerPrincipal extends JWTCallerPrincipal {
                 // Use LinkedHashSet to preserve iteration order
                 audSet = new LinkedHashSet<>(claimsSet.getAudience());
             } catch (MalformedClaimException e) {
-                LOGGER.debug("getAudience failure", e);
+                PrincipalLogging.log.getAudienceFailure(e);
             }
         }
         return audSet;
@@ -87,7 +84,7 @@ public class DefaultJWTCallerPrincipal extends JWTCallerPrincipal {
                 groups.addAll(globalGroups);
             }
         } catch (MalformedClaimException e) {
-            LOGGER.warn("getGroups failure: ", e);
+            PrincipalLogging.log.getGroupsFailure(e);
         }
         return groups;
     }
@@ -115,7 +112,7 @@ public class DefaultJWTCallerPrincipal extends JWTCallerPrincipal {
                         claim = 0L;
                     }
                 } catch (MalformedClaimException e) {
-                    LOGGER.warn("getClaimValue failure for: " + claimName, e);
+                    PrincipalLogging.log.getGroupsFailure(claimName, e);
                 }
                 break;
             case groups:
@@ -174,7 +171,7 @@ public class DefaultJWTCallerPrincipal extends JWTCallerPrincipal {
                 claimsSet.setClaim(name, JsonUtils.wrapValue(object));
             }
         } catch (MalformedClaimException e) {
-            LOGGER.warn("replaceClaimValueWithJsonValue failure for: " + name, e);
+            PrincipalLogging.log.replaceClaimValueWithJsonFailure(name, e);
         }
     }
 }

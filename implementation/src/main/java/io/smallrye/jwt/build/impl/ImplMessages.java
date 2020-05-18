@@ -1,0 +1,100 @@
+package io.smallrye.jwt.build.impl;
+
+import org.jboss.logging.Messages;
+import org.jboss.logging.annotations.Cause;
+import org.jboss.logging.annotations.Message;
+import org.jboss.logging.annotations.MessageBundle;
+
+import io.smallrye.jwt.build.JwtEncryptionException;
+import io.smallrye.jwt.build.JwtException;
+import io.smallrye.jwt.build.JwtSignatureException;
+
+@MessageBundle(projectCode = "SRJWT", length = 5)
+interface ImplMessages {
+    ImplMessages msg = Messages.getBundle(ImplMessages.class);
+
+    @Message(id = 5000, value = "Unsupported signature algorithm: %s")
+    JwtSignatureException unsupportedSignatureAlgorithm(String algorithmName,
+            @Cause Throwable throwable);
+
+    JwtSignatureException unsupportedSignatureAlgorithm(String algorithmName);
+
+    @Message(id = 5001, value = "A key of size 2048 bits or larger MUST be used with " +
+            "the '%s' algorithm")
+    JwtEncryptionException encryptionKeySizeMustBeHigher(String algorithmName);
+
+    @Message(id = 5002, value = "A key of size 2048 bits or larger MUST be used with " +
+            "the '%s' algorithm")
+    JwtSignatureException signKeySizeMustBeHigher(String algorithmName);
+
+    @Message(id = 5003, value = "%s")
+    JwtEncryptionException joseSerializationError(String errorMessage, @Cause Throwable t);
+
+    @Message(id = 5004, value = "Direct content encryption is currently not supported")
+    JwtEncryptionException directContentEncryptionUnsupported();
+
+    @Message(id = 5005, value = "Unsupported key encryption algorithm: %s")
+    JwtEncryptionException unsupportedKeyEncryptionAlgorithm(String algorithmName);
+
+    @Message(id = 5006, value = "Unsupported content encryption algorithm: %s")
+    JwtEncryptionException unsupportedContentEncryptionAlgorithm(String algorithmName);
+
+    @Message(id = 5007, value = "Key encrypting key can not be loaded from: %s")
+    JwtEncryptionException encryptionKeyNotFound(String keyLocation);
+
+    @Message(id = 5008, value = "Please set a 'smallrye.jwt.encrypt.key-location' property")
+    JwtEncryptionException keyLocationPropertyEmpty();
+
+    @Message(id = 5009, value = "")
+    JwtSignatureException signatureException(@Cause Throwable throwable);
+
+    @Message(id = 5010, value = "Inner JWT can not be created, "
+            + "'smallrye.jwt.sign.key-location' is not set but the 'alg' header is: %s")
+    JwtSignatureException signKeyPropertyRequired(String algorithmName);
+
+    @Message(id = 5011, value = "'none' algorithm is selected but the key id 'kid' header is set")
+    JwtSignatureException signAlgorithmRequired();
+
+    @Message(id = 5012, value = "Failure to create a signed JWT token: %s")
+    JwtSignatureException signJwtTokenFailed(String exceptionMessage, @Cause Throwable throwable);
+
+    @Message(id = 5013, value = "JWK algorithm 'alg' value does not match a key type")
+    IllegalArgumentException algDoesNotMatchKeyType();
+
+    @Message(id = 5014, value = "Only PrivateKey or SecretKey can be be used to sign a token")
+    IllegalArgumentException publicKeyBeingUsedForSign();
+
+    @Message(id = 5015, value = "Failure to read the json content: %s")
+    JwtException readJsonFailure(String exceptionMessage, @Cause Throwable throwable);
+
+    @Message(id = 5016, value = "Failure to parse JWK: %s")
+    JwtException failureToParseJWK(String exceptionMessage, @Cause Throwable throwable);
+
+    @Message(id = 5017, value = "Failure to parse JWK Set: %s")
+    JwtException failureToParseJWKS(String exceptionMessage, @Cause Throwable throwable);
+
+    @Message(id = 5018, value = "Key id 'kid' header value must be provided")
+    IllegalArgumentException kidRequired();
+
+    @Message(id = 5019, value = "JWK set has no key with a key id 'kid' header '%s'")
+    IllegalArgumentException keyWithKidNotFound(String keyId);
+
+    @Message(id = 5020, value = "Signing key can not be loaded from: %s")
+    IllegalArgumentException signingKeyCanNotBeLoadedFromLocation(String keyLocation);
+
+    @Message(id = 5021, value = "Please set a 'smallrye.jwt.sign.key-location' property")
+    IllegalArgumentException signKeyLocationNotConfigured();
+
+    @Message(id = 5022, value = "Failure to parse the JWT claims: %s")
+    JwtException failureToParseJWTClaims(String exceptionMessage, @Cause Throwable throwable);
+
+    @Message(id = 5024, value = "Failure to read the private key: %s")
+    JwtException failureToReadPrivateKey(String exceptionMessage, @Cause Throwable throwable);
+
+    @Message(id = 5025, value = "Failure to open the input stream from %s")
+    JwtException failureToOpenInputStreamFromJsonResName(String jsonResName);
+
+    @Message(id = 5026, value = "Failure to read the json content from %s: %s")
+    JwtException failureToReadJsonContentFromJsonResName(String jsonResName, String exceptionMessage,
+            @Cause Throwable throwable);
+}

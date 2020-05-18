@@ -11,7 +11,6 @@ import javax.json.JsonObject;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
 import io.smallrye.jwt.build.JwtClaimsBuilder;
-import io.smallrye.jwt.build.JwtException;
 
 /**
  * Service provider for JWT Claims Builder objects.
@@ -45,14 +44,11 @@ public abstract class JwtProvider {
         try {
             return (JwtProvider) Class.forName(DEFAULT_JWT_PROVIDER).newInstance();
         } catch (ClassNotFoundException ex) {
-            throw new JwtException(
-                    "JwtProvider " + DEFAULT_JWT_PROVIDER + " has not been found", ex);
+            throw SpiMessages.msg.providerNotFound(DEFAULT_JWT_PROVIDER, ex.getMessage(), ex);
         } catch (IllegalAccessException ex) {
-            throw new JwtException(
-                    "JwtProvider " + DEFAULT_JWT_PROVIDER + " class could not be accessed: " + ex, ex);
+            throw SpiMessages.msg.providerClassCannotBeAccessed(DEFAULT_JWT_PROVIDER, ex.getMessage(), ex);
         } catch (InstantiationException ex) {
-            throw new JwtException(
-                    "JwtProvider " + DEFAULT_JWT_PROVIDER + " could not be instantiated: " + ex, ex);
+            throw SpiMessages.msg.providerCannotBeInstantiated(DEFAULT_JWT_PROVIDER, ex.getMessage(), ex);
         }
     }
 
