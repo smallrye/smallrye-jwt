@@ -29,14 +29,11 @@ import javax.json.JsonString;
 import javax.json.JsonValue;
 
 import org.eclipse.microprofile.jwt.Claim;
-import org.jboss.logging.Logger;
 
 /**
  * A producer for JsonValue injection types
  */
 public class JsonValueProducer {
-    private static Logger log = Logger.getLogger(JsonValueProducer.class);
-
     @Inject
     CommonJwtProducer util;
 
@@ -90,13 +87,13 @@ public class JsonValueProducer {
 
     @SuppressWarnings("unchecked")
     public <T extends JsonValue> T getValue(InjectionPoint ip) {
-        log.debugf("JsonValueProducer(%s).produce", ip);
+        CDILogging.log.jsonValueProducer(ip);
         return (T) util.generalJsonValueProducer(ip);
     }
 
     @SuppressWarnings("unchecked")
     public <T extends JsonValue> Optional<T> getOptionalValue(InjectionPoint ip) {
-        log.debugf("JsonValueProducer(%s).produce", ip);
+        CDILogging.log.jsonValueProducer(ip);
         T jsonValue = (T) util.generalJsonValueProducer(ip);
         return Optional.ofNullable(jsonValue);
     }

@@ -11,13 +11,10 @@ import javax.inject.Inject;
 
 import org.eclipse.microprofile.jwt.Claim;
 import org.eclipse.microprofile.jwt.JsonWebToken;
-import org.jboss.logging.Logger;
 
 import io.smallrye.jwt.JsonUtils;
 
 public class OptionalClaimTypeProducer {
-    private static Logger log = Logger.getLogger(OptionalClaimTypeProducer.class);
-
     @Inject
     JsonWebToken currentToken;
 
@@ -30,7 +27,7 @@ public class OptionalClaimTypeProducer {
     @Produces
     @Claim("")
     public Optional<String> getOptionalString(InjectionPoint ip) {
-        log.debugf("getOptionalString(%s)", ip);
+        CDILogging.log.getOptionalString(ip);
         if (currentToken == null) {
             return Optional.empty();
         }
@@ -46,7 +43,7 @@ public class OptionalClaimTypeProducer {
     @Produces
     @Claim("")
     public Optional<Set<String>> getOptionalStringSet(InjectionPoint ip) {
-        log.debugf("getOptionalStringSet(%s)", ip);
+        CDILogging.log.getOptionalStringSet(ip);
         if (currentToken == null) {
             return Optional.empty();
         }
@@ -62,7 +59,7 @@ public class OptionalClaimTypeProducer {
     @Produces
     @Claim("")
     public Optional<Long> getOptionalLong(InjectionPoint ip) {
-        log.debugf("getOptionalLong(%s)", ip);
+        CDILogging.log.getOptionalLong(ip);
         if (currentToken == null) {
             return Optional.empty();
         }
@@ -78,7 +75,7 @@ public class OptionalClaimTypeProducer {
     @Produces
     @Claim("")
     public Optional<Boolean> getOptionalBoolean(InjectionPoint ip) {
-        log.debugf("getOptionalBoolean(%s)", ip);
+        CDILogging.log.getOptionalBoolean(ip);
         if (currentToken == null) {
             return Optional.empty();
         }

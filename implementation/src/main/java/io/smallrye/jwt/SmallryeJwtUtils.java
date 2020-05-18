@@ -25,7 +25,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.eclipse.microprofile.jwt.Claims;
-import org.jboss.logging.Logger;
 import org.jose4j.jws.AlgorithmIdentifiers;
 
 import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
@@ -42,8 +41,6 @@ public class SmallryeJwtUtils {
             AlgorithmIdentifiers.ECDSA_USING_P256_CURVE_AND_SHA256,
             AlgorithmIdentifiers.ECDSA_USING_P384_CURVE_AND_SHA384,
             AlgorithmIdentifiers.ECDSA_USING_P521_CURVE_AND_SHA512));
-
-    private static final Logger log = Logger.getLogger(SmallryeJwtUtils.class);
 
     private SmallryeJwtUtils() {
     }
@@ -64,8 +61,7 @@ public class SmallryeJwtUtils {
         if (claimPath.isPresent()) {
             final String[] pathSegments = claimPath.get().split("/");
             if (MAX_PATH_DEPTH < pathSegments.length) {
-                log.errorf("path." + claimName + " configuration will be ignored because the path depth is too large:"
-                        + " %d, maximum depth is %d.", pathSegments.length, MAX_PATH_DEPTH);
+                JWTLogging.log.maximumPathDepthReached(claimName, pathSegments.length, MAX_PATH_DEPTH);
             } else {
                 return true;
             }
@@ -76,7 +72,7 @@ public class SmallryeJwtUtils {
     public static void setContextTokenCookie(JWTAuthContextInfo contextInfo, Optional<String> cookieName) {
         if (cookieName.isPresent()) {
             if (!COOKIE_HEADER.equals(contextInfo.getTokenHeader())) {
-                log.error("Token header is not 'Cookie', the cookie name value will be ignored");
+                JWTLogging.log.tokenHeaderIsNotCookieHeader();
             } else {
                 contextInfo.setTokenCookie(cookieName.get());
             }
@@ -94,7 +90,7 @@ public class SmallryeJwtUtils {
                 if (SUPPORTED_ALGORITHMS.contains(whitelistAlgorithm)) {
                     contextInfo.getWhitelistAlgorithms().add(whitelistAlgorithm);
                 } else {
-                    log.errorf("Algorithm %s not supported", whitelistAlgorithm);
+                    JWTLogging.log.unsupportedAlgorithm(whitelistAlgorithm);
                 }
             }
         }

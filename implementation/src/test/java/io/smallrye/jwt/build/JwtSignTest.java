@@ -144,7 +144,7 @@ public class JwtSignTest {
             Jwt.claims().sign(key);
             Assert.fail("JwtSignatureException is expected due to the invalid key size");
         } catch (JwtSignatureException ex) {
-            Assert.assertEquals("A key of size 2048 bits or larger MUST be used with the 'RS256' algorithm",
+            Assert.assertEquals("SRJWT05002: A key of size 2048 bits or larger MUST be used with the 'RS256' algorithm",
                     ex.getMessage());
         }
     }

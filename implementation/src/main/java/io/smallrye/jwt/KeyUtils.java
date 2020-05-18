@@ -26,7 +26,6 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringReader;
 import java.io.StringWriter;
-import java.io.UncheckedIOException;
 import java.math.BigInteger;
 import java.net.URL;
 import java.security.GeneralSecurityException;
@@ -51,7 +50,6 @@ import javax.json.JsonArray;
 import javax.json.JsonObject;
 import javax.json.JsonReader;
 
-import org.jboss.logging.Logger;
 import org.jose4j.json.JsonUtil;
 import org.jose4j.jwk.JsonWebKey;
 import org.jose4j.jwk.JsonWebKeySet;
@@ -59,14 +57,12 @@ import org.jose4j.jwk.OctetSequenceJsonWebKey;
 import org.jose4j.jwk.PublicJsonWebKey;
 
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
-import io.smallrye.jwt.auth.principal.KeyLocationResolver;
 
 /**
  * Utility methods for dealing with decoding public and private keys resources
  */
 public final class KeyUtils {
 
-    private static final Logger LOGGER = Logger.getLogger(KeyLocationResolver.class);
     private static final String HTTP_BASED_SCHEME = "http";
     private static final String CLASSPATH_SCHEME = "classpath:";
     private static final String FILE_SCHEME = "file:";
@@ -162,7 +158,7 @@ public final class KeyUtils {
                     JsonReader json = Json.createReader(stream)) {
                 jwks = json.readObject();
             } catch (IOException ioe) {
-                throw new UncheckedIOException(ioe);
+                throw JWTMessages.msg.invalidJWKSPublicKey(ioe);
             }
         }
         JsonArray keys = jwks.getJsonArray("keys");
@@ -219,7 +215,7 @@ public final class KeyUtils {
         if (algo.name().startsWith("ES")) {
             return EC;
         }
-        throw new NoSuchAlgorithmException("Unsupported key type" + algo.name());
+        throw JWTMessages.msg.unsupportedAlgorithm(algo.name());
     }
 
     /**
@@ -288,7 +284,7 @@ public final class KeyUtils {
         }
 
         if (is == null) {
-            throw new IOException("No resource with the named " + keyLocation + " location exists");
+            throw JWTMessages.msg.keyNotFound(keyLocation);
         }
 
         StringWriter contents = new StringWriter();
@@ -306,43 +302,43 @@ public final class KeyUtils {
     }
 
     static PrivateKey tryAsPEMPrivateKey(String content) {
-        LOGGER.debugf("Trying to create a key from the encoded PEM key...");
+        JWTLogging.log.creatingKeyFromPemKey();
         try {
             return decodePrivateKey(content);
         } catch (Exception e) {
-            LOGGER.debug("Failed to create a key from the encoded PEM key", e);
+            JWTLogging.log.creatingKeyFromPemKeyFailed(e);
         }
         return null;
     }
 
     static PublicKey tryAsPEMPublicKey(String content) {
-        LOGGER.debugf("Trying to create a key from the encoded PEM key...");
+        JWTLogging.log.creatingKeyFromPemKey();
         try {
             return KeyUtils.decodePublicKey(content);
         } catch (Exception e) {
-            LOGGER.debug("Failed to create a key from the encoded PEM key", e);
+            JWTLogging.log.creatingKeyFromPemKeyFailed(e);
         }
         return null;
     }
 
     static PublicKey tryAsPEMCertificate(String content) {
-        LOGGER.debugf("Trying to create a key from the encoded PEM certificate...");
+        JWTLogging.log.creatingKeyFromPemCertificate();
         try {
             return KeyUtils.decodeCertificate(content);
         } catch (Exception e) {
-            LOGGER.debug("Failed to to create a key from the encoded PEM certificate", e);
+            JWTLogging.log.creatingKeyFromPemCertificateFailed(e);
         }
         return null;
     }
 
     static List<JsonWebKey> loadJsonWebKeys(String content) {
-        LOGGER.debugf("Trying to load the local JWK(S)...");
+        JWTLogging.log.loadingJwks();
 
         JsonObject jwks = null;
         try (JsonReader reader = Json.createReader(new StringReader(content))) {
             jwks = reader.readObject();
         } catch (Exception ex) {
-            LOGGER.debug("Failed to load the JWK(S)");
+            JWTLogging.log.loadingJwksFailed(ex);
             return null;
         }
 
@@ -361,7 +357,7 @@ public final class KeyUtils {
                 localKeys = Collections.singletonList(createJsonWebKey(jwks));
             }
         } catch (Exception ex) {
-            LOGGER.debug("Failed to parse the JWK JSON representation");
+            JWTLogging.log.parsingJwksFailed();
             return null;
         }
         return localKeys;

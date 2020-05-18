@@ -28,7 +28,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.eclipse.microprofile.jwt.Claims;
-import org.jboss.logging.Logger;
 import org.jose4j.jwa.AlgorithmConstraints;
 import org.jose4j.jwt.JwtClaims;
 import org.jose4j.jwt.NumericDate;
@@ -44,7 +43,6 @@ import org.jose4j.lang.UnresolvableKeyException;
  *
  */
 public class DefaultJWTTokenParser {
-    private static final Logger LOGGER = Logger.getLogger(DefaultJWTTokenParser.class);
     private static final String ROLE_MAPPINGS = "roleMappings";
     /**
      * This pattern uses a positive lookahead to split an expression around the forward slashes
@@ -123,11 +121,11 @@ public class DefaultJWTTokenParser {
 
             return jwtContext;
         } catch (InvalidJwtException e) {
-            LOGGER.debug("Token is invalid");
-            throw new ParseException("Failed to verify a token", e);
+            PrincipalLogging.log.tokenInvalid();
+            throw PrincipalMessages.msg.failedToVerifyToken(e);
         } catch (UnresolvableKeyException e) {
-            LOGGER.debug("Verification key is unresolvable");
-            throw new ParseException("Failed to verify a token", e);
+            PrincipalLogging.log.verificationKeyUnresolvable();
+            throw PrincipalMessages.msg.failedToVerifyToken(e);
         }
 
     }
@@ -149,8 +147,7 @@ public class DefaultJWTTokenParser {
                 claimsSet.getClaimValue(Claims.preferred_username.name()) != null;
 
         if (!hasPrincipalClaim) {
-            throw new InvalidJwtException("No claim exists in sub, upn or preferred_username", emptyList(),
-                    jwtContext);
+            throw PrincipalMessages.msg.claimNotFound(s -> new InvalidJwtException(s, emptyList(), jwtContext));
         }
     }
 
@@ -161,7 +158,7 @@ public class DefaultJWTTokenParser {
             if (claimValue instanceof String) {
                 return (String) claimValue;
             } else {
-                LOGGER.debugf("Claim value at the path %s is not a String", authContextInfo.getSubjectPath());
+                PrincipalLogging.log.claimAtPathIsNotAString(authContextInfo.getSubjectPath());
             }
         }
         if (authContextInfo.getDefaultSubjectClaim() != null) {
@@ -182,14 +179,12 @@ public class DefaultJWTTokenParser {
                 try {
                     return Arrays.asList(groups.toArray(new String[] {}));
                 } catch (ArrayStoreException ex) {
-                    LOGGER.debugf("Claim value at the path %s is not an array of strings",
-                            authContextInfo.getGroupsPath());
+                    PrincipalLogging.log.claimAtPathIsNotAnArrayOfStrings(authContextInfo.getGroupsPath());
                 }
             } else if (claimValue instanceof String) {
                 return splitStringClaimValue(claimValue.toString(), authContextInfo);
             } else {
-                LOGGER.debugf("Claim value at the path %s is neither an array of strings nor string",
-                        authContextInfo.getGroupsPath());
+                PrincipalLogging.log.claimAtPathIsNeitherAnArrayOfStringsNorString(authContextInfo.getGroupsPath());
             }
         }
         if (authContextInfo.getDefaultGroupsClaim() != null) {
@@ -221,16 +216,16 @@ public class DefaultJWTTokenParser {
             }
             // Replace the groups with the original groups + mapped roles
             claimsSet.setStringListClaim(Claims.groups.name(), allGroups);
-            LOGGER.tracef("Updated groups to: %s", allGroups);
+            PrincipalLogging.log.updatedGroups(allGroups);
         } catch (Exception e) {
-            LOGGER.debug("Failed to access rolesMapping claim", e);
+            PrincipalLogging.log.failedToAccessRolesMappingClaim(e);
         }
     }
 
     private Object findClaimValue(String claimPath, Map<String, Object> claimsMap, String[] pathArray, int step) {
         Object claimValue = claimsMap.get(pathArray[step].replace("\"", ""));
         if (claimValue == null) {
-            LOGGER.debugf("No claim exists at the path %s at segment %s", claimPath, pathArray[step]);
+            PrincipalLogging.log.claimNotFoundAtPathAtSegment(claimPath, pathArray[step]);
         } else if (step + 1 < pathArray.length) {
             if (claimValue instanceof Map) {
                 @SuppressWarnings("unchecked")
@@ -238,7 +233,7 @@ public class DefaultJWTTokenParser {
                 int nextStep = step + 1;
                 return findClaimValue(claimPath, nextMap, pathArray, nextStep);
             } else {
-                LOGGER.debugf("Claim value at the path %s is not a json object", claimPath);
+                PrincipalLogging.log.claimValueIsNotAJson(claimPath);
                 return null;
             }
         }
@@ -256,16 +251,14 @@ public class DefaultJWTTokenParser {
                 iat = claimsSet.getIssuedAt();
                 exp = claimsSet.getExpirationTime();
             } catch (Exception e) {
-                throw new ParseException("Failed to verify max TTL", e);
+                throw PrincipalMessages.msg.failedToVerifyMaxTTL(e);
             }
 
             if (exp.getValue() - iat.getValue() > maxTimeToLiveSecs) {
-                String msg = "The Expiration Time (exp=" + exp + ") claim value cannot be more than " + maxTimeToLiveSecs
-                        + " minutes in the future relative to Issued At (iat=" + iat + ")";
-                throw new ParseException(msg);
+                throw PrincipalMessages.msg.expExceeded(exp, maxTimeToLiveSecs, iat);
             }
         } else {
-            LOGGER.debugf("No max TTL has been specified in configuration");
+            PrincipalLogging.log.noMaxTTLSpecified();
         }
     }
 
@@ -274,13 +267,13 @@ public class DefaultJWTTokenParser {
 
         if (requiredClaims != null) {
             if (!jwtContext.getJwtClaims().getClaimsMap().keySet().containsAll(requiredClaims)) {
-                if (LOGGER.isDebugEnabled()) {
+                if (PrincipalLogging.log.isDebugEnabled()) {
                     final String missingClaims = requiredClaims.stream()
                             .filter(claim -> !jwtContext.getJwtClaims().getClaimsMap().containsKey(claim))
                             .collect(Collectors.joining(","));
-                    LOGGER.debugf("Required claims %s are not present in the JWT", missingClaims);
+                    PrincipalLogging.log.missingClaims(missingClaims);
                 }
-                throw new InvalidJwtException("Required claims are not present in the JWT", emptyList(), jwtContext);
+                throw PrincipalMessages.msg.missingClaims(s -> new InvalidJwtException(s, emptyList(), jwtContext));
             }
         }
     }

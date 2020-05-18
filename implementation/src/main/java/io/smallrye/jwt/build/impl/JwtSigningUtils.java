@@ -30,8 +30,6 @@ import org.jose4j.jwt.NumericDate;
 
 import io.smallrye.jwt.KeyUtils;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
-import io.smallrye.jwt.build.JwtException;
-import io.smallrye.jwt.build.JwtSignatureException;
 
 /**
  * JWT Token Signing Utilities
@@ -194,14 +192,13 @@ public class JwtSigningUtils {
         jws.setPayload(claims.toJson());
         if (signingKey instanceof RSAPrivateKey && algorithm.startsWith("RS")
                 && ((RSAPrivateKey) signingKey).getModulus().bitLength() < 2048) {
-            throw new JwtSignatureException("A key of size 2048 bits or larger MUST be used with the '"
-                    + algorithm + "' algorithm");
+            throw ImplMessages.msg.signKeySizeMustBeHigher(algorithm);
         }
         jws.setKey(signingKey);
         try {
             return jws.getCompactSerialization();
         } catch (Exception ex) {
-            throw new JwtSignatureException("Failure to create a signed JWT token: " + ex, ex);
+            throw ImplMessages.msg.signJwtTokenFailed(ex.getMessage(), ex);
         }
     }
 
@@ -243,12 +240,12 @@ public class JwtSigningUtils {
             if (key instanceof SecretKey && !alg.startsWith("HS")
                     || key instanceof RSAPrivateKey && !alg.startsWith("RS")
                     || key instanceof ECPrivateKey && !alg.startsWith("ES")) {
-                throw new IllegalArgumentException("JWK algorithm 'alg' value does not match a key type");
+                throw ImplMessages.msg.algDoesNotMatchKeyType();
             }
 
             return signJwtClaimsInternal(key, newHeaders, claims);
         } else {
-            throw new IllegalArgumentException("Only PrivateKey or SecretKey can be be used to sign a token");
+            throw ImplMessages.msg.publicKeyBeingUsedForSign();
         }
     }
 
@@ -273,7 +270,7 @@ public class JwtSigningUtils {
                 return alg;
             }
         }
-        throw new IllegalArgumentException("Unsupported signature algorithm: " + signingKey.getAlgorithm());
+        throw ImplMessages.msg.unsupportedSignatureAlgorithm(signingKey.getAlgorithm());
     }
 
     static String readJsonContent(String jsonResName) {
@@ -294,12 +291,12 @@ public class JwtSigningUtils {
             }
         }
         if (is == null) {
-            throw new JwtException("Failure to open the input stream from " + jsonResName);
+            throw ImplMessages.msg.failureToOpenInputStreamFromJsonResName(jsonResName);
         }
         try (BufferedReader buffer = new BufferedReader(new InputStreamReader(is))) {
             return buffer.lines().collect(Collectors.joining("\n"));
         } catch (IOException ex) {
-            throw new JwtException("Failure to read the json content from " + jsonResName + ":" + ex, ex);
+            throw ImplMessages.msg.failureToReadJsonContentFromJsonResName(jsonResName, ex.getMessage(), ex);
         }
     }
 
@@ -326,7 +323,7 @@ public class JwtSigningUtils {
         try {
             return JsonWebKey.Factory.newJwk(JsonUtil.parseJson(jwkString));
         } catch (Exception ex) {
-            throw new JwtException("Failure to parse JWK:" + ex, ex);
+            throw ImplMessages.msg.failureToParseJWK(ex.getMessage(), ex);
         }
     }
 
@@ -335,18 +332,18 @@ public class JwtSigningUtils {
         try {
             jwkSet = new JsonWebKeySet(jwkSetString);
         } catch (Exception ex) {
-            throw new JwtException("Failure to parse JWK Set:" + ex, ex);
+            throw ImplMessages.msg.failureToParseJWKS(ex.getMessage(), ex);
         }
         if (keyId == null) {
             if (jwkSet.getJsonWebKeys().size() == 1) {
                 return jwkSet.getJsonWebKeys().get(0);
             } else {
-                throw new IllegalArgumentException("Key id 'kid' header value must be provided");
+                throw ImplMessages.msg.kidRequired();
             }
         }
         JsonWebKey jwk = jwkSet.findJsonWebKey(keyId, null, null, null);
         if (jwk == null) {
-            throw new IllegalArgumentException("JWK set has no key with a key id 'kid' header '" + keyId + "'");
+            throw ImplMessages.msg.keyWithKidNotFound(keyId);
         }
         return jwk;
     }
@@ -361,11 +358,11 @@ public class JwtSigningUtils {
             try {
                 return KeyUtils.readSigningKey(keyLocation, kid);
             } catch (Exception ex) {
-                throw new IllegalArgumentException("Signing key can not be loaded from: " + keyLocation);
+                throw ImplMessages.msg.signingKeyCanNotBeLoadedFromLocation(keyLocation);
                 // TODO: try JWK(S) as well
             }
         } catch (NoSuchElementException ex) {
-            throw new IllegalArgumentException("Please set a 'smallrye.jwt.sign.key-location' property");
+            throw ImplMessages.msg.signKeyLocationNotConfigured();
         }
     }
 
@@ -373,7 +370,7 @@ public class JwtSigningUtils {
         try {
             return JwtClaims.parse(readJsonContent(jwtLocation));
         } catch (Exception ex) {
-            throw new JwtException("Failure to parse the JWT claims:" + ex, ex);
+            throw ImplMessages.msg.failureToParseJWTClaims(ex.getMessage(), ex);
         }
     }
 
@@ -381,7 +378,7 @@ public class JwtSigningUtils {
         try {
             return KeyUtils.readPrivateKey(pemKeyLocation);
         } catch (Exception ex) {
-            throw new JwtException("Failure to read the private key:" + ex, ex);
+            throw ImplMessages.msg.failureToReadPrivateKey(ex.getMessage(), ex);
         }
     }
 

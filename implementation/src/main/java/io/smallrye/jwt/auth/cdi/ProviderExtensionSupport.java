@@ -9,7 +9,6 @@ import java.util.Set;
 
 import javax.enterprise.event.Observes;
 import javax.enterprise.inject.spi.BeanAttributes;
-import javax.enterprise.inject.spi.DeploymentException;
 import javax.enterprise.inject.spi.InjectionPoint;
 import javax.enterprise.inject.spi.ProcessBeanAttributes;
 import javax.enterprise.inject.spi.ProcessInjectionPoint;
@@ -17,14 +16,11 @@ import javax.inject.Provider;
 
 import org.eclipse.microprofile.jwt.Claim;
 import org.eclipse.microprofile.jwt.Claims;
-import org.jboss.logging.Logger;
 
 /**
  * Support for {@linkplain Provider} injection points annotated with {@linkplain Claim}.
  */
 public class ProviderExtensionSupport {
-    private static Logger log = Logger.getLogger(ProviderExtensionSupport.class);
-
     /**
      * Replace the general producer method BeanAttributes with one bound to the collected injection site
      * types to properly reflect all of the type locations the producer method applies to.
@@ -36,7 +32,7 @@ public class ProviderExtensionSupport {
         if (!providerOptionalTypes.isEmpty() && pba.getAnnotated().isAnnotationPresent(Claim.class)) {
             Claim claim = pba.getAnnotated().getAnnotation(Claim.class);
             if (claim.value().length() == 0 && claim.standard() == Claims.UNKNOWN) {
-                log.debugf("addTypeToClaimProducer: %s\n", pba.getAnnotated());
+                CDILogging.log.addTypeToClaimProducer(pba.getAnnotated());
                 BeanAttributes delegate = pba.getBeanAttributes();
                 if (delegate.getTypes().contains(Optional.class)) {
                     pba.setBeanAttributes(new ProviderBeanAttributes(delegate, providerOptionalTypes, providerQualifiers));
@@ -51,17 +47,16 @@ public class ProviderExtensionSupport {
      * @param pip - the injection point event information
      */
     void processClaimProviderInjections(@Observes ProcessInjectionPoint<?, ? extends Provider> pip) {
-        log.debugf("pip: %s", pip.getInjectionPoint());
+        CDILogging.log.pip(pip.getInjectionPoint());
         final InjectionPoint ip = pip.getInjectionPoint();
         if (ip.getAnnotated().isAnnotationPresent(Claim.class)) {
             Claim claim = ip.getAnnotated().getAnnotation(Claim.class);
             if (claim.value().length() == 0 && claim.standard() == Claims.UNKNOWN) {
-                pip.addDefinitionError(
-                        new DeploymentException("@Claim at: " + ip + " has no name or valid standard enum setting"));
+                pip.addDefinitionError(CDIMessages.msg.claimHasNoNameOrValidStandardEnumSetting(ip));
             }
             boolean usesEnum = claim.standard() != Claims.UNKNOWN;
             final String claimName = usesEnum ? claim.standard().name() : claim.value();
-            log.debugf("Checking Provider Claim(%s), ip: %s", claimName, ip);
+            CDILogging.log.checkingProviderClaim(claimName, ip);
             Type matchType = ip.getType();
             // The T from the Provider<T> injection site
             Type actualType = ((ParameterizedType) matchType).getActualTypeArguments()[0];

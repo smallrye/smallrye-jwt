@@ -132,22 +132,22 @@ class JwtEncryptionImpl implements JwtEncryptionBuilder {
 
         if (key instanceof RSAPublicKey && keyAlgorithm.startsWith(KeyEncryptionAlgorithm.RSA_OAEP.getAlgorithm())
                 && ((RSAPublicKey) key).getModulus().bitLength() < 2048) {
-            throw new JwtEncryptionException(
-                    "A key of size 2048 bits or larger MUST be used with the '" + keyAlgorithm + "' algorithm");
+            throw ImplMessages.msg.encryptionKeySizeMustBeHigher(keyAlgorithm);
         }
         jwe.setKey(key);
         try {
             return jwe.getCompactSerialization();
         } catch (org.jose4j.lang.JoseException ex) {
-            throw new JwtEncryptionException(ex.getMessage(), ex);
+            throw ImplMessages.msg.joseSerializationError(ex.getMessage(), ex);
         }
     }
 
     private String getKeyEncryptionAlgorithm(Key keyEncryptionKey) {
         String alg = (String) headers.get("alg");
         if ("dir".equals(alg)) {
-            throw new JwtEncryptionException("Direct content encryption is currently not supported");
+            throw ImplMessages.msg.directContentEncryptionUnsupported();
         }
+
         if (keyEncryptionKey instanceof RSAPublicKey) {
             if (alg == null) {
                 return KeyEncryptionAlgorithm.RSA_OAEP_256.getAlgorithm();
@@ -168,7 +168,7 @@ class JwtEncryptionImpl implements JwtEncryptionBuilder {
             }
         }
 
-        throw new JwtEncryptionException("Unsupported key encryption algorithm: " + keyEncryptionKey.getAlgorithm());
+        throw ImplMessages.msg.unsupportedKeyEncryptionAlgorithm(keyEncryptionKey.getAlgorithm());
     }
 
     private String getContentEncryptionAlgorithm() {
@@ -181,10 +181,10 @@ class JwtEncryptionImpl implements JwtEncryptionBuilder {
             try {
                 return KeyUtils.readEncryptionKey(keyLocation, kid);
             } catch (Exception ex) {
-                throw new JwtEncryptionException("Key encrypting key can not be loaded from: " + keyLocation);
+                throw ImplMessages.msg.encryptionKeyNotFound(keyLocation);
             }
         } catch (NoSuchElementException ex) {
-            throw new JwtEncryptionException("Please set a 'smallrye.jwt.encrypt.key-location' property");
+            throw ImplMessages.msg.keyLocationPropertyEmpty();
         }
     }
 
@@ -192,7 +192,7 @@ class JwtEncryptionImpl implements JwtEncryptionBuilder {
         try {
             return KeyEncryptionAlgorithm.fromAlgorithm(value);
         } catch (Exception ex) {
-            throw new JwtEncryptionException("Unsupported key encryption algorithm: " + value);
+            throw ImplMessages.msg.unsupportedKeyEncryptionAlgorithm(value);
         }
     }
 
@@ -200,7 +200,7 @@ class JwtEncryptionImpl implements JwtEncryptionBuilder {
         try {
             return ContentEncryptionAlgorithm.fromAlgorithm(value);
         } catch (Exception ex) {
-            throw new JwtEncryptionException("Unsupported content encryption algorithm: " + value);
+            throw ImplMessages.msg.unsupportedContentEncryptionAlgorithm(value);
         }
     }
 }

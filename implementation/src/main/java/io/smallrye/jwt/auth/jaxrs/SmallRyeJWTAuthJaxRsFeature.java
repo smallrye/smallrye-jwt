@@ -21,7 +21,6 @@ import javax.ws.rs.core.Feature;
 import javax.ws.rs.core.FeatureContext;
 
 import org.eclipse.microprofile.auth.LoginConfig;
-import org.jboss.logging.Logger;
 
 import io.smallrye.jwt.auth.cdi.SmallRyeJWTAuthCDIExtension;
 
@@ -39,8 +38,6 @@ import io.smallrye.jwt.auth.cdi.SmallRyeJWTAuthCDIExtension;
  */
 public class SmallRyeJWTAuthJaxRsFeature implements Feature {
 
-    private static Logger logger = Logger.getLogger(SmallRyeJWTAuthJaxRsFeature.class);
-
     @Context
     private Application restApplication;
 
@@ -54,15 +51,12 @@ public class SmallRyeJWTAuthJaxRsFeature implements Feature {
             if (!SmallRyeJWTAuthCDIExtension.isHttpAuthMechanismEnabled()) {
                 context.register(JWTAuthenticationFilter.class);
 
-                logger.debugf("EE Security is not in use, %s has been registered",
-                        JWTAuthenticationFilter.class.getSimpleName());
+                JAXRSLogging.log.eeSecurityNotInUseButRegistered(JWTAuthenticationFilter.class.getSimpleName());
             }
 
-            logger.debugf("MP-JWT LoginConfig present, %s is enabled",
-                    getClass().getSimpleName());
+            JAXRSLogging.log.mpJWTLoginConfigPresent(getClass().getSimpleName());
         } else {
-            logger.infof("LoginConfig not found on Application class, %s will not be enabled",
-                    getClass().getSimpleName());
+            JAXRSLogging.log.mpJWTLoginConfigNotFound(getClass().getSimpleName());
         }
 
         return enabled;

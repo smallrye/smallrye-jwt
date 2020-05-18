@@ -283,7 +283,7 @@ class JwtClaimsBuilderImpl extends JwtSignatureImpl implements JwtClaimsBuilder,
         try {
             return SignatureAlgorithm.fromAlgorithm(value);
         } catch (Exception ex) {
-            throw new JwtSignatureException("Unsupported signature algorithm: " + value);
+            throw ImplMessages.msg.unsupportedSignatureAlgorithm(value, ex);
         }
     }
 }

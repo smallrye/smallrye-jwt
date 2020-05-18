@@ -81,7 +81,7 @@ public class JwtEncryptTest {
             Jwt.claims().jwe().encrypt(key);
             Assert.fail("JwtEncryptionException is expected due to the invalid key size");
         } catch (JwtEncryptionException ex) {
-            Assert.assertEquals("A key of size 2048 bits or larger MUST be used with the 'RSA-OAEP-256' algorithm",
+            Assert.assertEquals("SRJWT05001: A key of size 2048 bits or larger MUST be used with the 'RSA-OAEP-256' algorithm",
                     ex.getMessage());
         }
     }
