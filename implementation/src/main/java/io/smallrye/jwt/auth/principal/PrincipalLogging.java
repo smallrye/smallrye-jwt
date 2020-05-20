@@ -189,4 +189,8 @@ interface PrincipalLogging extends BasicLogger {
     @LogMessage(level = Logger.Level.DEBUG)
     @Message(id = 8043, value = "Failed to parse the JWK JSON representation")
     void failedToParseJWKJsonRepresentation();
+
+    @LogMessage(level = Logger.Level.DEBUG)
+    @Message(id = 8044, value = "Encrypted token sequence is invalid")
+    void encryptedTokenSequenceInvalid();
 }

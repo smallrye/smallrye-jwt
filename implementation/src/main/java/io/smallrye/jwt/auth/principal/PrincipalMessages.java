@@ -50,4 +50,10 @@ interface PrincipalMessages {
 
     @Message(id = 7010, value = "Required claims are not present in the JWT")
     InvalidJwtException missingClaims(@Producer Function<String, InvalidJwtException> fn);
+
+    @Message(id = 7011, value = "Key is unresolvable")
+    ParseException keyUnresolvable();
+
+    @Message(id = 7012, value = "Encrypted token sequence is invalid")
+    ParseException encryptedTokenSequenceInvalid();
 }
