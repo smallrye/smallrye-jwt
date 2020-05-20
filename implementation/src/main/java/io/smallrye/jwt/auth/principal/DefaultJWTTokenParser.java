@@ -171,9 +171,11 @@ public class DefaultJWTTokenParser {
             jwe.setCompactSerialization(token);
             return jwe.getPlaintextString();
         } catch (UnresolvableKeyException e) {
-            throw new ParseException("Key is unresolvable", e);
+            PrincipalLogging.log.verificationKeyUnresolvable();
+            throw PrincipalMessages.msg.keyUnresolvable();
         } catch (JoseException e) {
-            throw new ParseException("Encrypted token sequence is invalid", e);
+            PrincipalLogging.log.encryptedTokenSequenceInvalid();
+            throw PrincipalMessages.msg.encryptedTokenSequenceInvalid();
         }
     }
 
