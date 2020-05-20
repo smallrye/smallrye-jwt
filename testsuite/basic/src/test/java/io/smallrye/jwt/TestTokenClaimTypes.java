@@ -34,6 +34,7 @@ import javax.json.JsonObject;
 
 import org.eclipse.microprofile.jwt.Claims;
 import org.eclipse.microprofile.jwt.JsonWebToken;
+import org.eclipse.microprofile.jwt.tck.util.SignatureAlgorithm;
 import org.eclipse.microprofile.jwt.tck.util.TokenUtils;
 import org.jboss.arquillian.testng.Arquillian;
 import org.testng.Assert;
@@ -63,7 +64,7 @@ public class TestTokenClaimTypes extends Arquillian {
     @BeforeClass(alwaysRun = true)
     public static void generateToken() throws Exception {
         Map<String, Long> timeClaims = new HashMap<>();
-        token = TokenUtils.signClaims("/Token1.json", null, timeClaims);
+        token = TokenUtils.signClaims("/Token1.json", SignatureAlgorithm.RS256, null, timeClaims);
         iatClaim = timeClaims.get(Claims.iat.name());
         authTimeClaim = timeClaims.get(Claims.auth_time.name());
         expClaim = timeClaims.get(Claims.exp.name());
