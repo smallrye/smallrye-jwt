@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.microprofile.jwt.JsonWebToken;
+import org.eclipse.microprofile.jwt.tck.util.SignatureAlgorithm;
 import org.eclipse.microprofile.jwt.tck.util.TokenUtils;
 import org.jboss.arquillian.testng.Arquillian;
 import org.testng.Assert;
@@ -48,7 +49,7 @@ public class TestTokenWithGroupsString extends Arquillian {
     @BeforeClass(alwaysRun = true)
     public static void generateToken() throws Exception {
         Map<String, Long> timeClaims = new HashMap<>();
-        token = TokenUtils.signClaims("/TokenGroupsString.json", null, timeClaims);
+        token = TokenUtils.signClaims("/TokenGroupsString.json", SignatureAlgorithm.RS256, null, timeClaims);
         publicKey = TokenUtils.readPublicKey("/publicKey.pem");
         if (publicKey == null) {
             throw new IllegalStateException("Failed to load /publicKey.pem resource");
