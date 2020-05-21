@@ -13,6 +13,8 @@ include::attributes.adoc[]
 |mp.jwt.verify.publickey|none|Public Key supplied as a string, parsed from it in the order defined in section <<Supported Public Key Formats>>.
 |mp.jwt.verify.publickey.location|none|Config property allows for an external or internal location of Public Key to be specified.
 |mp.jwt.verify.issuer|none|Expected value of the JWT `iss` (issuer) claim.
+|mp.jwt.token.header|`Authorization`|Set this property if another header such as `Cookie` is used to pass the token.
+|mp.jwt.token.cookie|`Bearer`|Name of the cookie containing a token. This property will be effective only if  `mp.jwt.token.header` is set to `Cookie`.
 |===
 
 == Supported Public Key Formats
@@ -33,8 +35,8 @@ Smallrye JWT supports many properties which can be used to customize the token p
 |Property Name|Default|Description
 |smallrye.jwt.verify.algorithm|`RS256`|Signature algorithm. Set it to `ES256` to support the Elliptic Curve signature algorithm.
 |smallrye.jwt.verify.key-format|`ANY`|Set this property to a specific key format such as `PEM_KEY`, `PEM_CERTIFICATE`, `JWK` or `JWK_BASE64URL` to optimize the way the verification key is loaded.
-|smallrye.jwt.token.header|`Authorization`|Set this property if another header such as `Cookie` is used to pass the token.
-|smallrye.jwt.token.cookie|none|Name of the cookie containing a token. This property will be effective only if  `smallrye.jwt.token.header` is set to `Cookie`.
+|smallrye.jwt.token.header|`Authorization`|Set this property if another header such as `Cookie` is used to pass the token.This property is deprecated. Use `mp.jwt.token.header` instead.
+|smallrye.jwt.token.cookie|`Bearer`|Name of the cookie containing a token. This property will be effective only if  `smallrye.jwt.token.header` is set to `Cookie`. This property is deprecated. Use `mp.jwt.token.cookie` instead.
 |smallrye.jwt.always-check-authorization|false|Set this property to `true` for `Authorization` header be checked even if the `smallrye.jwt.token.header` is set to `Cookie` but no cookie with a `smallrye.jwt.token.cookie` name exists.
 |smallrye.jwt.token.schemes|`Bearer`|Comma-separated list containing an alternative single or multiple schemes, for example, `DPoP`.
 |smallrye.jwt.token.kid|none|Key identifier. If it is set then the verification JWK key as well every JWT token must have a matching `kid` header.
