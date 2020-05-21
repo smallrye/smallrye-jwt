@@ -34,4 +34,9 @@ public interface ConfigLogging extends BasicLogger {
     @LogMessage(level = Logger.Level.DEBUG)
     @Message(id = 3005, value = "Unsupported key format")
     void unsupportedKeyFormat();
+
+    @LogMessage(level = Logger.Level.WARN)
+    @Message(id = 3006, value = "'%s' property is deprecated and will be removed in a future version. " +
+            "Use '%s ' property instead")
+    void replacedConfig(String originalConfig, String newConfig);
 }
