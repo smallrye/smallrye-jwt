@@ -19,10 +19,12 @@ package io.smallrye.jwt.auth.principal;
 
 import org.eclipse.microprofile.jwt.tck.util.TokenUtils;
 import org.testng.Assert;
+import org.testng.annotations.Ignore;
 import org.testng.annotations.Test;
 
 import io.smallrye.jwt.config.JWTAuthContextInfoProvider;
 
+@Ignore
 public class DecryptionKeyLocationResolverTest {
 
     @Test
