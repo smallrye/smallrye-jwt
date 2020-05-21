@@ -103,6 +103,7 @@ public class JWTAuthContextInfoProvider {
         provider.mpJwtRequireIss = Optional.of(Boolean.TRUE);
         provider.mpJwtTokenHeader = Optional.of(AUTHORIZATION_HEADER);
         provider.mpJwtTokenCookie = Optional.of(BEARER_SCHEME);
+        provider.mpJwtVerifyAudiences = Optional.empty();
 
         provider.tokenHeader = provider.mpJwtTokenHeader;
         provider.tokenCookie = provider.mpJwtTokenCookie;
@@ -176,6 +177,13 @@ public class JWTAuthContextInfoProvider {
     @Inject
     @ConfigProperty(name = Names.TOKEN_COOKIE)
     private Optional<String> mpJwtTokenCookie;
+
+    /**
+     * @since 1.2
+     */
+    @Inject
+    @ConfigProperty(name = Names.AUDIENCES)
+    Optional<Set<String>> mpJwtVerifyAudiences;
 
     // SmallRye JWT specific properties
     /**
@@ -342,6 +350,7 @@ public class JWTAuthContextInfoProvider {
      * list per MP Config requirements for a collection property.
      *
      * @since 2.0.3
+     * @deprecated Use {@link JWTAuthContextInfoProvider#mpJwtVerifyAudiences}
      */
     @Inject
     @ConfigProperty(name = "smallrye.jwt.verify.aud")
@@ -424,7 +433,14 @@ public class JWTAuthContextInfoProvider {
         }
         contextInfo.setSignatureAlgorithm(signatureAlgorithm.orElse(SignatureAlgorithm.RS256));
         contextInfo.setKeyFormat(keyFormat);
-        contextInfo.setExpectedAudience(expectedAudience.orElse(null));
+        if (mpJwtVerifyAudiences.isPresent()) {
+            contextInfo.setExpectedAudience(mpJwtVerifyAudiences.get());
+        } else if (expectedAudience.isPresent()) {
+            contextInfo.setExpectedAudience(expectedAudience.get());
+            ConfigLogging.log.replacedConfig("smallrye.jwt.verify.aud", Names.AUDIENCES);
+        } else {
+            contextInfo.setExpectedAudience(null);
+        }
         contextInfo.setGroupsSeparator(groupsSeparator);
         contextInfo.setRequiredClaims(requiredClaims.orElse(null));
 
@@ -482,6 +498,10 @@ public class JWTAuthContextInfoProvider {
 
     public Optional<String> getMpJwtTokenCookie() {
         return mpJwtTokenCookie;
+    }
+
+    public Optional<Set<String>> getMpJwtVerifyAudiences() {
+        return mpJwtVerifyAudiences;
     }
 
     @Deprecated
@@ -554,6 +574,7 @@ public class JWTAuthContextInfoProvider {
         return keyFormat;
     }
 
+    @Deprecated
     public Optional<Set<String>> getExpectedAudience() {
         return expectedAudience;
     }
