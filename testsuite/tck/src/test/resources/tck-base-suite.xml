@@ -56,8 +56,7 @@
       <class name="org.eclipse.microprofile.jwt.tck.container.jaxrs.AudArrayValidationTest" />
       <class name="org.eclipse.microprofile.jwt.tck.container.jaxrs.AudValidationBadAudTest" />
       <class name="org.eclipse.microprofile.jwt.tck.container.jaxrs.AudValidationMissingAudTest" />
-      <!-- TODO - requires fix in the TCK -->
-      <!--<class name="org.eclipse.microprofile.jwt.tck.container.jaxrs.ApplicationScopedInjectionTest" />-->
+      <class name="org.eclipse.microprofile.jwt.tck.container.jaxrs.ApplicationScopedInjectionTest" />
       <class name="org.eclipse.microprofile.jwt.tck.config.PublicKeyAsPEMTest" />
       <class name="org.eclipse.microprofile.jwt.tck.config.PublicKeyAsPEMLocationTest" />
       <class name="org.eclipse.microprofile.jwt.tck.config.PublicKeyAsPEMLocationURLTest" />
@@ -77,8 +76,7 @@
       <class name="org.eclipse.microprofile.jwt.tck.config.IssValidationFailTest" />
       <class name="org.eclipse.microprofile.jwt.tck.container.jaxrs.CookieTokenTest" />
       <class name="org.eclipse.microprofile.jwt.tck.config.TokenAsCookieIgnoredTest" />
-      <!-- TODO - requires fix in the TCK -->
-      <!--<class name="org.eclipse.microprofile.jwt.tck.config.TokenAsCookieTest" />-->
+      <class name="org.eclipse.microprofile.jwt.tck.config.TokenAsCookieTest" />
       <!--<class name="org.eclipse.microprofile.jwt.tck.container.jaxrs.EmptyTokenTest" />-->
       <class name="org.eclipse.microprofile.jwt.tck.container.jaxrs.jwe.RolesAllowedEncryptTest" />
       <class name="org.eclipse.microprofile.jwt.tck.container.jaxrs.jwe.RolesAllowedSignEncryptTest" />
