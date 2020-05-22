@@ -8,6 +8,8 @@ import org.eclipse.microprofile.config.spi.ConfigSource;
 public class JwtBuildConfigSource implements ConfigSource {
 
     boolean signingKeyAvailable = true;
+    boolean lifespanPropertyRequired;
+    boolean issuerPropertyRequired;
     String encryptionKeyLocation = "/publicKey.pem";
     String signingKeyLocation = "/privateKey.pem";
 
@@ -18,6 +20,12 @@ public class JwtBuildConfigSource implements ConfigSource {
             map.put("smallrye.jwt.sign.key-location", signingKeyLocation);
         }
         map.put("smallrye.jwt.encrypt.key-location", encryptionKeyLocation);
+        if (lifespanPropertyRequired) {
+            map.put("smallrye.jwt.new-token.lifespan", "2000");
+        }
+        if (issuerPropertyRequired) {
+            map.put("smallrye.jwt.new-token.issuer", "https://custom-issuer");
+        }
         return map;
     }
 
@@ -41,5 +49,13 @@ public class JwtBuildConfigSource implements ConfigSource {
 
     public void setSigningKeyLocation(String location) {
         this.signingKeyLocation = location;
+    }
+
+    void setLifespanPropertyRequired(boolean lifespanPropertyRequired) {
+        this.lifespanPropertyRequired = lifespanPropertyRequired;
+    }
+
+    public void setIssuerPropertyRequired(boolean issuerPropertyRequired) {
+        this.issuerPropertyRequired = issuerPropertyRequired;
     }
 }

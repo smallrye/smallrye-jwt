@@ -13,7 +13,6 @@ import java.security.interfaces.RSAPrivateKey;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 
 import javax.crypto.SecretKey;
@@ -208,12 +207,24 @@ public class JwtSigningUtils {
         if (!claims.hasClaim(Claims.iat.name())) {
             claims.setIssuedAt(NumericDate.fromSeconds(currentTimeInSecs));
         }
-        if (!claims.hasClaim(Claims.exp.name())) {
-            claims.setExpirationTime(NumericDate.fromSeconds(currentTimeInSecs() + 300));
-        }
+        setExpiryClaim(claims);
         if (!claims.hasClaim(Claims.jti.name())) {
             claims.setGeneratedJwtId();
         }
+        if (!claims.hasClaim(Claims.iss.name())) {
+            String issuer = getConfigProperty("smallrye.jwt.new-token.issuer", String.class);
+            if (issuer != null) {
+                claims.setIssuer(issuer);
+            }
+        }
+    }
+
+    static <T> T getConfigProperty(String name, Class<T> cls) {
+        return getConfigProperty(name, cls, null);
+    }
+
+    static <T> T getConfigProperty(String name, Class<T> cls, T defaultValue) {
+        return ConfigProvider.getConfig().getOptionalValue(name, cls).orElse(defaultValue);
     }
 
     static String readClaimsAndSignWithJwk(JsonWebKey jwk, Map<String, Object> headers, String jwtLocation) {
@@ -353,16 +364,22 @@ public class JwtSigningUtils {
     }
 
     static Key getSigningKeyFromConfig(String kid) {
-        try {
-            String keyLocation = ConfigProvider.getConfig().getValue("smallrye.jwt.sign.key-location", String.class);
+        String keyLocation = getConfigProperty("smallrye.jwt.sign.key-location", String.class);
+        if (keyLocation != null) {
             try {
                 return KeyUtils.readSigningKey(keyLocation, kid);
             } catch (Exception ex) {
                 throw ImplMessages.msg.signingKeyCanNotBeLoadedFromLocation(keyLocation);
-                // TODO: try JWK(S) as well
             }
-        } catch (NoSuchElementException ex) {
+        } else {
             throw ImplMessages.msg.signKeyLocationNotConfigured();
+        }
+    }
+
+    static void setExpiryClaim(JwtClaims claims) {
+        if (!claims.hasClaim(Claims.exp.name())) {
+            Long lifespan = getConfigProperty("smallrye.jwt.new-token.lifespan", Long.class, 300L);
+            claims.setExpirationTime(NumericDate.fromSeconds(currentTimeInSecs() + lifespan));
         }
     }
 

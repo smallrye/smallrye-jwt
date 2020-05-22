@@ -81,9 +81,9 @@ class JwtEncryptionImpl implements JwtEncryptionBuilder {
     @Override
     public JwtEncryptionBuilder header(String name, Object value) {
         if ("alg".equals(name)) {
-            return keyEncryptionAlgorithm(toKeyEncryptionAlgorithm((String) value));
+            return keyAlgorithm(toKeyEncryptionAlgorithm((String) value));
         } else if ("enc".equals(name)) {
-            return contentEncryptionAlgorithm(toContentEncryptionAlgorithm((String) value));
+            return contentAlgorithm(toContentEncryptionAlgorithm((String) value));
         } else {
             headers.put(name, value);
             return this;
@@ -94,7 +94,7 @@ class JwtEncryptionImpl implements JwtEncryptionBuilder {
      * {@inheritDoc}
      */
     @Override
-    public JwtEncryptionBuilder keyEncryptionAlgorithm(KeyEncryptionAlgorithm algorithm) {
+    public JwtEncryptionBuilder keyAlgorithm(KeyEncryptionAlgorithm algorithm) {
         headers.put("alg", algorithm.getAlgorithm());
         return this;
     }
@@ -103,7 +103,7 @@ class JwtEncryptionImpl implements JwtEncryptionBuilder {
      * {@inheritDoc}
      */
     @Override
-    public JwtEncryptionBuilder contentEncryptionAlgorithm(ContentEncryptionAlgorithm algorithm) {
+    public JwtEncryptionBuilder contentAlgorithm(ContentEncryptionAlgorithm algorithm) {
         headers.put("enc", algorithm.getAlgorithm());
         return this;
     }
@@ -112,7 +112,7 @@ class JwtEncryptionImpl implements JwtEncryptionBuilder {
      * {@inheritDoc}
      */
     @Override
-    public JwtEncryptionBuilder keyEncryptionKeyId(String keyId) {
+    public JwtEncryptionBuilder keyId(String keyId) {
         headers.put("kid", keyId);
         return this;
     }
