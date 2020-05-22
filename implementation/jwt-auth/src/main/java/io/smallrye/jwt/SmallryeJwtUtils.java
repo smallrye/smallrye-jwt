@@ -70,10 +70,8 @@ public class SmallryeJwtUtils {
     }
 
     public static void setContextTokenCookie(JWTAuthContextInfo contextInfo, Optional<String> cookieName) {
-        if (cookieName.isPresent()) {
-            if (!COOKIE_HEADER.equals(contextInfo.getTokenHeader())) {
-                JWTLogging.log.tokenHeaderIsNotCookieHeader();
-            } else {
+        if (COOKIE_HEADER.equals(contextInfo.getTokenHeader())) {
+            if (cookieName.isPresent()) {
                 contextInfo.setTokenCookie(cookieName.get());
             }
         }
