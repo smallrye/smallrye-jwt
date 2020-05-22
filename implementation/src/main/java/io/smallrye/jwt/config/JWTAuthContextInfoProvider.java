@@ -26,7 +26,6 @@ import javax.enterprise.inject.Produces;
 import javax.inject.Inject;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.eclipse.microprofile.jwt.config.Names;
 import org.jboss.logging.Logger;
 
 import io.smallrye.jwt.KeyFormat;
@@ -98,6 +97,7 @@ public class JWTAuthContextInfoProvider {
         JWTAuthContextInfoProvider provider = new JWTAuthContextInfoProvider();
         provider.mpJwtPublicKey = Optional.of(publicKey);
         provider.mpJwtLocation = Optional.of(publicKeyLocation);
+        provider.mpJwtPublicKeyAlgorithm = Optional.of(SignatureAlgorithm.RS256);
         provider.mpJwtDecryptKeyLocation = Optional.of(decryptKeyLocation);
         provider.mpJwtIssuer = issuer;
         provider.mpJwtRequireIss = Optional.of(Boolean.TRUE);
@@ -119,9 +119,9 @@ public class JWTAuthContextInfoProvider {
         provider.maxTimeToLiveSecs = Optional.empty();
         provider.jwksRefreshInterval = Optional.empty();
         provider.forcedJwksRefreshInterval = 30;
-        provider.signatureAlgorithm = Optional.of(SignatureAlgorithm.RS256);
+        provider.signatureAlgorithm = provider.mpJwtPublicKeyAlgorithm;
         provider.keyFormat = KeyFormat.ANY;
-        provider.expectedAudience = Optional.empty();
+        provider.expectedAudience = provider.mpJwtVerifyAudiences;
         provider.groupsSeparator = DEFAULT_GROUPS_SEPARATOR;
         provider.requiredClaims = Optional.empty();
 
@@ -130,59 +130,66 @@ public class JWTAuthContextInfoProvider {
     // The MP-JWT spec defined configuration properties
 
     /**
-     * @since 1.1
+     * @apiNote MP JWT 1.1
      */
     @Inject
     @ConfigProperty(name = "mp.jwt.verify.publickey", defaultValue = NONE)
     private Optional<String> mpJwtPublicKey;
 
     /**
-     * @since 1.1
+     * @apiNote MP JWT 1.1
      */
     @Inject
     @ConfigProperty(name = "mp.jwt.verify.publickey.location", defaultValue = NONE)
     private Optional<String> mpJwtLocation;
 
     /**
-     * @since 1.1
+     * @apiNote MP JWT 1.2
+     */
+    @Inject
+    @ConfigProperty(name = "mp.jwt.verify.publickey.algorithm")
+    private Optional<SignatureAlgorithm> mpJwtPublicKeyAlgorithm;
+
+    /**
+     * @apiNote MP JWT 1.1
      */
     @Inject
     @ConfigProperty(name = "mp.jwt.decrypt.key.location", defaultValue = NONE)
     private Optional<String> mpJwtDecryptKeyLocation;
 
     /**
-     * @since 1.1
+     * @apiNote MP JWT 1.1
      */
     @Inject
     @ConfigProperty(name = "mp.jwt.verify.issuer", defaultValue = NONE)
     private String mpJwtIssuer;
 
     /**
-     * Not part of the 1.1 release, but talked about.
+     * @apiNote MP JWT 1.1
      */
     @Inject
     @ConfigProperty(name = "mp.jwt.verify.requireiss", defaultValue = "true")
     private Optional<Boolean> mpJwtRequireIss;
 
     /**
-     * @since 1.2
+     * @apiNote MP JWT 1.2
      */
     @Inject
-    @ConfigProperty(name = Names.TOKEN_HEADER)
+    @ConfigProperty(name = "mp.jwt.token.header")
     private Optional<String> mpJwtTokenHeader;
 
     /**
-     * @since 1.2
+     * @apiNote MP JWT 1.2
      */
     @Inject
-    @ConfigProperty(name = Names.TOKEN_COOKIE)
+    @ConfigProperty(name = "mp.jwt.token.cookie")
     private Optional<String> mpJwtTokenCookie;
 
     /**
-     * @since 1.2
+     * @apiNote MP JWT 1.2
      */
     @Inject
-    @ConfigProperty(name = Names.AUDIENCES)
+    @ConfigProperty(name = "mp.jwt.verify.audiences")
     Optional<Set<String>> mpJwtVerifyAudiences;
 
     // SmallRye JWT specific properties
@@ -193,6 +200,7 @@ public class JWTAuthContextInfoProvider {
      */
     @Inject
     @ConfigProperty(name = "smallrye.jwt.token.header")
+    @Deprecated
     private Optional<String> tokenHeader;
 
     /**
@@ -202,6 +210,7 @@ public class JWTAuthContextInfoProvider {
      */
     @Inject
     @ConfigProperty(name = "smallrye.jwt.token.cookie")
+    @Deprecated
     private Optional<String> tokenCookie;
 
     /**
@@ -330,9 +339,12 @@ public class JWTAuthContextInfoProvider {
 
     /**
      * Supported JSON Web Algorithm asymmetric signature algorithm (RS256 or ES256), default is RS256.
+     *
+     * @deprecated Use {@link JWTAuthContextInfoProvider#mpJwtPublicKeyAlgorithm}
      */
     @Inject
-    @ConfigProperty(name = "smallrye.jwt.verify.algorithm", defaultValue = "RS256")
+    @ConfigProperty(name = "smallrye.jwt.verify.algorithm")
+    @Deprecated
     private Optional<SignatureAlgorithm> signatureAlgorithm;
 
     /**
@@ -354,6 +366,7 @@ public class JWTAuthContextInfoProvider {
      */
     @Inject
     @ConfigProperty(name = "smallrye.jwt.verify.aud")
+    @Deprecated
     Optional<Set<String>> expectedAudience;
 
     /**
@@ -402,8 +415,8 @@ public class JWTAuthContextInfoProvider {
         if (mpJwtTokenHeader.isPresent()) {
             contextInfo.setTokenHeader(mpJwtTokenHeader.get());
         } else if (tokenHeader.isPresent()) {
+            ConfigLogging.log.replacedConfig("smallrye.jwt.token.header", "mp.jwt.token.header");
             contextInfo.setTokenHeader(tokenHeader.get());
-            ConfigLogging.log.replacedConfig("smallrye.jwt.token.header", Names.TOKEN_HEADER);
         } else {
             contextInfo.setTokenHeader(AUTHORIZATION_HEADER);
         }
@@ -411,8 +424,8 @@ public class JWTAuthContextInfoProvider {
         if (mpJwtTokenCookie.isPresent()) {
             SmallryeJwtUtils.setContextTokenCookie(contextInfo, mpJwtTokenCookie);
         } else if (tokenCookie.isPresent()) {
+            ConfigLogging.log.replacedConfig("smallrye.jwt.token.cookie", "mp.jwt.token.cookie");
             SmallryeJwtUtils.setContextTokenCookie(contextInfo, tokenCookie);
-            ConfigLogging.log.replacedConfig("smallrye.jwt.token.cookie", Names.TOKEN_COOKIE);
         } else {
             SmallryeJwtUtils.setContextTokenCookie(contextInfo, Optional.of(BEARER_SCHEME));
         }
@@ -430,16 +443,29 @@ public class JWTAuthContextInfoProvider {
         contextInfo.setMaxTimeToLiveSecs(maxTimeToLiveSecs.orElse(null));
         contextInfo.setJwksRefreshInterval(jwksRefreshInterval.orElse(null));
         contextInfo.setForcedJwksRefreshInterval(forcedJwksRefreshInterval);
-        if (signatureAlgorithm.orElse(null) == SignatureAlgorithm.HS256) {
-            throw ConfigMessages.msg.hs256NotSupported();
+        final Optional<SignatureAlgorithm> resolvedAlgorithm;
+        if (mpJwtPublicKeyAlgorithm.isPresent()) {
+            resolvedAlgorithm = mpJwtPublicKeyAlgorithm;
+        } else if (signatureAlgorithm.isPresent()) {
+            ConfigLogging.log.replacedConfig("smallrye.jwt.verify.algorithm", "mp.jwt.verify.publickey.algorithm");
+            resolvedAlgorithm = signatureAlgorithm;
+        } else {
+            resolvedAlgorithm = Optional.empty();
         }
-        contextInfo.setSignatureAlgorithm(signatureAlgorithm.orElse(SignatureAlgorithm.RS256));
+        if (resolvedAlgorithm.isPresent()) {
+            if (resolvedAlgorithm.get() == SignatureAlgorithm.HS256) {
+                throw ConfigMessages.msg.hs256NotSupported();
+            }
+            contextInfo.setSignatureAlgorithm(resolvedAlgorithm.get());
+        } else {
+            contextInfo.setSignatureAlgorithm(SignatureAlgorithm.RS256);
+        }
         contextInfo.setKeyFormat(keyFormat);
         if (mpJwtVerifyAudiences.isPresent()) {
             contextInfo.setExpectedAudience(mpJwtVerifyAudiences.get());
         } else if (expectedAudience.isPresent()) {
+            ConfigLogging.log.replacedConfig("smallrye.jwt.verify.aud", "mp.jwt.verify.audiences");
             contextInfo.setExpectedAudience(expectedAudience.get());
-            ConfigLogging.log.replacedConfig("smallrye.jwt.verify.aud", Names.AUDIENCES);
         } else {
             contextInfo.setExpectedAudience(null);
         }
@@ -480,6 +506,10 @@ public class JWTAuthContextInfoProvider {
 
     public Optional<String> getMpJwtLocation() {
         return mpJwtLocation;
+    }
+
+    public Optional<SignatureAlgorithm> getMpJwtPublicKeyAlgorithm() {
+        return mpJwtPublicKeyAlgorithm;
     }
 
     public Optional<String> getMpJwtDecryptKeyLocation() {
@@ -568,6 +598,7 @@ public class JWTAuthContextInfoProvider {
         return defaultSubClaim;
     }
 
+    @Deprecated
     public Optional<SignatureAlgorithm> getSignatureAlgorithm() {
         return signatureAlgorithm;
     }
