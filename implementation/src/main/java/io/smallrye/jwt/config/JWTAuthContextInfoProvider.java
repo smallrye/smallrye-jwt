@@ -26,6 +26,7 @@ import javax.enterprise.inject.Produces;
 import javax.inject.Inject;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.eclipse.microprofile.jwt.config.Names;
 import org.jboss.logging.Logger;
 
 import io.smallrye.jwt.KeyFormat;
@@ -99,10 +100,13 @@ public class JWTAuthContextInfoProvider {
         provider.mpJwtLocation = Optional.of(publicKeyLocation);
         provider.mpJwtDecryptKeyLocation = Optional.of(decryptKeyLocation);
         provider.mpJwtIssuer = issuer;
-
         provider.mpJwtRequireIss = Optional.of(Boolean.TRUE);
-        provider.tokenHeader = AUTHORIZATION_HEADER;
-        provider.tokenCookie = Optional.empty();
+        provider.mpJwtTokenHeader = Optional.of(AUTHORIZATION_HEADER);
+        provider.mpJwtTokenCookie = Optional.of(BEARER_SCHEME);
+        provider.mpJwtVerifyAudiences = Optional.empty();
+
+        provider.tokenHeader = provider.mpJwtTokenHeader;
+        provider.tokenCookie = provider.mpJwtTokenCookie;
         provider.tokenKeyId = Optional.empty();
         provider.tokenDecryptionKeyId = Optional.empty();
         provider.tokenSchemes = Optional.of(BEARER_SCHEME);
@@ -160,16 +164,41 @@ public class JWTAuthContextInfoProvider {
     @ConfigProperty(name = "mp.jwt.verify.requireiss", defaultValue = "true")
     private Optional<Boolean> mpJwtRequireIss;
 
+    /**
+     * @since 1.2
+     */
+    @Inject
+    @ConfigProperty(name = Names.TOKEN_HEADER)
+    private Optional<String> mpJwtTokenHeader;
+
+    /**
+     * @since 1.2
+     */
+    @Inject
+    @ConfigProperty(name = Names.TOKEN_COOKIE)
+    private Optional<String> mpJwtTokenCookie;
+
+    /**
+     * @since 1.2
+     */
+    @Inject
+    @ConfigProperty(name = Names.AUDIENCES)
+    Optional<Set<String>> mpJwtVerifyAudiences;
+
     // SmallRye JWT specific properties
     /**
      * HTTP header which is expected to contain a JWT token, default value is 'Authorization'
+     *
+     * @deprecated Use {@link JWTAuthContextInfoProvider#mpJwtTokenHeader}
      */
     @Inject
-    @ConfigProperty(name = "smallrye.jwt.token.header", defaultValue = AUTHORIZATION_HEADER)
-    private String tokenHeader;
+    @ConfigProperty(name = "smallrye.jwt.token.header")
+    private Optional<String> tokenHeader;
 
     /**
      * Cookie name containing a JWT token. This property is ignored unless the "smallrye.jwt.token.header" is set to 'Cookie'
+     *
+     * @deprecated Use {@link JWTAuthContextInfoProvider#mpJwtTokenCookie}
      */
     @Inject
     @ConfigProperty(name = "smallrye.jwt.token.cookie")
@@ -321,6 +350,7 @@ public class JWTAuthContextInfoProvider {
      * list per MP Config requirements for a collection property.
      *
      * @since 2.0.3
+     * @deprecated Use {@link JWTAuthContextInfoProvider#mpJwtVerifyAudiences}
      */
     @Inject
     @ConfigProperty(name = "smallrye.jwt.verify.aud")
@@ -342,7 +372,7 @@ public class JWTAuthContextInfoProvider {
 
         if (mpJwtDecryptKeyLocation.isPresent() && KeyFormat.PEM_CERTIFICATE == keyFormat) {
             log.debugf("Unsupported key format");
-            // TODO: throw the exception 
+            // TODO: throw the exception
             return Optional.empty();
         }
 
@@ -367,16 +397,28 @@ public class JWTAuthContextInfoProvider {
             contextInfo.setDecryptKeyLocation(mpJwtDecryptKeyLocation.get().trim());
         }
 
-        if (tokenHeader != null) {
-            contextInfo.setTokenHeader(tokenHeader);
+        if (mpJwtTokenHeader.isPresent()) {
+            contextInfo.setTokenHeader(mpJwtTokenHeader.get());
+        } else if (tokenHeader.isPresent()) {
+            contextInfo.setTokenHeader(tokenHeader.get());
+            ConfigLogging.log.replacedConfig("smallrye.jwt.token.header", Names.TOKEN_HEADER);
+        } else {
+            contextInfo.setTokenHeader(AUTHORIZATION_HEADER);
+        }
+
+        if (mpJwtTokenCookie.isPresent()) {
+            SmallryeJwtUtils.setContextTokenCookie(contextInfo, mpJwtTokenCookie);
+        } else if (tokenCookie.isPresent()) {
+            SmallryeJwtUtils.setContextTokenCookie(contextInfo, tokenCookie);
+            ConfigLogging.log.replacedConfig("smallrye.jwt.token.cookie", Names.TOKEN_COOKIE);
+        } else {
+            SmallryeJwtUtils.setContextTokenCookie(contextInfo, Optional.of(BEARER_SCHEME));
         }
 
         contextInfo.setAlwaysCheckAuthorization(alwaysCheckAuthorization);
-
         contextInfo.setTokenKeyId(tokenKeyId.orElse(null));
         contextInfo.setTokenDecryptionKeyId(tokenDecryptionKeyId.orElse(null));
         contextInfo.setRequireNamedPrincipal(requireNamedPrincipal.orElse(null));
-        SmallryeJwtUtils.setContextTokenCookie(contextInfo, tokenCookie);
         SmallryeJwtUtils.setTokenSchemes(contextInfo, tokenSchemes);
         contextInfo.setDefaultSubjectClaim(defaultSubClaim.orElse(null));
         SmallryeJwtUtils.setContextSubPath(contextInfo, subPath);
@@ -391,7 +433,14 @@ public class JWTAuthContextInfoProvider {
         }
         contextInfo.setSignatureAlgorithm(signatureAlgorithm.orElse(SignatureAlgorithm.RS256));
         contextInfo.setKeyFormat(keyFormat);
-        contextInfo.setExpectedAudience(expectedAudience.orElse(null));
+        if (mpJwtVerifyAudiences.isPresent()) {
+            contextInfo.setExpectedAudience(mpJwtVerifyAudiences.get());
+        } else if (expectedAudience.isPresent()) {
+            contextInfo.setExpectedAudience(expectedAudience.get());
+            ConfigLogging.log.replacedConfig("smallrye.jwt.verify.aud", Names.AUDIENCES);
+        } else {
+            contextInfo.setExpectedAudience(null);
+        }
         contextInfo.setGroupsSeparator(groupsSeparator);
         contextInfo.setRequiredClaims(requiredClaims.orElse(null));
 
@@ -443,10 +492,24 @@ public class JWTAuthContextInfoProvider {
         return mpJwtRequireIss;
     }
 
-    public String getTokenHeader() {
+    public Optional<String> getMpJwtTokenHeader() {
+        return mpJwtTokenHeader;
+    }
+
+    public Optional<String> getMpJwtTokenCookie() {
+        return mpJwtTokenCookie;
+    }
+
+    public Optional<Set<String>> getMpJwtVerifyAudiences() {
+        return mpJwtVerifyAudiences;
+    }
+
+    @Deprecated
+    public Optional<String> getTokenHeader() {
         return tokenHeader;
     }
 
+    @Deprecated
     public Optional<String> getTokenCookie() {
         return tokenCookie;
     }
@@ -511,6 +574,7 @@ public class JWTAuthContextInfoProvider {
         return keyFormat;
     }
 
+    @Deprecated
     public Optional<Set<String>> getExpectedAudience() {
         return expectedAudience;
     }
