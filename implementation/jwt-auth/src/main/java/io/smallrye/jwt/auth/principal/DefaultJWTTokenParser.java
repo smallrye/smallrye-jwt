@@ -83,6 +83,10 @@ public class DefaultJWTTokenParser {
                 jwe.setKey(getDecryptionKeyResolver(authContextInfo).resolveKey(jwe, null));
             }
             jwe.setCompactSerialization(token);
+            if (!"JWT".equals(jwe.getContentTypeHeaderValue())) {
+                PrincipalLogging.log.encryptedTokenSequenceInvalid();
+                throw PrincipalMessages.msg.encryptedTokenSequenceInvalid();
+            }
             return jwe.getPlaintextString();
         } catch (UnresolvableKeyException e) {
             PrincipalLogging.log.decryptionKeyUnresolvable();
