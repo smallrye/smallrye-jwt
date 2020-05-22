@@ -383,13 +383,9 @@ public class JWTAuthContextInfoProvider {
         ConfigLogging.log.configValues(mpJwtPublicKey.orElse("missing"), mpJwtIssuer, mpJwtLocation.orElse("missing"));
 
         if (mpJwtDecryptKeyLocation.isPresent() && KeyFormat.PEM_CERTIFICATE == keyFormat) {
-<<<<<<< HEAD
             ConfigLogging.log.unsupportedKeyFormat();
             // TODO: throw the exception 
-=======
-            log.debugf("Unsupported key format");
             // TODO: throw the exception
->>>>>>> Support MP JWT 1.2 new configurations (#240)
             return Optional.empty();
         }
 
