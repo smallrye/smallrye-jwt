@@ -393,7 +393,9 @@ public class JWTAuthContextInfoProvider {
             contextInfo.setPublicKeyContent(mpJwtPublicKey.get());
         } else if (mpJwtLocation.isPresent() && !NONE.equals(mpJwtLocation.get())) {
             contextInfo.setPublicKeyLocation(mpJwtLocation.get().trim());
-        } else if (mpJwtDecryptKeyLocation.isPresent() && !NONE.equals(mpJwtDecryptKeyLocation.get())) {
+        }
+
+        if (mpJwtDecryptKeyLocation.isPresent() && !NONE.equals(mpJwtDecryptKeyLocation.get())) {
             contextInfo.setDecryptKeyLocation(mpJwtDecryptKeyLocation.get().trim());
         }
 
