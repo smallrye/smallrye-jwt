@@ -21,11 +21,13 @@ import java.security.Principal;
 
 import javax.annotation.Priority;
 import javax.inject.Inject;
+import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.Priorities;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
 import javax.ws.rs.container.PreMatching;
 import javax.ws.rs.core.Cookie;
+import javax.ws.rs.core.Response;
 import javax.ws.rs.core.SecurityContext;
 
 import org.eclipse.microprofile.jwt.JsonWebToken;
@@ -41,13 +43,12 @@ import io.smallrye.jwt.auth.principal.JWTParser;
 @PreMatching
 @Priority(Priorities.AUTHENTICATION)
 public class JWTAuthenticationFilter implements ContainerRequestFilter {
+    public static final String HAS_JWT = JWTAuthenticationFilter.class.getName() + ".has.jwt";
 
     @Inject
     private JWTAuthContextInfo authContextInfo;
-
     @Inject
     private JWTParser jwtParser;
-
     @Inject
     private PrincipalProducer producer;
 
@@ -71,6 +72,7 @@ public class JWTAuthenticationFilter implements ContainerRequestFilter {
                     JAXRSLogging.log.success();
                 } catch (Exception e) {
                     JAXRSLogging.log.unableParseJWT(e);
+                    throw new NotAuthorizedException(Response.status(Response.Status.UNAUTHORIZED).build());
                 }
             }
         }
