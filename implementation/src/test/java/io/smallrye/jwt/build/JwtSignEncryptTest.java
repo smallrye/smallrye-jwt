@@ -63,9 +63,9 @@ public class JwtSignEncryptTest {
         String jweCompact = Jwt.claims()
                 .claim("customClaim", "custom-value")
                 .jws()
-                .signatureKeyId("sign-key-id")
+                .keyId("sign-key-id")
                 .innerSign()
-                .keyEncryptionKeyId("key-enc-key-id")
+                .keyId("key-enc-key-id")
                 .encrypt();
 
         checkJweHeaders(jweCompact, "RSA-OAEP-256", "key-enc-key-id");
@@ -93,7 +93,7 @@ public class JwtSignEncryptTest {
                     .claim("customClaim", "custom-value")
                     .jws()
                     .innerSign()
-                    .keyEncryptionKeyId("key-enc-key-id")
+                    .keyId("key-enc-key-id")
                     .encrypt();
         } finally {
             configSource.setSigningKeyAvailability(true);
@@ -123,9 +123,9 @@ public class JwtSignEncryptTest {
             jweCompact = Jwt.claims()
                     .claim("customClaim", "custom-value")
                     .jws()
-                    .signatureKeyId("sign-key-id")
+                    .keyId("sign-key-id")
                     .innerSign()
-                    .keyEncryptionKeyId("key1")
+                    .keyId("key1")
                     .encrypt();
         } finally {
             configSource.setEncryptionKeyLocation("/publicKey.pem");

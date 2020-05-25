@@ -34,11 +34,21 @@ JwtClaimsBuilder builder2 = Jwt.claims("/tokenClaims.json");
 
 // Builder created from a map of claims
 JwtClaimsBuilder builder3 = Jwt.claims(Collections.singletonMap("customClaim", "custom-value"));
+
+// Builder created from JsonObject
+JsonObject userName = Json.createObjectBuilder().add("username", "Alice").build();
+JsonObject userAddress = Json.createObjectBuilder().add("city", "someCity").add("street", "someStreet").build();
+JsonObject json = Json.createObjectBuilder(userName).add("address", userAddress).build();
+JwtClaimsBuilder builder4 = Jwt.claims(json);
+
+// Builder created from JsonWebToken
+@Inject JsonWebToken token;
+JwtClaimsBuilder builder5 = Jwt.claims(token);
 ----
 
 The API is fluent so the builder initialization can be done as part of the fluent API sequence. The builder will also
-set `iat (issued at) to the current time, `exp`(expires at) to 5 minutes away from the current time and `jti`
-(unique token identifier) claims if they have not already been set, so one can skip setting them when possible.
+set `iat (issued at) claim to the current time, `exp`(expires at) claim to a sum of the `iat` claim and `smallrye.jwt.new-token.lifespan`
+property values and `jti` (unique token identifier) claim if they have not already been set, so one can skip setting them when possible.
 
 The next step is to decide how to secure the claims.
 
@@ -56,7 +66,7 @@ import io.smallrye.jwt.build.Jwt;
 String jwt1 = Jwt.claims("/tokenClaims.json").sign();
 
 // Set the headers and sign the claims with an RSA private key loaded in the code (the implementation of this method is omitted). Note a 'jws()' transition to a 'JwtSignatureBuilder'.
-String jwt2 = Jwt.claims("/tokenClaims.json").jws().signatureKeyId("kid1").header("custom-header", "custom-value").sign(getPrivateKey());
+String jwt2 = Jwt.claims("/tokenClaims.json").jws().keyId("kid1").header("custom-header", "custom-value").sign(getPrivateKey());
 ----
 
 Note the `alg` (algorithm) header is set to `RS256` by default.
@@ -102,6 +112,8 @@ Smallrye JWT supports the following properties which can be used to customize th
 [cols="<m,<m,<2",options="header"]
 |===
 |Property Name|Default|Description
-|smallrye.jwt.encrypt.key-location|none|Config property allows the location of a key to be specified which will be used to encrypt the claims or inner JWT.
-|smallrye.jwt.sign.key-location|none|Config property allows the location of a private key to be specified which will be used to sign the claims of a JWT.
+|smallrye.jwt.encrypt.key-location|none|Location of a key which will be used to encrypt the claims or inner JWT when a no-argument encrypt() method is called.
+|smallrye.jwt.sign.key-location|none|Location of a key which will be used to sign the claims when either a no-argument sign() or innerSign() method is called.
+|smallrye.jwt.new-token.lifespan|300|Token lifespan in seconds which will be used to calculate an `exp` (expiry) claim value if this claim has not already been set.
+|smallrye.jwt.new-token.issuer|none|Token issuer which can be used to set an `iss` (issuer) claim value if this claim has not already been set.
 |===

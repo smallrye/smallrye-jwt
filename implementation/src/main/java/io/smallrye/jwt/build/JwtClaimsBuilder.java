@@ -14,6 +14,13 @@ import javax.json.JsonObject;
  * JwtClaimsBuilder implementations must set the 'iat' (issued at time), 'exp' (expiration time)
  * and 'jit' (unique token identifier) claims unless they have already been set.
  * <p>
+ * By default the 'iat' claim is set to the current time in seconds and the 'exp' claim is set by adding a default token
+ * lifespan value of 5 minutes to the 'iat' claim value. The 'smallrye.jwt.new-token.lifespan' property can be used to
+ * customize a new token lifespan and its 'exp' claim values.
+ * <p>
+ * JwtClaimsBuilder implementations must set the 'iss' (issuer) claim if has not already been set and
+ * the 'smallrye.jwt.new-token.issuer' property is set.
+ * <p>
  * Note that JwtClaimsBuilder implementations are not expected to be thread-safe.
  * 
  * @see <a href="https://tools.ietf.org/html/rfc7519">RFC7515</a>
@@ -63,7 +70,7 @@ public interface JwtClaimsBuilder extends JwtSignature {
     /**
      * Set an expiry 'exp' claim
      * 
-     * @param expiredAt the expiry time
+     * @param expiredAt the expiry time in seconds
      * @return JwtClaimsBuilder
      */
     JwtClaimsBuilder expiresAt(long expiredAt);

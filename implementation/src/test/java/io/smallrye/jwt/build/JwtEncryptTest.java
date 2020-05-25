@@ -45,7 +45,7 @@ public class JwtEncryptTest {
         String jweCompact = Jwt.claims()
                 .claim("customClaim", "custom-value")
                 .jwe()
-                .keyEncryptionKeyId("key-enc-key-id")
+                .keyId("key-enc-key-id")
                 .encrypt();
 
         checkJweHeaders(jweCompact);
@@ -61,7 +61,7 @@ public class JwtEncryptTest {
         String jweCompact = Jwt.claims()
                 .claim("customClaim", "custom-value")
                 .jwe()
-                .keyEncryptionKeyId("key-enc-key-id")
+                .keyId("key-enc-key-id")
                 .encrypt("publicKey.pem");
 
         checkJweHeaders(jweCompact);
@@ -92,7 +92,7 @@ public class JwtEncryptTest {
         String jweCompact = Jwt.claims()
                 .claim("customClaim", "custom-value")
                 .jwe()
-                .keyEncryptionKeyId("key-enc-key-id")
+                .keyId("key-enc-key-id")
                 .encrypt(jwk.getECPublicKey());
 
         checkJweHeaders(jweCompact, "ECDH-ES+A256KW", 4);
@@ -109,8 +109,8 @@ public class JwtEncryptTest {
         String jweCompact = Jwt.claims()
                 .claim("customClaim", "custom-value")
                 .jwe()
-                .keyEncryptionKeyId("key-enc-key-id")
-                .contentEncryptionAlgorithm(ContentEncryptionAlgorithm.A128CBC_HS256)
+                .keyId("key-enc-key-id")
+                .contentAlgorithm(ContentEncryptionAlgorithm.A128CBC_HS256)
                 .encrypt(jwk.getECPublicKey());
 
         checkJweHeaders(jweCompact, "ECDH-ES+A256KW", "A128CBC-HS256", 4);
@@ -126,7 +126,7 @@ public class JwtEncryptTest {
         String jweCompact = Jwt.claims()
                 .claim("customClaim", "custom-value")
                 .jwe()
-                .keyEncryptionKeyId("key-enc-key-id")
+                .keyId("key-enc-key-id")
                 .encrypt(createSecretKey());
 
         checkJweHeaders(jweCompact, "A256KW", 3);

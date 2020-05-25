@@ -162,7 +162,7 @@ class JwtClaimsBuilderImpl extends JwtSignatureImpl implements JwtClaimsBuilder,
     @Override
     public JwtSignatureBuilder header(String name, Object value) {
         if ("alg".equals(name)) {
-            return signatureAlgorithm(toSignatureAlgorithm((String) value));
+            return algorithm(toSignatureAlgorithm((String) value));
         } else {
             headers.put(name, value);
             return this;
@@ -173,7 +173,7 @@ class JwtClaimsBuilderImpl extends JwtSignatureImpl implements JwtClaimsBuilder,
      * {@inheritDoc}
      */
     @Override
-    public JwtSignatureBuilder signatureAlgorithm(SignatureAlgorithm algorithm) {
+    public JwtSignatureBuilder algorithm(SignatureAlgorithm algorithm) {
         headers.put("alg", algorithm.name());
         return this;
     }
@@ -182,7 +182,7 @@ class JwtClaimsBuilderImpl extends JwtSignatureImpl implements JwtClaimsBuilder,
      * {@inheritDoc}
      */
     @Override
-    public JwtSignatureBuilder signatureKeyId(String keyId) {
+    public JwtSignatureBuilder keyId(String keyId) {
         headers.put("kid", keyId);
         return this;
     }
