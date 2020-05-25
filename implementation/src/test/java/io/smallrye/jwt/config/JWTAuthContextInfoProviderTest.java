@@ -18,6 +18,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import io.smallrye.config.inject.ConfigExtension;
+import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
 
 public class JWTAuthContextInfoProviderTest {
@@ -36,9 +37,11 @@ public class JWTAuthContextInfoProviderTest {
         System.clearProperty("mp.jwt.token.header");
         System.clearProperty("mp.jwt.token.cookie");
         System.clearProperty("mp.jwt.verify.audiences");
+        System.clearProperty("mp.jwt.verify.publickey.algorithm");
         System.clearProperty("smallrye.jwt.token.header");
         System.clearProperty("smallrye.jwt.token.cookie");
         System.clearProperty("smallrye.jwt.verify.aud");
+        System.clearProperty("smallrye.jwt.verify.algorithm");
     }
 
     @Test
@@ -107,5 +110,31 @@ public class JWTAuthContextInfoProviderTest {
         JWTAuthContextInfo contextInfo = context.get().getOptionalContextInfo().get();
         assertEquals(1, contextInfo.getExpectedAudience().size());
         assertTrue(contextInfo.getExpectedAudience().contains("1234"));
+    }
+
+    @Test
+    public void algorithmsConfigs() {
+        System.setProperty("mp.jwt.verify.publickey.algorithm", "ES256");
+        JWTAuthContextInfo contextInfo = context.get().getOptionalContextInfo().get();
+        assertEquals(SignatureAlgorithm.ES256, contextInfo.getSignatureAlgorithm());
+        assertThrows(NoSuchElementException.class,
+                () -> ConfigProvider.getConfig().getValue("smallrye.jwt.verify.algorithm", String.class));
+    }
+
+    @Test
+    public void smallryeAlgorithmsConfigs() {
+        System.setProperty("smallrye.jwt.verify.algorithm", "ES256");
+        JWTAuthContextInfo contextInfo = context.get().getOptionalContextInfo().get();
+        assertEquals(SignatureAlgorithm.ES256, contextInfo.getSignatureAlgorithm());
+        assertThrows(NoSuchElementException.class,
+                () -> ConfigProvider.getConfig().getValue("mp.jwt.verify.publickey.algorithm", String.class));
+    }
+
+    @Test
+    public void mpAlgorithmsConfigPriority() {
+        System.setProperty("mp.jwt.verify.publickey.algorithm", "ES256");
+        System.setProperty("smallrye.jwt.verify.aud", "RS256");
+        JWTAuthContextInfo contextInfo = context.get().getOptionalContextInfo().get();
+        assertEquals(SignatureAlgorithm.ES256, contextInfo.getSignatureAlgorithm());
     }
 }
