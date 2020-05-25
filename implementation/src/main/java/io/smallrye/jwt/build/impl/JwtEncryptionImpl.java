@@ -64,7 +64,7 @@ class JwtEncryptionImpl implements JwtEncryptionBuilder {
         } catch (Exception ex) {
             throw new JwtEncryptionException(ex);
         }
-        return key instanceof PublicKey ? encryptInternal((PublicKey) key) : encryptInternal((SecretKey) key);
+        return encryptInternal(key);
     }
 
     /**
@@ -72,7 +72,7 @@ class JwtEncryptionImpl implements JwtEncryptionBuilder {
      */
     @Override
     public String encrypt() throws JwtSignatureException {
-        return encryptInternal(getKeyEncryptionKeyFromConfig((String) headers.get("kid")));
+        return encrypt(readKeyLocationFromConfig());
     }
 
     /**
@@ -147,42 +147,28 @@ class JwtEncryptionImpl implements JwtEncryptionBuilder {
         if ("dir".equals(alg)) {
             throw ImplMessages.msg.directContentEncryptionUnsupported();
         }
-
-        if (keyEncryptionKey instanceof RSAPublicKey) {
-            if (alg == null) {
-                return KeyEncryptionAlgorithm.RSA_OAEP_256.getAlgorithm();
-            } else {
-                return alg;
-            }
-        } else if (keyEncryptionKey instanceof SecretKey) {
-            if (alg == null) {
-                return KeyEncryptionAlgorithm.A256KW.getAlgorithm();
-            } else {
-                return alg;
-            }
-        } else if (keyEncryptionKey instanceof ECPublicKey) {
-            if (alg == null) {
-                return KeyEncryptionAlgorithm.ECDH_ES_A256KW.getAlgorithm();
-            } else {
-                return alg;
+        if (alg == null) {
+            if (keyEncryptionKey instanceof RSAPublicKey) {
+                alg = KeyEncryptionAlgorithm.RSA_OAEP_256.getAlgorithm();
+            } else if (keyEncryptionKey instanceof SecretKey) {
+                alg = KeyEncryptionAlgorithm.A256KW.getAlgorithm();
+            } else if (keyEncryptionKey instanceof ECPublicKey) {
+                alg = KeyEncryptionAlgorithm.ECDH_ES_A256KW.getAlgorithm();
             }
         }
-
-        throw ImplMessages.msg.unsupportedKeyEncryptionAlgorithm(keyEncryptionKey.getAlgorithm());
+        if (alg == null) {
+            throw ImplMessages.msg.unsupportedKeyEncryptionAlgorithm(keyEncryptionKey.getAlgorithm());
+        }
+        return alg;
     }
 
     private String getContentEncryptionAlgorithm() {
         return headers.containsKey("enc") ? headers.get("enc").toString() : ContentEncryptionAlgorithm.A256GCM.name();
     }
 
-    static Key getKeyEncryptionKeyFromConfig(String kid) {
+    private static String readKeyLocationFromConfig() {
         try {
-            String keyLocation = ConfigProvider.getConfig().getValue("smallrye.jwt.encrypt.key-location", String.class);
-            try {
-                return KeyUtils.readEncryptionKey(keyLocation, kid);
-            } catch (Exception ex) {
-                throw ImplMessages.msg.encryptionKeyNotFound(keyLocation);
-            }
+            return ConfigProvider.getConfig().getValue("smallrye.jwt.encrypt.key-location", String.class);
         } catch (NoSuchElementException ex) {
             throw ImplMessages.msg.keyLocationPropertyEmpty();
         }
