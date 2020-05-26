@@ -43,7 +43,7 @@ interface ImplMessages {
     JwtEncryptionException encryptionKeyNotFound(String keyLocation);
 
     @Message(id = 5008, value = "Please set a 'smallrye.jwt.encrypt.key-location' property")
-    JwtSignatureException keyLocationPropertyEmpty();
+    JwtEncryptionException keyLocationPropertyEmpty();
 
     @Message(id = 5009, value = "")
     JwtSignatureException signatureException(@Cause Throwable throwable);

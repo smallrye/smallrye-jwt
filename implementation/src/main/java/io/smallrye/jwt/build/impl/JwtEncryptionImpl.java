@@ -71,7 +71,7 @@ class JwtEncryptionImpl implements JwtEncryptionBuilder {
      * {@inheritDoc}
      */
     @Override
-    public String encrypt() throws JwtSignatureException {
+    public String encrypt() throws JwtEncryptionException {
         return encrypt(readKeyLocationFromConfig());
     }
 
