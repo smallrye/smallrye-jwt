@@ -53,8 +53,8 @@ public interface JwtEncryption {
      * unless different ones have been set with {@code JwtEncryptionBuilder}.
      * A key of size 2048 bits or larger MUST be used with the 'RSA-OAEP' and 'RSA-OAEP-256' algorithms.
      *
-     * @return signed JWT token
-     * @throws JwtEncryptionException the exception if the signing operation has failed
+     * @return encrypted JWT token
+     * @throws JwtEncryptionException the exception if the encryption operation has failed
      */
     String encrypt() throws JwtEncryptionException;
 
