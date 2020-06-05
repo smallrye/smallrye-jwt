@@ -16,16 +16,13 @@
  */
 package io.smallrye.jwt;
 
-import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringReader;
-import java.io.StringWriter;
 import java.math.BigInteger;
 import java.net.URL;
 import java.security.GeneralSecurityException;
@@ -63,9 +60,6 @@ import io.smallrye.jwt.algorithm.SignatureAlgorithm;
  */
 public final class KeyUtils {
 
-    private static final String HTTP_BASED_SCHEME = "http";
-    private static final String CLASSPATH_SCHEME = "classpath:";
-    private static final String FILE_SCHEME = "file:";
     private static final String RSA = "RSA";
     private static final String EC = "EC";
 
@@ -264,41 +258,11 @@ public final class KeyUtils {
 
     static String readKeyContent(String keyLocation) throws IOException {
 
-        InputStream is = null;
-
-        if (keyLocation.startsWith(HTTP_BASED_SCHEME)) {
-            // It can be PEM key at HTTP or HTTPS URL, JWK set at HTTP URL or single JWK at either HTTP or HTTPS URL
-            is = getUrlResolver().resolve(keyLocation);
-        } else if (keyLocation.startsWith(FILE_SCHEME)) {
-            is = getAsFileSystemResource(keyLocation.substring(FILE_SCHEME.length()));
-        } else if (keyLocation.startsWith(CLASSPATH_SCHEME)) {
-            is = getAsClasspathResource(keyLocation.substring(CLASSPATH_SCHEME.length()));
-        } else {
-            is = getAsFileSystemResource(keyLocation);
-            if (is == null) {
-                is = getAsClasspathResource(keyLocation);
-            }
-            if (is == null) {
-                is = getUrlResolver().resolve(keyLocation);
-            }
-        }
-
-        if (is == null) {
+        String content = ResourceUtils.readResource(keyLocation);
+        if (content == null) {
             throw JWTMessages.msg.keyNotFound(keyLocation);
         }
-
-        StringWriter contents = new StringWriter();
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(is))) {
-            String line = null;
-            while ((line = reader.readLine()) != null) {
-                contents.write(line);
-            }
-        }
-        return contents.toString();
-    }
-
-    static UrlStreamResolver getUrlResolver() {
-        return new UrlStreamResolver();
+        return content;
     }
 
     static PrivateKey tryAsPEMPrivateKey(String content) {

@@ -2,6 +2,7 @@ package io.smallrye.jwt.config;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.InputStream;
@@ -10,9 +11,12 @@ import java.util.Collections;
 import java.util.Optional;
 import java.util.Scanner;
 
+import javax.enterprise.inject.spi.DeploymentException;
+
 import org.junit.Before;
 import org.junit.Test;
 
+import io.smallrye.jwt.ResourceUtils;
 import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
 
 public class JWTAuthContextInfoProviderTest {
@@ -51,11 +55,26 @@ public class JWTAuthContextInfoProviderTest {
     }
 
     @Test
-    public void testGetContextInfoWithKeyLocation() {
+    public void testGetContextInfoWithHttpsKeyLocation() {
+        JWTAuthContextInfoProvider provider = JWTAuthContextInfoProvider.createWithKeyLocation("https://publicKey.pem",
+                TEST_ISS);
+        JWTAuthContextInfo info = provider.getContextInfo();
+        assertNull(info.getPublicKeyContent());
+        assertEquals("https://publicKey.pem", info.getPublicKeyLocation());
+    }
+
+    @Test
+    public void testGetContextInfoWithClasspathKeyLocation() throws Exception {
         JWTAuthContextInfoProvider provider = JWTAuthContextInfoProvider.createWithKeyLocation("classpath:publicKey.pem",
                 TEST_ISS);
         JWTAuthContextInfo info = provider.getContextInfo();
-        assertEquals("classpath:publicKey.pem", info.getPublicKeyLocation());
+        assertNull(info.getPublicKeyLocation());
+        assertEquals(ResourceUtils.readResource("classpath:publicKey.pem"), info.getPublicKeyContent());
+    }
+
+    @Test(expected = DeploymentException.class)
+    public void testGetContextInfoWithInvalidClasspathKeyLocation() throws Exception {
+        JWTAuthContextInfoProvider.createWithKeyLocation("classpath:publicKeys.pem", TEST_ISS).getContextInfo();
     }
 
     @Test
@@ -64,6 +83,7 @@ public class JWTAuthContextInfoProviderTest {
         Optional<JWTAuthContextInfo> info = provider.getOptionalContextInfo();
         assertNotNull(info);
         assertTrue(info.isPresent());
+        assertNull(info.get().getPublicKeyLocation());
         assertEquals(signerKeyJwk, info.get().getPublicKeyContent());
     }
 

@@ -16,6 +16,7 @@
  */
 package io.smallrye.jwt.config;
 
+import java.io.IOException;
 import java.security.interfaces.RSAPublicKey;
 import java.util.Optional;
 import java.util.Set;
@@ -26,10 +27,10 @@ import javax.enterprise.inject.Produces;
 import javax.inject.Inject;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.jboss.logging.Logger;
 
 import io.smallrye.jwt.KeyFormat;
 import io.smallrye.jwt.KeyUtils;
+import io.smallrye.jwt.ResourceUtils;
 import io.smallrye.jwt.SmallryeJwtUtils;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
@@ -44,7 +45,6 @@ public class JWTAuthContextInfoProvider {
     private static final String BEARER_SCHEME = "Bearer";
     private static final String NONE = "NONE";
     private static final String DEFAULT_GROUPS_SEPARATOR = " ";
-    private static final Logger log = Logger.getLogger(JWTAuthContextInfoProvider.class);
 
     /**
      * Create JWTAuthContextInfoProvider with the public key and issuer
@@ -307,11 +307,22 @@ public class JWTAuthContextInfoProvider {
         // Default is to require iss claim
         contextInfo.setRequireIssuer(mpJwtRequireIss.orElse(true));
 
-        // The MP-JWT location can be a PEM, JWK or JWKS
         if (mpJwtPublicKey.isPresent() && !NONE.equals(mpJwtPublicKey.get())) {
             contextInfo.setPublicKeyContent(mpJwtPublicKey.get());
         } else if (mpJwtLocation.isPresent() && !NONE.equals(mpJwtLocation.get())) {
-            contextInfo.setPublicKeyLocation(mpJwtLocation.get().trim());
+            String mpJwtLocationTrimmed = mpJwtLocation.get().trim();
+            if (mpJwtLocationTrimmed.startsWith("http")) {
+                contextInfo.setPublicKeyLocation(mpJwtLocationTrimmed);
+            } else {
+                try {
+                    contextInfo.setPublicKeyContent(ResourceUtils.readResource(mpJwtLocationTrimmed));
+                    if (contextInfo.getPublicKeyContent() == null) {
+                        throw ConfigMessages.msg.invalidPublicKeyLocation();
+                    }
+                } catch (IOException ex) {
+                    throw ConfigMessages.msg.readingPublicKeyLocationFailed(ex);
+                }
+            }
         }
         if (tokenHeader != null) {
             contextInfo.setTokenHeader(tokenHeader);

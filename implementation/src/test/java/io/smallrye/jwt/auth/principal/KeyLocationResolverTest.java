@@ -42,8 +42,9 @@ import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
 
 import io.smallrye.jwt.KeyUtils;
+import io.smallrye.jwt.ResourceUtils;
+import io.smallrye.jwt.ResourceUtils.UrlStreamResolver;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
-import io.smallrye.jwt.auth.principal.KeyLocationResolver.UrlStreamResolver;
 
 @RunWith(MockitoJUnitRunner.class)
 public class KeyLocationResolverTest {
@@ -170,7 +171,7 @@ public class KeyLocationResolverTest {
         contextInfo.setJwksRefreshInterval(10);
 
         Mockito.doThrow(new JoseException("")).when(httpsJwks).refresh();
-        Mockito.doReturn(KeyLocationResolver.getAsClasspathResource("publicCrt.pem"))
+        Mockito.doReturn(ResourceUtils.getAsClasspathResource("publicCrt.pem"))
                 .when(urlResolver).resolve(Mockito.any());
         KeyLocationResolver keyLocationResolver = new KeyLocationResolver(contextInfo) {
             protected HttpsJwks initializeHttpsJwks() {

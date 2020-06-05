@@ -17,7 +17,9 @@ interface ConfigMessages {
     @Message(id = 2001, value = "Failed to decode the MP JWT Public Key")
     DeploymentException parsingPublicKeyFailed(@Cause Throwable throwable);
 
-    @Message(id = 2002, value = "JWTAuthContextInfo has not been initialized. Please make sure that either "
-            + "'mp.jwt.verify.publickey' or 'mp.jwt.verify.publickey.location' properties are set.")
-    IllegalStateException authContextHasNotBeenInitialized();
+    @Message(id = 2002, value = "Failed to read the public key content from 'mp.jwt.publickey.location'")
+    DeploymentException readingPublicKeyLocationFailed(@Cause Throwable throwable);
+
+    @Message(id = 2003, value = "'mp.jwt.publickey.location' is invalid")
+    DeploymentException invalidPublicKeyLocation();
 }
