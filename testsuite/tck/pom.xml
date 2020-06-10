@@ -133,38 +133,56 @@
             <artifactId>maven-surefire-plugin</artifactId>
             <configuration>
               <environmentVariables>
-                <JBOSS_HOME>${project.build.directory}/wildfly-servlet-${version.wildfly}</JBOSS_HOME>
+                <JBOSS_HOME>${project.build.directory}/wildfly</JBOSS_HOME>
               </environmentVariables>
             </configuration>
           </plugin>
           <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-dependency-plugin</artifactId>
+            <groupId>org.jboss.galleon</groupId>
+            <artifactId>galleon-maven-plugin</artifactId>
+            <version>${version.galleon}</version>
             <executions>
               <execution>
-                <id>unpack</id>
-                <phase>process-test-classes</phase>
                 <goals>
-                  <goal>unpack</goal>
+                  <goal>provision</goal>
                 </goals>
                 <configuration>
-                  <artifactItems>
-                    <artifactItem>
+                  <install-dir>${project.build.directory}/wildfly</install-dir>
+                  <plugin-options>
+                    <optional-packages>passive+</optional-packages>
+                  </plugin-options>
+                  <feature-packs>
+                    <feature-pack>
                       <groupId>org.wildfly</groupId>
-                      <artifactId>wildfly-servlet-dist</artifactId>
+                      <artifactId>wildfly-galleon-pack</artifactId>
                       <version>${version.wildfly}</version>
-                      <type>zip</type>
-                      <overWrite>false</overWrite>
-                      <outputDirectory>${project.build.directory}</outputDirectory>
-                    </artifactItem>
-                  </artifactItems>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
+                      <inherit-configs>false</inherit-configs>
+                      <inherit-packages>false</inherit-packages>
+                      <excluded-packages>
+                        <name>product.conf</name>
+                        <name>docs.schema</name>
+                      </excluded-packages>
+                    </feature-pack>
+                  </feature-packs>
+                  <configs>
+                    <config>
+                      <name>standalone.xml</name>
+                      <model>standalone</model>
+                      <layers>
+                          <layer>jmx-remoting</layer>
+                          <layer>legacy-management</layer>
+                          <layer>legacy-security</layer>
+                          <layer>web-server</layer>
+                      </layers>
+                    </config>
+                </configs>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+      </plugins>
+    </build>
+  </profile>
 
     <profile>
       <id>coverage</id>
