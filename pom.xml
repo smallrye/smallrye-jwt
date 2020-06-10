@@ -42,6 +42,7 @@
     <version.resteasy>3.12.1.Final</version.resteasy>
     <version.mokito>3.3.3</version.mokito>
     <version.weld-junit4>2.0.1.Final</version.weld-junit4>
+    <version.wildfly>20.0.0.Final</version.wildfly>
     <sonar.coverage.jacoco.xmlReportPaths>${project.basedir}/testsuite/basic/target/site/jacoco-aggregate/jacoco.xml,${project.basedir}/../testsuite/basic/target/site/jacoco-aggregate/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
   </properties>
 
@@ -129,6 +130,7 @@
       </dependency>
     </dependencies>
   </dependencyManagement>
+
 
   <build>
     <plugins>
