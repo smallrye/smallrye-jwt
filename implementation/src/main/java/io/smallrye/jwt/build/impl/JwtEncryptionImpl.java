@@ -18,7 +18,6 @@ import io.smallrye.jwt.algorithm.ContentEncryptionAlgorithm;
 import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
 import io.smallrye.jwt.build.JwtEncryptionBuilder;
 import io.smallrye.jwt.build.JwtEncryptionException;
-import io.smallrye.jwt.build.JwtSignatureException;
 
 /**
  * Default JWT Encryption implementation
