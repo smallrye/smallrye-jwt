@@ -42,6 +42,9 @@
     <version.jose4j>0.7.9</version.jose4j>
     <version.resteasy>4.7.3.Final</version.resteasy>
     <version.mokito>4.1.0</version.mokito>
+    <version.galleon>4.2.8.Final</version.galleon>
+    <version.wildfly>25.0.1.Final</version.wildfly>
+    <version.wildfly.plugin>2.1.0.Final</version.wildfly.plugin>
   </properties>
 
   <licenses>
