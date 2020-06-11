@@ -1,5 +1,6 @@
 package io.smallrye.jwt.build;
 
+import java.time.Instant;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
@@ -68,12 +69,32 @@ public interface JwtClaimsBuilder extends JwtSignature {
     JwtClaimsBuilder issuedAt(long issuedAt);
 
     /**
+     * Set an issuedAt 'iat' claim
+     * 
+     * @param issuedAt the issuedAt time in seconds
+     * @return JwtClaimsBuilder
+     */
+    default JwtClaimsBuilder issuedAt(Instant issuedAt) {
+        return issuedAt(issuedAt.getEpochSecond());
+    }
+
+    /**
      * Set an expiry 'exp' claim
      * 
      * @param expiredAt the expiry time in seconds
      * @return JwtClaimsBuilder
      */
     JwtClaimsBuilder expiresAt(long expiredAt);
+
+    /**
+     * Set an expiry 'exp' claim
+     * 
+     * @param expiredAt the expiry time in seconds
+     * @return JwtClaimsBuilder
+     */
+    default JwtClaimsBuilder expiresAt(Instant expiredAt) {
+        return expiresAt(expiredAt.getEpochSecond());
+    }
 
     /**
      * Set a single value 'groups' claim

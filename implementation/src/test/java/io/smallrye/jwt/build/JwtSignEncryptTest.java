@@ -19,7 +19,11 @@ package io.smallrye.jwt.build;
 import java.security.Key;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.util.Collections;
 import java.util.Map;
+
+import javax.json.Json;
+import javax.json.JsonObject;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.spi.ConfigSource;
@@ -43,6 +47,10 @@ public class JwtSignEncryptTest {
                 .innerSign()
                 .encrypt();
 
+        checkRsaInnerSignedEncryptedClaims(jweCompact);
+    }
+
+    private void checkRsaInnerSignedEncryptedClaims(String jweCompact) throws Exception {
         checkJweHeaders(jweCompact, "RSA-OAEP-256", null);
 
         JsonWebEncryption jwe = getJsonWebEncryption(jweCompact);
@@ -56,6 +64,48 @@ public class JwtSignEncryptTest {
         checkClaimsAndJwsHeaders(jwtCompact, claims, "RS256", null);
 
         Assert.assertEquals("custom-value", claims.getClaimValue("customClaim"));
+    }
+
+    @Test
+    public void testInnerSignAndEncryptMapOfClaims() throws Exception {
+        String jweCompact = Jwt.claims(Collections.singletonMap("customClaim", "custom-value"))
+                .innerSign().encrypt();
+        checkRsaInnerSignedEncryptedClaims(jweCompact);
+    }
+
+    @Test
+    public void testInnerSignAndEncryptMapOfClaimsShortcut() throws Exception {
+        String jweCompact = Jwt.innerSignAndEncrypt(Collections.singletonMap("customClaim", "custom-value"));
+
+        checkRsaInnerSignedEncryptedClaims(jweCompact);
+    }
+
+    @Test
+    public void testInnerSignAndEncryptJsonObject() throws Exception {
+        JsonObject json = Json.createObjectBuilder().add("customClaim", "custom-value").build();
+        String jweCompact = Jwt.claims(json).innerSign().encrypt();
+
+        checkRsaInnerSignedEncryptedClaims(jweCompact);
+    }
+
+    @Test
+    public void testInnerSignAndEncryptJsonObjectShortcut() throws Exception {
+        JsonObject json = Json.createObjectBuilder().add("customClaim", "custom-value").build();
+        String jweCompact = Jwt.innerSignAndEncrypt(json);
+
+        checkRsaInnerSignedEncryptedClaims(jweCompact);
+    }
+
+    @Test
+    public void testInnerSignAndEncryptExistingClaims() throws Exception {
+        String jweCompact = Jwt.claims("/customClaim.json").innerSign().encrypt();
+        checkRsaInnerSignedEncryptedClaims(jweCompact);
+    }
+
+    @Test
+    public void testInnerSignAndEncryptExistingClaimsShortcut() throws Exception {
+        String jweCompact = Jwt.innerSignAndEncrypt("/customClaim.json");
+        checkRsaInnerSignedEncryptedClaims(jweCompact);
     }
 
     @Test

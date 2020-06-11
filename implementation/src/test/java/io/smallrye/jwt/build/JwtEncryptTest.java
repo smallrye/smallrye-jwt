@@ -20,9 +20,12 @@ import java.security.Key;
 import java.security.KeyPairGenerator;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.util.Collections;
 import java.util.Map;
 
 import javax.crypto.SecretKey;
+import javax.json.Json;
+import javax.json.JsonObject;
 
 import org.jose4j.base64url.Base64Url;
 import org.jose4j.json.JsonUtil;
@@ -52,6 +55,54 @@ public class JwtEncryptTest {
 
         JsonWebEncryption jwe = getJsonWebEncryption(jweCompact);
 
+        JwtClaims claims = JwtClaims.parse(jwe.getPlaintextString());
+        checkJwtClaims(claims);
+    }
+
+    @Test
+    public void testEncryptMapOfClaims() throws Exception {
+        String jweCompact = Jwt.claims(Collections.singletonMap("customClaim", "custom-value"))
+                .jwe().encrypt();
+
+        doTestEncryptedClaims(jweCompact);
+    }
+
+    @Test
+    public void testEncryptMapOfClaimsShortcut() throws Exception {
+        String jweCompact = Jwt.encrypt(Collections.singletonMap("customClaim", "custom-value"));
+
+        doTestEncryptedClaims(jweCompact);
+    }
+
+    @Test
+    public void testEncryptJsonObject() throws Exception {
+        JsonObject json = Json.createObjectBuilder().add("customClaim", "custom-value").build();
+        String jweCompact = Jwt.claims(json).jwe().encrypt();
+
+        doTestEncryptedClaims(jweCompact);
+    }
+
+    @Test
+    public void testEncryptJsonObjectShortcut() throws Exception {
+        JsonObject json = Json.createObjectBuilder().add("customClaim", "custom-value").build();
+        String jweCompact = Jwt.encrypt(json);
+
+        doTestEncryptedClaims(jweCompact);
+    }
+
+    @Test
+    public void testEncryptExistingClaims() throws Exception {
+        doTestEncryptedClaims(Jwt.claims("/customClaim.json").jwe().encrypt());
+    }
+
+    @Test
+    public void testEncryptExistingClaimsShortcut() throws Exception {
+        doTestEncryptedClaims(Jwt.encrypt("/customClaim.json"));
+    }
+
+    private void doTestEncryptedClaims(String jweCompact) throws Exception {
+        checkRsaEncJweHeaders(jweCompact);
+        JsonWebEncryption jwe = getJsonWebEncryption(jweCompact);
         JwtClaims claims = JwtClaims.parse(jwe.getPlaintextString());
         checkJwtClaims(claims);
     }
@@ -167,6 +218,13 @@ public class JwtEncryptTest {
         if ("ECDH-ES+A256KW".equals(keyEncKeyAlg)) {
             Assert.assertNotNull(jweHeaders.get("epk"));
         }
+    }
+
+    private static void checkRsaEncJweHeaders(String jweCompact) throws Exception {
+        Map<String, Object> jweHeaders = getJweHeaders(jweCompact);
+        Assert.assertEquals(2, jweHeaders.size());
+        Assert.assertEquals("RSA-OAEP-256", jweHeaders.get("alg"));
+        Assert.assertEquals("A256GCM", jweHeaders.get("enc"));
     }
 
     private static JsonWebEncryption getJsonWebEncryption(String compactJwe) throws Exception {
