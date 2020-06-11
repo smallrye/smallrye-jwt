@@ -85,6 +85,9 @@ public class DefaultJWTTokenParser {
 
             setExpectedAudience(builder, authContextInfo);
 
+            if (authContextInfo.isRelaxVerificationKeyValidation()) {
+                builder.setRelaxVerificationKeyValidation();
+            }
             JwtConsumer jwtConsumer = builder.build();
 
             //  Validate the JWT and process it to the Claims

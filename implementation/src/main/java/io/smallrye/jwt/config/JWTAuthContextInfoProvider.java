@@ -272,6 +272,14 @@ public class JWTAuthContextInfoProvider {
     private KeyFormat keyFormat;
 
     /**
+     * Relax the validation of the verification keys.
+     * Public RSA keys with the 1024 bit length will be allowed if this property is set to 'true'.
+     */
+    @Inject
+    @ConfigProperty(name = "smallrye.jwt.verify.relax-key-validation", defaultValue = "false")
+    private boolean relaxVerificationKeyValidation;
+
+    /**
      * The audience value(s) that identify valid recipient(s) of a JWT. Audience validation
      * will succeed, if any one of the provided values is equal to any one of the values of
      * the "aud" claim in the JWT. The config value should be specified as a comma-separated
@@ -350,6 +358,7 @@ public class JWTAuthContextInfoProvider {
         contextInfo.setExpectedAudience(expectedAudience.orElse(null));
         contextInfo.setGroupsSeparator(groupsSeparator);
         contextInfo.setRequiredClaims(requiredClaims.orElse(null));
+        contextInfo.setRelaxVerificationKeyValidation(relaxVerificationKeyValidation);
 
         return Optional.of(contextInfo);
     }
@@ -470,6 +479,10 @@ public class JWTAuthContextInfoProvider {
 
     public Optional<Set<String>> getRequiredClaims() {
         return requiredClaims;
+    }
+
+    public boolean isRelaxVerificationKeyValidation() {
+        return relaxVerificationKeyValidation;
     }
 
     @Produces

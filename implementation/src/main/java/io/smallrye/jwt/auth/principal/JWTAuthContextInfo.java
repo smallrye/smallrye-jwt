@@ -52,6 +52,7 @@ public class JWTAuthContextInfo {
     private Set<String> expectedAudience;
     private String groupsSeparator = " ";
     private Set<String> requiredClaims;
+    private boolean relaxVerificationKeyValidation;
 
     /**
      * Flag that indicates whether the issuer is required and validated, or ignored, new in MP-JWT 1.1.
@@ -320,6 +321,15 @@ public class JWTAuthContextInfo {
                 ", expectedAudience=" + expectedAudience +
                 ", groupsSeparator='" + groupsSeparator + '\'' +
                 ", requireIssuer=" + requireIssuer +
+                ", relaxVerificationKeyValidation=" + relaxVerificationKeyValidation +
                 '}';
+    }
+
+    public boolean isRelaxVerificationKeyValidation() {
+        return relaxVerificationKeyValidation;
+    }
+
+    public void setRelaxVerificationKeyValidation(boolean relaxVerificationKeyValidation) {
+        this.relaxVerificationKeyValidation = relaxVerificationKeyValidation;
     }
 }
