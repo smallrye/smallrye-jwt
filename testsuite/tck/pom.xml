@@ -205,6 +205,19 @@
         </plugin>
       </plugins>
     </build>
+
+    <repositories>
+        <repository>
+            <id>JBoss</id>
+            <name>JBoss Repository</name>
+            <url>https://repository.jboss.org/nexus/content/groups/public-jboss/</url>
+        </repository>
+        <repository>
+            <id>Red Hat</id>
+            <name>Red Hat Repository</name>
+            <url>https://maven.repository.redhat.com/ga/</url>
+        </repository>
+    </repositories>
   </profile>
 
     <profile>
