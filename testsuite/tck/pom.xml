@@ -169,9 +169,10 @@
                       <name>standalone.xml</name>
                       <model>standalone</model>
                       <layers>
+                          <layer>core-tools</layer>
+                          <layer>elytron</layer>
                           <layer>jmx-remoting</layer>
-                          <layer>legacy-management</layer>
-                          <layer>legacy-security</layer>
+                          <layer>secure-management</layer>
                           <layer>web-server</layer>
                       </layers>
                     </config>
@@ -179,6 +180,28 @@
               </configuration>
             </execution>
           </executions>
+        </plugin>
+        <plugin>
+          <groupId>org.wildfly.plugins</groupId>
+          <artifactId>wildfly-maven-plugin</artifactId>
+          <version>${version.wildfly.plugin}</version>
+          <executions>
+            <execution>
+              <phase>process-test-resources</phase>
+              <goals>
+                <goal>execute-commands</goal>
+              </goals>
+            </execution>
+          </executions>
+          <configuration>
+            <offline>true</offline>
+            <commands>
+              <command>embed-server</command>
+              <command>/subsystem=undertow/application-security-domain=other:add(security-domain=ApplicationDomain, integrated-jaspi=false)</command>
+            </commands>
+            <jboss-home>${project.build.directory}/wildfly</jboss-home>
+            <stdout>${project.build.directory}/wildfly-plugin.log</stdout>
+          </configuration>
         </plugin>
       </plugins>
     </build>
