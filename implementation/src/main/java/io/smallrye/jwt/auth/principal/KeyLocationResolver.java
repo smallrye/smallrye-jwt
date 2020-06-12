@@ -16,15 +16,8 @@
  */
 package io.smallrye.jwt.auth.principal;
 
-import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.StringReader;
-import java.io.StringWriter;
-import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.security.PublicKey;
@@ -51,6 +44,8 @@ import org.jose4j.lang.UnresolvableKeyException;
 
 import io.smallrye.jwt.KeyFormat;
 import io.smallrye.jwt.KeyUtils;
+import io.smallrye.jwt.ResourceUtils;
+import io.smallrye.jwt.ResourceUtils.UrlStreamResolver;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 
 /**
@@ -58,9 +53,6 @@ import io.smallrye.jwt.algorithm.SignatureAlgorithm;
  */
 public class KeyLocationResolver implements VerificationKeyResolver {
     private static final String HTTPS_SCHEME = "https:";
-    private static final String HTTP_BASED_SCHEME = "http";
-    private static final String CLASSPATH_SCHEME = "classpath:";
-    private static final String FILE_SCHEME = "file:";
 
     // The verification key can be calculated only once and used for all the token verification requests.
     // It will be created in the constructor if the PEM or the local JWK(S) content is available.
@@ -277,37 +269,11 @@ public class KeyLocationResolver implements VerificationKeyResolver {
 
     protected String readKeyContent(String keyLocation) throws IOException {
 
-        InputStream is = null;
-
-        if (keyLocation.startsWith(HTTP_BASED_SCHEME)) {
-            // It can be PEM key at HTTP or HTTPS URL, JWK set at HTTP URL or single JWK at either HTTP or HTTPS URL
-            is = getUrlResolver().resolve(keyLocation);
-        } else if (keyLocation.startsWith(FILE_SCHEME)) {
-            is = getAsFileSystemResource(keyLocation.substring(FILE_SCHEME.length()));
-        } else if (keyLocation.startsWith(CLASSPATH_SCHEME)) {
-            is = getAsClasspathResource(keyLocation.substring(CLASSPATH_SCHEME.length()));
-        } else {
-            is = getAsFileSystemResource(keyLocation);
-            if (is == null) {
-                is = getAsClasspathResource(keyLocation);
-            }
-            if (is == null) {
-                is = getUrlResolver().resolve(keyLocation);
-            }
-        }
-
-        if (is == null) {
+        String content = ResourceUtils.readResource(keyLocation, getUrlResolver());
+        if (content == null) {
             throw PrincipalMessages.msg.resourceNotFound(keyLocation);
         }
-
-        StringWriter contents = new StringWriter();
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(is))) {
-            String line = null;
-            while ((line = reader.readLine()) != null) {
-                contents.write(line);
-            }
-        }
-        return contents.toString();
+        return content;
     }
 
     protected UrlStreamResolver getUrlResolver() {
@@ -390,24 +356,6 @@ public class KeyLocationResolver implements VerificationKeyResolver {
 
     static JsonWebKey createJsonWebKey(JsonObject jsonObject) throws Exception {
         return JsonWebKey.Factory.newJwk(JsonUtil.parseJson(jsonObject.toString()));
-    }
-
-    static InputStream getAsFileSystemResource(String publicKeyLocation) {
-        try {
-            return new FileInputStream(publicKeyLocation);
-        } catch (FileNotFoundException e) {
-            return null;
-        }
-    }
-
-    static InputStream getAsClasspathResource(String location) {
-        return Thread.currentThread().getContextClassLoader().getResourceAsStream(location);
-    }
-
-    static class UrlStreamResolver {
-        public InputStream resolve(String keyLocation) throws IOException {
-            return new URL(keyLocation).openStream();
-        }
     }
 
     boolean mayBeFormat(KeyFormat format) {

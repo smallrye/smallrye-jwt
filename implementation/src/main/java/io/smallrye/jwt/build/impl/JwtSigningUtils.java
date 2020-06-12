@@ -1,11 +1,6 @@
 package io.smallrye.jwt.build.impl;
 
-import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.security.Key;
 import java.security.PrivateKey;
 import java.security.interfaces.ECPrivateKey;
@@ -13,7 +8,6 @@ import java.security.interfaces.RSAPrivateKey;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import javax.crypto.SecretKey;
 
@@ -28,6 +22,7 @@ import org.jose4j.jwt.JwtClaims;
 import org.jose4j.jwt.NumericDate;
 
 import io.smallrye.jwt.KeyUtils;
+import io.smallrye.jwt.ResourceUtils;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 
 /**
@@ -285,27 +280,12 @@ public class JwtSigningUtils {
     }
 
     static String readJsonContent(String jsonResName) {
-        // Try as the class path resource
-        InputStream is = JwtSigningUtils.class.getResourceAsStream(jsonResName);
-        if (is == null) {
-            is = Thread.currentThread().getContextClassLoader().getResourceAsStream(jsonResName);
-        }
-        if (is == null) {
-            // Try as the file system resource
-            if (jsonResName.startsWith("file:")) {
-                jsonResName = jsonResName.substring(5);
+        try {
+            String content = ResourceUtils.readResource(jsonResName);
+            if (content == null) {
+                throw ImplMessages.msg.failureToOpenInputStreamFromJsonResName(jsonResName);
             }
-            try {
-                is = new FileInputStream(jsonResName);
-            } catch (FileNotFoundException e) {
-                //continue
-            }
-        }
-        if (is == null) {
-            throw ImplMessages.msg.failureToOpenInputStreamFromJsonResName(jsonResName);
-        }
-        try (BufferedReader buffer = new BufferedReader(new InputStreamReader(is))) {
-            return buffer.lines().collect(Collectors.joining("\n"));
+            return content;
         } catch (IOException ex) {
             throw ImplMessages.msg.failureToReadJsonContentFromJsonResName(jsonResName, ex.getMessage(), ex);
         }
