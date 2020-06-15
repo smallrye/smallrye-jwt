@@ -3,16 +3,22 @@ package io.smallrye.jwt.auth.principal;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
 
+import java.security.KeyPair;
 import java.security.interfaces.RSAPublicKey;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 
 import org.eclipse.microprofile.jwt.tck.util.TokenUtils;
+import org.jose4j.jwt.consumer.InvalidJwtException;
 import org.jose4j.jwt.consumer.JwtContext;
 import org.junit.Before;
 import org.junit.Test;
+
+import io.smallrye.jwt.KeyUtils;
 
 public class DefaultJWTTokenParserTest {
 
@@ -33,6 +39,25 @@ public class DefaultJWTTokenParserTest {
     public void testParse() throws Exception {
         JwtContext context = parser.parse(TokenUtils.generateTokenString("/Token1.json"), config);
         assertNotNull(context);
+    }
+
+    @Test
+    public void testParseJwtSignedWith1024RsaKeyLengthAllowed() throws Exception {
+        KeyPair pair = KeyUtils.generateKeyPair(1024);
+        String jwt = TokenUtils.generateTokenString(pair.getPrivate(), "kid", "/Token1.json", null, null);
+        JWTAuthContextInfo context = new JWTAuthContextInfo((RSAPublicKey) pair.getPublic(), "https://server.example.com");
+        context.setRelaxVerificationKeyValidation(true);
+        assertNotNull(parser.parse(jwt, context).getJwtClaims());
+    }
+
+    @Test
+    public void testParseJwtSignedWith1024RsaKeyLengthDisallowed() throws Throwable {
+        KeyPair pair = KeyUtils.generateKeyPair(1024);
+        String jwt = TokenUtils.generateTokenString(pair.getPrivate(), "kid", "/Token1.json", null, null);
+        JWTAuthContextInfo context = new JWTAuthContextInfo((RSAPublicKey) pair.getPublic(), "https://server.example.com");
+        ParseException thrown = assertThrows("InvalidJwtException is expected",
+                ParseException.class, () -> parser.parse(jwt, context));
+        assertTrue(thrown.getCause() instanceof InvalidJwtException);
     }
 
     @Test
