@@ -21,6 +21,7 @@ import java.security.Key;
 import java.security.KeyPairGenerator;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -61,7 +62,7 @@ public class JwtSignTest {
         try {
             configSource.setLifespanPropertyRequired(true);
             configSource.setIssuerPropertyRequired(true);
-            signAndVerifyClaims(true, "https://custom-issuer");
+            signAndVerifyClaims(2000L, "https://custom-issuer");
         } finally {
             configSource.setLifespanPropertyRequired(false);
             configSource.setIssuerPropertyRequired(false);
@@ -86,10 +87,10 @@ public class JwtSignTest {
     }
 
     private JwtClaims signAndVerifyClaims() throws Exception {
-        return signAndVerifyClaims(false, null);
+        return signAndVerifyClaims(null, null);
     }
 
-    private JwtClaims signAndVerifyClaims(boolean lifeSpanRequired, String issuer) throws Exception {
+    private JwtClaims signAndVerifyClaims(Long customLifespan, String issuer) throws Exception {
         JwtClaimsBuilder builder = Jwt.claims().claim("customClaim", "custom-value");
         if (issuer == null) {
             builder.issuer("https://default-issuer");
@@ -102,7 +103,7 @@ public class JwtSignTest {
         Assert.assertEquals(jsonAfterSign, jws.getPayload());
         JwtClaims claims = JwtClaims.parse(jws.getPayload());
         Assert.assertEquals(5, claims.getClaimsMap().size());
-        checkDefaultClaimsAndHeaders(getJwsHeaders(jwt, 2), claims, "RS256", lifeSpanRequired ? 2000 : 300);
+        checkDefaultClaimsAndHeaders(getJwsHeaders(jwt, 2), claims, "RS256", customLifespan != null ? customLifespan : 300);
 
         Assert.assertEquals("custom-value", claims.getClaimValue("customClaim"));
         if (issuer != null) {
@@ -112,9 +113,37 @@ public class JwtSignTest {
     }
 
     @Test
+    public void testCustomIssuedAtExpiresAt() throws Exception {
+        Instant now = Instant.now();
+        String jwt = Jwt.claims().issuedAt(now).expiresAt(now.plusSeconds(3000)).sign();
+        JsonWebSignature jws = new JsonWebSignature();
+        jws.setKey(KeyUtils.readPublicKey("/publicKey.pem"));
+        jws.setCompactSerialization(jwt);
+        Assert.assertTrue(jws.verifySignature());
+        JwtClaims claims = JwtClaims.parse(jws.getPayload());
+        Assert.assertEquals(3, claims.getClaimsMap().size());
+        Assert.assertEquals(now.getEpochSecond(), claims.getIssuedAt().getValue());
+        Assert.assertEquals(now.getEpochSecond() + 3000, claims.getExpirationTime().getValue());
+        Assert.assertNotNull(claims.getJwtId());
+    }
+
+    @Test
     public void testSignMapOfClaims() throws Exception {
         String jwt = Jwt.claims(Collections.singletonMap("customClaim", "custom-value"))
                 .sign(getPrivateKey());
+
+        JsonWebSignature jws = getVerifiedJws(jwt);
+        JwtClaims claims = JwtClaims.parse(jws.getPayload());
+
+        Assert.assertEquals(4, claims.getClaimsMap().size());
+        checkDefaultClaimsAndHeaders(getJwsHeaders(jwt, 2), claims);
+
+        Assert.assertEquals("custom-value", claims.getClaimValue("customClaim"));
+    }
+
+    @Test
+    public void testSignMapOfClaimsShortcut() throws Exception {
+        String jwt = Jwt.sign(Collections.singletonMap("customClaim", "custom-value"));
 
         JsonWebSignature jws = getVerifiedJws(jwt);
         JwtClaims claims = JwtClaims.parse(jws.getPayload());
@@ -144,8 +173,24 @@ public class JwtSignTest {
         JsonObject userName = Json.createObjectBuilder().add("username", "Alice").build();
         JsonObject userAddress = Json.createObjectBuilder().add("city", "someCity").add("street", "someStreet").build();
         JsonObject json = Json.createObjectBuilder(userName).add("address", userAddress).build();
+
         String jwt = Jwt.claims(json).sign("/privateKey.pem");
 
+        verifySignedJsonObject(jwt);
+    }
+
+    @Test
+    public void testSignJsonObjectShortcut() throws Exception {
+        JsonObject userName = Json.createObjectBuilder().add("username", "Alice").build();
+        JsonObject userAddress = Json.createObjectBuilder().add("city", "someCity").add("street", "someStreet").build();
+        JsonObject json = Json.createObjectBuilder(userName).add("address", userAddress).build();
+
+        String jwt = Jwt.sign(json);
+
+        verifySignedJsonObject(jwt);
+    }
+
+    private void verifySignedJsonObject(String jwt) throws Exception {
         JsonWebSignature jws = getVerifiedJws(jwt);
         JwtClaims claims = JwtClaims.parse(jws.getPayload());
 
@@ -300,25 +345,29 @@ public class JwtSignTest {
 
     @Test
     public void testSignExistingClaimsFromClassPath() throws Exception {
-        doTestSignExistingClaims("/token.json");
+        doTestSignedExistingClaims(Jwt.claims("/token.json").sign());
+    }
+
+    @Test
+    public void testSignExistingClaimsFromClassPathShortcut() throws Exception {
+        doTestSignedExistingClaims(Jwt.sign("/token.json"));
     }
 
     @Test
     public void testSignExistingClaimsFromFileSystemWithFileScheme() throws Exception {
         URL resourceUrl = JwtSignTest.class.getResource("/token.json");
         Assert.assertEquals("file", resourceUrl.getProtocol());
-        doTestSignExistingClaims(resourceUrl.toString());
+        doTestSignedExistingClaims(Jwt.claims(resourceUrl.toString()).sign());
     }
 
     @Test
     public void testSignExistingClaimsFromFileSystemWithoutFileScheme() throws Exception {
         URL resourceUrl = JwtSignTest.class.getResource("/token.json");
         Assert.assertEquals("file", resourceUrl.getProtocol());
-        doTestSignExistingClaims(resourceUrl.toString().substring(5));
+        doTestSignedExistingClaims(Jwt.claims(resourceUrl.toString().substring(5)).sign());
     }
 
-    private void doTestSignExistingClaims(String jsonResName) throws Exception {
-        String jwt = Jwt.claims(jsonResName).sign();
+    private void doTestSignedExistingClaims(String jwt) throws Exception {
 
         JsonWebSignature jws = getVerifiedJws(jwt);
         JwtClaims claims = JwtClaims.parse(jws.getPayload());
