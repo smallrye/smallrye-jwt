@@ -216,7 +216,7 @@ class JwtClaimsBuilderImpl extends JwtSignatureImpl implements JwtClaimsBuilder,
      */
     @Override
     public String json() {
-        JwtSigningUtils.setDefaultJwtClaims(claims);
+        JwtBuildUtils.setDefaultJwtClaims(claims);
         return claims.toJson();
     }
 
@@ -225,7 +225,7 @@ class JwtClaimsBuilderImpl extends JwtSignatureImpl implements JwtClaimsBuilder,
      */
     @Override
     public JwtEncryptionBuilder jwe() {
-        JwtSigningUtils.setDefaultJwtClaims(claims);
+        JwtBuildUtils.setDefaultJwtClaims(claims);
         return new JwtEncryptionImpl(claims.toJson());
     }
 
@@ -276,7 +276,7 @@ class JwtClaimsBuilderImpl extends JwtSignatureImpl implements JwtClaimsBuilder,
     }
 
     private static JwtClaims parseJsonToClaims(String jsonLocation) {
-        return JwtSigningUtils.parseJwtClaims(jsonLocation);
+        return JwtBuildUtils.parseJwtClaims(jsonLocation);
     }
 
     private static SignatureAlgorithm toSignatureAlgorithm(String value) {

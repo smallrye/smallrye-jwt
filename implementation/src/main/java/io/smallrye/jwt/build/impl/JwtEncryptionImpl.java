@@ -6,11 +6,9 @@ import java.security.interfaces.ECPublicKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.NoSuchElementException;
 
 import javax.crypto.SecretKey;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jose4j.jwe.JsonWebEncryption;
 
 import io.smallrye.jwt.KeyUtils;
@@ -166,11 +164,7 @@ class JwtEncryptionImpl implements JwtEncryptionBuilder {
     }
 
     private static String readKeyLocationFromConfig() {
-        try {
-            return ConfigProvider.getConfig().getValue("smallrye.jwt.encrypt.key-location", String.class);
-        } catch (NoSuchElementException ex) {
-            throw ImplMessages.msg.keyLocationPropertyEmpty();
-        }
+        return JwtBuildUtils.getConfigProperty("smallrye.jwt.encrypt.key-location", String.class);
     }
 
     private static KeyEncryptionAlgorithm toKeyEncryptionAlgorithm(String value) {
