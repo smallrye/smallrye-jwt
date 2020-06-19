@@ -149,6 +149,7 @@ public interface JwtClaimsBuilder extends JwtSignature {
      *
      * @return the JSON representation
      */
+    @Deprecated
     String json();
 
     /**

@@ -90,6 +90,7 @@ public class JwtSignTest {
         return signAndVerifyClaims(null, null);
     }
 
+    @SuppressWarnings("deprecation")
     private JwtClaims signAndVerifyClaims(Long customLifespan, String issuer) throws Exception {
         JwtClaimsBuilder builder = Jwt.claims().claim("customClaim", "custom-value");
         if (issuer == null) {

@@ -22,6 +22,7 @@ public abstract class JwtProvider {
      * Name of the default {@code JwtProvider} implementation class.
      */
     private static final String DEFAULT_JWT_PROVIDER = "io.smallrye.jwt.build.impl.JwtProviderImpl";
+    private volatile static JwtProvider provider;
 
     protected JwtProvider() {
     }
@@ -36,6 +37,17 @@ public abstract class JwtProvider {
      * @return a JWT provider
      */
     public static JwtProvider provider() {
+        if (provider == null) {
+            synchronized (JwtProvider.class) {
+                if (provider == null) {
+                    provider = getProvider();
+                }
+            }
+        }
+        return provider;
+    }
+
+    private static JwtProvider getProvider() {
         ServiceLoader<JwtProvider> loader = ServiceLoader.load(JwtProvider.class);
         Iterator<JwtProvider> it = loader.iterator();
         if (it.hasNext()) {
