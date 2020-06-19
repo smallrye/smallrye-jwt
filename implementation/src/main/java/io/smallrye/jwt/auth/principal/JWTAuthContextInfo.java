@@ -15,31 +15,42 @@
  */
 package io.smallrye.jwt.auth.principal;
 
+import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
+import javax.crypto.SecretKey;
+
 import io.smallrye.jwt.KeyFormat;
+import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 
 /**
  * The public key and expected issuer needed to validate a token.
  */
 public class JWTAuthContextInfo {
-    private RSAPublicKey signerKey;
+    private PublicKey publicVerificationKey;
+    private SecretKey secretVerificationKey;
+    private PrivateKey privateDecryptionKey;
+    private SecretKey secretDecryptionKey;
     private String issuedBy;
     private int expGracePeriodSecs = 60;
     private Long maxTimeToLiveSecs;
     private String publicKeyLocation;
     private String publicKeyContent;
+    private String decryptionKeyLocation;
+    private String decryptionKeyContent;
     private Integer jwksRefreshInterval;
     private int forcedJwksRefreshInterval = 30;
     private String tokenHeader = "Authorization";
     private String tokenCookie;
     private boolean alwaysCheckAuthorization;
     private String tokenKeyId;
+    private String tokenDecryptionKeyId;
     private List<String> tokenSchemes = Collections.singletonList("Bearer");
     private boolean requireNamedPrincipal = true;
     private String defaultSubClaim;
@@ -48,6 +59,7 @@ public class JWTAuthContextInfo {
     private String groupsPath;
     private List<String> whitelistAlgorithms = new ArrayList<>();
     private SignatureAlgorithm signatureAlgorithm = SignatureAlgorithm.RS256;
+    private KeyEncryptionAlgorithm keyEncryptionAlgorithm = KeyEncryptionAlgorithm.RSA_OAEP;
     private KeyFormat keyFormat = KeyFormat.ANY;
     private Set<String> expectedAudience;
     private String groupsSeparator = " ";
@@ -62,14 +74,13 @@ public class JWTAuthContextInfo {
     public JWTAuthContextInfo() {
     }
 
-    /**
-     * Create an auth context from the token signer public key and issuer
-     *
-     * @param signerKey public key
-     * @param issuedBy the issuer
-     */
-    public JWTAuthContextInfo(RSAPublicKey signerKey, String issuedBy) {
-        this.signerKey = signerKey;
+    public JWTAuthContextInfo(PublicKey verificationKey, String issuedBy) {
+        this.publicVerificationKey = verificationKey;
+        this.issuedBy = issuedBy;
+    }
+
+    public JWTAuthContextInfo(SecretKey verificationKey, String issuedBy) {
+        this.secretVerificationKey = verificationKey;
         this.issuedBy = issuedBy;
     }
 
@@ -84,21 +95,81 @@ public class JWTAuthContextInfo {
      * @param orig the original instance to copy
      */
     public JWTAuthContextInfo(JWTAuthContextInfo orig) {
-        this.signerKey = orig.signerKey;
+        this.publicVerificationKey = orig.publicVerificationKey;
+        this.secretVerificationKey = orig.secretVerificationKey;
+        this.privateDecryptionKey = orig.privateDecryptionKey;
+        this.secretDecryptionKey = orig.secretDecryptionKey;
         this.issuedBy = orig.issuedBy;
         this.expGracePeriodSecs = orig.expGracePeriodSecs;
+        this.maxTimeToLiveSecs = orig.maxTimeToLiveSecs;
         this.publicKeyLocation = orig.publicKeyLocation;
+        this.publicKeyContent = orig.publicKeyContent;
+        this.decryptionKeyLocation = orig.decryptionKeyLocation;
+        this.decryptionKeyContent = orig.decryptionKeyContent;
         this.jwksRefreshInterval = orig.jwksRefreshInterval;
+        this.forcedJwksRefreshInterval = orig.forcedJwksRefreshInterval;
+        this.tokenHeader = orig.tokenHeader;
+        this.tokenCookie = orig.tokenCookie;
+        this.alwaysCheckAuthorization = orig.alwaysCheckAuthorization;
+        this.tokenKeyId = orig.tokenKeyId;
+        this.tokenDecryptionKeyId = orig.tokenDecryptionKeyId;
+        this.tokenSchemes = orig.tokenSchemes;
+        this.requireNamedPrincipal = orig.requireNamedPrincipal;
+        this.defaultSubClaim = orig.defaultSubClaim;
+        this.subPath = orig.subPath;
+        this.defaultGroupsClaim = orig.defaultGroupsClaim;
+        this.groupsPath = orig.groupsPath;
+        this.whitelistAlgorithms = orig.whitelistAlgorithms;
+        this.signatureAlgorithm = orig.signatureAlgorithm;
+        this.keyEncryptionAlgorithm = orig.keyEncryptionAlgorithm;
+        this.keyFormat = orig.keyFormat;
+        this.expectedAudience = orig.expectedAudience;
+        this.groupsSeparator = orig.groupsSeparator;
+        this.requiredClaims = orig.requiredClaims;
+        this.relaxVerificationKeyValidation = orig.relaxVerificationKeyValidation;
+        this.requireIssuer = orig.requireIssuer;
     }
 
     @Deprecated
     public RSAPublicKey getSignerKey() {
-        return signerKey;
+        return (RSAPublicKey) publicVerificationKey;
     }
 
     @Deprecated
     public void setSignerKey(RSAPublicKey signerKey) {
-        this.signerKey = signerKey;
+        this.publicVerificationKey = signerKey;
+    }
+
+    public PublicKey getPublicVerificationKey() {
+        return publicVerificationKey;
+    }
+
+    public void setPublicVerificationKey(PublicKey verificationKey) {
+        this.publicVerificationKey = verificationKey;
+    }
+
+    public SecretKey getSecretVerificationKey() {
+        return secretVerificationKey;
+    }
+
+    public void setSecretVerificationKey(SecretKey verificationKey) {
+        this.secretVerificationKey = verificationKey;
+    }
+
+    public PrivateKey getPrivateDecryptionKey() {
+        return privateDecryptionKey;
+    }
+
+    public void setPrivateDecryptionKey(PrivateKey decryptionKey) {
+        this.privateDecryptionKey = decryptionKey;
+    }
+
+    public SecretKey getSecretDecryptionKey() {
+        return secretDecryptionKey;
+    }
+
+    public void setSecretDecryptionKey(SecretKey decryptionKey) {
+        this.secretDecryptionKey = decryptionKey;
     }
 
     public String getIssuedBy() {
@@ -133,12 +204,36 @@ public class JWTAuthContextInfo {
         this.publicKeyLocation = publicKeyLocation;
     }
 
+    public String getDecryptionKeyLocation() {
+        return this.decryptionKeyLocation;
+    }
+
+    public void setDecryptionKeyLocation(String keyLocation) {
+        this.decryptionKeyLocation = keyLocation;
+    }
+
+    public KeyEncryptionAlgorithm getKeyEncryptionAlgorithm() {
+        return this.keyEncryptionAlgorithm;
+    }
+
+    public void setKeyEncryptionAlgorithm(KeyEncryptionAlgorithm algorithm) {
+        this.keyEncryptionAlgorithm = algorithm;
+    }
+
     public String getPublicKeyContent() {
         return this.publicKeyContent;
     }
 
     public void setPublicKeyContent(String publicKeyContent) {
         this.publicKeyContent = publicKeyContent;
+    }
+
+    public String getDecryptionKeyContent() {
+        return this.decryptionKeyContent;
+    }
+
+    public void setDecryptionKeyContent(String keyContent) {
+        this.decryptionKeyContent = keyContent;
     }
 
     public Integer getJwksRefreshInterval() {
@@ -157,10 +252,12 @@ public class JWTAuthContextInfo {
         this.forcedJwksRefreshInterval = forcedJwksRefreshInterval;
     }
 
+    @Deprecated
     public boolean isRequireIssuer() {
         return requireIssuer;
     }
 
+    @Deprecated
     public void setRequireIssuer(boolean requireIssuer) {
         this.requireIssuer = requireIssuer;
     }
@@ -239,6 +336,14 @@ public class JWTAuthContextInfo {
         this.tokenKeyId = tokenKeyId;
     }
 
+    public String getTokenDecryptionKeyId() {
+        return tokenDecryptionKeyId;
+    }
+
+    public void setTokenDecryptionKeyId(String tokenKeyId) {
+        this.tokenDecryptionKeyId = tokenKeyId;
+    }
+
     public List<String> getTokenSchemes() {
         return tokenSchemes;
     }
@@ -298,17 +403,23 @@ public class JWTAuthContextInfo {
     @Override
     public String toString() {
         return "JWTAuthContextInfo{" +
-                "signerKey=" + signerKey +
+                "publicVerificationKey=" + publicVerificationKey +
+                ", secretVerificationKey=" + secretVerificationKey +
+                ", privateDecryptionKey=" + privateDecryptionKey +
+                ", secretDecryptionKey=" + secretDecryptionKey +
                 ", issuedBy='" + issuedBy + '\'' +
                 ", expGracePeriodSecs=" + expGracePeriodSecs +
                 ", maxTimeToLiveSecs=" + maxTimeToLiveSecs +
                 ", publicKeyLocation='" + publicKeyLocation + '\'' +
                 ", publicKeyContent='" + publicKeyContent + '\'' +
+                ", decryptionKeyLocation='" + decryptionKeyLocation + '\'' +
+                ", decryptionKeyContent='" + decryptionKeyContent + '\'' +
                 ", jwksRefreshInterval=" + jwksRefreshInterval +
                 ", tokenHeader='" + tokenHeader + '\'' +
                 ", tokenCookie='" + tokenCookie + '\'' +
                 ", alwaysCheckAuthorization=" + alwaysCheckAuthorization +
                 ", tokenKeyId='" + tokenKeyId + '\'' +
+                ", tokenDecryptionKeyId='" + tokenDecryptionKeyId + '\'' +
                 ", tokenSchemes=" + tokenSchemes +
                 ", requireNamedPrincipal=" + requireNamedPrincipal +
                 ", defaultSubClaim='" + defaultSubClaim + '\'' +
@@ -317,6 +428,7 @@ public class JWTAuthContextInfo {
                 ", groupsPath='" + groupsPath + '\'' +
                 ", whitelistAlgorithms=" + whitelistAlgorithms +
                 ", signatureAlgorithm=" + signatureAlgorithm +
+                ", keyEncryptionAlgorithm=" + keyEncryptionAlgorithm +
                 ", keyFormat=" + keyFormat +
                 ", expectedAudience=" + expectedAudience +
                 ", groupsSeparator='" + groupsSeparator + '\'' +

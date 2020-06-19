@@ -23,17 +23,17 @@ interface PrincipalMessages {
     @Message(id = 7001, value = "No claim exists in sub, upn or preferred_username")
     InvalidJwtException claimNotFound(@Producer Function<String, InvalidJwtException> fn);
 
-    @Message(id = 7002, value = "Failed to load a key from the 'mp.jwt.verify.publickey' property")
-    UnresolvableKeyException failedToLoadPublicKey(@Cause Throwable throwable);
+    @Message(id = 7002, value = "Failed to load a key from the key content")
+    UnresolvableKeyException failedToLoadKey(@Cause Throwable throwable);
 
     @Message(id = 7003, value = "Failed to load a key from %s")
-    UnresolvableKeyException failedToLoadPublicKeyFromLocation(@Pos(1) String location, @Cause Throwable throwable);
+    UnresolvableKeyException failedToLoadKeyFromLocation(@Pos(1) String location, @Cause Throwable throwable);
 
-    @Message(id = 7004, value = "Failed to load a key from the 'mp.jwt.verify.publickey' property while resolving")
-    UnresolvableKeyException failedToLoadPublicKeyWhileResolving();
+    @Message(id = 7004, value = "Failed to load a key from the key content while resolving")
+    UnresolvableKeyException failedToLoadKeyWhileResolving();
 
     @Message(id = 7005, value = "Failed to load a key from %s property while resolving")
-    UnresolvableKeyException failedToLoadPublicKeyFromLocationWhileResolving(@Pos(1) String location);
+    UnresolvableKeyException failedToLoadKeyFromLocationWhileResolving(@Pos(1) String location);
 
     @Message(id = 7006, value = "Invalid token 'kid' header")
     UnresolvableKeyException invalidTokenKid();
@@ -50,4 +50,13 @@ interface PrincipalMessages {
 
     @Message(id = 7010, value = "Required claims are not present in the JWT")
     InvalidJwtException missingClaims(@Producer Function<String, InvalidJwtException> fn);
+
+    @Message(id = 7011, value = "Verification key is unresolvable")
+    ParseException verificationKeyUnresolvable();
+
+    @Message(id = 7012, value = "Decryption key is unresolvable")
+    ParseException decryptionKeyUnresolvable();
+
+    @Message(id = 7013, value = "Encrypted token sequence is invalid")
+    ParseException encryptedTokenSequenceInvalid();
 }

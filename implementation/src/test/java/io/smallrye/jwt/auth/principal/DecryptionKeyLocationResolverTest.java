@@ -23,13 +23,14 @@ import static org.junit.Assert.assertNull;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.when;
 
-import java.security.interfaces.RSAPublicKey;
 import java.util.Collections;
 
+import org.jose4j.jwe.JsonWebEncryption;
 import org.jose4j.jwk.HttpsJwks;
 import org.jose4j.jwk.JsonWebKey;
+import org.jose4j.jwk.PublicJsonWebKey;
 import org.jose4j.jwk.RsaJsonWebKey;
-import org.jose4j.jws.JsonWebSignature;
+import org.jose4j.jwk.RsaJwkGenerator;
 import org.jose4j.jwx.Headers;
 import org.jose4j.lang.JoseException;
 import org.jose4j.lang.UnresolvableKeyException;
@@ -41,27 +42,20 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
 
-import io.smallrye.jwt.KeyUtils;
 import io.smallrye.jwt.ResourceUtils;
 import io.smallrye.jwt.ResourceUtils.UrlStreamResolver;
-import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 
 @RunWith(MockitoJUnitRunner.class)
-public class KeyLocationResolverTest {
+public class DecryptionKeyLocationResolverTest {
 
     @Mock
-    JsonWebSignature signature;
-    RSAPublicKey key;
+    JsonWebEncryption encryption;
     @Mock
     Headers headers;
     @Mock
     HttpsJwks mockedHttpsJwks;
     @Mock
     UrlStreamResolver urlResolver;
-
-    public KeyLocationResolverTest() throws Exception {
-        key = (RSAPublicKey) KeyUtils.generateKeyPair(2048).getPublic();
-    }
 
     @Rule
     public ExpectedException expectedEx = ExpectedException.none();
@@ -71,46 +65,49 @@ public class KeyLocationResolverTest {
 
         expectedEx.expect(UnresolvableKeyException.class);
 
-        KeyLocationResolver keyLocationResolver = new KeyLocationResolver(new JWTAuthContextInfo("wrong_location.pem", null));
-        keyLocationResolver.resolveKey(signature, emptyList());
+        JWTAuthContextInfo contextInfo = new JWTAuthContextInfo();
+        contextInfo.setDecryptionKeyLocation("wrong_location.pem");
+        new DecryptionKeyLocationResolver(contextInfo).resolveKey(encryption, emptyList());
     }
 
     @Test
     public void testLoadHttpsJwksMathchingKid() throws Exception {
-        JWTAuthContextInfo contextInfo = new JWTAuthContextInfo("https://github.com/my_key.jwks", "issuer");
+        JWTAuthContextInfo contextInfo = new JWTAuthContextInfo();
+        contextInfo.setDecryptionKeyLocation("https://github.com/my_key.jwks");
         contextInfo.setJwksRefreshInterval(10);
 
-        KeyLocationResolver keyLocationResolver = new KeyLocationResolver(contextInfo) {
+        DecryptionKeyLocationResolver keyLocationResolver = new DecryptionKeyLocationResolver(contextInfo) {
             protected HttpsJwks initializeHttpsJwks(String loc) {
                 return mockedHttpsJwks;
             }
         };
-        RsaJsonWebKey jwk = new RsaJsonWebKey(key);
+        RsaJsonWebKey jwk = RsaJwkGenerator.generateJwk(2048);
         jwk.setKeyId("1");
         when(mockedHttpsJwks.getJsonWebKeys()).thenReturn(Collections.singletonList(jwk));
         keyLocationResolver = Mockito.spy(keyLocationResolver);
-        when(signature.getHeaders()).thenReturn(headers);
+        when(encryption.getHeaders()).thenReturn(headers);
         when(headers.getStringHeaderValue(JsonWebKey.KEY_ID_PARAMETER)).thenReturn("1");
 
-        assertEquals(key, keyLocationResolver.resolveKey(signature, emptyList()));
+        assertEquals(jwk.getPrivateKey(), keyLocationResolver.resolveKey(encryption, emptyList()));
         assertNull(keyLocationResolver.key);
     }
 
     @Test
     public void testLoadHttpsJwksNonMathchingKidAndRefresh() throws Exception {
-        JWTAuthContextInfo contextInfo = new JWTAuthContextInfo("https://github.com/my_key.jwks", "issuer");
+        JWTAuthContextInfo contextInfo = new JWTAuthContextInfo();
+        contextInfo.setDecryptionKeyLocation("https://github.com/my_key.jwks");
         contextInfo.setJwksRefreshInterval(10);
 
-        KeyLocationResolver keyLocationResolver = new KeyLocationResolver(contextInfo) {
+        DecryptionKeyLocationResolver keyLocationResolver = new DecryptionKeyLocationResolver(contextInfo) {
             protected HttpsJwks initializeHttpsJwks(String loc) {
                 return mockedHttpsJwks;
             }
         };
         // token 'kid' is '1'
-        when(signature.getHeaders()).thenReturn(headers);
+        when(encryption.getHeaders()).thenReturn(headers);
         when(headers.getStringHeaderValue(JsonWebKey.KEY_ID_PARAMETER)).thenReturn("1");
 
-        final RsaJsonWebKey jwk = new RsaJsonWebKey(key);
+        RsaJsonWebKey jwk = RsaJwkGenerator.generateJwk(2048);
 
         // Return JWK Set with a non-matching JWK with 'kid' set to '2' 
         jwk.setKeyId("2");
@@ -123,26 +120,27 @@ public class KeyLocationResolverTest {
         }).when(mockedHttpsJwks).refresh();
 
         keyLocationResolver = Mockito.spy(keyLocationResolver);
-        assertEquals(key, keyLocationResolver.resolveKey(signature, emptyList()));
+        assertEquals(jwk.getPrivateKey(), keyLocationResolver.resolveKey(encryption, emptyList()));
         assertNull(keyLocationResolver.key);
     }
 
     @Test(expected = UnresolvableKeyException.class)
     public void testLoadHttpsJwksNonMathchingKidAndRefreshDeclined() throws Exception {
-        JWTAuthContextInfo contextInfo = new JWTAuthContextInfo("https://github.com/my_key.jwks", "issuer");
+        JWTAuthContextInfo contextInfo = new JWTAuthContextInfo();
+        contextInfo.setDecryptionKeyLocation("https://github.com/my_key.jwks");
         contextInfo.setJwksRefreshInterval(10);
         contextInfo.setForcedJwksRefreshInterval(10);
 
-        KeyLocationResolver keyLocationResolver = new KeyLocationResolver(contextInfo) {
+        DecryptionKeyLocationResolver keyLocationResolver = new DecryptionKeyLocationResolver(contextInfo) {
             protected HttpsJwks initializeHttpsJwks(String loc) {
                 return mockedHttpsJwks;
             }
         };
         // token 'kid' is '1'
-        when(signature.getHeaders()).thenReturn(headers);
+        when(encryption.getHeaders()).thenReturn(headers);
         when(headers.getStringHeaderValue(JsonWebKey.KEY_ID_PARAMETER)).thenReturn("1");
 
-        final RsaJsonWebKey jwk = new RsaJsonWebKey(key);
+        RsaJsonWebKey jwk = RsaJwkGenerator.generateJwk(2048);
 
         // Return JWK Set with a non-matching JWK with 'kid' set to '2' 
         jwk.setKeyId("2");
@@ -155,23 +153,24 @@ public class KeyLocationResolverTest {
         }).when(mockedHttpsJwks).refresh();
 
         keyLocationResolver = Mockito.spy(keyLocationResolver);
-        assertEquals(key, keyLocationResolver.resolveKey(signature, emptyList()));
+        assertEquals(jwk.getPrivateKey(), keyLocationResolver.resolveKey(encryption, emptyList()));
         assertNull(keyLocationResolver.key);
 
         // Return JWK Set with a non-matching JWK with 'kid' set to '2'
         jwk.setKeyId("2");
-        keyLocationResolver.resolveKey(signature, emptyList());
+        keyLocationResolver.resolveKey(encryption, emptyList());
     }
 
     @Test
-    public void testLoadHttpsPemCrt() throws Exception {
-        JWTAuthContextInfo contextInfo = new JWTAuthContextInfo("https://github.com/my_key.crt", "issuer");
+    public void testLoadHttpsPem() throws Exception {
+        JWTAuthContextInfo contextInfo = new JWTAuthContextInfo();
+        contextInfo.setDecryptionKeyLocation("https://github.com/my_key.pem");
         contextInfo.setJwksRefreshInterval(10);
 
         Mockito.doThrow(new JoseException("")).when(mockedHttpsJwks).refresh();
-        Mockito.doReturn(ResourceUtils.getAsClasspathResource("publicCrt.pem"))
+        Mockito.doReturn(ResourceUtils.getAsClasspathResource("privateKey.pem"))
                 .when(urlResolver).resolve(Mockito.any());
-        KeyLocationResolver keyLocationResolver = new KeyLocationResolver(contextInfo) {
+        DecryptionKeyLocationResolver keyLocationResolver = new DecryptionKeyLocationResolver(contextInfo) {
             protected HttpsJwks initializeHttpsJwks(String loc) {
                 return mockedHttpsJwks;
             }
@@ -181,42 +180,33 @@ public class KeyLocationResolverTest {
             }
         };
         assertNotNull(keyLocationResolver.key);
-        assertEquals(keyLocationResolver.key, keyLocationResolver.resolveKey(signature, emptyList()));
+        assertEquals(keyLocationResolver.key, keyLocationResolver.resolveKey(encryption, emptyList()));
         assertEquals(keyLocationResolver.key,
-                KeyLocationResolver.tryAsPEMCertificate(keyLocationResolver.readKeyContent("publicCrt.pem")));
-    }
-
-    @Test
-    public void testLoadPemCertOnClassPath() throws Exception {
-        JWTAuthContextInfo contextInfo = new JWTAuthContextInfo("publicCrt.pem", "issuer");
-        KeyLocationResolver keyLocationResolver = new KeyLocationResolver(contextInfo);
-        assertNotNull(keyLocationResolver.key);
-        assertEquals(keyLocationResolver.key, keyLocationResolver.resolveKey(signature, emptyList()));
-        assertEquals(keyLocationResolver.key,
-                KeyLocationResolver.tryAsPEMCertificate(keyLocationResolver.readKeyContent("publicCrt.pem")));
+                DecryptionKeyLocationResolver.tryAsPEMPrivateKey(keyLocationResolver.readKeyContent("privateKey.pem")));
     }
 
     @Test
     public void testLoadPemOnClassPath() throws Exception {
-        JWTAuthContextInfo contextInfo = new JWTAuthContextInfo("publicKey.pem", "issuer");
-        KeyLocationResolver keyLocationResolver = new KeyLocationResolver(contextInfo);
+        JWTAuthContextInfo contextInfo = new JWTAuthContextInfo();
+        contextInfo.setDecryptionKeyLocation("privateKey.pem");
+        DecryptionKeyLocationResolver keyLocationResolver = new DecryptionKeyLocationResolver(contextInfo);
         assertNotNull(keyLocationResolver.key);
-        assertEquals(keyLocationResolver.key, keyLocationResolver.resolveKey(signature, emptyList()));
+        assertEquals(keyLocationResolver.key, keyLocationResolver.resolveKey(encryption, emptyList()));
         assertEquals(keyLocationResolver.key,
-                KeyLocationResolver.tryAsPEMPublicKey(keyLocationResolver.readKeyContent("publicKey.pem"),
-                        SignatureAlgorithm.RS256));
+                DecryptionKeyLocationResolver.tryAsPEMPrivateKey(keyLocationResolver.readKeyContent("privateKey.pem")));
     }
 
     @Test
     public void testLoadJWKOnClassPath() throws Exception {
-        JWTAuthContextInfo contextInfo = new JWTAuthContextInfo("publicKey.jwk", "issuer");
-        contextInfo.setTokenKeyId("key1");
-        KeyLocationResolver keyLocationResolver = new KeyLocationResolver(contextInfo);
-        when(signature.getHeaders()).thenReturn(headers);
+        JWTAuthContextInfo contextInfo = new JWTAuthContextInfo();
+        contextInfo.setDecryptionKeyLocation("decryptPrivateKey.jwk");
+        contextInfo.setTokenDecryptionKeyId("key1");
+        when(encryption.getHeaders()).thenReturn(headers);
         when(headers.getStringHeaderValue(JsonWebKey.KEY_ID_PARAMETER)).thenReturn("key1");
+        DecryptionKeyLocationResolver keyLocationResolver = new DecryptionKeyLocationResolver(contextInfo);
         assertNotNull(keyLocationResolver.key);
-        assertEquals(keyLocationResolver.key, keyLocationResolver.resolveKey(signature, emptyList()));
+        assertEquals(keyLocationResolver.key, keyLocationResolver.resolveKey(encryption, emptyList()));
         assertEquals(keyLocationResolver.key,
-                keyLocationResolver.getJsonWebKey("key1", null).getKey());
+                ((PublicJsonWebKey) keyLocationResolver.getJsonWebKey("key1", null)).getPrivateKey());
     }
 }

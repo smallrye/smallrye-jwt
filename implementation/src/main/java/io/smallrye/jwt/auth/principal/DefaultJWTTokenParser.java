@@ -29,13 +29,16 @@ import java.util.stream.Collectors;
 
 import org.eclipse.microprofile.jwt.Claims;
 import org.jose4j.jwa.AlgorithmConstraints;
+import org.jose4j.jwe.JsonWebEncryption;
 import org.jose4j.jwt.JwtClaims;
 import org.jose4j.jwt.NumericDate;
 import org.jose4j.jwt.consumer.InvalidJwtException;
 import org.jose4j.jwt.consumer.JwtConsumer;
 import org.jose4j.jwt.consumer.JwtConsumerBuilder;
 import org.jose4j.jwt.consumer.JwtContext;
+import org.jose4j.keys.resolvers.DecryptionKeyResolver;
 import org.jose4j.keys.resolvers.VerificationKeyResolver;
+import org.jose4j.lang.JoseException;
 import org.jose4j.lang.UnresolvableKeyException;
 
 /**
@@ -51,30 +54,84 @@ public class DefaultJWTTokenParser {
     private static final Pattern CLAIM_PATH_PATTERN = Pattern.compile("\\/(?=(?:(?:[^\"]*\"){2})*[^\"]*$)");
 
     private volatile VerificationKeyResolver keyResolver;
+    private volatile DecryptionKeyResolver decryptionKeyResolver;
 
     public JwtContext parse(final String token, final JWTAuthContextInfo authContextInfo) throws ParseException {
 
+        String tokenSequence = token;
+        ProtectionLevel level = getProtectionLevel(authContextInfo);
+
+        if (level == ProtectionLevel.SIGN_ENCRYPT) {
+            tokenSequence = decryptSignedToken(tokenSequence, authContextInfo);
+            level = ProtectionLevel.SIGN;
+        }
+        return parseClaims(tokenSequence, authContextInfo, level);
+
+    }
+
+    private String decryptSignedToken(String token, JWTAuthContextInfo authContextInfo) throws ParseException {
         try {
-            JwtConsumerBuilder builder = new JwtConsumerBuilder()
-                    .setRequireExpirationTime();
+            JsonWebEncryption jwe = new JsonWebEncryption();
+            jwe.setAlgorithmConstraints(
+                    new AlgorithmConstraints(AlgorithmConstraints.ConstraintType.WHITELIST,
+                            authContextInfo.getKeyEncryptionAlgorithm().getAlgorithm()));
+            if (authContextInfo.getPrivateDecryptionKey() != null) {
+                jwe.setKey(authContextInfo.getPrivateDecryptionKey());
+            } else if (authContextInfo.getSecretDecryptionKey() != null) {
+                jwe.setKey(authContextInfo.getSecretDecryptionKey());
+            } else {
+                jwe.setKey(getDecryptionKeyResolver(authContextInfo).resolveKey(jwe, null));
+            }
+            jwe.setCompactSerialization(token);
+            return jwe.getPlaintextString();
+        } catch (UnresolvableKeyException e) {
+            PrincipalLogging.log.decryptionKeyUnresolvable();
+            throw PrincipalMessages.msg.decryptionKeyUnresolvable();
+        } catch (JoseException e) {
+            PrincipalLogging.log.encryptedTokenSequenceInvalid();
+            throw PrincipalMessages.msg.encryptedTokenSequenceInvalid();
+        }
+    }
+
+    private JwtContext parseClaims(String token, JWTAuthContextInfo authContextInfo, ProtectionLevel level)
+            throws ParseException {
+        try {
+            JwtConsumerBuilder builder = new JwtConsumerBuilder();
+
+            if (level == ProtectionLevel.SIGN) {
+                if (authContextInfo.getPublicVerificationKey() != null) {
+                    builder.setVerificationKey(authContextInfo.getPublicVerificationKey());
+                } else if (authContextInfo.getSecretVerificationKey() != null) {
+                    builder.setVerificationKey(authContextInfo.getSecretVerificationKey());
+                } else {
+                    builder.setVerificationKeyResolver(getVerificationKeyResolver(authContextInfo));
+                }
+                builder.setJwsAlgorithmConstraints(
+                        new AlgorithmConstraints(AlgorithmConstraints.ConstraintType.WHITELIST,
+                                authContextInfo.getSignatureAlgorithm().getAlgorithm()));
+            } else {
+                builder.setEnableRequireEncryption();
+                builder.setDisableRequireSignature();
+                if (authContextInfo.getPrivateDecryptionKey() != null) {
+                    builder.setDecryptionKey(authContextInfo.getPrivateDecryptionKey());
+                } else if (authContextInfo.getSecretDecryptionKey() != null) {
+                    builder.setDecryptionKey(authContextInfo.getSecretDecryptionKey());
+                } else {
+                    builder.setDecryptionKeyResolver(getDecryptionKeyResolver(authContextInfo));
+                }
+                builder.setJweAlgorithmConstraints(
+                        new AlgorithmConstraints(AlgorithmConstraints.ConstraintType.WHITELIST,
+                                authContextInfo.getKeyEncryptionAlgorithm().getAlgorithm()));
+            }
+
+            builder.setRequireExpirationTime();
 
             if (authContextInfo.getMaxTimeToLiveSecs() != null) {
                 builder.setRequireIssuedAt();
             }
 
-            builder.setJwsAlgorithmConstraints(
-                    new AlgorithmConstraints(AlgorithmConstraints.ConstraintType.WHITELIST,
-                            authContextInfo.getSignatureAlgorithm().getAlgorithm()));
-
-            if (authContextInfo.isRequireIssuer()) {
-                builder.setExpectedIssuer(true, authContextInfo.getIssuedBy());
-            } else {
-                builder.setExpectedIssuer(false, null);
-            }
-            if (authContextInfo.getSignerKey() != null) {
-                builder.setVerificationKey(authContextInfo.getSignerKey());
-            } else {
-                builder.setVerificationKeyResolver(getKeyResolver(authContextInfo));
+            if (authContextInfo.getIssuedBy() != null) {
+                builder.setExpectedIssuer(authContextInfo.getIssuedBy());
             }
 
             if (authContextInfo.getExpGracePeriodSecs() > 0) {
@@ -281,7 +338,8 @@ public class DefaultJWTTokenParser {
         }
     }
 
-    protected VerificationKeyResolver getKeyResolver(JWTAuthContextInfo authContextInfo) throws UnresolvableKeyException {
+    protected VerificationKeyResolver getVerificationKeyResolver(JWTAuthContextInfo authContextInfo)
+            throws UnresolvableKeyException {
         if (keyResolver == null) {
             synchronized (this) {
                 if (keyResolver == null)
@@ -289,5 +347,37 @@ public class DefaultJWTTokenParser {
             }
         }
         return keyResolver;
+    }
+
+    protected DecryptionKeyResolver getDecryptionKeyResolver(JWTAuthContextInfo authContextInfo)
+            throws UnresolvableKeyException {
+        if (decryptionKeyResolver == null) {
+            synchronized (this) {
+                if (decryptionKeyResolver == null)
+                    decryptionKeyResolver = new DecryptionKeyLocationResolver(authContextInfo);
+            }
+        }
+        return decryptionKeyResolver;
+    }
+
+    protected ProtectionLevel getProtectionLevel(JWTAuthContextInfo authContextInfo) {
+        if (authContextInfo.getDecryptionKeyLocation() != null
+                || authContextInfo.getDecryptionKeyContent() != null
+                || authContextInfo.getPrivateDecryptionKey() != null
+                || authContextInfo.getSecretDecryptionKey() != null) {
+            boolean sign = authContextInfo.getPublicVerificationKey() != null
+                    || authContextInfo.getSecretVerificationKey() != null
+                    || authContextInfo.getPublicKeyContent() != null
+                    || authContextInfo.getPublicKeyLocation() != null;
+            return sign ? ProtectionLevel.SIGN_ENCRYPT : ProtectionLevel.ENCRYPT;
+        } else {
+            return ProtectionLevel.SIGN;
+        }
+    }
+
+    protected enum ProtectionLevel {
+        SIGN,
+        ENCRYPT,
+        SIGN_ENCRYPT
     }
 }

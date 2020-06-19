@@ -6,7 +6,10 @@ import java.util.ServiceLoader;
 
 import org.jboss.logging.BasicLogger;
 import org.jboss.logging.Logger;
-import org.jboss.logging.annotations.*;
+import org.jboss.logging.annotations.Cause;
+import org.jboss.logging.annotations.LogMessage;
+import org.jboss.logging.annotations.Message;
+import org.jboss.logging.annotations.MessageLogger;
 
 @MessageLogger(projectCode = "SRJWT", length = 5)
 interface PrincipalLogging extends BasicLogger {
@@ -147,20 +150,20 @@ interface PrincipalLogging extends BasicLogger {
     void unableToDecodeContentUsingBase64(@Cause Throwable throwable);
 
     @LogMessage(level = Logger.Level.DEBUG)
-    @Message(id = 8033, value = "PublicKey has been created from the encoded JWK key or JWK key set")
-    void publicKeyCreatedFromEncodedJWKKeyOrJWKKeySet();
+    @Message(id = 8033, value = "Key has been created from the encoded JWK key or JWK key set")
+    void keyCreatedFromEncodedJWKKeyOrJWKKeySet();
 
     @LogMessage(level = Logger.Level.DEBUG)
-    @Message(id = 8034, value = "PublicKey has been created from the JWK key or JWK key set")
-    void publicKeyCreatedFromJWKKeyOrJWKKeySet();
+    @Message(id = 8034, value = "Key has been created from the JWK key or JWK key set")
+    void keyCreatedFromJWKKeyOrJWKKeySet();
 
     @LogMessage(level = Logger.Level.DEBUG)
     @Message(id = 8035, value = "Checking if the key content is a Base64 encoded PEM key")
     void checkKeyContentIsBase64EncodedPEMKey();
 
     @LogMessage(level = Logger.Level.DEBUG)
-    @Message(id = 8036, value = "PublicKey has been created from the encoded PEM key")
-    void publicKeyCreatedFromEncodedPEMKey();
+    @Message(id = 8036, value = "Key has been created from the encoded PEM key")
+    void keyCreatedFromEncodedPEMKey();
 
     @LogMessage(level = Logger.Level.DEBUG)
     @Message(id = 8037, value = "The key content is not a valid encoded PEM key")
@@ -179,14 +182,14 @@ interface PrincipalLogging extends BasicLogger {
     void keyContentIsNotValidEncodedPEMCertificate(@Cause Throwable throwable);
 
     @LogMessage(level = Logger.Level.DEBUG)
-    @Message(id = 8041, value = "Trying to load the local JWK(S)")
-    void tryLoadLocalJWKS();
+    @Message(id = 8041, value = "Decryption key is unresolvable")
+    void decryptionKeyUnresolvable();
 
     @LogMessage(level = Logger.Level.DEBUG)
-    @Message(id = 8042, value = "Failed to load the JWK(S)")
-    void failedToLoadJWKS();
+    @Message(id = 8042, value = "Encrypted token sequence is invalid")
+    void encryptedTokenSequenceInvalid();
 
     @LogMessage(level = Logger.Level.DEBUG)
-    @Message(id = 8043, value = "Failed to parse the JWK JSON representation")
-    void failedToParseJWKJsonRepresentation();
+    @Message(id = 8043, value = "Trying to create a key from the HTTPS JWK(S)")
+    void tryCreateKeyFromHttpsJWKS();
 }

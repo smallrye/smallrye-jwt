@@ -32,6 +32,7 @@ import io.smallrye.jwt.KeyFormat;
 import io.smallrye.jwt.KeyUtils;
 import io.smallrye.jwt.ResourceUtils;
 import io.smallrye.jwt.SmallryeJwtUtils;
+import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
 
@@ -73,11 +74,12 @@ public class JWTAuthContextInfoProvider {
         provider.mpJwtPublicKey = Optional.of(publicKey);
         provider.mpJwtLocation = Optional.of(publicKeyLocation);
         provider.mpJwtIssuer = issuer;
-
+        provider.decryptionKeyLocation = Optional.empty();
         provider.mpJwtRequireIss = Optional.of(Boolean.TRUE);
         provider.tokenHeader = AUTHORIZATION_HEADER;
         provider.tokenCookie = Optional.empty();
         provider.tokenKeyId = Optional.empty();
+        provider.tokenDecryptionKeyId = Optional.empty();
         provider.tokenSchemes = Optional.of(BEARER_SCHEME);
         provider.requireNamedPrincipal = Optional.of(Boolean.TRUE);
         provider.defaultSubClaim = Optional.empty();
@@ -89,6 +91,7 @@ public class JWTAuthContextInfoProvider {
         provider.jwksRefreshInterval = Optional.empty();
         provider.forcedJwksRefreshInterval = 30;
         provider.signatureAlgorithm = Optional.of(SignatureAlgorithm.RS256);
+        provider.keyEncryptionAlgorithm = KeyEncryptionAlgorithm.RSA_OAEP;
         provider.keyFormat = KeyFormat.ANY;
         provider.expectedAudience = Optional.empty();
         provider.groupsSeparator = DEFAULT_GROUPS_SEPARATOR;
@@ -119,9 +122,22 @@ public class JWTAuthContextInfoProvider {
      * @since 1.1
      */
     private Optional<String> mpJwtLocation;
+
+    @Inject
+    @ConfigProperty(name = "smallrye.jwt.decrypt.key.location")
+    private Optional<String> decryptionKeyLocation;
+
+    /**
+     * Supported JSON Web Algorithm encryption algorithm.
+     */
+    @Inject
+    @ConfigProperty(name = "smallrye.jwt.decrypt.algorithm", defaultValue = "RSA_OAEP")
+    private KeyEncryptionAlgorithm keyEncryptionAlgorithm;
+
     /**
      * Not part of the 1.1 release, but talked about.
      */
+    @Deprecated
     @Inject
     @ConfigProperty(name = "mp.jwt.verify.requireiss", defaultValue = "true")
     private Optional<Boolean> mpJwtRequireIss;
@@ -150,13 +166,22 @@ public class JWTAuthContextInfoProvider {
     private boolean alwaysCheckAuthorization;
 
     /**
-     * The key identifier ('kid'). If it is set then if the token contains 'kid' then both values must match. It will also be
-     * used to
-     * select a JWK key from a JWK set.
+     * Verification key identifier ('kid'). If it is set then if a signed JWT token contains 'kid' then both values must
+     * match.
+     * It will also be used to select a verification JWK key from a JWK set.
      */
     @Inject
     @ConfigProperty(name = "smallrye.jwt.token.kid")
     private Optional<String> tokenKeyId;
+
+    /**
+     * Decryption key identifier ('kid'). If it is set then if an encrypted JWT token contains 'kid' then both values must
+     * match.
+     * It will also be used to select a decryption JWK key from a JWK set.
+     */
+    @Inject
+    @ConfigProperty(name = "smallrye.jwt.token.decryption.kid")
+    private Optional<String> tokenDecryptionKeyId;
 
     /**
      * The scheme used with an HTTP Authorization header.
@@ -299,6 +324,7 @@ public class JWTAuthContextInfoProvider {
     @ConfigProperty(name = "smallrye.jwt.required.claims")
     Optional<Set<String>> requiredClaims;
 
+    @SuppressWarnings("deprecation")
     @Produces
     Optional<JWTAuthContextInfo> getOptionalContextInfo() {
         // Log the config values
@@ -332,6 +358,21 @@ public class JWTAuthContextInfoProvider {
                 }
             }
         }
+        if (decryptionKeyLocation.isPresent() && !NONE.equals(decryptionKeyLocation.get())) {
+            String decryptionKeyLocationTrimmed = decryptionKeyLocation.get().trim();
+            if (decryptionKeyLocationTrimmed.startsWith("http")) {
+                contextInfo.setDecryptionKeyLocation(decryptionKeyLocationTrimmed);
+            } else {
+                try {
+                    contextInfo.setDecryptionKeyContent(ResourceUtils.readResource(decryptionKeyLocationTrimmed));
+                    if (contextInfo.getDecryptionKeyContent() == null) {
+                        throw ConfigMessages.msg.invalidDecryptKeyLocation();
+                    }
+                } catch (IOException ex) {
+                    throw ConfigMessages.msg.readingDecryptKeyLocationFailed(ex);
+                }
+            }
+        }
         if (tokenHeader != null) {
             contextInfo.setTokenHeader(tokenHeader);
         }
@@ -339,6 +380,7 @@ public class JWTAuthContextInfoProvider {
         contextInfo.setAlwaysCheckAuthorization(alwaysCheckAuthorization);
 
         contextInfo.setTokenKeyId(tokenKeyId.orElse(null));
+        contextInfo.setTokenDecryptionKeyId(tokenDecryptionKeyId.orElse(null));
         contextInfo.setRequireNamedPrincipal(requireNamedPrincipal.orElse(null));
         SmallryeJwtUtils.setContextTokenCookie(contextInfo, tokenCookie);
         SmallryeJwtUtils.setTokenSchemes(contextInfo, tokenSchemes);
@@ -354,6 +396,7 @@ public class JWTAuthContextInfoProvider {
             throw ConfigMessages.msg.hs256NotSupported();
         }
         contextInfo.setSignatureAlgorithm(signatureAlgorithm.orElse(SignatureAlgorithm.RS256));
+        contextInfo.setKeyEncryptionAlgorithm(keyEncryptionAlgorithm);
         contextInfo.setKeyFormat(keyFormat);
         contextInfo.setExpectedAudience(expectedAudience.orElse(null));
         contextInfo.setGroupsSeparator(groupsSeparator);
