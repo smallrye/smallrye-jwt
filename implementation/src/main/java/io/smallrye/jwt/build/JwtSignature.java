@@ -55,7 +55,7 @@ public interface JwtSignature {
     String sign() throws JwtSignatureException;
 
     /**
-     * Sign the claims with {@link PrivateKey} and encrypt the inner JWT by moving to {@link JwtEncryption}.
+     * Sign the claims with {@link PrivateKey} and encrypt the inner JWT by moving to {@link JwtEncryptionBuilder}.
      * 'RS256' algorithm will be used unless a different one has been set with {@code JwtSignatureBuilder}.
      * A key of size 2048 bits or larger MUST be used with the 'RS256' algorithm.
      *
@@ -63,7 +63,7 @@ public interface JwtSignature {
      * @return JwtEncryption
      * @throws JwtSignatureException the exception if the inner JWT signing operation has failed
      */
-    JwtEncryption innerSign(PrivateKey signingKey) throws JwtSignatureException;
+    JwtEncryptionBuilder innerSign(PrivateKey signingKey) throws JwtSignatureException;
 
     /**
      * Sign the claims with {@link SecretKey} and encrypt the inner JWT by moving to {@link JwtEncryptionBuilder}.
@@ -74,7 +74,7 @@ public interface JwtSignature {
      * @return JwtEncryption
      * @throws JwtSignatureException the exception if the inner JWT signing operation has failed
      */
-    JwtEncryption innerSign(SecretKey signingKey) throws JwtSignatureException;
+    JwtEncryptionBuilder innerSign(SecretKey signingKey) throws JwtSignatureException;
 
     /**
      * Sign the claims with a private or secret key loaded from the custom location
@@ -86,7 +86,7 @@ public interface JwtSignature {
      * @return JwtEncryption
      * @throws JwtSignatureException the exception if the inner JWT signing operation has failed
      */
-    JwtEncryption innerSign(String keyLocation) throws JwtSignatureException;
+    JwtEncryptionBuilder innerSign(String keyLocation) throws JwtSignatureException;
 
     /**
      * Sign the claims with a key loaded from the location set with the "smallrye.jwt.sign.key-location" property
@@ -99,6 +99,6 @@ public interface JwtSignature {
      * @return JwtEncryption
      * @throws JwtSignatureException the exception if the inner JWT signing operation has failed
      */
-    JwtEncryption innerSign() throws JwtSignatureException;
+    JwtEncryptionBuilder innerSign() throws JwtSignatureException;
 
 }
