@@ -37,6 +37,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import io.smallrye.jwt.KeyUtils;
+import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
 
 public class JwtSignEncryptTest {
 
@@ -51,7 +52,11 @@ public class JwtSignEncryptTest {
     }
 
     private void checkRsaInnerSignedEncryptedClaims(String jweCompact) throws Exception {
-        checkJweHeaders(jweCompact, "RSA-OAEP-256", null);
+        checkRsaInnerSignedEncryptedClaims(jweCompact, "RSA-OAEP-256");
+    }
+
+    private void checkRsaInnerSignedEncryptedClaims(String jweCompact, String keyEncAlgo) throws Exception {
+        checkJweHeaders(jweCompact, keyEncAlgo, null);
 
         JsonWebEncryption jwe = getJsonWebEncryption(jweCompact);
 
@@ -67,10 +72,10 @@ public class JwtSignEncryptTest {
     }
 
     @Test
-    public void testInnerSignAndEncryptMapOfClaims() throws Exception {
+    public void testInnerSignAndEncryptMapOfClaimsRsaOaep() throws Exception {
         String jweCompact = Jwt.claims(Collections.singletonMap("customClaim", "custom-value"))
-                .innerSign().encrypt();
-        checkRsaInnerSignedEncryptedClaims(jweCompact);
+                .innerSign().keyAlgorithm(KeyEncryptionAlgorithm.RSA_OAEP).encrypt();
+        checkRsaInnerSignedEncryptedClaims(jweCompact, KeyEncryptionAlgorithm.RSA_OAEP.getAlgorithm());
     }
 
     @Test
