@@ -17,14 +17,11 @@
 package io.smallrye.jwt;
 
 import java.io.ByteArrayInputStream;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
 import java.io.StringReader;
 import java.math.BigInteger;
-import java.net.URL;
 import java.security.GeneralSecurityException;
 import java.security.Key;
 import java.security.KeyFactory;
@@ -53,6 +50,7 @@ import org.jose4j.jwk.JsonWebKeySet;
 import org.jose4j.jwk.OctetSequenceJsonWebKey;
 import org.jose4j.jwk.PublicJsonWebKey;
 
+import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 
 /**
@@ -72,10 +70,22 @@ public final class KeyUtils {
 
     public static PrivateKey readPrivateKey(String pemResName, SignatureAlgorithm algo)
             throws IOException, GeneralSecurityException {
-        InputStream contentIS = getAsClasspathResource(pemResName);
+        InputStream contentIS = ResourceUtils.getAsClasspathResource(pemResName);
         byte[] tmp = new byte[4096];
         int length = contentIS.read(tmp);
         return decodePrivateKey(new String(tmp, 0, length), algo);
+    }
+
+    public static PrivateKey readDecryptionPrivateKey(String pemResName) throws IOException, GeneralSecurityException {
+        return readDecryptionPrivateKey(pemResName, KeyEncryptionAlgorithm.RSA_OAEP);
+    }
+
+    public static PrivateKey readDecryptionPrivateKey(String pemResName, KeyEncryptionAlgorithm algo)
+            throws IOException, GeneralSecurityException {
+        InputStream contentIS = ResourceUtils.getAsClasspathResource(pemResName);
+        byte[] tmp = new byte[4096];
+        int length = contentIS.read(tmp);
+        return decodeDecryptionPrivateKey(new String(tmp, 0, length), algo);
     }
 
     public static PublicKey readPublicKey(String pemResName) throws IOException, GeneralSecurityException {
@@ -84,10 +94,22 @@ public final class KeyUtils {
 
     public static PublicKey readPublicKey(String pemResName, SignatureAlgorithm algo)
             throws IOException, GeneralSecurityException {
-        InputStream contentIS = getAsClasspathResource(pemResName);
+        InputStream contentIS = ResourceUtils.getAsClasspathResource(pemResName);
         byte[] tmp = new byte[4096];
         int length = contentIS.read(tmp);
         return decodePublicKey(new String(tmp, 0, length), algo);
+    }
+
+    public static PublicKey readEncryptionPublicKey(String pemResName) throws IOException, GeneralSecurityException {
+        return readEncryptionPublicKey(pemResName, KeyEncryptionAlgorithm.RSA_OAEP);
+    }
+
+    public static PublicKey readEncryptionPublicKey(String pemResName, KeyEncryptionAlgorithm algo)
+            throws IOException, GeneralSecurityException {
+        InputStream contentIS = ResourceUtils.getAsClasspathResource(pemResName);
+        byte[] tmp = new byte[4096];
+        int length = contentIS.read(tmp);
+        return decodeEncryptionPublicKey(new String(tmp, 0, length), algo);
     }
 
     public static KeyPair generateKeyPair(int keySize) throws NoSuchAlgorithmException {
@@ -115,17 +137,46 @@ public final class KeyUtils {
      * Decode a PEM private key
      * 
      * @param pemEncoded - pem string for key
+     * @param algo - signature algorithm
      * @return Private key instance
      * @throws GeneralSecurityException - on failure to decode and create key
      */
     public static PrivateKey decodePrivateKey(String pemEncoded, SignatureAlgorithm algo) throws GeneralSecurityException {
+        return decodePrivateKeyInternal(pemEncoded, keyFactoryAlgorithm(algo));
+    }
+
+    /**
+     * Decode a decryption PEM private key
+     *
+     * @param pemEncoded - pem string for key
+     * @return Private key instance
+     * @throws GeneralSecurityException - on failure to decode and create key
+     */
+    public static PrivateKey decodeDecryptionPrivateKey(String pemEncoded) throws GeneralSecurityException {
+        return decodePrivateKeyInternal(pemEncoded, "RSA");
+    }
+
+    /**
+     * Decode a decryption PEM private key
+     *
+     * @param pemEncoded - pem string for key
+     * @param algo - key encryption algorithm
+     * @return Private key instance
+     * @throws GeneralSecurityException - on failure to decode and create key
+     */
+    public static PrivateKey decodeDecryptionPrivateKey(String pemEncoded, KeyEncryptionAlgorithm algo)
+            throws GeneralSecurityException {
+        return decodePrivateKeyInternal(pemEncoded, encryptionKeyFactoryAlgorithm(algo));
+    }
+
+    public static PrivateKey decodePrivateKeyInternal(String pemEncoded, String algo) throws GeneralSecurityException {
         pemEncoded = removePemKeyBeginEnd(pemEncoded);
         byte[] pkcs8EncodedBytes = Base64.getDecoder().decode(pemEncoded);
 
         // extract the private key
 
         PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(pkcs8EncodedBytes);
-        KeyFactory kf = KeyFactory.getInstance(keyFactoryAlgorithm(algo));
+        KeyFactory kf = KeyFactory.getInstance(algo);
         return kf.generatePrivate(keySpec);
     }
 
@@ -202,11 +253,31 @@ public final class KeyUtils {
         return kf.generatePublic(spec);
     }
 
+    public static PublicKey decodeEncryptionPublicKey(String pemEncoded, KeyEncryptionAlgorithm algo)
+            throws GeneralSecurityException {
+        pemEncoded = removePemKeyBeginEnd(pemEncoded);
+        byte[] encodedBytes = Base64.getDecoder().decode(pemEncoded);
+
+        X509EncodedKeySpec spec = new X509EncodedKeySpec(encodedBytes);
+        KeyFactory kf = KeyFactory.getInstance(encryptionKeyFactoryAlgorithm(algo));
+        return kf.generatePublic(spec);
+    }
+
     static String keyFactoryAlgorithm(SignatureAlgorithm algo) throws NoSuchAlgorithmException {
         if (algo.name().startsWith("RS")) {
             return RSA;
         }
         if (algo.name().startsWith("ES")) {
+            return EC;
+        }
+        throw JWTMessages.msg.unsupportedAlgorithm(algo.name());
+    }
+
+    static String encryptionKeyFactoryAlgorithm(KeyEncryptionAlgorithm algo) throws NoSuchAlgorithmException {
+        if (algo.name().startsWith("RS")) {
+            return RSA;
+        }
+        if (algo.name().startsWith("EC")) {
             return EC;
         }
         throw JWTMessages.msg.unsupportedAlgorithm(algo.name());
@@ -295,7 +366,7 @@ public final class KeyUtils {
         return null;
     }
 
-    static List<JsonWebKey> loadJsonWebKeys(String content) {
+    public static List<JsonWebKey> loadJsonWebKeys(String content) {
         JWTLogging.log.loadingJwks();
 
         JsonObject jwks = null;
@@ -329,28 +400,6 @@ public final class KeyUtils {
 
     static JsonWebKey createJsonWebKey(JsonObject jsonObject) throws Exception {
         return JsonWebKey.Factory.newJwk(JsonUtil.parseJson(jsonObject.toString()));
-    }
-
-    static InputStream getAsFileSystemResource(String publicKeyLocation) throws IOException {
-        try {
-            return new FileInputStream(publicKeyLocation);
-        } catch (FileNotFoundException e) {
-            return null;
-        }
-    }
-
-    static InputStream getAsClasspathResource(String location) {
-        InputStream is = KeyUtils.class.getResourceAsStream(location);
-        if (is == null) {
-            is = Thread.currentThread().getContextClassLoader().getResourceAsStream(location);
-        }
-        return is;
-    }
-
-    static class UrlStreamResolver {
-        public InputStream resolve(String keyLocation) throws IOException {
-            return new URL(keyLocation).openStream();
-        }
     }
 
     public static Key readEncryptionKey(String location, String kid) throws IOException {
