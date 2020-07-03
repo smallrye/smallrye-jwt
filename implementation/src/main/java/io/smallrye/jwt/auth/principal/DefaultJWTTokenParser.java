@@ -73,7 +73,7 @@ public class DefaultJWTTokenParser {
         try {
             JsonWebEncryption jwe = new JsonWebEncryption();
             jwe.setAlgorithmConstraints(
-                    new AlgorithmConstraints(AlgorithmConstraints.ConstraintType.WHITELIST,
+                    new AlgorithmConstraints(AlgorithmConstraints.ConstraintType.PERMIT,
                             authContextInfo.getKeyEncryptionAlgorithm().getAlgorithm()));
             if (authContextInfo.getPrivateDecryptionKey() != null) {
                 jwe.setKey(authContextInfo.getPrivateDecryptionKey());
@@ -107,7 +107,7 @@ public class DefaultJWTTokenParser {
                     builder.setVerificationKeyResolver(getVerificationKeyResolver(authContextInfo));
                 }
                 builder.setJwsAlgorithmConstraints(
-                        new AlgorithmConstraints(AlgorithmConstraints.ConstraintType.WHITELIST,
+                        new AlgorithmConstraints(AlgorithmConstraints.ConstraintType.PERMIT,
                                 authContextInfo.getSignatureAlgorithm().getAlgorithm()));
             } else {
                 builder.setEnableRequireEncryption();
@@ -120,7 +120,7 @@ public class DefaultJWTTokenParser {
                     builder.setDecryptionKeyResolver(getDecryptionKeyResolver(authContextInfo));
                 }
                 builder.setJweAlgorithmConstraints(
-                        new AlgorithmConstraints(AlgorithmConstraints.ConstraintType.WHITELIST,
+                        new AlgorithmConstraints(AlgorithmConstraints.ConstraintType.PERMIT,
                                 authContextInfo.getKeyEncryptionAlgorithm().getAlgorithm()));
             }
 
