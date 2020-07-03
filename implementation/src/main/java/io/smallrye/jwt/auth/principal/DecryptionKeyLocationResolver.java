@@ -164,8 +164,8 @@ public class DecryptionKeyLocationResolver implements DecryptionKeyResolver {
 
     protected void initializeKeyContent() throws Exception {
 
-        if (mayBeFormat(KeyFormat.JWK) && authContextInfo.getPublicKeyLocation() != null
-                && authContextInfo.getPublicKeyLocation().startsWith(HTTPS_SCHEME)) {
+        if (mayBeFormat(KeyFormat.JWK) && authContextInfo.getDecryptKeyLocation() != null
+                && authContextInfo.getDecryptKeyLocation().startsWith(HTTPS_SCHEME)) {
             LOGGER.debugf("Trying to load the keys from the HTTPS JWK(S)...");
             httpsJwks = initializeHttpsJwks();
             httpsJwks.setDefaultCacheDuration(authContextInfo.getJwksRefreshInterval().longValue() * 60L);

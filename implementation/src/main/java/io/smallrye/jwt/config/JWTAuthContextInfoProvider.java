@@ -394,7 +394,6 @@ public class JWTAuthContextInfoProvider {
         if (mpJwtDecryptKeyLocation.isPresent() && KeyFormat.PEM_CERTIFICATE == keyFormat) {
             ConfigLogging.log.unsupportedKeyFormat();
             // TODO: throw the exception 
-            // TODO: throw the exception
             return Optional.empty();
         }
 
@@ -426,7 +425,8 @@ public class JWTAuthContextInfoProvider {
                     throw ConfigMessages.msg.readingPublicKeyLocationFailed(ex);
                 }
             }
-        } else if (mpJwtDecryptKeyLocation.isPresent() && !NONE.equals(mpJwtDecryptKeyLocation.get())) {
+        }
+        if (mpJwtDecryptKeyLocation.isPresent() && !NONE.equals(mpJwtDecryptKeyLocation.get())) {
             contextInfo.setDecryptKeyLocation(mpJwtDecryptKeyLocation.get().trim());
         }
 
