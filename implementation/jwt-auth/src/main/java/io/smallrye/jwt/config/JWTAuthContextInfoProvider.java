@@ -17,7 +17,6 @@
 package io.smallrye.jwt.config;
 
 import java.io.IOException;
-import java.security.interfaces.RSAPublicKey;
 import java.util.Optional;
 import java.util.Set;
 
@@ -379,14 +378,6 @@ public class JWTAuthContextInfoProvider {
     private int forcedJwksRefreshInterval;
 
     /**
-     * List of supported JSON Web Algorithm RSA and Elliptic Curve signing algorithms, default is RS256.
-     */
-    @Inject
-    @ConfigProperty(name = "smallrye.jwt.whitelist.algorithms")
-    @Deprecated
-    private Optional<String> whitelistAlgorithms;
-
-    /**
      * Supported JSON Web Algorithm asymmetric signature algorithm (RS256 or ES256), default is RS256.
      *
      * @deprecated Use {@link JWTAuthContextInfoProvider#mpJwtPublicKeyAlgorithm}
@@ -579,31 +570,6 @@ public class JWTAuthContextInfoProvider {
         return Optional.of(contextInfo);
     }
 
-    @SuppressWarnings("deprecation")
-    protected void decodeMpJwtPublicKey(JWTAuthContextInfo contextInfo) {
-        if (!mpJwtPublicKey.isPresent() || NONE.equals(mpJwtPublicKey.get())) {
-            return;
-        }
-
-        // Need to decode what this is...
-        try {
-            RSAPublicKey pk = (RSAPublicKey) KeyUtils.decodeJWKSPublicKey(mpJwtPublicKey.get());
-            contextInfo.setSignerKey(pk);
-            ConfigLogging.log.publicKeyParsedAsJwk();
-        } catch (Exception e) {
-            // Try as PEM key value
-            ConfigLogging.log.parsingPublicKeyAsJwkFailed(e.getMessage());
-            try {
-                RSAPublicKey pk = (RSAPublicKey) KeyUtils.decodePublicKey(mpJwtPublicKey.get());
-                contextInfo.setSignerKey(pk);
-                ConfigLogging.log.publicKeyParsedAsPem();
-            } catch (Exception e1) {
-                throw ConfigMessages.msg.parsingPublicKeyFailed(e1);
-            }
-        }
-
-    }
-
     public Optional<String> getMpJwtPublicKey() {
         return mpJwtPublicKey;
     }
@@ -698,23 +664,8 @@ public class JWTAuthContextInfoProvider {
         return defaultSubClaim;
     }
 
-    @Deprecated
-    public Optional<String> getWhitelistAlgorithms() {
-        return whitelistAlgorithms;
-    }
-
-    @Deprecated
-    public Optional<SignatureAlgorithm> getSignatureAlgorithm() {
-        return signatureAlgorithm;
-    }
-
     public KeyFormat getKeyFormat() {
         return keyFormat;
-    }
-
-    @Deprecated
-    public Optional<Set<String>> getExpectedAudience() {
-        return expectedAudience;
     }
 
     public Optional<Set<String>> getRequiredClaims() {
