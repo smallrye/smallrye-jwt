@@ -19,9 +19,7 @@ package io.smallrye.jwt.util;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.Reader;
 import java.io.StringReader;
-import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.Key;
@@ -34,7 +32,6 @@ import java.security.PublicKey;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.security.spec.PKCS8EncodedKeySpec;
-import java.security.spec.RSAPublicKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -182,52 +179,6 @@ public final class KeyUtils {
         PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(pkcs8EncodedBytes);
         KeyFactory kf = KeyFactory.getInstance(algo);
         return kf.generatePrivate(keySpec);
-    }
-
-    /**
-     * Decode a JWK(S) encoded public key string to an RSA PublicKey. This assumes a single JWK in the set as
-     * only the first JWK is used.
-     * 
-     * @param jwksValue - JWKS string value
-     * @return PublicKey from RSAPublicKeySpec
-     * @throws GeneralSecurityException when RSA security is not supported or public key cannot be decoded
-     */
-    @Deprecated
-    public static PublicKey decodeJWKSPublicKey(String jwksValue) throws GeneralSecurityException {
-        JsonObject jwks;
-
-        try (Reader reader = new StringReader(jwksValue);
-                JsonReader json = Json.createReader(reader)) {
-            jwks = json.readObject();
-        } catch (Exception e) {
-            // See if this is base64 encoded
-            byte[] decoded = Base64.getDecoder().decode(jwksValue);
-
-            try (InputStream stream = new ByteArrayInputStream(decoded);
-                    JsonReader json = Json.createReader(stream)) {
-                jwks = json.readObject();
-            } catch (IOException ioe) {
-                throw JWTUtilMessages.msg.invalidJWKSPublicKey(ioe);
-            }
-        }
-        JsonArray keys = jwks.getJsonArray("keys");
-        JsonObject jwk;
-        if (keys != null) {
-            jwk = keys.getJsonObject(0);
-        } else {
-            // A JWK
-            jwk = jwks;
-        }
-        String e = jwk.getString("e");
-        String n = jwk.getString("n");
-
-        byte[] ebytes = Base64.getUrlDecoder().decode(e);
-        BigInteger publicExponent = new BigInteger(1, ebytes);
-        byte[] nbytes = Base64.getUrlDecoder().decode(n);
-        BigInteger modulus = new BigInteger(1, nbytes);
-        KeyFactory kf = KeyFactory.getInstance(RSA);
-        RSAPublicKeySpec rsaPublicKeySpec = new RSAPublicKeySpec(modulus, publicExponent);
-        return kf.generatePublic(rsaPublicKeySpec);
     }
 
     /**

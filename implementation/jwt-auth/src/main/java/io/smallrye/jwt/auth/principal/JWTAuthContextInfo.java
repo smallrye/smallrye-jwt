@@ -18,7 +18,6 @@ package io.smallrye.jwt.auth.principal;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.interfaces.RSAPublicKey;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -57,7 +56,6 @@ public class JWTAuthContextInfo {
     private String subPath;
     private String defaultGroupsClaim;
     private String groupsPath;
-    private List<String> whitelistAlgorithms = new ArrayList<>();
     private SignatureAlgorithm signatureAlgorithm = SignatureAlgorithm.RS256;
     private KeyEncryptionAlgorithm keyEncryptionAlgorithm = KeyEncryptionAlgorithm.RSA_OAEP;
     private KeyFormat keyFormat = KeyFormat.ANY;
@@ -120,7 +118,6 @@ public class JWTAuthContextInfo {
         this.subPath = orig.subPath;
         this.defaultGroupsClaim = orig.defaultGroupsClaim;
         this.groupsPath = orig.groupsPath;
-        this.whitelistAlgorithms = orig.whitelistAlgorithms;
         this.signatureAlgorithm = orig.signatureAlgorithm;
         this.keyEncryptionAlgorithm = orig.keyEncryptionAlgorithm;
         this.keyFormat = orig.keyFormat;
@@ -320,16 +317,6 @@ public class JWTAuthContextInfo {
         this.groupsPath = groupsPath;
     }
 
-    @Deprecated
-    public List<String> getWhitelistAlgorithms() {
-        return whitelistAlgorithms;
-    }
-
-    @Deprecated
-    public void setWhitelistAlgorithms(final List<String> whitelistAlgorithms) {
-        this.whitelistAlgorithms = whitelistAlgorithms;
-    }
-
     public String getTokenKeyId() {
         return tokenKeyId;
     }
@@ -428,7 +415,6 @@ public class JWTAuthContextInfo {
                 ", subPath='" + subPath + '\'' +
                 ", defaultGroupsClaim='" + defaultGroupsClaim + '\'' +
                 ", groupsPath='" + groupsPath + '\'' +
-                ", whitelistAlgorithms=" + whitelistAlgorithms +
                 ", signatureAlgorithm=" + signatureAlgorithm +
                 ", keyEncryptionAlgorithm=" + keyEncryptionAlgorithm +
                 ", keyFormat=" + keyFormat +
