@@ -30,6 +30,7 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import io.smallrye.jwt.KeyFormat;
 import io.smallrye.jwt.ResourceUtils;
 import io.smallrye.jwt.SmallryeJwtUtils;
+import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
 
@@ -118,6 +119,7 @@ public class JWTAuthContextInfoProvider {
         provider.jwksRefreshInterval = Optional.empty();
         provider.forcedJwksRefreshInterval = 30;
         provider.signatureAlgorithm = provider.mpJwtPublicKeyAlgorithm;
+        provider.keyEncryptionAlgorithm = KeyEncryptionAlgorithm.RSA_OAEP;
         provider.keyFormat = KeyFormat.ANY;
         provider.expectedAudience = provider.mpJwtVerifyAudiences;
         provider.groupsSeparator = DEFAULT_GROUPS_SEPARATOR;
@@ -149,11 +151,23 @@ public class JWTAuthContextInfoProvider {
     private Optional<SignatureAlgorithm> mpJwtPublicKeyAlgorithm;
 
     /**
-     * @apiNote MP JWT 1.1
+     * @apiNote MP JWT 1.2
      */
     @Inject
     @ConfigProperty(name = "mp.jwt.decrypt.key.location", defaultValue = NONE)
     private Optional<String> mpJwtDecryptKeyLocation;
+
+    @Deprecated
+    @Inject
+    @ConfigProperty(name = "smallrye.jwt.decrypt.key.location")
+    private Optional<String> decryptionKeyLocation;
+
+    /**
+     * Supported JSON Web Algorithm encryption algorithm.
+     */
+    @Inject
+    @ConfigProperty(name = "smallrye.jwt.decrypt.algorithm", defaultValue = "RSA_OAEP")
+    private KeyEncryptionAlgorithm keyEncryptionAlgorithm;
 
     /**
      * @apiNote MP JWT 1.1
@@ -165,6 +179,7 @@ public class JWTAuthContextInfoProvider {
     /**
      * @apiNote MP JWT 1.1
      */
+    @Deprecated
     @Inject
     @ConfigProperty(name = "mp.jwt.verify.requireiss", defaultValue = "true")
     private Optional<Boolean> mpJwtRequireIss;
@@ -375,6 +390,7 @@ public class JWTAuthContextInfoProvider {
     @ConfigProperty(name = "smallrye.jwt.required.claims")
     Optional<Set<String>> requiredClaims;
 
+    @SuppressWarnings("deprecation")
     @Produces
     Optional<JWTAuthContextInfo> getOptionalContextInfo() {
         // Log the config values
@@ -416,8 +432,31 @@ public class JWTAuthContextInfoProvider {
                 }
             }
         }
-        if (mpJwtDecryptKeyLocation.isPresent() && !NONE.equals(mpJwtDecryptKeyLocation.get())) {
-            contextInfo.setDecryptKeyLocation(mpJwtDecryptKeyLocation.get().trim());
+
+        final Optional<String> theDecryptionKeyLocation;
+        if (mpJwtDecryptKeyLocation.isPresent()) {
+            theDecryptionKeyLocation = mpJwtDecryptKeyLocation;
+        } else if (decryptionKeyLocation.isPresent()) {
+            ConfigLogging.log.replacedConfig("smallrye.jwt.decrypt.key.location", "mp.jwt.decrypt.key.location");
+            theDecryptionKeyLocation = decryptionKeyLocation;
+        } else {
+            theDecryptionKeyLocation = Optional.empty();
+        }
+
+        if (theDecryptionKeyLocation.isPresent() && !NONE.equals(theDecryptionKeyLocation.get())) {
+            String decryptionKeyLocationTrimmed = theDecryptionKeyLocation.get().trim();
+            if (decryptionKeyLocationTrimmed.startsWith("http")) {
+                contextInfo.setDecryptionKeyLocation(decryptionKeyLocationTrimmed);
+            } else {
+                try {
+                    contextInfo.setDecryptionKeyContent(ResourceUtils.readResource(decryptionKeyLocationTrimmed));
+                    if (contextInfo.getDecryptionKeyContent() == null) {
+                        throw ConfigMessages.msg.invalidDecryptKeyLocation();
+                    }
+                } catch (IOException ex) {
+                    throw ConfigMessages.msg.readingDecryptKeyLocationFailed(ex);
+                }
+            }
         }
 
         if (mpJwtTokenHeader.isPresent()) {
@@ -468,6 +507,7 @@ public class JWTAuthContextInfoProvider {
         } else {
             contextInfo.setSignatureAlgorithm(SignatureAlgorithm.RS256);
         }
+        contextInfo.setKeyEncryptionAlgorithm(keyEncryptionAlgorithm);
         contextInfo.setKeyFormat(keyFormat);
         if (mpJwtVerifyAudiences.isPresent()) {
             contextInfo.setExpectedAudience(mpJwtVerifyAudiences.get());

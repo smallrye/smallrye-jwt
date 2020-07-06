@@ -38,7 +38,7 @@
     <version.eclipse.microprofile.jwt>1.2-SNAPSHOT</version.eclipse.microprofile.jwt>
     <version.io.smallrye.config>1.8.1</version.io.smallrye.config>
     <version.microprofile.config>1.4</version.microprofile.config>
-    <version.jose4j>0.7.1</version.jose4j>
+    <version.jose4j>0.7.2</version.jose4j>
     <version.resteasy>3.12.1.Final</version.resteasy>
     <version.mokito>3.3.3</version.mokito>
     <version.weld-junit4>2.0.1.Final</version.weld-junit4>

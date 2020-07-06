@@ -28,7 +28,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.microprofile.jwt.JsonWebToken;
-import org.jboss.logging.Logger;
 
 import io.smallrye.jwt.auth.AbstractBearerTokenExtractor;
 import io.smallrye.jwt.auth.cdi.PrincipalProducer;
@@ -41,8 +40,6 @@ import io.smallrye.jwt.auth.principal.JWTParser;
  */
 @ApplicationScoped
 public class JWTHttpAuthenticationMechanism implements HttpAuthenticationMechanism {
-
-    private static Logger logger = Logger.getLogger(JWTHttpAuthenticationMechanism.class);
 
     @Inject
     private JWTAuthContextInfo authContextInfo;

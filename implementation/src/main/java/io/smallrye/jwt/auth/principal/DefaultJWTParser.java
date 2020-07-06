@@ -16,10 +16,19 @@
  */
 package io.smallrye.jwt.auth.principal;
 
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.interfaces.ECPrivateKey;
+import java.security.interfaces.ECPublicKey;
+
+import javax.crypto.SecretKey;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
 import org.eclipse.microprofile.jwt.JsonWebToken;
+
+import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
+import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 
 /**
  * A default implementation of {@link JWTParser}.
@@ -43,6 +52,51 @@ public class DefaultJWTParser implements JWTParser {
         return getCallerPrincipalFactory().parse(bearerToken, authContextInfo);
     }
 
+    @Override
+    public JsonWebToken parse(String bearerToken, JWTAuthContextInfo newAuthContextInfo) throws ParseException {
+        return getCallerPrincipalFactory().parse(bearerToken, newAuthContextInfo);
+    }
+
+    @Override
+    public JsonWebToken verify(String bearerToken, PublicKey key) throws ParseException {
+        JWTAuthContextInfo newAuthContextInfo = copyAuthContextInfo();
+        newAuthContextInfo.setPublicVerificationKey(key);
+        if (key instanceof ECPublicKey) {
+            setSignatureAlgorithmIfNeeded(newAuthContextInfo, "ES", SignatureAlgorithm.ES256);
+        } else {
+            setSignatureAlgorithmIfNeeded(newAuthContextInfo, "RS", SignatureAlgorithm.RS256);
+        }
+        return getCallerPrincipalFactory().parse(bearerToken, newAuthContextInfo);
+    }
+
+    @Override
+    public JsonWebToken verify(String bearerToken, SecretKey key) throws ParseException {
+        JWTAuthContextInfo newAuthContextInfo = copyAuthContextInfo();
+        newAuthContextInfo.setSecretVerificationKey(key);
+        setSignatureAlgorithmIfNeeded(newAuthContextInfo, "HS", SignatureAlgorithm.HS256);
+        return getCallerPrincipalFactory().parse(bearerToken, newAuthContextInfo);
+    }
+
+    @Override
+    public JsonWebToken decrypt(String bearerToken, PrivateKey key) throws ParseException {
+        JWTAuthContextInfo newAuthContextInfo = copyAuthContextInfo();
+        newAuthContextInfo.setPrivateDecryptionKey(key);
+        if (key instanceof ECPrivateKey) {
+            setKeyEncryptionAlgorithmIfNeeded(newAuthContextInfo, "EC", KeyEncryptionAlgorithm.ECDH_ES_A256KW);
+        } else {
+            setKeyEncryptionAlgorithmIfNeeded(newAuthContextInfo, "RS", KeyEncryptionAlgorithm.RSA_OAEP);
+        }
+        return getCallerPrincipalFactory().parse(bearerToken, newAuthContextInfo);
+    }
+
+    @Override
+    public JsonWebToken decrypt(String bearerToken, SecretKey key) throws ParseException {
+        JWTAuthContextInfo newAuthContextInfo = copyAuthContextInfo();
+        newAuthContextInfo.setSecretDecryptionKey(key);
+        setKeyEncryptionAlgorithmIfNeeded(newAuthContextInfo, "A256KW", KeyEncryptionAlgorithm.A256KW);
+        return getCallerPrincipalFactory().parse(bearerToken, newAuthContextInfo);
+    }
+
     private JWTCallerPrincipalFactory getCallerPrincipalFactory() {
         if (callerPrincipalFactory == null) {
             synchronized (this) {
@@ -54,4 +108,23 @@ public class DefaultJWTParser implements JWTParser {
         return callerPrincipalFactory;
     }
 
+    private JWTAuthContextInfo copyAuthContextInfo() {
+        return authContextInfo != null ? new JWTAuthContextInfo(authContextInfo) : new JWTAuthContextInfo();
+    }
+
+    private void setSignatureAlgorithmIfNeeded(JWTAuthContextInfo newAuthContextInfo, String algoStart,
+            SignatureAlgorithm newAlgo) {
+        SignatureAlgorithm algo = newAuthContextInfo.getSignatureAlgorithm();
+        if (algo == null || !algo.getAlgorithm().startsWith(algoStart)) {
+            newAuthContextInfo.setSignatureAlgorithm(newAlgo);
+        }
+    }
+
+    private void setKeyEncryptionAlgorithmIfNeeded(JWTAuthContextInfo newAuthContextInfo, String algoStart,
+            KeyEncryptionAlgorithm newAlgo) {
+        KeyEncryptionAlgorithm algo = newAuthContextInfo.getKeyEncryptionAlgorithm();
+        if (algo == null || !algo.getAlgorithm().startsWith(algoStart)) {
+            newAuthContextInfo.setKeyEncryptionAlgorithm(newAlgo);
+        }
+    }
 }

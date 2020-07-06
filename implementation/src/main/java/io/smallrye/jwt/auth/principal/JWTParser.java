@@ -17,13 +17,83 @@
 
 package io.smallrye.jwt.auth.principal;
 
+import java.security.PrivateKey;
+import java.security.PublicKey;
+
+import javax.crypto.SecretKey;
+
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
 /**
- * A parser to convert from a bearer token string to a {@link JsonWebToken}.
+ * A parser to parse a JWT token and convert it to a {@link JsonWebToken}.
  */
 public interface JWTParser {
 
-    public JsonWebToken parse(final String bearerToken) throws ParseException;
+    /**
+     * Parse JWT token.
+     * The token will be verified or decrypted or decrypted and then verified and converted to {@link JsonWebToken}.
+     * This method depends on the injected {@link JWTAuthContextInfo} configuration context.
+     *
+     * @param token the JWT token
+     * @return JsonWebToken
+     * @throws ParseException
+     */
+    public JsonWebToken parse(final String token) throws ParseException;
+
+    /**
+     * Parse JWT token.
+     * The token will be verified or decrypted or decrypted and then verified and converted to {@link JsonWebToken}.
+     *
+     * @param token the JWT token
+     * @param context the configuration context which will override the injected {@link JWTAuthContextInfo} configuration
+     *        context.
+     * @return JsonWebToken
+     * @throws ParseException
+     */
+    public JsonWebToken parse(final String token, JWTAuthContextInfo context) throws ParseException;
+
+    /**
+     * Parse JWT token. The token will be verified and converted to {@link JsonWebToken}.
+     *
+     * @param token the JWT token
+     * @param key the public verification key. The injected {@link JWTAuthContextInfo} configuration context
+     *        will be reused, only its publicVerificationKey property will be replaced by this parameter.
+     * @return JsonWebToken
+     * @throws ParseException
+     */
+    public JsonWebToken verify(final String token, PublicKey key) throws ParseException;
+
+    /**
+     * Parse JWT token. The token will be verified and converted to {@link JsonWebToken}.
+     *
+     * @param token the JWT token
+     * @param key the secret verification key. The injected {@link JWTAuthContextInfo} configuration context
+     *        will be reused, only its secretVerificationKey property will be replaced by this parameter.
+     * @return JsonWebToken
+     * @throws ParseException
+     */
+    public JsonWebToken verify(final String token, SecretKey key) throws ParseException;
+
+    /**
+     * Parse JWT token. The token will be decrypted and converted to {@link JsonWebToken}.
+     *
+     * @param token the JWT token
+     * @param key the private decryption key. The injected {@link JWTAuthContextInfo} configuration context
+     *        will be reused, only its privateDecryptionkey property will be replaced by this parameter.
+     * @return JsonWebToken
+     * @throws ParseException
+     */
+    public JsonWebToken decrypt(final String token, PrivateKey key) throws ParseException;
+
+    /**
+     * Parse JWT token. The token will be decrypted and converted to {@link JsonWebToken}.
+     *
+     * @param token the JWT token
+     * @param key the secret decryption key. The injected {@link JWTAuthContextInfo} configuration context
+     *        will be reused, only its secretDecryptionkey property will be replaced by this parameter.
+     * @return JsonWebToken
+     * @throws ParseException
+     */
+    public JsonWebToken decrypt(final String token, SecretKey key) throws ParseException;
 
 }
