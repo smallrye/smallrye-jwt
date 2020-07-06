@@ -65,11 +65,6 @@ public class JWTAuthContextInfo {
     private boolean relaxVerificationKeyValidation;
     private boolean verifyCertificateThumbprint;
 
-    /**
-     * Flag that indicates whether the issuer is required and validated, or ignored, new in MP-JWT 1.1.
-     */
-    private boolean requireIssuer = true;
-
     public JWTAuthContextInfo() {
     }
 
@@ -125,7 +120,6 @@ public class JWTAuthContextInfo {
         this.groupsSeparator = orig.groupsSeparator;
         this.requiredClaims = orig.requiredClaims;
         this.relaxVerificationKeyValidation = orig.relaxVerificationKeyValidation;
-        this.requireIssuer = orig.requireIssuer;
         this.verifyCertificateThumbprint = orig.verifyCertificateThumbprint;
     }
 
@@ -249,16 +243,6 @@ public class JWTAuthContextInfo {
 
     public void setForcedJwksRefreshInterval(int forcedJwksRefreshInterval) {
         this.forcedJwksRefreshInterval = forcedJwksRefreshInterval;
-    }
-
-    @Deprecated
-    public boolean isRequireIssuer() {
-        return requireIssuer;
-    }
-
-    @Deprecated
-    public void setRequireIssuer(boolean requireIssuer) {
-        this.requireIssuer = requireIssuer;
     }
 
     public String getTokenHeader() {
@@ -420,7 +404,6 @@ public class JWTAuthContextInfo {
                 ", keyFormat=" + keyFormat +
                 ", expectedAudience=" + expectedAudience +
                 ", groupsSeparator='" + groupsSeparator + '\'' +
-                ", requireIssuer=" + requireIssuer +
                 ", relaxVerificationKeyValidation=" + relaxVerificationKeyValidation +
                 ", verifyCertificateThumbprint=" + verifyCertificateThumbprint +
                 '}';
