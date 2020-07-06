@@ -17,15 +17,10 @@
 package io.smallrye.jwt;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.eclipse.microprofile.jwt.Claims;
-import org.jose4j.jws.AlgorithmIdentifiers;
 
 import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
 
@@ -35,12 +30,6 @@ import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
 public class SmallryeJwtUtils {
     private static final Integer MAX_PATH_DEPTH = 4;
     private static final String COOKIE_HEADER = "Cookie";
-    private static final Set<String> SUPPORTED_ALGORITHMS = new HashSet<>(Arrays.asList(AlgorithmIdentifiers.RSA_USING_SHA256,
-            AlgorithmIdentifiers.RSA_USING_SHA384,
-            AlgorithmIdentifiers.RSA_USING_SHA512,
-            AlgorithmIdentifiers.ECDSA_USING_P256_CURVE_AND_SHA256,
-            AlgorithmIdentifiers.ECDSA_USING_P384_CURVE_AND_SHA384,
-            AlgorithmIdentifiers.ECDSA_USING_P521_CURVE_AND_SHA512));
 
     private SmallryeJwtUtils() {
     }
@@ -73,23 +62,6 @@ public class SmallryeJwtUtils {
         if (COOKIE_HEADER.equals(contextInfo.getTokenHeader())) {
             if (cookieName.isPresent()) {
                 contextInfo.setTokenCookie(cookieName.get());
-            }
-        }
-    }
-
-    @Deprecated
-    public static void setWhitelistAlgorithms(JWTAuthContextInfo contextInfo, Optional<String> whitelistAlgorithms) {
-        if (whitelistAlgorithms.isPresent()) {
-            final List<String> algorithms = Arrays.stream(whitelistAlgorithms.get().split(","))
-                    .map(String::trim)
-                    .collect(Collectors.toList());
-
-            for (String whitelistAlgorithm : algorithms) {
-                if (SUPPORTED_ALGORITHMS.contains(whitelistAlgorithm)) {
-                    contextInfo.getWhitelistAlgorithms().add(whitelistAlgorithm);
-                } else {
-                    JWTLogging.log.unsupportedAlgorithm(whitelistAlgorithm);
-                }
             }
         }
     }
