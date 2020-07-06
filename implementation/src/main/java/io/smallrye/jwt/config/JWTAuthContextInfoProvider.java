@@ -390,7 +390,6 @@ public class JWTAuthContextInfoProvider {
     @ConfigProperty(name = "smallrye.jwt.required.claims")
     Optional<Set<String>> requiredClaims;
 
-    @SuppressWarnings("deprecation")
     @Produces
     Optional<JWTAuthContextInfo> getOptionalContextInfo() {
         // Log the config values
@@ -407,13 +406,7 @@ public class JWTAuthContextInfoProvider {
 
         if (mpJwtIssuer != null && !mpJwtIssuer.equals(NONE)) {
             contextInfo.setIssuedBy(mpJwtIssuer.trim());
-        } else {
-            // If there is no expected issuer configured, don't validate it; new in MP-JWT 1.1
-            contextInfo.setRequireIssuer(false);
         }
-
-        // Default is to require iss claim
-        contextInfo.setRequireIssuer(mpJwtRequireIss.orElse(true));
 
         if (mpJwtPublicKey.isPresent() && !NONE.equals(mpJwtPublicKey.get())) {
             contextInfo.setPublicKeyContent(mpJwtPublicKey.get());
