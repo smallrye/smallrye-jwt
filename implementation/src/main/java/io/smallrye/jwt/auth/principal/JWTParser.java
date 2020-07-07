@@ -36,7 +36,7 @@ public interface JWTParser {
      *
      * @param token the JWT token
      * @return JsonWebToken
-     * @throws ParseException
+     * @throws ParseException parse exception
      */
     public JsonWebToken parse(final String token) throws ParseException;
 
@@ -48,7 +48,7 @@ public interface JWTParser {
      * @param context the configuration context which will override the injected {@link JWTAuthContextInfo} configuration
      *        context.
      * @return JsonWebToken
-     * @throws ParseException
+     * @throws ParseException parse exception
      */
     public JsonWebToken parse(final String token, JWTAuthContextInfo context) throws ParseException;
 
@@ -59,7 +59,7 @@ public interface JWTParser {
      * @param key the public verification key. The injected {@link JWTAuthContextInfo} configuration context
      *        will be reused, only its publicVerificationKey property will be replaced by this parameter.
      * @return JsonWebToken
-     * @throws ParseException
+     * @throws ParseException parse exception
      */
     public JsonWebToken verify(final String token, PublicKey key) throws ParseException;
 
@@ -70,7 +70,7 @@ public interface JWTParser {
      * @param key the secret verification key. The injected {@link JWTAuthContextInfo} configuration context
      *        will be reused, only its secretVerificationKey property will be replaced by this parameter.
      * @return JsonWebToken
-     * @throws ParseException
+     * @throws ParseException parse exception
      */
     public JsonWebToken verify(final String token, SecretKey key) throws ParseException;
 
@@ -81,7 +81,7 @@ public interface JWTParser {
      * @param key the private decryption key. The injected {@link JWTAuthContextInfo} configuration context
      *        will be reused, only its privateDecryptionkey property will be replaced by this parameter.
      * @return JsonWebToken
-     * @throws ParseException
+     * @throws ParseException parse exception
      */
     public JsonWebToken decrypt(final String token, PrivateKey key) throws ParseException;
 
@@ -92,7 +92,7 @@ public interface JWTParser {
      * @param key the secret decryption key. The injected {@link JWTAuthContextInfo} configuration context
      *        will be reused, only its secretDecryptionkey property will be replaced by this parameter.
      * @return JsonWebToken
-     * @throws ParseException
+     * @throws ParseException parse exception
      */
     public JsonWebToken decrypt(final String token, SecretKey key) throws ParseException;
 
