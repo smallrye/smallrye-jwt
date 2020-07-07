@@ -91,6 +91,10 @@ public class JsonUtils {
 
     /**
      * Manual converter to convert Json type to supported Java types in the spec.
+     *
+     * @param klass Class to convert the value to
+     * @param value the value to be converted
+     * @return converted Object
      */
     public static Object convert(final Class<?> klass, final Object value) {
         if (klass == null) {

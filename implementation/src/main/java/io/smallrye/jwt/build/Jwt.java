@@ -151,7 +151,7 @@ public final class Jwt {
     /**
      * Creates a new instance of {@link JwtClaimsBuilder} with a specified 'audience' claim.
      *
-     * @param groups the audience
+     * @param audience the audience
      * @return {@link JwtClaimsBuilder}
      */
     public static JwtClaimsBuilder audience(String audience) {
@@ -161,7 +161,7 @@ public final class Jwt {
     /**
      * Creates a new instance of {@link JwtClaimsBuilder} with a specified 'audience' claim.
      *
-     * @param groups the audience
+     * @param audiences the audience
      * @return {@link JwtClaimsBuilder}
      */
     public static JwtClaimsBuilder audience(Set<String> audiences) {
