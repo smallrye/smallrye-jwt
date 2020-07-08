@@ -61,7 +61,7 @@ public class JWTAuthContextInfo {
     private Set<String> expectedAudience;
     private String groupsSeparator = " ";
     private Set<String> requiredClaims;
-    private boolean relaxVerificationKeyValidation;
+    private boolean relaxVerificationKeyValidation = true;
 
     public JWTAuthContextInfo() {
     }
