@@ -192,6 +192,7 @@ public final class KeyUtils {
      * Decode a PEM encoded public key string to an RSA or EllipticCurve PublicKey
      * 
      * @param pemEncoded - PEM string for public key
+     * @param algo signature algorithm
      * @return PublicKey
      * @throws GeneralSecurityException on decode failure
      */
