@@ -13,7 +13,7 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package io.smallrye.jwt.auth;
+package io.smallrye.jwt.auth.dpop;
 
 import static org.jose4j.jwa.AlgorithmConstraints.ConstraintType.PERMIT;
 
@@ -78,16 +78,16 @@ public abstract class AbstractDpopTokenValidator {
                 try {
                     parser.process(dpop);
                 } catch (InvalidJwtException e) {
-                    AuthLogging.log.invalidDpopToken();
-                    throw AuthMessages.msg.failedToVerifyDpopToken(e);
+                    DpopLogging.log.invalidDpopToken();
+                    throw DpopMessages.msg.failedToVerifyDpopToken(e);
                 }
             } else {
-                AuthLogging.log.missingDpopToken();
-                throw AuthMessages.msg.missingDpopProof();
+                DpopLogging.log.missingDpopToken();
+                throw DpopMessages.msg.missingDpopProof();
             }
         } else {
-            AuthLogging.log.missingDpopKeyBinding();
-            throw AuthMessages.msg.missingDpopKeyBinding();
+            DpopLogging.log.missingDpopKeyBinding();
+            throw DpopMessages.msg.missingDpopKeyBinding();
         }
     }
 
@@ -206,7 +206,7 @@ public abstract class AbstractDpopTokenValidator {
                         && uri1.getAuthority().equalsIgnoreCase(uri2.getAuthority())
                         && uri1.getPath().equalsIgnoreCase(uri2.getPath());
             } catch (URISyntaxException ex) {
-                AuthLogging.log.invalidRequestUrl(ex.getMessage());
+                DpopLogging.log.invalidRequestUrl(ex.getMessage());
             }
         }
         return false;

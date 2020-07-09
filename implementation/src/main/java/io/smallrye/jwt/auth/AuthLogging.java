@@ -33,20 +33,4 @@ interface AuthLogging extends BasicLogger {
     @LogMessage(level = Logger.Level.DEBUG)
     @Message(id = 6005, value = "Authorization header was null")
     void authHeaderIsNull();
-
-    @LogMessage(level = Logger.Level.DEBUG)
-    @Message(id = 6006, value = "Invalid DPoP token")
-    void invalidDpopToken();
-
-    @LogMessage(level = Logger.Level.DEBUG)
-    @Message(id = 6007, value = "Missing DPoP token")
-    void missingDpopToken();
-
-    @LogMessage(level = Logger.Level.DEBUG)
-    @Message(id = 6008, value = "Missing DPoP key binding in access token")
-    void missingDpopKeyBinding();
-
-    @LogMessage(level = Logger.Level.DEBUG)
-    @Message(id = 6009, value = "Invalid request URL: %s")
-    void invalidRequestUrl(String invalidUrlMsg);
 }

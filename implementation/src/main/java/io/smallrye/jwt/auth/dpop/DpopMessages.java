@@ -1,4 +1,4 @@
-package io.smallrye.jwt.auth;
+package io.smallrye.jwt.auth.dpop;
 
 import org.jboss.logging.Messages;
 import org.jboss.logging.annotations.Cause;
@@ -8,8 +8,8 @@ import org.jboss.logging.annotations.MessageBundle;
 import io.smallrye.jwt.auth.principal.ParseException;
 
 @MessageBundle(projectCode = "SRJWT", length = 5)
-interface AuthMessages {
-    AuthMessages msg = Messages.getBundle(AuthMessages.class);
+interface DpopMessages {
+    DpopMessages msg = Messages.getBundle(DpopMessages.class);
 
     @Message(id = 14000, value = "Failed to verify DPoP token")
     ParseException failedToVerifyDpopToken(@Cause Throwable e);
