@@ -67,7 +67,7 @@ public abstract class AbstractDpopTokenValidator {
                         .setRequireJwtId()
                         .setExpectedType(true, DPOP_JWT_TYPE)
                         .setJwsAlgorithmConstraints(new AlgorithmConstraints(PERMIT,
-                                authContextInfo.getKeyEncryptionAlgorithm().getAlgorithm()))
+                                authContextInfo.getSignatureAlgorithm().getAlgorithm()))
                         .setVerificationKeyResolver(new EmbeddedJwkVerificationKeyResolver())
                         .setRequireIssuedAt().setAllowedClockSkewInSeconds(authContextInfo.getExpGracePeriodSecs())
                         .setExpectedIssuer(false, null)
