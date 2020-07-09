@@ -111,7 +111,7 @@ public class JWTAuthContextInfoProviderTest {
     @Test
     public void testGetOptionalContextInfoWithMaxTimeToLive() throws Exception {
         JWTAuthContextInfoProvider provider = JWTAuthContextInfoProvider.createWithKey(signerKeyPem, TEST_ISS);
-        provider.maxTimeToLiveSecs = Optional.of(60L); // 60 minutes
+        provider.maxTimeToLiveSecs = Optional.of(60L); // 60 seconds
         Optional<JWTAuthContextInfo> info = provider.getOptionalContextInfo();
         assertNotNull(info);
         assertTrue(info.isPresent());
