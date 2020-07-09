@@ -45,7 +45,7 @@ interface PrincipalMessages {
     ParseException failedToVerifyMaxTTL(@Cause Throwable throwable);
 
     @Message(id = 7009, value = "The Expiration Time (exp=%s) claim value cannot be more than %d"
-            + " minutes in the future relative to Issued At (iat=%s)")
+            + " seconds in the future relative to Issued At (iat=%s)")
     ParseException expExceeded(NumericDate exp, long maxTimeToLiveSecs, NumericDate iat);
 
     @Message(id = 7010, value = "Required claims are not present in the JWT")
