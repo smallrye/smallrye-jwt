@@ -299,8 +299,8 @@ public class JWTAuthContextInfoProvider {
      * fail.
      */
     @Inject
-    @ConfigProperty(name = "smallrye.jwt.require.named-principal", defaultValue = "false")
-    private Optional<Boolean> requireNamedPrincipal;
+    @ConfigProperty(name = "smallrye.jwt.require.named-principal", defaultValue = "true")
+    private Optional<Boolean> requireNamedPrincipal = Optional.of(Boolean.TRUE);
 
     /**
      * Default subject claim value. This property can be used to support the JWT tokens without a 'sub' claim.
@@ -413,8 +413,8 @@ public class JWTAuthContextInfoProvider {
      * Public RSA keys with the 1024 bit length will be allowed if this property is set to 'true'.
      */
     @Inject
-    @ConfigProperty(name = "smallrye.jwt.verify.relax-key-validation", defaultValue = "false")
-    private boolean relaxVerificationKeyValidation;
+    @ConfigProperty(name = "smallrye.jwt.verify.relax-key-validation", defaultValue = "true")
+    private boolean relaxVerificationKeyValidation = true;
 
     /**
      * The audience value(s) that identify valid recipient(s) of a JWT. Audience validation
