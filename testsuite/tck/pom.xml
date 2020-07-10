@@ -95,10 +95,7 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <suiteXmlFiles>
-            <!-- TODO - remove when all TCK passes -->
-            <suiteXmlFile>${project.build.directory}/test-classes/tck-base-suite.xml</suiteXmlFile>
-            <!-- TODO - uncomment when all TCK passes -->
-            <!--<suiteXmlFile>${project.build.directory}/tck-suite/suites/tck-base-suite.xml</suiteXmlFile>-->
+            <suiteXmlFile>${project.build.directory}/tck-suite/suites/tck-base-suite.xml</suiteXmlFile>
           </suiteXmlFiles>
           <excludes>
             <exclude>TokenAsCookieTest</exclude>

@@ -44,7 +44,7 @@
       <class name="org.eclipse.microprofile.jwt.tck.util.TokenUtilsSignEncryptTest" />
       <class name="org.eclipse.microprofile.jwt.tck.util.TokenUtilsExtraTest" />
       <class name="org.eclipse.microprofile.jwt.tck.container.jaxrs.UnsecuredPingTest" />
-      <!--<class name="org.eclipse.microprofile.jwt.tck.container.jaxrs.RequiredClaimsTest" />-->
+      <class name="org.eclipse.microprofile.jwt.tck.container.jaxrs.RequiredClaimsTest" />
       <class name="org.eclipse.microprofile.jwt.tck.container.jaxrs.ClaimValueInjectionTest" />
       <class name="org.eclipse.microprofile.jwt.tck.container.jaxrs.JsonValueInjectionTest" />
       <class name="org.eclipse.microprofile.jwt.tck.container.jaxrs.ProviderInjectionTest" />
@@ -57,6 +57,7 @@
       <class name="org.eclipse.microprofile.jwt.tck.container.jaxrs.AudValidationBadAudTest" />
       <class name="org.eclipse.microprofile.jwt.tck.container.jaxrs.AudValidationMissingAudTest" />
       <class name="org.eclipse.microprofile.jwt.tck.container.jaxrs.ApplicationScopedInjectionTest" />
+      <class name="org.eclipse.microprofile.jwt.tck.container.jaxrs.RsaKeySignatureTest" />
       <class name="org.eclipse.microprofile.jwt.tck.config.PublicKeyAsPEMTest" />
       <class name="org.eclipse.microprofile.jwt.tck.config.PublicKeyAsPEMLocationTest" />
       <class name="org.eclipse.microprofile.jwt.tck.config.PublicKeyAsPEMLocationURLTest" />

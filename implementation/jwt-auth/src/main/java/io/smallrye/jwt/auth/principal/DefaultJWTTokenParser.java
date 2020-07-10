@@ -130,9 +130,7 @@ public class DefaultJWTTokenParser {
 
             builder.setRequireExpirationTime();
 
-            if (authContextInfo.getMaxTimeToLiveSecs() != null) {
-                builder.setRequireIssuedAt();
-            }
+            builder.setRequireIssuedAt();
 
             if (authContextInfo.getIssuedBy() != null) {
                 builder.setExpectedIssuer(authContextInfo.getIssuedBy());
@@ -155,7 +153,7 @@ public class DefaultJWTTokenParser {
             JwtContext jwtContext = jwtConsumer.process(token);
             JwtClaims claimsSet = jwtContext.getJwtClaims();
 
-            verifyTimeToLive(authContextInfo, claimsSet);
+            verifyIatAndExpAndTimeToLive(authContextInfo, claimsSet);
             verifyRequiredClaims(authContextInfo, jwtContext);
 
             claimsSet.setClaim(Claims.raw_token.name(), token);
@@ -304,20 +302,23 @@ public class DefaultJWTTokenParser {
         return claimValue;
     }
 
-    private void verifyTimeToLive(JWTAuthContextInfo authContextInfo, JwtClaims claimsSet) throws ParseException {
+    private void verifyIatAndExpAndTimeToLive(JWTAuthContextInfo authContextInfo, JwtClaims claimsSet) throws ParseException {
+        NumericDate iat;
+        NumericDate exp;
+
+        try {
+            iat = claimsSet.getIssuedAt();
+            exp = claimsSet.getExpirationTime();
+        } catch (Exception ex) {
+            throw PrincipalMessages.msg.invalidIatExp();
+        }
+
+        if (iat.getValue() > exp.getValue()) {
+            throw PrincipalMessages.msg.failedToVerifyIatExp(exp, iat);
+        }
         final Long maxTimeToLiveSecs = authContextInfo.getMaxTimeToLiveSecs();
 
         if (maxTimeToLiveSecs != null) {
-            final NumericDate iat;
-            final NumericDate exp;
-
-            try {
-                iat = claimsSet.getIssuedAt();
-                exp = claimsSet.getExpirationTime();
-            } catch (Exception e) {
-                throw PrincipalMessages.msg.failedToVerifyMaxTTL(e);
-            }
-
             if (exp.getValue() - iat.getValue() > maxTimeToLiveSecs) {
                 throw PrincipalMessages.msg.expExceeded(exp, maxTimeToLiveSecs, iat);
             }
