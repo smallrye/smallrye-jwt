@@ -52,7 +52,6 @@ public class DefaultJWTTokenParserTest {
         KeyPair pair = KeyUtils.generateKeyPair(1024);
         String jwt = TokenUtils.generateTokenString(pair.getPrivate(), "kid", "/Token1.json", null, null);
         JWTAuthContextInfo context = new JWTAuthContextInfo((RSAPublicKey) pair.getPublic(), "https://server.example.com");
-        context.setRelaxVerificationKeyValidation(true);
         assertNotNull(parser.parse(jwt, context).getJwtClaims());
     }
 
@@ -61,6 +60,7 @@ public class DefaultJWTTokenParserTest {
         KeyPair pair = KeyUtils.generateKeyPair(1024);
         String jwt = TokenUtils.generateTokenString(pair.getPrivate(), "kid", "/Token1.json", null, null);
         JWTAuthContextInfo context = new JWTAuthContextInfo((RSAPublicKey) pair.getPublic(), "https://server.example.com");
+        context.setRelaxVerificationKeyValidation(false);
         ParseException thrown = assertThrows("InvalidJwtException is expected",
                 ParseException.class, () -> parser.parse(jwt, context));
         assertTrue(thrown.getCause() instanceof InvalidJwtException);
