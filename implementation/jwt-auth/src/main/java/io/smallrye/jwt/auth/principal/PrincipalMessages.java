@@ -41,11 +41,11 @@ interface PrincipalMessages {
     @Message(id = 7007, value = "No resource with the named %s location exists")
     IOException resourceNotFound(String resourceName);
 
-    @Message(id = 7008, value = "Failed to verify max TTL")
-    ParseException failedToVerifyMaxTTL(@Cause Throwable throwable);
+    @Message(id = 7008, value = "Invalid 'iat' or 'exp' claim value")
+    ParseException invalidIatExp();
 
     @Message(id = 7009, value = "The Expiration Time (exp=%s) claim value cannot be more than %d"
-            + " seconds in the future relative to Issued At (iat=%s)")
+            + " seconds in the future relative to Issued At (iat=%s) claim value")
     ParseException expExceeded(NumericDate exp, long maxTimeToLiveSecs, NumericDate iat);
 
     @Message(id = 7010, value = "Required claims are not present in the JWT")
@@ -62,4 +62,7 @@ interface PrincipalMessages {
 
     @Message(id = 7014, value = "Failed to load X509 certificates")
     ParseException failedToLoadCertificates();
+
+    @Message(id = 7015, value = "The Expiration Time (exp=%s) claim value cannot be less than Issued At (iat=%s) claim value")
+    ParseException failedToVerifyIatExp(NumericDate exp, NumericDate iat);
 }
