@@ -33,7 +33,7 @@ Smallrye JWT supports many properties which can be used to customize the token p
 |Property Name|Default|Description
 |smallrye.jwt.verify.algorithm|`RS256`|Signature algorithm. Set it to `ES256` to support the Elliptic Curve signature algorithm.
 |smallrye.jwt.verify.key-format|`ANY`|Set this property to a specific key format such as `PEM_KEY`, `PEM_CERTIFICATE`, `JWK` or `JWK_BASE64URL` to optimize the way the verification key is loaded.
-|smallrye.jwt.verify.relax-key-validation|false|Relax the validattion of the verification keys, setting this property to `true` will allow public RSA keys with the length less than 2048 bit.
+|smallrye.jwt.verify.relax-key-validation|false|Relax the validation of the verification keys, setting this property to `true` will allow public RSA keys with the length less than 2048 bit.
 |smallrye.jwt.token.header|`Authorization`|Set this property if another header such as `Cookie` is used to pass the token.
 |smallrye.jwt.token.cookie|none|Name of the cookie containing a token. This property will be effective only if  `smallrye.jwt.token.header` is set to `Cookie`.
 |smallrye.jwt.always-check-authorization|false|Set this property to `true` for `Authorization` header be checked even if the `smallrye.jwt.token.header` is set to `Cookie` but no cookie with a `smallrye.jwt.token.cookie` name exists.
@@ -51,7 +51,69 @@ Smallrye JWT supports many properties which can be used to customize the token p
 |smallrye.jwt.expiration.grace|60|Expiration grace in seconds. By default an expired token will still be accepted if the current time is no more than 1 min after the token expiry time.
 |smallrye.jwt.verify.aud|none|Comma separated list of the audiences that a token `aud` claim may contain.
 |smallrye.jwt.required.claims|none|Comma separated list of the claims that a token must contain.
+|smallrye.jwt.decrypt.key-location|none|Config property allows for an external or internal location of Private Decryption Key to be specified.
+|smallrye.jwt.decrypt.algorithm|`RSA_OAEP`|Decryption algorithm.
+|smallrye.jwt.token.decryption.kid|none|Decryption Key identifier. If it is set then the decryption JWK key as well every JWT token must have a matching `kid` header.
 |===
+
+= Create JsonWebToken with JWTParser
+
+If the JWT token can not be injected, for example, if it is embedded in the service request payload or the service endpoint acquires it out of band, then one can use `JWTParser`:
+```
+import org.eclipse.microprofile.jwt.JsonWebToken;
+import io.smallrye.jwt.auth.principal.JWTParser;
+...
+@Inject JWTParser parser;
+
+String token = getTokenFromOidcServer();
+
+// Parse and verify the token
+JsonWebToken jwt = parser.parse(token);
+```
+
+You can also use it to customize the way the token is verified or decrypted. For example, one can supply a local `SecretKey`:
+
+```
+import javax.crypto.SecretKey;
+import javax.ws.rs.GET;
+import javax.ws.rs.core.NewCookie;
+import javax.ws.rs.core.Response;
+import org.eclipse.microprofile.jwt.JsonWebToken;
+import io.smallrye.jwt.auth.principal.JWTParser;
+import io.smallrye.jwt.build.Jwt;
+
+@Path("/secured")
+public class SecuredResource {
+ @Inject JWTParser parser;
+ private SecretKey key = createSecretKey();
+
+ @GET
+ @Produces("text/plain")
+ public Response getUserName(@CookieParam("jwt") String jwtCookie) {
+    Response response = null;
+    if (jwtCookie == null) {
+        String newJwtCookie = Jwt.upn("Alice").sign(key);
+        // or newJwtCookie = Jwt.upn("alice").encrypt(key);
+        return Response.ok("Alice").cookie(new NewCookie("jwt", newJwtCookie)).build();
+    else {
+        // All mp.jwt and smallrye.jwt properties are still effective, only the verification key is customized.
+        JsonWebToken jwt = parser.verify(jwtCookie, key);
+        // or jwt = parser.decrypt(jwtCookie, key);
+        return Response.ok(jwt.getName()).build();
+    }
+}
+```
+
+= Token Decryption
+
+If your application needs to accept the tokens with the encrypted claims or with the encrypted inner signed claims then all you have to do is to set
+`smallrye.jwt.decrypt.key-location` pointing to the decryption key.
+
+If this is the only key property which is set then the incoming token is expected to contain the encrypted claims only.
+If either `mp.jwt.verify.publickey` or `mp.jwt.verify.publickey.location` verification properties are also set then the incoming token is expected to contain
+the encrypted inner-signed token.
+
+See <<generate-jwt-tokens, Generate JWT tokens>> and learn how to generate the encrypted or inner-signed and then encrypted tokens fast.
 
 = Custom Factories
 
