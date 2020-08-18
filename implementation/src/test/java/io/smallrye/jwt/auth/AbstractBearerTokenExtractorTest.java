@@ -140,6 +140,20 @@ public class AbstractBearerTokenExtractorTest {
     }
 
     @Test
+    public void testGetBearerTokenCustomHeaderAndScheme() {
+        when(authContextInfo.getTokenHeader()).thenReturn("MyHeader");
+        when(authContextInfo.getTokenSchemes()).thenReturn(Arrays.asList("DPoP"));
+        AbstractBearerTokenExtractor target = newTarget(h -> {
+            if ("MyHeader".equals(h)) {
+                return "DPoP THE_CUSTOM_TOKEN";
+            }
+            return null;
+        }, c -> null);
+        String bearerToken = target.getBearerToken();
+        assertEquals("THE_CUSTOM_TOKEN", bearerToken);
+    }
+
+    @Test
     public void testGetBearerTokenDefaultCookieHeader() {
         when(authContextInfo.getTokenHeader()).thenReturn(COOKIE);
         AbstractBearerTokenExtractor target = newTarget(h -> null, c -> "THE_TOKEN");

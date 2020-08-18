@@ -65,11 +65,17 @@ public abstract class AbstractBearerTokenExtractor {
         } else if (AUTHORIZATION_HEADER.equals(tokenHeaderName)) {
             bearerValue = getBearerTokenAuthHeader();
         } else {
-            bearerValue = getHeaderValue(tokenHeaderName);
+            String customHeaderValue = getHeaderValue(tokenHeaderName);
 
-            if (bearerValue == null) {
+            if (customHeaderValue == null) {
                 AuthLogging.log.headerIsNull(tokenHeaderName);
+            } else {
+                String customHeaderSchemeValue = getTokenWithConfiguredScheme(customHeaderValue);
+                if (customHeaderSchemeValue != null) {
+                    customHeaderValue = customHeaderSchemeValue;
+                }
             }
+            bearerValue = customHeaderValue;
         }
 
         return bearerValue;
@@ -123,12 +129,12 @@ public abstract class AbstractBearerTokenExtractor {
         return null;
     }
 
-    private static boolean isTokenScheme(String authorizationHeader, String schemePrefix) {
-        if (authorizationHeader.length() < schemePrefix.length()) {
+    private static boolean isTokenScheme(String headerValue, String schemePrefix) {
+        if (headerValue.length() < schemePrefix.length()) {
             return false;
         }
 
-        String scheme = authorizationHeader.substring(0, schemePrefix.length());
+        String scheme = headerValue.substring(0, schemePrefix.length());
 
         return schemePrefix.equalsIgnoreCase(scheme);
     }
