@@ -29,6 +29,7 @@ import org.eclipse.microprofile.jwt.JsonWebToken;
 
 import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
+import io.smallrye.jwt.auth.cdi.JWTCallerPrincipalFactoryProducer;
 
 /**
  * A default implementation of {@link JWTParser}.
@@ -39,13 +40,19 @@ public class DefaultJWTParser implements JWTParser {
     @Inject
     private JWTAuthContextInfo authContextInfo;
 
-    private volatile JWTCallerPrincipalFactory callerPrincipalFactory;
+    @Inject
+    private JWTCallerPrincipalFactory callerPrincipalFactory;
 
     public DefaultJWTParser() {
     }
 
     public DefaultJWTParser(JWTAuthContextInfo authContextInfo) {
+        this(authContextInfo, new JWTCallerPrincipalFactoryProducer().getFactory());
+    }
+
+    public DefaultJWTParser(JWTAuthContextInfo authContextInfo, JWTCallerPrincipalFactory factory) {
         this.authContextInfo = authContextInfo;
+        this.callerPrincipalFactory = factory;
     }
 
     public JsonWebToken parse(final String bearerToken) throws ParseException {
@@ -99,11 +106,7 @@ public class DefaultJWTParser implements JWTParser {
 
     private JWTCallerPrincipalFactory getCallerPrincipalFactory() {
         if (callerPrincipalFactory == null) {
-            synchronized (this) {
-                if (callerPrincipalFactory == null) {
-                    callerPrincipalFactory = JWTCallerPrincipalFactory.instance();
-                }
-            }
+            return new JWTCallerPrincipalFactoryProducer().getFactory();
         }
         return callerPrincipalFactory;
     }
