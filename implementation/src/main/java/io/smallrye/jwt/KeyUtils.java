@@ -32,6 +32,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.RSAPublicKeySpec;
 import java.security.spec.X509EncodedKeySpec;
@@ -300,10 +301,21 @@ public final class KeyUtils {
      * @throws GeneralSecurityException on decode failure
      */
     public static PublicKey decodeCertificate(String pemEncoded) throws GeneralSecurityException {
+        return getCertificate(pemEncoded).getPublicKey();
+    }
+
+    /**
+     * Decode a PEM encoded certificate string to X509Certificate
+     *
+     * @param pemEncoded - PEM string for certificate
+     * @return X509Certificate
+     * @throws GeneralSecurityException on decode failure
+     */
+    public static X509Certificate getCertificate(String pemEncoded) throws GeneralSecurityException {
         pemEncoded = removeCertBeginEnd(pemEncoded);
         byte[] encodedBytes = Base64.getDecoder().decode(pemEncoded);
-        return CertificateFactory.getInstance("X.509")
-                .generateCertificate(new ByteArrayInputStream(encodedBytes)).getPublicKey();
+        return (X509Certificate) CertificateFactory.getInstance("X.509")
+                .generateCertificate(new ByteArrayInputStream(encodedBytes));
     }
 
     /**

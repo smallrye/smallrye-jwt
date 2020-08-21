@@ -7,18 +7,24 @@ import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import java.security.KeyPair;
+import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAPublicKey;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 
 import org.eclipse.microprofile.jwt.tck.util.TokenUtils;
+import org.jose4j.jwt.JwtClaims;
 import org.jose4j.jwt.consumer.InvalidJwtException;
 import org.jose4j.jwt.consumer.JwtContext;
 import org.junit.Before;
 import org.junit.Test;
+import org.testng.Assert;
 
 import io.smallrye.jwt.KeyUtils;
+import io.smallrye.jwt.ResourceUtils;
+import io.smallrye.jwt.build.Jwt;
+import io.smallrye.jwt.config.JWTAuthContextInfoProvider;
 
 public class DefaultJWTTokenParserTest {
 
@@ -112,5 +118,26 @@ public class DefaultJWTTokenParserTest {
     public void testParseMaxTimeToLiveLessThanExpAge() throws Exception {
         config.setMaxTimeToLiveSecs(Long.valueOf(299));
         parser.parse(TokenUtils.generateTokenString("/Token1.json"), config);
+    }
+
+    @Test
+    public void testVerifyTokenWithThumbprint() throws Exception {
+        X509Certificate cert = KeyUtils.getCertificate(ResourceUtils.readResource("/certificate.pem"));
+        String jwtString = Jwt.upn("Alice").issuer("https://server.example.com")
+                .jws().thumbprint(cert)
+                .sign(KeyUtils.readPrivateKey("/privateKey2.pem"));
+        JWTAuthContextInfoProvider provider = JWTAuthContextInfoProvider.createWithCertificate("/certificate.pem",
+                "https://server.example.com");
+        JwtClaims jwt = new DefaultJWTTokenParser().parse(jwtString, provider.getContextInfo()).getJwtClaims();
+        Assert.assertEquals("Alice", jwt.getClaimValueAsString("upn"));
+    }
+
+    @Test
+    public void testVerifyTokenWithoutThumbprint() throws Exception {
+        String jwtString = Jwt.upn("Alice").issuer("https://server.example.com")
+                .sign(KeyUtils.readPrivateKey("/privateKey2.pem"));
+        JWTAuthContextInfoProvider provider = JWTAuthContextInfoProvider.createWithCertificate("/certificate.pem",
+                "https://server.example.com");
+        assertThrows(ParseException.class, () -> new DefaultJWTTokenParser().parse(jwtString, provider.getContextInfo()));
     }
 }

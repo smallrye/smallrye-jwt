@@ -343,7 +343,9 @@ public class DefaultJWTTokenParser {
         if (keyResolver == null) {
             synchronized (this) {
                 if (keyResolver == null)
-                    keyResolver = new KeyLocationResolver(authContextInfo);
+                    keyResolver = authContextInfo.isVerifyCertificateThumbprint()
+                            ? new X509KeyLocationResolver(authContextInfo)
+                            : new KeyLocationResolver(authContextInfo);
             }
         }
         return keyResolver;

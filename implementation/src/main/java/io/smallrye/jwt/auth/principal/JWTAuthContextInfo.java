@@ -65,6 +65,7 @@ public class JWTAuthContextInfo {
     private String groupsSeparator = " ";
     private Set<String> requiredClaims;
     private boolean relaxVerificationKeyValidation;
+    private boolean verifyCertificateThumbprint;
 
     /**
      * Flag that indicates whether the issuer is required and validated, or ignored, new in MP-JWT 1.1.
@@ -128,6 +129,7 @@ public class JWTAuthContextInfo {
         this.requiredClaims = orig.requiredClaims;
         this.relaxVerificationKeyValidation = orig.relaxVerificationKeyValidation;
         this.requireIssuer = orig.requireIssuer;
+        this.verifyCertificateThumbprint = orig.verifyCertificateThumbprint;
     }
 
     @Deprecated
@@ -434,6 +436,7 @@ public class JWTAuthContextInfo {
                 ", groupsSeparator='" + groupsSeparator + '\'' +
                 ", requireIssuer=" + requireIssuer +
                 ", relaxVerificationKeyValidation=" + relaxVerificationKeyValidation +
+                ", verifyCertificateThumbprint=" + verifyCertificateThumbprint +
                 '}';
     }
 
@@ -443,5 +446,13 @@ public class JWTAuthContextInfo {
 
     public void setRelaxVerificationKeyValidation(boolean relaxVerificationKeyValidation) {
         this.relaxVerificationKeyValidation = relaxVerificationKeyValidation;
+    }
+
+    public boolean isVerifyCertificateThumbprint() {
+        return verifyCertificateThumbprint;
+    }
+
+    public void setVerifyCertificateThumbprint(boolean verifyCertificateThumbprint) {
+        this.verifyCertificateThumbprint = verifyCertificateThumbprint;
     }
 }

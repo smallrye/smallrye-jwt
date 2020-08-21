@@ -18,6 +18,7 @@ package io.smallrye.jwt.auth.principal;
 
 import java.security.Key;
 import java.security.PublicKey;
+import java.security.cert.X509Certificate;
 import java.util.List;
 
 import org.jose4j.jwk.JsonWebKey;
@@ -122,15 +123,8 @@ public class KeyLocationResolver extends AbstractKeyLocationResolver implements 
         return key;
     }
 
-    static PublicKey tryAsPEMCertificate(String content) {
-        PrincipalLogging.log.checkKeyContentIsBase64EncodedPEMCertificate();
-        PublicKey key = null;
-        try {
-            key = KeyUtils.decodeCertificate(content);
-            PrincipalLogging.log.publicKeyCreatedFromEncodedPEMCertificate();
-        } catch (Exception e) {
-            PrincipalLogging.log.keyContentIsNotValidEncodedPEMCertificate(e);
-        }
-        return key;
+    PublicKey tryAsPEMCertificate(String content) {
+        X509Certificate cert = super.loadPEMCertificate(content);
+        return cert == null ? null : cert.getPublicKey();
     }
 }
