@@ -80,6 +80,7 @@ public class SmallRyeJWTAuthCDIExtension implements Extension {
         addAnnotatedType(event, beanManager, ClaimValueProducer.class);
         addAnnotatedType(event, beanManager, CommonJwtProducer.class);
         addAnnotatedType(event, beanManager, DefaultJWTParser.class);
+        addAnnotatedType(event, beanManager, JWTCallerPrincipalFactoryProducer.class);
         addAnnotatedType(event, beanManager, JsonValueProducer.class);
         addAnnotatedType(event, beanManager, JWTAuthContextInfoProvider.class);
         addAnnotatedType(event, beanManager, JWTAuthenticationFilter.class);
