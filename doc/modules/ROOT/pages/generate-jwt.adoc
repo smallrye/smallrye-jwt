@@ -1,7 +1,7 @@
 :doctype: book
 include::attributes.adoc[]
 
-[[configuration]]
+[[generate-jwt-tokens]]
 
 = Generate JWT Tokens
 
@@ -28,6 +28,8 @@ import io.smallrye.jwt.build.JwtClaimsBuilder;
 // Create an empty builder and add some claims
 JwtClaimsBuilder builder1 = Jwt.claims();
 builder1.claim("customClaim", "custom-value").issuer("https://issuer.org");
+// Or start typing the claims immediately:
+// JwtClaimsBuilder builder1 = Jwt.upn("Alice");
 
 // Builder created from the existing claims
 JwtClaimsBuilder builder2 = Jwt.claims("/tokenClaims.json");
@@ -104,6 +106,21 @@ import io.smallrye.jwt.build.Jwt;
 // Sign the claims and encrypt the nested token using the private and public keys loaded from the locations set with the 'smallrye.jwt.sign.key-location' and 'smallrye.jwt.encrypt.key-location' properties respectively.
 String jwt = Jwt.claims("/tokenClaims.json").innerSign().encrypt();
 ----
+
+=== Fast JWT Generation
+
+If `smallrye.jwt.sign.key-location` or/and `smallrye.jwt.encrypt.key-location` properties are set then one can secure the existing claims (resources, maps, JsonObjects) with a single call:
+```
+// More compact than Jwt.claims("/claims.json").sign();
+Jwt.sign("/claims.json");
+
+// More compact than Jwt.claims("/claims.json").jwe().encrypt();
+Jwt.encrypt("/claims.json");
+
+// More compact than Jwt.claims("/claims.json").innerSign().encrypt();
+Jwt.signAndEncrypt("/claims.json");
+```
+As mentioned above, `iat`, `exp`, `jti` and `iss` claims will be added if needed.
 
 == Configuration
 
