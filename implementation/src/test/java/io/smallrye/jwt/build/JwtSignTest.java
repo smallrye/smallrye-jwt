@@ -17,6 +17,7 @@
 package io.smallrye.jwt.build;
 
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.security.KeyPairGenerator;
 import java.security.PrivateKey;
@@ -28,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 
 import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
 import javax.json.Json;
 import javax.json.JsonObject;
 
@@ -215,7 +217,8 @@ public class JwtSignTest {
             Jwt.claims().sign(key);
             Assert.fail("JwtSignatureException is expected due to the invalid key size");
         } catch (JwtSignatureException ex) {
-            Assert.assertEquals("SRJWT05002: A key of size 2048 bits or larger MUST be used with the 'RS256' algorithm",
+            Assert.assertEquals(
+                    "SRJWT05012: Failure to create a signed JWT token: An RSA key of size 2048 bits or larger MUST be used with the all JOSE RSA algorithms (given key was only 1024 bits).",
                     ex.getMessage());
         }
     }
@@ -416,6 +419,24 @@ public class JwtSignTest {
                 .claim("customClaim", "custom-value")
                 .sign(secretKey);
 
+        JsonWebSignature jws = getVerifiedJws(jwt, secretKey);
+        JwtClaims claims = JwtClaims.parse(jws.getPayload());
+
+        Assert.assertEquals(4, claims.getClaimsMap().size());
+        checkDefaultClaimsAndHeaders(getJwsHeaders(jwt, 2), claims, "HS256", 300);
+
+        Assert.assertEquals("custom-value", claims.getClaimValue("customClaim"));
+    }
+
+    @Test
+    public void testSignClaimsWithSecret() throws Exception {
+        String secret = "AyM1SysPpbyDfgZld3umj1qzKObwVMko";
+
+        String jwt = Jwt.claims()
+                .claim("customClaim", "custom-value")
+                .signWithSecret(secret);
+
+        SecretKey secretKey = new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "AES");
         JsonWebSignature jws = getVerifiedJws(jwt, secretKey);
         JwtClaims claims = JwtClaims.parse(jws.getPayload());
 

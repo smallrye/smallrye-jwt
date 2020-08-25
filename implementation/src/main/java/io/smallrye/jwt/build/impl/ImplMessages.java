@@ -23,10 +23,6 @@ interface ImplMessages {
             "the '%s' algorithm")
     JwtEncryptionException encryptionKeySizeMustBeHigher(String algorithmName);
 
-    @Message(id = 5002, value = "A key of size 2048 bits or larger MUST be used with " +
-            "the '%s' algorithm")
-    JwtSignatureException signKeySizeMustBeHigher(String algorithmName);
-
     @Message(id = 5003, value = "%s")
     JwtEncryptionException joseSerializationError(String errorMessage, @Cause Throwable t);
 

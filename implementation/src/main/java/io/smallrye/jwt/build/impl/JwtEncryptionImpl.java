@@ -76,6 +76,14 @@ class JwtEncryptionImpl implements JwtEncryptionBuilder {
      * {@inheritDoc}
      */
     @Override
+    public String encryptWithSecret(String secret) throws JwtEncryptionException {
+        return encrypt(KeyUtils.createSecretKeyFromSecret(secret));
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public JwtEncryptionBuilder header(String name, Object value) {
         if ("alg".equals(name)) {
             return keyAlgorithm(toKeyEncryptionAlgorithm((String) value));

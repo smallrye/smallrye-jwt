@@ -76,6 +76,14 @@ class JwtSignatureImpl implements JwtSignature {
      * {@inheritDoc}
      */
     @Override
+    public String signWithSecret(String secret) throws JwtSignatureException {
+        return sign(KeyUtils.createSecretKeyFromSecret(secret));
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public JwtEncryptionBuilder innerSign(PrivateKey signingKey) throws JwtSignatureException {
         return new JwtEncryptionImpl(sign(signingKey), true);
     }
@@ -114,6 +122,11 @@ class JwtSignatureImpl implements JwtSignature {
         return new JwtEncryptionImpl(sign(), true);
     }
 
+    @Override
+    public JwtEncryptionBuilder innerSignWithSecret(String secret) throws JwtSignatureException {
+        return innerSign(KeyUtils.createSecretKeyFromSecret(secret));
+    }
+
     private static boolean signingKeyConfigured() {
         try {
             ConfigProvider.getConfig().getValue("smallrye.jwt.sign.key-location", String.class);
@@ -141,10 +154,6 @@ class JwtSignatureImpl implements JwtSignature {
             jws.setAlgorithmConstraints(AlgorithmConstraints.ALLOW_ONLY_NONE);
         }
         jws.setPayload(claims.toJson());
-        if (signingKey instanceof RSAPrivateKey && algorithm.startsWith("RS")
-                && ((RSAPrivateKey) signingKey).getModulus().bitLength() < 2048) {
-            throw ImplMessages.msg.signKeySizeMustBeHigher(algorithm);
-        }
         jws.setKey(signingKey);
         try {
             return jws.getCompactSerialization();
