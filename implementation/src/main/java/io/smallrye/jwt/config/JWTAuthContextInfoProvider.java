@@ -55,24 +55,36 @@ public class JWTAuthContextInfoProvider {
      * @return a new instance of JWTAuthContextInfoProvider
      */
     public static JWTAuthContextInfoProvider createWithKey(String publicKey, String issuer) {
-        return create(publicKey, NONE, issuer);
+        return create(publicKey, NONE, false, issuer);
     }
 
     /**
-     * Create JWTAuthContextInfoProvider with the public key location and issuer
+     * Create JWTAuthContextInfoProvider with the verification public key location and issuer
      *
-     * @param publicKeyLocation the public key location
+     * @param keyLocation the verification public key location
      * @param issuer the issuer
      * @return a new instance of JWTAuthContextInfoProvider
      */
-    public static JWTAuthContextInfoProvider createWithKeyLocation(String publicKeyLocation, String issuer) {
-        return create(NONE, publicKeyLocation, issuer);
+    public static JWTAuthContextInfoProvider createWithKeyLocation(String keyLocation, String issuer) {
+        return create(NONE, keyLocation, false, issuer);
     }
 
-    private static JWTAuthContextInfoProvider create(String publicKey, String publicKeyLocation, String issuer) {
+    /**
+     * Create JWTAuthContextInfoProvider with the verification secret key location and issuer
+     *
+     * @param keyLocation the verification secret key location
+     * @param issuer the issuer
+     * @return a new instance of JWTAuthContextInfoProvider
+     */
+    public static JWTAuthContextInfoProvider createWithSecretKeyLocation(String keyLocation, String issuer) {
+        return create(NONE, keyLocation, true, issuer);
+    }
+
+    private static JWTAuthContextInfoProvider create(String publicKey, String keyLocation, boolean secretKey, String issuer) {
         JWTAuthContextInfoProvider provider = new JWTAuthContextInfoProvider();
         provider.mpJwtPublicKey = Optional.of(publicKey);
-        provider.mpJwtLocation = Optional.of(publicKeyLocation);
+        provider.mpJwtLocation = !secretKey ? Optional.of(keyLocation) : Optional.empty();
+        provider.verifyKeyLocation = secretKey ? Optional.of(keyLocation) : Optional.empty();
         provider.mpJwtIssuer = issuer;
         provider.decryptionKeyLocation = Optional.empty();
         provider.mpJwtRequireIss = Optional.of(Boolean.TRUE);
@@ -118,10 +130,21 @@ public class JWTAuthContextInfoProvider {
      */
     @Inject
     @ConfigProperty(name = "mp.jwt.verify.publickey.location", defaultValue = NONE)
+
     /**
      * @since 1.1
      */
     private Optional<String> mpJwtLocation;
+
+    /**
+     * Verification key location.
+     * This property can point to both public and secret keys and if it is set then 'mp.jwt.verify.publickey.location' will be
+     * ignored.
+     * Note that the secret keys will only recognized in the JWK format.
+     */
+    @Inject
+    @ConfigProperty(name = "smallrye.jwt.verify.key.location", defaultValue = NONE)
+    private Optional<String> verifyKeyLocation;
 
     @Inject
     @ConfigProperty(name = "smallrye.jwt.decrypt.key.location")
@@ -327,8 +350,13 @@ public class JWTAuthContextInfoProvider {
     @SuppressWarnings("deprecation")
     @Produces
     Optional<JWTAuthContextInfo> getOptionalContextInfo() {
+        Optional<String> resolvedVerifyKeyLocation = verifyKeyLocation.isPresent() && !NONE.equals(verifyKeyLocation.get())
+                ? verifyKeyLocation
+                : mpJwtLocation;
+
         // Log the config values
-        ConfigLogging.log.configValues(mpJwtPublicKey.orElse("missing"), mpJwtIssuer, mpJwtLocation.orElse("missing"));
+        ConfigLogging.log.configValues(mpJwtPublicKey.orElse("missing"), mpJwtIssuer,
+                resolvedVerifyKeyLocation.orElse("missing"));
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo();
 
         if (mpJwtIssuer != null && !mpJwtIssuer.equals(NONE)) {
@@ -343,13 +371,13 @@ public class JWTAuthContextInfoProvider {
 
         if (mpJwtPublicKey.isPresent() && !NONE.equals(mpJwtPublicKey.get())) {
             contextInfo.setPublicKeyContent(mpJwtPublicKey.get());
-        } else if (mpJwtLocation.isPresent() && !NONE.equals(mpJwtLocation.get())) {
-            String mpJwtLocationTrimmed = mpJwtLocation.get().trim();
-            if (mpJwtLocationTrimmed.startsWith("http")) {
-                contextInfo.setPublicKeyLocation(mpJwtLocationTrimmed);
+        } else if (resolvedVerifyKeyLocation.isPresent() && !NONE.equals(resolvedVerifyKeyLocation.get())) {
+            String resolvedVerifyKeyLocationTrimmed = resolvedVerifyKeyLocation.get().trim();
+            if (resolvedVerifyKeyLocationTrimmed.startsWith("http")) {
+                contextInfo.setPublicKeyLocation(resolvedVerifyKeyLocationTrimmed);
             } else {
                 try {
-                    contextInfo.setPublicKeyContent(ResourceUtils.readResource(mpJwtLocationTrimmed));
+                    contextInfo.setPublicKeyContent(ResourceUtils.readResource(resolvedVerifyKeyLocationTrimmed));
                     if (contextInfo.getPublicKeyContent() == null) {
                         throw ConfigMessages.msg.invalidPublicKeyLocation();
                     }
@@ -392,7 +420,7 @@ public class JWTAuthContextInfoProvider {
         contextInfo.setMaxTimeToLiveSecs(maxTimeToLiveSecs.orElse(null));
         contextInfo.setJwksRefreshInterval(jwksRefreshInterval.orElse(null));
         contextInfo.setForcedJwksRefreshInterval(forcedJwksRefreshInterval);
-        if (signatureAlgorithm.orElse(null) == SignatureAlgorithm.HS256) {
+        if (signatureAlgorithm.orElse(null) == SignatureAlgorithm.HS256 && resolvedVerifyKeyLocation == mpJwtLocation) {
             throw ConfigMessages.msg.hs256NotSupported();
         }
         contextInfo.setSignatureAlgorithm(signatureAlgorithm.orElse(SignatureAlgorithm.RS256));

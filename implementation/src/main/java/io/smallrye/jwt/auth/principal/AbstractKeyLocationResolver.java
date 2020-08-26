@@ -24,6 +24,7 @@ import java.util.List;
 
 import org.jose4j.jwk.HttpsJwks;
 import org.jose4j.jwk.JsonWebKey;
+import org.jose4j.jwk.OctetSequenceJsonWebKey;
 import org.jose4j.jwx.JsonWebStructure;
 import org.jose4j.lang.JoseException;
 import org.jose4j.lang.UnresolvableKeyException;
@@ -264,5 +265,12 @@ public class AbstractKeyLocationResolver {
             }
         }
         return jwk;
+    }
+
+    protected Key getSecretKeyFromJwk(JsonWebKey jwk) {
+        if (jwk instanceof OctetSequenceJsonWebKey) {
+            return ((OctetSequenceJsonWebKey) jwk).getKey();
+        }
+        return null;
     }
 }

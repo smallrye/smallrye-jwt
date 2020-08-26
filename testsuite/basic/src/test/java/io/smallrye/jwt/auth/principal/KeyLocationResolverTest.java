@@ -21,6 +21,7 @@ import java.security.PrivateKey;
 import java.time.Instant;
 
 import org.eclipse.microprofile.jwt.tck.util.TokenUtils;
+import org.jose4j.jwt.JwtClaims;
 import org.jose4j.lang.InvalidAlgorithmException;
 import org.jose4j.lang.UnresolvableKeyException;
 import org.testng.Assert;
@@ -174,5 +175,16 @@ public class KeyLocationResolverTest {
         } catch (ParseException ex) {
             Assert.assertTrue(ex.getCause().getCause() instanceof InvalidAlgorithmException);
         }
+    }
+
+    @Test
+    public void testVerifyTokenSignedWithSecretKey() throws Exception {
+        String jwtString = Jwt.issuer("https://server.example.com").upn("Alice").sign("secretKey.jwk");
+        JWTAuthContextInfoProvider provider = JWTAuthContextInfoProvider.createWithSecretKeyLocation("secretKey.jwk",
+                "https://server.example.com");
+        JWTAuthContextInfo contextInfo = provider.getContextInfo();
+        contextInfo.setSignatureAlgorithm(SignatureAlgorithm.HS256);
+        JwtClaims jwt = new DefaultJWTTokenParser().parse(jwtString, contextInfo).getJwtClaims();
+        Assert.assertEquals("Alice", jwt.getClaimValueAsString("upn"));
     }
 }
