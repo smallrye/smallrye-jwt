@@ -69,10 +69,18 @@ public class DecryptionKeyLocationResolver extends AbstractKeyLocationResolver i
 
     private Key tryAsDecryptionJwk(JsonWebEncryption jwe) throws UnresolvableKeyException {
         JsonWebKey jwk = super.tryAsJwk(jwe, authContextInfo.getKeyEncryptionAlgorithm().getAlgorithm());
+        return fromJwkToDecryptionKey(jwk);
+    }
+
+    private Key fromJwkToDecryptionKey(JsonWebKey jwk) {
+        Key theKey = null;
         if (jwk != null) {
-            return PublicJsonWebKey.class.cast(jwk).getPrivateKey();
+            theKey = getSecretKeyFromJwk(jwk);
+            if (theKey == null) {
+                theKey = PublicJsonWebKey.class.cast(jwk).getPrivateKey();
+            }
         }
-        return null;
+        return theKey;
     }
 
     protected void initializeKeyContent() throws Exception {
@@ -94,9 +102,7 @@ public class DecryptionKeyLocationResolver extends AbstractKeyLocationResolver i
         }
         JsonWebKey jwk = loadFromJwk(content, authContextInfo.getTokenDecryptionKeyId(),
                 authContextInfo.getKeyEncryptionAlgorithm().getAlgorithm());
-        if (jwk != null) {
-            key = PublicJsonWebKey.class.cast(jwk).getPrivateKey();
-        }
+        key = fromJwkToDecryptionKey(jwk);
     }
 
     static PrivateKey tryAsPEMPrivateKey(String content) {

@@ -23,11 +23,16 @@ import static org.junit.Assert.assertNull;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.when;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
+
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
 
 import org.jose4j.jwe.JsonWebEncryption;
 import org.jose4j.jwk.HttpsJwks;
 import org.jose4j.jwk.JsonWebKey;
+import org.jose4j.jwk.OctetSequenceJsonWebKey;
 import org.jose4j.jwk.PublicJsonWebKey;
 import org.jose4j.jwk.RsaJsonWebKey;
 import org.jose4j.jwk.RsaJwkGenerator;
@@ -71,7 +76,7 @@ public class DecryptionKeyLocationResolverTest {
     }
 
     @Test
-    public void testLoadHttpsJwksMathchingKid() throws Exception {
+    public void testLoadRsaKeyFromHttpsJwks() throws Exception {
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo();
         contextInfo.setDecryptionKeyLocation("https://github.com/my_key.jwks");
         contextInfo.setJwksRefreshInterval(10);
@@ -89,6 +94,29 @@ public class DecryptionKeyLocationResolverTest {
         when(headers.getStringHeaderValue(JsonWebKey.KEY_ID_PARAMETER)).thenReturn("1");
 
         assertEquals(jwk.getPrivateKey(), keyLocationResolver.resolveKey(encryption, emptyList()));
+        assertNull(keyLocationResolver.key);
+    }
+
+    @Test
+    public void testLoadSecretKeyFromHttpsJwks() throws Exception {
+        JWTAuthContextInfo contextInfo = new JWTAuthContextInfo();
+        contextInfo.setDecryptionKeyLocation("https://github.com/my_key.jwks");
+        contextInfo.setJwksRefreshInterval(10);
+
+        DecryptionKeyLocationResolver keyLocationResolver = new DecryptionKeyLocationResolver(contextInfo) {
+            protected HttpsJwks initializeHttpsJwks(String loc) {
+                return mockedHttpsJwks;
+            }
+        };
+        SecretKey secretKey = new SecretKeySpec("123456789ABCDEF".getBytes(StandardCharsets.UTF_8), "AES");
+        OctetSequenceJsonWebKey jwk = new OctetSequenceJsonWebKey(secretKey);
+        jwk.setKeyId("1");
+        when(mockedHttpsJwks.getJsonWebKeys()).thenReturn(Collections.singletonList(jwk));
+        keyLocationResolver = Mockito.spy(keyLocationResolver);
+        when(encryption.getHeaders()).thenReturn(headers);
+        when(headers.getStringHeaderValue(JsonWebKey.KEY_ID_PARAMETER)).thenReturn("1");
+
+        assertEquals(secretKey, keyLocationResolver.resolveKey(encryption, emptyList()));
         assertNull(keyLocationResolver.key);
     }
 

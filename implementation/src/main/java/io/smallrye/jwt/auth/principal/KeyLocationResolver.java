@@ -68,10 +68,18 @@ public class KeyLocationResolver extends AbstractKeyLocationResolver implements 
 
     private Key tryAsVerificationJwk(JsonWebSignature jws) throws UnresolvableKeyException {
         JsonWebKey jwk = super.tryAsJwk(jws, authContextInfo.getSignatureAlgorithm().getAlgorithm());
+        return fromJwkToVerificationKey(jwk);
+    }
+
+    private Key fromJwkToVerificationKey(JsonWebKey jwk) {
+        Key theKey = null;
         if (jwk != null) {
-            return PublicJsonWebKey.class.cast(jwk).getPublicKey();
+            theKey = getSecretKeyFromJwk(jwk);
+            if (theKey == null) {
+                theKey = PublicJsonWebKey.class.cast(jwk).getPublicKey();
+            }
         }
-        return null;
+        return theKey;
     }
 
     protected void initializeKeyContent() throws Exception {
@@ -99,9 +107,7 @@ public class KeyLocationResolver extends AbstractKeyLocationResolver implements 
         }
         JsonWebKey jwk = loadFromJwk(content, authContextInfo.getTokenKeyId(),
                 authContextInfo.getSignatureAlgorithm().getAlgorithm());
-        if (jwk != null) {
-            key = PublicJsonWebKey.class.cast(jwk).getPublicKey();
-        }
+        key = fromJwkToVerificationKey(jwk);
     }
 
     static PublicKey tryAsPEMPublicKey(String content, SignatureAlgorithm algo) {
