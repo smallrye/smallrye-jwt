@@ -72,4 +72,15 @@ public interface JwtEncryption {
      */
     String encrypt() throws JwtEncryptionException;
 
+    /**
+     * Encrypt the claims or inner JWT with a secret key string.
+     * 'A256KW' key encryption algorithms will be used by default unless a different one has been set with
+     * {@code JwtEncryptionBuilder}.
+     * 'A256GCM' content encryption algorithms will be used unless a different one have been set with
+     * {@code JwtEncryptionBuilder}.
+     *
+     * @return encrypted JWT token
+     * @throws JwtEncryptionException the exception if the encryption operation has failed
+     */
+    String encryptWithSecret(String secret) throws JwtEncryptionException;
 }

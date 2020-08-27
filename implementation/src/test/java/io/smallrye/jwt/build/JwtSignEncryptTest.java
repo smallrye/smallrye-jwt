@@ -16,12 +16,15 @@
  */
 package io.smallrye.jwt.build;
 
+import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.util.Collections;
 import java.util.Map;
 
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
 import javax.json.Json;
 import javax.json.JsonObject;
 
@@ -201,6 +204,31 @@ public class JwtSignEncryptTest {
         Assert.assertEquals("custom-value", claims.getClaimValue("customClaim"));
     }
 
+    @Test
+    public void testInnerSignWithSecretAndEncryptWithSecret() throws Exception {
+        String secret = "AyM1SysPpbyDfgZld3umj1qzKObwVMko";
+
+        String jweCompact = Jwt.claims()
+                .claim("customClaim", "custom-value")
+                .innerSignWithSecret(secret)
+                .encryptWithSecret(secret);
+
+        checkJweHeaders(jweCompact, "A256KW", null);
+
+        SecretKey secretKey = new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "AES");
+        JsonWebEncryption jwe = getJsonWebEncryption(jweCompact, secretKey);
+
+        String jwtCompact = jwe.getPlaintextString();
+
+        JsonWebSignature jws = getVerifiedJws(jwtCompact, secretKey);
+        JwtClaims claims = JwtClaims.parse(jws.getPayload());
+
+        Assert.assertEquals(4, claims.getClaimsMap().size());
+        checkClaimsAndJwsHeaders(jwtCompact, claims, "HS256", null);
+
+        Assert.assertEquals("custom-value", claims.getClaimValue("customClaim"));
+    }
+
     private static JwtBuildConfigSource getConfigSource() {
         for (ConfigSource cs : ConfigProvider.getConfig().getConfigSources()) {
             if (cs instanceof JwtBuildConfigSource) {
@@ -262,9 +290,13 @@ public class JwtSignEncryptTest {
     }
 
     private static JsonWebEncryption getJsonWebEncryption(String compactJwe) throws Exception {
+        return getJsonWebEncryption(compactJwe, getPrivateKey());
+    }
+
+    private static JsonWebEncryption getJsonWebEncryption(String compactJwe, Key key) throws Exception {
         JsonWebEncryption jwe = new JsonWebEncryption();
         jwe.setCompactSerialization(compactJwe);
-        jwe.setKey(getPrivateKey());
+        jwe.setKey(key);
         return jwe;
     }
 

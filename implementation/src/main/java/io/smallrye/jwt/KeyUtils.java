@@ -22,6 +22,7 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.io.StringReader;
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.Key;
 import java.security.KeyFactory;
@@ -39,6 +40,8 @@ import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
 
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
 import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
@@ -235,6 +238,11 @@ public final class KeyUtils {
      */
     public static PublicKey decodePublicKey(String pemEncoded) throws GeneralSecurityException {
         return decodePublicKey(pemEncoded, SignatureAlgorithm.RS256);
+    }
+
+    public static SecretKey createSecretKeyFromSecret(String secret) {
+        byte[] secretBytes = secret.getBytes(StandardCharsets.UTF_8);
+        return new SecretKeySpec(secretBytes, "AES");
     }
 
     /**

@@ -75,6 +75,18 @@ public interface JWTParser {
     public JsonWebToken verify(final String token, SecretKey key) throws ParseException;
 
     /**
+     * Parse JWT token. The token will be verified and converted to {@link JsonWebToken}.
+     *
+     * @param token the JWT token
+     * @param secret the secret. The injected {@link JWTAuthContextInfo} configuration context
+     *        will be reused, only its secretVerificationKey property will be replaced after
+     *        converting this parameter to {@link SecretKey}.
+     * @return JsonWebToken
+     * @throws ParseException parse exception
+     */
+    public JsonWebToken verify(final String token, String secret) throws ParseException;
+
+    /**
      * Parse JWT token. The token will be decrypted and converted to {@link JsonWebToken}.
      *
      * @param token the JWT token
@@ -95,5 +107,17 @@ public interface JWTParser {
      * @throws ParseException parse exception
      */
     public JsonWebToken decrypt(final String token, SecretKey key) throws ParseException;
+
+    /**
+     * Parse JWT token. The token will be decrypted and converted to {@link JsonWebToken}.
+     *
+     * @param token the JWT token
+     * @param secret the secret. The injected {@link JWTAuthContextInfo} configuration context
+     *        will be reused, only its secretDecryptionkey property will be replaced will be replaced after
+     *        converting this parameter to {@link SecretKey}.
+     * @return JsonWebToken
+     * @throws ParseException parse exception
+     */
+    public JsonWebToken decrypt(final String token, String secret) throws ParseException;
 
 }

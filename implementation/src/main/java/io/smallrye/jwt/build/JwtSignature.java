@@ -55,6 +55,15 @@ public interface JwtSignature {
     String sign() throws JwtSignatureException;
 
     /**
+     * Sign the claims with a secret key string.
+     * 'HS256' algorithm will be used unless a different one has been set with {@code JwtSignatureBuilder}.
+     *
+     * @return signed JWT token
+     * @throws JwtSignatureException the exception if the signing operation has failed
+     */
+    String signWithSecret(String secret) throws JwtSignatureException;
+
+    /**
      * Sign the claims with {@link PrivateKey} and encrypt the inner JWT by moving to {@link JwtEncryptionBuilder}.
      * 'RS256' algorithm will be used unless a different one has been set with {@code JwtSignatureBuilder}.
      * A key of size 2048 bits or larger MUST be used with the 'RS256' algorithm.
@@ -101,4 +110,12 @@ public interface JwtSignature {
      */
     JwtEncryptionBuilder innerSign() throws JwtSignatureException;
 
+    /**
+     * Sign the claims with a secret key string and encrypt the inner JWT by moving to {@link JwtEncryptionBuilder}.
+     * 'HS256' algorithm will be used unless a different one has been set with {@code JwtSignatureBuilder}.
+     *
+     * @return signed JWT token
+     * @throws JwtSignatureException the exception if the signing operation has failed
+     */
+    JwtEncryptionBuilder innerSignWithSecret(String secret) throws JwtSignatureException;
 }

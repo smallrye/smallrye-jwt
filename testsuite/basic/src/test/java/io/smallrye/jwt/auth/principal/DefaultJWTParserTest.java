@@ -61,6 +61,14 @@ public class DefaultJWTParserTest {
     }
 
     @Test
+    public void testVerifyWithSecretString() throws Exception {
+        String secret = "AyM1SysPpbyDfgZld3umj1qzKObwVMko";
+        String jwtString = Jwt.upn("jdoe@example.com").signWithSecret(secret);
+        JsonWebToken jwt = new DefaultJWTParser().verify(jwtString, secret);
+        assertEquals("jdoe@example.com", jwt.getName());
+    }
+
+    @Test
     public void testDecryptWithRsaPrivateKey() throws Exception {
         String jwtString = Jwt.upn("jdoe@example.com")
                 .jwe().keyAlgorithm(KeyEncryptionAlgorithm.RSA_OAEP)
@@ -98,6 +106,14 @@ public class DefaultJWTParserTest {
         SecretKey secretKey = createSecretKey();
         String jwtString = Jwt.upn("jdoe@example.com").jwe().encrypt(secretKey);
         JsonWebToken jwt = new DefaultJWTParser().decrypt(jwtString, secretKey);
+        assertEquals("jdoe@example.com", jwt.getName());
+    }
+
+    @Test
+    public void testDecryptWithSecretString() throws Exception {
+        String secret = "AyM1SysPpbyDfgZld3umj1qzKObwVMko";
+        String jwtString = Jwt.upn("jdoe@example.com").jwe().encryptWithSecret(secret);
+        JsonWebToken jwt = new DefaultJWTParser().decrypt(jwtString, secret);
         assertEquals("jdoe@example.com", jwt.getName());
     }
 

@@ -27,6 +27,7 @@ import javax.inject.Inject;
 
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
+import io.smallrye.jwt.KeyUtils;
 import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 import io.smallrye.jwt.auth.cdi.JWTCallerPrincipalFactoryProducer;
@@ -85,6 +86,11 @@ public class DefaultJWTParser implements JWTParser {
     }
 
     @Override
+    public JsonWebToken verify(String bearerToken, String secret) throws ParseException {
+        return verify(bearerToken, KeyUtils.createSecretKeyFromSecret(secret));
+    }
+
+    @Override
     public JsonWebToken decrypt(String bearerToken, PrivateKey key) throws ParseException {
         JWTAuthContextInfo newAuthContextInfo = copyAuthContextInfo();
         newAuthContextInfo.setPrivateDecryptionKey(key);
@@ -102,6 +108,11 @@ public class DefaultJWTParser implements JWTParser {
         newAuthContextInfo.setSecretDecryptionKey(key);
         setKeyEncryptionAlgorithmIfNeeded(newAuthContextInfo, "A256KW", KeyEncryptionAlgorithm.A256KW);
         return getCallerPrincipalFactory().parse(bearerToken, newAuthContextInfo);
+    }
+
+    @Override
+    public JsonWebToken decrypt(String bearerToken, String secret) throws ParseException {
+        return decrypt(bearerToken, KeyUtils.createSecretKeyFromSecret(secret));
     }
 
     private JWTCallerPrincipalFactory getCallerPrincipalFactory() {
