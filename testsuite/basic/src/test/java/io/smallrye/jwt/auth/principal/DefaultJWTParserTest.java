@@ -1,12 +1,17 @@
 package io.smallrye.jwt.auth.principal;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
+
+import java.security.cert.X509Certificate;
 
 import javax.crypto.SecretKey;
 
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.jose4j.jwk.JsonWebKey;
 import org.jose4j.jwk.PublicJsonWebKey;
+import org.jose4j.jwt.consumer.InvalidJwtException;
 import org.junit.Test;
 
 import io.smallrye.jwt.KeyUtils;
@@ -25,6 +30,54 @@ public class DefaultJWTParserTest {
         JWTParser parser = new DefaultJWTParser(config);
         JsonWebToken jwt = parser.parse(jwtString);
         assertEquals("jdoe@example.com", jwt.getName());
+    }
+
+    @Test
+    public void testParseWithConfiguredCert() throws Exception {
+        String jwtString = Jwt.upn("jdoe@example.com").issuer("https://server.example.com")
+                .sign(KeyUtils.readPrivateKey("/privateKey2.pem"));
+        JWTAuthContextInfo config = new JWTAuthContextInfo("/certificate.pem", "https://server.example.com");
+        JWTParser parser = new DefaultJWTParser(config);
+        JsonWebToken jwt = parser.parse(jwtString);
+        assertEquals("jdoe@example.com", jwt.getName());
+    }
+
+    @Test
+    public void testParseWithConfiguredCertAndThumbprint() throws Exception {
+        X509Certificate cert = KeyUtils.getCertificate(ResourceUtils.readResource("/certificate.pem"));
+        String jwtString = Jwt.upn("jdoe@example.com").issuer("https://server.example.com")
+                .jws().thumbprint(cert)
+                .sign(KeyUtils.readPrivateKey("/privateKey2.pem"));
+        JWTAuthContextInfo config = new JWTAuthContextInfo("/certificate.pem", "https://server.example.com");
+        config.setVerifyCertificateThumbprint(true);
+        JWTParser parser = new DefaultJWTParser(config);
+        JsonWebToken jwt = parser.parse(jwtString);
+        assertEquals("jdoe@example.com", jwt.getName());
+    }
+
+    @Test
+    public void testParseWithConfiguredCertAndThumbprintS256() throws Exception {
+        X509Certificate cert = KeyUtils.getCertificate(ResourceUtils.readResource("/certificate.pem"));
+        String jwtString = Jwt.upn("jdoe@example.com").issuer("https://server.example.com")
+                .jws().thumbprintS256(cert)
+                .sign(KeyUtils.readPrivateKey("/privateKey2.pem"));
+        JWTAuthContextInfo config = new JWTAuthContextInfo("/certificate.pem", "https://server.example.com");
+        config.setVerifyCertificateThumbprint(true);
+        JWTParser parser = new DefaultJWTParser(config);
+        JsonWebToken jwt = parser.parse(jwtString);
+        assertEquals("jdoe@example.com", jwt.getName());
+    }
+
+    @Test
+    public void testParseWithConfiguredCertAndThumbprintMissing() throws Exception {
+        String jwtString = Jwt.upn("jdoe@example.com").issuer("https://server.example.com")
+                .sign(KeyUtils.readPrivateKey("/privateKey2.pem"));
+        JWTAuthContextInfo config = new JWTAuthContextInfo("/certificate.pem", "https://server.example.com");
+        config.setVerifyCertificateThumbprint(true);
+        JWTParser parser = new DefaultJWTParser(config);
+        ParseException thrown = assertThrows("InvalidJwtException is expected",
+                ParseException.class, () -> parser.parse(jwtString));
+        assertTrue(thrown.getCause() instanceof InvalidJwtException);
     }
 
     @Test

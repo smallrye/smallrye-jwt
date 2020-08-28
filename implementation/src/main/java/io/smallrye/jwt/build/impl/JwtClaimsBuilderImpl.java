@@ -1,6 +1,7 @@
 package io.smallrye.jwt.build.impl;
 
 import java.security.PrivateKey;
+import java.security.cert.X509Certificate;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -16,6 +17,7 @@ import javax.json.JsonValue;
 import org.eclipse.microprofile.jwt.Claims;
 import org.jose4j.jwt.JwtClaims;
 import org.jose4j.jwt.NumericDate;
+import org.jose4j.keys.X509Util;
 
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 import io.smallrye.jwt.build.JwtClaimsBuilder;
@@ -184,6 +186,24 @@ class JwtClaimsBuilderImpl extends JwtSignatureImpl implements JwtClaimsBuilder,
     @Override
     public JwtSignatureBuilder keyId(String keyId) {
         headers.put("kid", keyId);
+        return this;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public JwtSignatureBuilder thumbprint(X509Certificate cert) {
+        headers.put("x5t", X509Util.x5t(cert));
+        return this;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public JwtSignatureBuilder thumbprintS256(X509Certificate cert) {
+        headers.put("x5t#S256", X509Util.x5tS256(cert));
         return this;
     }
 

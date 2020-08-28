@@ -1,8 +1,6 @@
 package io.smallrye.jwt.build;
 
-import java.security.PrivateKey;
-
-import javax.crypto.SecretKey;
+import java.security.cert.X509Certificate;
 
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 
@@ -68,6 +66,22 @@ public interface JwtSignatureBuilder extends JwtSignature {
     }
 
     /**
+     * Set X.509 Certificate SHA-1 'x5t' thumbprint.
+     *
+     * @param cert the certificate
+     * @return JwtSignatureBuilder
+     */
+    JwtSignatureBuilder thumbprint(X509Certificate cert);
+
+    /**
+     * Set X.509 Certificate SHA-256 'x5t#S256' thumbprint.
+     *
+     * @param cert the certificate
+     * @return JwtSignatureBuilder
+     */
+    JwtSignatureBuilder thumbprintS256(X509Certificate cert);
+
+    /**
      * Custom JWT signature header.
      * 
      * If the 'alg' (algorithm) header is set with this method then it
@@ -78,37 +92,4 @@ public interface JwtSignatureBuilder extends JwtSignature {
      * @return JwtSignatureBuilder
      */
     JwtSignatureBuilder header(String name, Object value);
-
-    /**
-     * Sign the claims with {@link PrivateKey} and encrypt the inner JWT by moving to {@link JwtEncryptionBuilder}.
-     *
-     * @param signingKey the signing key
-     * @return JwtEncryptionBuilder
-     * @throws JwtSignatureException the exception if the inner JWT signing operation has failed
-     */
-    JwtEncryptionBuilder innerSign(PrivateKey signingKey) throws JwtSignatureException;
-
-    /**
-     * Sign the claims with {@link SecretKey} and encrypt the inner JWT by moving to {@link JwtEncryptionBuilder}.
-     * 
-     * @param signingKey the signing key
-     * @return JwtEncryptionBuilder
-     * @throws JwtSignatureException the exception if the inner JWT signing operation has failed
-     */
-    JwtEncryptionBuilder innerSign(SecretKey signingKey) throws JwtSignatureException;
-
-    /**
-     * Sign the claims with a key loaded from the location set with the "smallrye.jwt.sign.key-location" property
-     * and encrypt the inner JWT by moving to {@link JwtEncryptionBuilder}.
-     * 
-     * If no "smallrye.jwt.sign.key-location" property is set then an insecure inner JWT with a "none" algorithm
-     * has to be created before being encrypted.
-     *
-     * Note: Support for the 'none' algorithm is deprecated.
-     * 
-     * @return JwtEncryptionBuilder
-     * @throws JwtSignatureException the exception if the inner JWT signing operation has failed
-     */
-    JwtEncryptionBuilder innerSign() throws JwtSignatureException;
-
 }

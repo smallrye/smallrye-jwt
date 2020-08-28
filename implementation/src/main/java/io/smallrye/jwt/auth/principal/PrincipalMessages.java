@@ -59,4 +59,7 @@ interface PrincipalMessages {
 
     @Message(id = 7013, value = "Encrypted token sequence is invalid")
     ParseException encryptedTokenSequenceInvalid();
+
+    @Message(id = 7014, value = "Failed to load X509 certificates")
+    ParseException failedToLoadCertificates();
 }

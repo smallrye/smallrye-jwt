@@ -55,7 +55,7 @@ public class JWTAuthContextInfoProvider {
      * @return a new instance of JWTAuthContextInfoProvider
      */
     public static JWTAuthContextInfoProvider createWithKey(String publicKey, String issuer) {
-        return create(publicKey, NONE, false, issuer);
+        return create(publicKey, NONE, false, false, issuer);
     }
 
     /**
@@ -66,7 +66,19 @@ public class JWTAuthContextInfoProvider {
      * @return a new instance of JWTAuthContextInfoProvider
      */
     public static JWTAuthContextInfoProvider createWithKeyLocation(String keyLocation, String issuer) {
-        return create(NONE, keyLocation, false, issuer);
+        return create(NONE, keyLocation, false, false, issuer);
+    }
+
+    /**
+     * Create JWTAuthContextInfoProvider with the verification public key location and issuer.
+     * Tokens will be expected to contain either 'x5t' or 'x5t#S256' thumbprints.
+     *
+     * @param keyLocation certificate location which points to a PEM certificate or JWK containing the certificate chain
+     * @param issuer the issuer
+     * @return a new instance of JWTAuthContextInfoProvider
+     */
+    public static JWTAuthContextInfoProvider createWithCertificate(String keyLocation, String issuer) {
+        return create(NONE, keyLocation, false, true, issuer);
     }
 
     /**
@@ -77,14 +89,19 @@ public class JWTAuthContextInfoProvider {
      * @return a new instance of JWTAuthContextInfoProvider
      */
     public static JWTAuthContextInfoProvider createWithSecretKeyLocation(String keyLocation, String issuer) {
-        return create(NONE, keyLocation, true, issuer);
+        return create(NONE, keyLocation, true, false, issuer);
     }
 
-    private static JWTAuthContextInfoProvider create(String publicKey, String keyLocation, boolean secretKey, String issuer) {
+    private static JWTAuthContextInfoProvider create(String publicKey,
+            String keyLocation,
+            boolean secretKey,
+            boolean verifyCertificateThumbprint,
+            String issuer) {
         JWTAuthContextInfoProvider provider = new JWTAuthContextInfoProvider();
         provider.mpJwtPublicKey = Optional.of(publicKey);
         provider.mpJwtLocation = !secretKey ? Optional.of(keyLocation) : Optional.empty();
         provider.verifyKeyLocation = secretKey ? Optional.of(keyLocation) : Optional.empty();
+        provider.verifyCertificateThumbprint = verifyCertificateThumbprint;
         provider.mpJwtIssuer = issuer;
         provider.decryptionKeyLocation = Optional.empty();
         provider.mpJwtRequireIss = Optional.of(Boolean.TRUE);
@@ -312,6 +329,19 @@ public class JWTAuthContextInfoProvider {
     private Optional<SignatureAlgorithm> signatureAlgorithm;
 
     /**
+     * Verify the certificate thumbprint.
+     * If this property is enabled then a signed token must contain either 'x5t' or 'x5t#256' X509Certificate thumbprint
+     * headers.
+     * Verification keys can only be in JWK or PEM Certificate key formats in this case.
+     * JWK keys must have a 'x5c' (Base64-encoded X509Certificate) property set.
+     * Note that 'smallrye.jwt.token.kid' property will have no effect as 'x5t' and 'x5t#S256'
+     * are the key identifiers when this property is set.
+     */
+    @Inject
+    @ConfigProperty(name = "smallrye.jwt.verify.certificateThumbprint", defaultValue = "false")
+    private boolean verifyCertificateThumbprint;
+
+    /**
      * Supported key format. By default a key can be in any of the supported formats:
      * PEM key, PEM certificate, JWK key set or single JWK (possibly Base64URL-encoded).
      */
@@ -430,7 +460,7 @@ public class JWTAuthContextInfoProvider {
         contextInfo.setGroupsSeparator(groupsSeparator);
         contextInfo.setRequiredClaims(requiredClaims.orElse(null));
         contextInfo.setRelaxVerificationKeyValidation(relaxVerificationKeyValidation);
-
+        contextInfo.setVerifyCertificateThumbprint(verifyCertificateThumbprint);
         return Optional.of(contextInfo);
     }
 

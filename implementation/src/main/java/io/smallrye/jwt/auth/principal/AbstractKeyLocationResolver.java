@@ -19,6 +19,7 @@ package io.smallrye.jwt.auth.principal;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
+import java.security.cert.X509Certificate;
 import java.util.Base64;
 import java.util.List;
 
@@ -272,5 +273,17 @@ public class AbstractKeyLocationResolver {
             return ((OctetSequenceJsonWebKey) jwk).getKey();
         }
         return null;
+    }
+
+    protected X509Certificate loadPEMCertificate(String content) {
+        PrincipalLogging.log.checkKeyContentIsBase64EncodedPEMCertificate();
+        X509Certificate cert = null;
+        try {
+            cert = KeyUtils.getCertificate(content);
+            PrincipalLogging.log.publicKeyCreatedFromEncodedPEMCertificate();
+        } catch (Exception e) {
+            PrincipalLogging.log.keyContentIsNotValidEncodedPEMCertificate(e);
+        }
+        return cert;
     }
 }

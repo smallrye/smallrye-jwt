@@ -212,7 +212,7 @@ public class KeyLocationResolverTest {
         assertNotNull(keyLocationResolver.key);
         assertEquals(keyLocationResolver.key, keyLocationResolver.resolveKey(signature, emptyList()));
         assertEquals(keyLocationResolver.key,
-                KeyLocationResolver.tryAsPEMCertificate(keyLocationResolver.readKeyContent("publicCrt.pem")));
+                keyLocationResolver.tryAsPEMCertificate(keyLocationResolver.readKeyContent("publicCrt.pem")));
     }
 
     @Test
@@ -222,7 +222,7 @@ public class KeyLocationResolverTest {
         assertNotNull(keyLocationResolver.key);
         assertEquals(keyLocationResolver.key, keyLocationResolver.resolveKey(signature, emptyList()));
         assertEquals(keyLocationResolver.key,
-                KeyLocationResolver.tryAsPEMCertificate(keyLocationResolver.readKeyContent("publicCrt.pem")));
+                keyLocationResolver.tryAsPEMCertificate(keyLocationResolver.readKeyContent("publicCrt.pem")));
     }
 
     @Test
