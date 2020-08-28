@@ -79,6 +79,7 @@ public interface JwtEncryption {
      * 'A256GCM' content encryption algorithms will be used unless a different one have been set with
      * {@code JwtEncryptionBuilder}.
      *
+     * @param secret the secret
      * @return encrypted JWT token
      * @throws JwtEncryptionException the exception if the encryption operation has failed
      */

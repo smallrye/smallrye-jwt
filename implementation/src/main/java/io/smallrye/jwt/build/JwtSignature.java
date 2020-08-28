@@ -58,6 +58,7 @@ public interface JwtSignature {
      * Sign the claims with a secret key string.
      * 'HS256' algorithm will be used unless a different one has been set with {@code JwtSignatureBuilder}.
      *
+     * @param secret the secret
      * @return signed JWT token
      * @throws JwtSignatureException the exception if the signing operation has failed
      */
@@ -114,6 +115,7 @@ public interface JwtSignature {
      * Sign the claims with a secret key string and encrypt the inner JWT by moving to {@link JwtEncryptionBuilder}.
      * 'HS256' algorithm will be used unless a different one has been set with {@code JwtSignatureBuilder}.
      *
+     * @param secret the secret
      * @return signed JWT token
      * @throws JwtSignatureException the exception if the signing operation has failed
      */
