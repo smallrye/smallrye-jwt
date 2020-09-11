@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+      - mpjwt12
     paths-ignore:
       - '.gitignore'
       - 'CODEOWNERS'
