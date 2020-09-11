@@ -92,30 +92,6 @@ public class JWTAuthContextInfoProvider {
         return create(NONE, keyLocation, true, false, issuer);
     }
 
-    /**
-     * Create JWTAuthContextInfoProvider with the decrypt key location and issuer
-     *
-     * @param decryptKeyLocation the decrypt key location
-     * @param issuer the issuer
-     * @return a new instance of JWTAuthContextInfoProvider
-     */
-    public static JWTAuthContextInfoProvider createWithDecryptKeyLocation(String decryptKeyLocation, String issuer) {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * Create JWTAuthContextInfoProvider with the verify and decrypt key locations and issuer
-     *
-     * @param publicKeyLocation the public verification key location
-     * @param decryptKeyLocation the decrypt key location
-     * @param issuer the issuer
-     * @return a new instance of JWTAuthContextInfoProvider
-     */
-    public static JWTAuthContextInfoProvider createWithVerifyDecryptKeyLocations(String publicKeyLocation,
-            String decryptKeyLocation, String issuer) {
-        throw new UnsupportedOperationException();
-    }
-
     private static JWTAuthContextInfoProvider create(String publicKey,
             String keyLocation,
             boolean secretKey,
