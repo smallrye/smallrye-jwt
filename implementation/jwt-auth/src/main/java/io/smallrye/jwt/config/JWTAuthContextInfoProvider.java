@@ -127,6 +127,7 @@ public class JWTAuthContextInfoProvider {
         provider.verifyKeyLocation = secretKey ? Optional.of(keyLocation) : Optional.empty();
         provider.verifyCertificateThumbprint = verifyCertificateThumbprint;
         provider.mpJwtIssuer = issuer;
+        provider.mpJwtDecryptKeyLocation = Optional.empty();
         provider.decryptionKeyLocation = Optional.empty();
         provider.mpJwtRequireIss = Optional.of(Boolean.TRUE);
         provider.tokenHeader = AUTHORIZATION_HEADER;
@@ -442,8 +443,19 @@ public class JWTAuthContextInfoProvider {
                 }
             }
         }
-        if (decryptionKeyLocation.isPresent() && !NONE.equals(decryptionKeyLocation.get())) {
-            String decryptionKeyLocationTrimmed = decryptionKeyLocation.get().trim();
+
+        final Optional<String> theDecryptionKeyLocation;
+        if (mpJwtDecryptKeyLocation.isPresent()) {
+            theDecryptionKeyLocation = mpJwtDecryptKeyLocation;
+        } else if (decryptionKeyLocation.isPresent()) {
+            //ConfigLogging.log.replacedConfig("smallrye.jwt.decrypt.key.location", "mp.jwt.decrypt.key.location");
+            theDecryptionKeyLocation = decryptionKeyLocation;
+        } else {
+            theDecryptionKeyLocation = Optional.empty();
+        }
+
+        if (theDecryptionKeyLocation.isPresent() && !NONE.equals(theDecryptionKeyLocation.get())) {
+            String decryptionKeyLocationTrimmed = theDecryptionKeyLocation.get().trim();
             if (decryptionKeyLocationTrimmed.startsWith("http")) {
                 contextInfo.setDecryptionKeyLocation(decryptionKeyLocationTrimmed);
             } else {
