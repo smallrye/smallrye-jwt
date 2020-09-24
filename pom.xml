@@ -36,8 +36,8 @@
     <bouncycastle.version>1.67</bouncycastle.version>
     <version.jakarta.servlet.api>4.0.4</version.jakarta.servlet.api>
     <version.jakarta.security.enterprise.api>1.0.2</version.jakarta.security.enterprise.api>
-    <version.io.smallrye.config>1.10.0</version.io.smallrye.config>
-    <version.eclipse.microprofile.jwt>1.2-RC1</version.eclipse.microprofile.jwt>
+    <version.io.smallrye.config>1.9.3</version.io.smallrye.config>
+    <version.eclipse.microprofile.jwt>1.2</version.eclipse.microprofile.jwt>
     <version.microprofile.config>1.4</version.microprofile.config>
     <version.jose4j>0.7.2</version.jose4j>
     <version.resteasy>3.14.0.Final</version.resteasy>
