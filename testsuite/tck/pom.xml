@@ -97,9 +97,6 @@
           <suiteXmlFiles>
             <suiteXmlFile>${project.build.directory}/tck-suite/suites/tck-base-suite.xml</suiteXmlFile>
           </suiteXmlFiles>
-          <excludes>
-            <exclude>TokenAsCookieTest</exclude>
-          </excludes>
           <dependenciesToScan>
             <dependency>org.eclipse.microprofile.jwt:microprofile-jwt-auth-tck</dependency>
           </dependenciesToScan>
