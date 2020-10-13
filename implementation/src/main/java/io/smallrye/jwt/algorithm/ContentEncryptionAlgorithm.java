@@ -6,8 +6,11 @@ package io.smallrye.jwt.algorithm;
  * @see <a href="https://tools.ietf.org/html/rfc7518#section-5">https://tools.ietf.org/html/rfc7518#section-5</a>
  */
 public enum ContentEncryptionAlgorithm {
+    A128GCM("A128GCM"),
+    A192GCM("A192GCM"),
     A256GCM("A256GCM"),
     A128CBC_HS256("A128CBC-HS256"),
+    A192CBC_HS384("A192CBC-HS384"),
     A256CBC_HS512("A256CBC-HS512");
 
     private String algorithmName;

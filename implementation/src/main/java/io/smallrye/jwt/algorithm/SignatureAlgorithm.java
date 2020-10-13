@@ -14,7 +14,10 @@ public enum SignatureAlgorithm {
     ES512,
     HS256,
     HS384,
-    HS512;
+    HS512,
+    PS256,
+    PS384,
+    PS512;
 
     public String getAlgorithm() {
         return this.name();

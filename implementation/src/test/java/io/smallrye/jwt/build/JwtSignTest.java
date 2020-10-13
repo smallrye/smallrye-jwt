@@ -49,6 +49,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import io.smallrye.jwt.KeyUtils;
+import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 import io.smallrye.jwt.auth.principal.DefaultJWTCallerPrincipal;
 
 public class JwtSignTest {
@@ -403,6 +404,22 @@ public class JwtSignTest {
 
         Assert.assertEquals(4, claims.getClaimsMap().size());
         checkDefaultClaimsAndHeaders(getJwsHeaders(jwt, 2), claims, "ES256", 300);
+
+        Assert.assertEquals("custom-value", claims.getClaimValue("customClaim"));
+    }
+
+    @Test
+    public void testSignClaimsPS256() throws Exception {
+        String jwt = Jwt.claims()
+                .claim("customClaim", "custom-value")
+                .jws().algorithm(SignatureAlgorithm.PS256)
+                .sign();
+
+        JsonWebSignature jws = getVerifiedJws(jwt, getPublicKey());
+        JwtClaims claims = JwtClaims.parse(jws.getPayload());
+
+        Assert.assertEquals(4, claims.getClaimsMap().size());
+        checkDefaultClaimsAndHeaders(getJwsHeaders(jwt, 2), claims, "PS256", 300);
 
         Assert.assertEquals("custom-value", claims.getClaimValue("customClaim"));
     }

@@ -16,6 +16,7 @@
  */
 package io.smallrye.jwt.build;
 
+import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.security.KeyPairGenerator;
 import java.security.PrivateKey;
@@ -24,6 +25,7 @@ import java.util.Collections;
 import java.util.Map;
 
 import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
 import javax.json.Json;
 import javax.json.JsonObject;
 
@@ -35,11 +37,13 @@ import org.jose4j.jwk.EllipticCurveJsonWebKey;
 import org.jose4j.jwk.JsonWebKey;
 import org.jose4j.jwt.JwtClaims;
 import org.jose4j.keys.EllipticCurves;
+import org.jose4j.keys.PbkdfKey;
 import org.junit.Assert;
 import org.junit.Test;
 
 import io.smallrye.jwt.KeyUtils;
 import io.smallrye.jwt.algorithm.ContentEncryptionAlgorithm;
+import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
 
 public class JwtEncryptTest {
 
@@ -183,6 +187,43 @@ public class JwtEncryptTest {
         checkJweHeaders(jweCompact, "A256KW", 3);
 
         JsonWebEncryption jwe = getJsonWebEncryption(jweCompact, createSecretKey());
+
+        JwtClaims claims = JwtClaims.parse(jwe.getPlaintextString());
+        checkJwtClaims(claims);
+    }
+
+    @Test
+    public void testEncryptWithSecret() throws Exception {
+        String secret = "AyM1SysPpbyDfgZld3umj1qzKObwVMko";
+
+        String jweCompact = Jwt.claims()
+                .claim("customClaim", "custom-value")
+                .jwe().keyId("key-enc-key-id")
+                .encryptWithSecret(secret);
+
+        checkJweHeaders(jweCompact, "A256KW", 3);
+
+        SecretKey secretKey = new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "AES");
+        JsonWebEncryption jwe = getJsonWebEncryption(jweCompact, secretKey);
+
+        JwtClaims claims = JwtClaims.parse(jwe.getPlaintextString());
+        checkJwtClaims(claims);
+    }
+
+    @Test
+    public void testEncryptWithSecretPassword() throws Exception {
+        String secret = "AyM1SysPpbyDfgZld3umj1qzKObwVMko";
+
+        String jweCompact = Jwt.claims()
+                .claim("customClaim", "custom-value")
+                .jwe().keyAlgorithm(KeyEncryptionAlgorithm.PBES2_HS256_A128KW)
+                .keyId("key-enc-key-id")
+                .encryptWithSecret(secret);
+
+        checkJweHeaders(jweCompact, "PBES2-HS256+A128KW", 5);
+
+        SecretKey secretKey = new PbkdfKey("AyM1SysPpbyDfgZld3umj1qzKObwVMko");
+        JsonWebEncryption jwe = getJsonWebEncryption(jweCompact, secretKey);
 
         JwtClaims claims = JwtClaims.parse(jwe.getPlaintextString());
         checkJwtClaims(claims);
