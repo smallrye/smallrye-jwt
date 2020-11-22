@@ -13,7 +13,18 @@ https://tools.ietf.org/html/rfc7516[JSON Web Encryption] specification to produc
 Finally both the confidentiality and integrity of the claims can be further enforced by signing them first and then
 encrypting the nested JWT token.
 
-SmallRye JWT provides an API for securing the JWT claims using all of these options.
+SmallRye JWT project provides a JWT Build API for securing the JWT claims using all of these options.
+
+== Maven dependency
+
+[source,xml]
+----
+<dependency>
+  <groupId>io.smallrye</groupId>
+  <artifactId>smallrye-jwt-build</artifactId>
+  <version>${smallrye.jwt.version}</version>
+</dependency>
+----
 
 == Create JwtClaimsBuilder and set the claims
 

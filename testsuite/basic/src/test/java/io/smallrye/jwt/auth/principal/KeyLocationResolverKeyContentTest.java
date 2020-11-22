@@ -29,8 +29,8 @@ import org.eclipse.microprofile.jwt.tck.util.TokenUtils;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-import io.smallrye.jwt.KeyUtils;
 import io.smallrye.jwt.config.JWTAuthContextInfoProvider;
+import io.smallrye.jwt.util.KeyUtils;
 
 public class KeyLocationResolverKeyContentTest {
     @Test

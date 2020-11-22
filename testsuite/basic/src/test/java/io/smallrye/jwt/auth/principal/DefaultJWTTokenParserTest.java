@@ -21,10 +21,10 @@ import org.junit.Before;
 import org.junit.Test;
 import org.testng.Assert;
 
-import io.smallrye.jwt.KeyUtils;
-import io.smallrye.jwt.ResourceUtils;
 import io.smallrye.jwt.build.Jwt;
 import io.smallrye.jwt.config.JWTAuthContextInfoProvider;
+import io.smallrye.jwt.util.KeyUtils;
+import io.smallrye.jwt.util.ResourceUtils;
 
 public class DefaultJWTTokenParserTest {
 

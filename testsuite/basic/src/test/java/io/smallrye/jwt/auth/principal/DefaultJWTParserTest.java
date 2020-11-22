@@ -14,11 +14,11 @@ import org.jose4j.jwk.PublicJsonWebKey;
 import org.jose4j.jwt.consumer.InvalidJwtException;
 import org.junit.Test;
 
-import io.smallrye.jwt.KeyUtils;
-import io.smallrye.jwt.ResourceUtils;
 import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 import io.smallrye.jwt.build.Jwt;
+import io.smallrye.jwt.util.KeyUtils;
+import io.smallrye.jwt.util.ResourceUtils;
 
 public class DefaultJWTParserTest {
 
