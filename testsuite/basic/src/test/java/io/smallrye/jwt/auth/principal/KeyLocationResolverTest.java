@@ -27,11 +27,11 @@ import org.jose4j.lang.UnresolvableKeyException;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-import io.smallrye.jwt.KeyUtils;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 import io.smallrye.jwt.build.Jwt;
 import io.smallrye.jwt.build.JwtClaimsBuilder;
 import io.smallrye.jwt.config.JWTAuthContextInfoProvider;
+import io.smallrye.jwt.util.KeyUtils;
 
 public class KeyLocationResolverTest {
 

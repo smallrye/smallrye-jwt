@@ -16,8 +16,8 @@ import javax.enterprise.inject.spi.DeploymentException;
 import org.junit.Before;
 import org.junit.Test;
 
-import io.smallrye.jwt.ResourceUtils;
 import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
+import io.smallrye.jwt.util.ResourceUtils;
 
 public class JWTAuthContextInfoProviderTest {
 
