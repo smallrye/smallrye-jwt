@@ -16,6 +16,9 @@
  */
 package io.smallrye.jwt.build;
 
+import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
+
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.security.KeyPairGenerator;
@@ -227,6 +230,16 @@ public class JwtEncryptTest {
 
         JwtClaims claims = JwtClaims.parse(jwe.getPlaintextString());
         checkJwtClaims(claims);
+    }
+
+    @Test
+    public void testEncryptWithInvalidKeyLocation() throws Exception {
+        JwtClaimsBuilder builder = Jwt.claims();
+
+        JwtEncryptionException thrown = assertThrows("JwtEncryptionException is expected",
+                JwtEncryptionException.class, () -> builder.jwe().encrypt("/invalid-key-location.pem"));
+        assertTrue(thrown.getCause()
+                .getMessage().contains("Key encryption key can not be loaded from: /invalid-key-location.pem"));
     }
 
     private static PrivateKey getPrivateKey() throws Exception {

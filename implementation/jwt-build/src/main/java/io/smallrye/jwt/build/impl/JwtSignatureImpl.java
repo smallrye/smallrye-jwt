@@ -54,22 +54,30 @@ class JwtSignatureImpl implements JwtSignature {
      * {@inheritDoc}
      */
     public String sign(String keyLocation) throws JwtSignatureException {
-        Key key = null;
         try {
-            key = KeyUtils.readSigningKey(keyLocation, (String) headers.get("kid"));
+            return signInternal(getSigningKeyFromKeyLocation(keyLocation));
+        } catch (JwtSignatureException ex) {
+            throw ex;
         } catch (Exception ex) {
             throw ImplMessages.msg.signatureException(ex);
         }
-        return key instanceof PrivateKey ? sign((PrivateKey) key) : sign((SecretKey) key);
-
     }
 
     /**
      * {@inheritDoc}
      */
     public String sign() throws JwtSignatureException {
-        Key signingKey = "none".equals(headers.get("alg")) ? null : getSigningKeyFromConfig((String) headers.get("kid"));
-        return signInternal(signingKey);
+        try {
+            Key key = null;
+            if (!"none".equals(headers.get("alg"))) {
+                key = getSigningKeyFromKeyLocation(getKeyLocationFromConfig());
+            }
+            return signInternal(key);
+        } catch (JwtSignatureException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            throw ImplMessages.msg.signatureException(ex);
+        }
     }
 
     /**
@@ -186,16 +194,24 @@ class JwtSignatureImpl implements JwtSignature {
         throw ImplMessages.msg.unsupportedSignatureAlgorithm(signingKey.getAlgorithm());
     }
 
-    static Key getSigningKeyFromConfig(String kid) {
+    static String getKeyLocationFromConfig() {
         String keyLocation = JwtBuildUtils.getConfigProperty("smallrye.jwt.sign.key-location", String.class);
-        if (keyLocation != null) {
-            try {
-                return KeyUtils.readSigningKey(keyLocation, kid);
-            } catch (Exception ex) {
-                throw ImplMessages.msg.signingKeyCanNotBeLoadedFromLocation(keyLocation);
-            }
-        } else {
+        if (keyLocation == null) {
             throw ImplMessages.msg.signKeyLocationNotConfigured();
         }
+        return keyLocation;
+    }
+
+    Key getSigningKeyFromKeyLocation(String keyLocation) {
+        try {
+            Key key = KeyUtils.readSigningKey(keyLocation, (String) headers.get("kid"));
+            if (key == null) {
+                throw ImplMessages.msg.signingKeyCanNotBeLoadedFromLocation(keyLocation);
+            }
+            return key;
+        } catch (Exception ex) {
+            throw ImplMessages.msg.signingKeyCanNotBeLoadedFromLocation(keyLocation);
+        }
+
     }
 }
