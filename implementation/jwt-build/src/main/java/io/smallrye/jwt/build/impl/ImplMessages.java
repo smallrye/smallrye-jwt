@@ -35,11 +35,11 @@ interface ImplMessages {
     @Message(id = 5006, value = "Unsupported content encryption algorithm: %s")
     JwtEncryptionException unsupportedContentEncryptionAlgorithm(String algorithmName);
 
-    @Message(id = 5007, value = "Key encrypting key can not be loaded from: %s")
-    JwtEncryptionException encryptionKeyNotFound(String keyLocation);
+    @Message(id = 5007, value = "Key encryption key can not be loaded from: %s")
+    IllegalArgumentException encryptionKeyCanNotBeLoadedFromLocation(String keyLocation);
 
     @Message(id = 5008, value = "Please set a 'smallrye.jwt.encrypt.key-location' property")
-    JwtEncryptionException keyLocationPropertyEmpty();
+    IllegalArgumentException encryptionKeyLocationNotConfigured();
 
     @Message(id = 5009, value = "")
     JwtSignatureException signatureException(@Cause Throwable throwable);
@@ -93,4 +93,7 @@ interface ImplMessages {
     @Message(id = 5026, value = "Failure to read the json content from %s: %s")
     JwtException failureToReadJsonContentFromJsonResName(String jsonResName, String exceptionMessage,
             @Cause Throwable throwable);
+
+    @Message(id = 5027, value = "")
+    JwtEncryptionException encryptionException(@Cause Throwable throwable);
 }

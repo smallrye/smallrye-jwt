@@ -16,6 +16,9 @@
  */
 package io.smallrye.jwt.build;
 
+import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
+
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
@@ -239,6 +242,16 @@ public class JwtSignTest {
         checkDefaultClaimsAndHeaders(getJwsHeaders(jwt, 2), claims);
 
         Assert.assertEquals("custom-value", claims.getClaimValue("customClaim"));
+    }
+
+    @Test
+    public void testSignWithInvalidKeyLocation() throws Exception {
+        JwtClaimsBuilder builder = Jwt.claims();
+
+        JwtSignatureException thrown = assertThrows("JwtSignatureException is expected",
+                JwtSignatureException.class, () -> builder.sign("/invalid-key-location.pem"));
+        assertTrue(thrown.getCause()
+                .getMessage().contains("Signing key can not be loaded from: /invalid-key-location.pem"));
     }
 
     @Test

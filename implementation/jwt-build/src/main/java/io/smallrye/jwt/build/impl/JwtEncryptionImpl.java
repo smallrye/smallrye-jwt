@@ -55,13 +55,13 @@ class JwtEncryptionImpl implements JwtEncryptionBuilder {
      */
     @Override
     public String encrypt(String keyLocation) throws JwtEncryptionException {
-        Key key = null;
         try {
-            key = KeyUtils.readEncryptionKey(keyLocation, (String) headers.get("kid"));
+            return encryptInternal(getEncryptionKeyFromKeyLocation(keyLocation));
+        } catch (JwtEncryptionException ex) {
+            throw ex;
         } catch (Exception ex) {
-            throw new JwtEncryptionException(ex);
+            throw ImplMessages.msg.encryptionException(ex);
         }
-        return encryptInternal(key);
     }
 
     /**
@@ -69,7 +69,13 @@ class JwtEncryptionImpl implements JwtEncryptionBuilder {
      */
     @Override
     public String encrypt() throws JwtEncryptionException {
-        return encrypt(readKeyLocationFromConfig());
+        try {
+            return encryptInternal(getEncryptionKeyFromKeyLocation(getKeyLocationFromConfig()));
+        } catch (JwtEncryptionException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            throw ImplMessages.msg.encryptionException(ex);
+        }
     }
 
     /**
@@ -171,8 +177,24 @@ class JwtEncryptionImpl implements JwtEncryptionBuilder {
         return headers.containsKey("enc") ? headers.get("enc").toString() : ContentEncryptionAlgorithm.A256GCM.name();
     }
 
-    private static String readKeyLocationFromConfig() {
-        return JwtBuildUtils.getConfigProperty("smallrye.jwt.encrypt.key-location", String.class);
+    private static String getKeyLocationFromConfig() {
+        String keyLocation = JwtBuildUtils.getConfigProperty("smallrye.jwt.encrypt.key-location", String.class);
+        if (keyLocation == null) {
+            throw ImplMessages.msg.encryptionKeyLocationNotConfigured();
+        }
+        return keyLocation;
+    }
+
+    Key getEncryptionKeyFromKeyLocation(String keyLocation) {
+        try {
+            Key key = KeyUtils.readEncryptionKey(keyLocation, (String) headers.get("kid"));
+            if (key == null) {
+                throw ImplMessages.msg.encryptionKeyCanNotBeLoadedFromLocation(keyLocation);
+            }
+            return key;
+        } catch (Exception ex) {
+            throw ImplMessages.msg.encryptionKeyCanNotBeLoadedFromLocation(keyLocation);
+        }
     }
 
     private static KeyEncryptionAlgorithm toKeyEncryptionAlgorithm(String value) {
