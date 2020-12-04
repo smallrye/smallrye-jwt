@@ -44,6 +44,13 @@
     <version.mokito>3.7.0</version.mokito>
   </properties>
 
+  <repositories>
+    <repository>
+      <id>microprofile-jwt-staging</id>
+      <url>https://oss.sonatype.org/content/repositories/orgeclipsemicroprofile-1384</url>
+    </repository>
+  </repositories>
+
   <licenses>
     <license>
       <name>Apache License, Version 2.0</name>
