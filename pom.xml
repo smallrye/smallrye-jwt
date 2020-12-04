@@ -36,7 +36,7 @@
     <version.jakarta.servlet.api>4.0.4</version.jakarta.servlet.api>
     <version.jakarta.security.enterprise.api>1.0.2</version.jakarta.security.enterprise.api>
     <version.io.smallrye.config>1.9.3</version.io.smallrye.config>
-    <version.eclipse.microprofile.jwt>1.2-SNAPSHOT</version.eclipse.microprofile.jwt>
+    <version.eclipse.microprofile.jwt>1.2</version.eclipse.microprofile.jwt>
     <version.microprofile.config>1.4</version.microprofile.config>
     <version.jose4j>0.7.2</version.jose4j>
     <version.resteasy>3.13.2.Final</version.resteasy>
@@ -44,6 +44,13 @@
     <version.weld-junit4>2.0.1.Final</version.weld-junit4>
     <sonar.coverage.jacoco.xmlReportPaths>${project.basedir}/testsuite/basic/target/site/jacoco-aggregate/jacoco.xml,${project.basedir}/../testsuite/basic/target/site/jacoco-aggregate/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
   </properties>
+
+  <repositories>
+    <repository>
+      <id>microprofile-jwt-staging</id>
+      <url>https://oss.sonatype.org/content/repositories/orgeclipsemicroprofile-1384</url>
+    </repository>
+  </repositories>
 
   <licenses>
     <license>
