@@ -20,13 +20,12 @@ public class JwtBuildUtils {
         // no-op: utility class
     }
 
-    static void setDefaultJwtClaims(JwtClaims claims) {
+    static void setDefaultJwtClaims(JwtClaims claims, Long tokenLifespan) {
 
-        long currentTimeInSecs = currentTimeInSecs();
         if (!claims.hasClaim(Claims.iat.name())) {
-            claims.setIssuedAt(NumericDate.fromSeconds(currentTimeInSecs));
+            claims.setIssuedAt(NumericDate.fromSeconds(currentTimeInSecs()));
         }
-        setExpiryClaim(claims);
+        setExpiryClaim(claims, tokenLifespan);
         if (!claims.hasClaim(Claims.jti.name())) {
             claims.setClaim(Claims.jti.name(), UUID.randomUUID().toString());
         }
@@ -77,10 +76,16 @@ public class JwtBuildUtils {
         return (int) (System.currentTimeMillis() / 1000);
     }
 
-    static void setExpiryClaim(JwtClaims claims) {
+    private static void setExpiryClaim(JwtClaims claims, Long tokenLifespan) {
         if (!claims.hasClaim(Claims.exp.name())) {
-            Long lifespan = getConfigProperty("smallrye.jwt.new-token.lifespan", Long.class, 300L);
-            claims.setExpirationTime(NumericDate.fromSeconds(currentTimeInSecs() + lifespan));
+            Object value = claims.getClaimValue(Claims.iat.name());
+            Long issuedAt = (value instanceof NumericDate) ? ((NumericDate) value).getValue() : (Long) value;
+            Long lifespan = tokenLifespan;
+            if (lifespan == null) {
+                lifespan = getConfigProperty("smallrye.jwt.new-token.lifespan", Long.class, 300L);
+            }
+
+            claims.setExpirationTime(NumericDate.fromSeconds(issuedAt + lifespan));
         }
     }
 

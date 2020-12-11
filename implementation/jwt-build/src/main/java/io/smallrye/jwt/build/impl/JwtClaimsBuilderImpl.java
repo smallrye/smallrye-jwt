@@ -128,8 +128,17 @@ class JwtClaimsBuilderImpl extends JwtSignatureImpl implements JwtClaimsBuilder,
      * {@inheritDoc}
      */
     @Override
-    public JwtClaimsBuilder expiresAt(long expiredAt) {
-        claims.setExpirationTime(NumericDate.fromSeconds(expiredAt));
+    public JwtClaimsBuilder expiresAt(long expiresAt) {
+        claims.setExpirationTime(NumericDate.fromSeconds(expiresAt));
+        return this;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public JwtClaimsBuilder expiresIn(long expiresIn) {
+        tokenLifespan = expiresIn;
         return this;
     }
 
@@ -146,7 +155,7 @@ class JwtClaimsBuilderImpl extends JwtSignatureImpl implements JwtClaimsBuilder,
      */
     @Override
     public JwtClaimsBuilder groups(Set<String> groups) {
-        claims.setClaim("groups", groups.stream().collect(Collectors.toList()));
+        claims.setClaim(Claims.groups.name(), groups.stream().collect(Collectors.toList()));
         return this;
     }
 
@@ -236,7 +245,7 @@ class JwtClaimsBuilderImpl extends JwtSignatureImpl implements JwtClaimsBuilder,
      */
     @Override
     public String json() {
-        JwtBuildUtils.setDefaultJwtClaims(claims);
+        JwtBuildUtils.setDefaultJwtClaims(claims, tokenLifespan);
         return claims.toJson();
     }
 
@@ -245,7 +254,7 @@ class JwtClaimsBuilderImpl extends JwtSignatureImpl implements JwtClaimsBuilder,
      */
     @Override
     public JwtEncryptionBuilder jwe() {
-        JwtBuildUtils.setDefaultJwtClaims(claims);
+        JwtBuildUtils.setDefaultJwtClaims(claims, tokenLifespan);
         return new JwtEncryptionImpl(claims.toJson());
     }
 
