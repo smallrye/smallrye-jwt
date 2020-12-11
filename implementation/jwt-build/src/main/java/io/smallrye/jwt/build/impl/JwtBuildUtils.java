@@ -2,6 +2,7 @@ package io.smallrye.jwt.build.impl;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.UUID;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.jwt.Claims;
@@ -27,7 +28,7 @@ public class JwtBuildUtils {
         }
         setExpiryClaim(claims);
         if (!claims.hasClaim(Claims.jti.name())) {
-            claims.setGeneratedJwtId();
+            claims.setClaim(Claims.jti.name(), UUID.randomUUID().toString());
         }
         if (!claims.hasClaim(Claims.iss.name())) {
             String issuer = getConfigProperty("smallrye.jwt.new-token.issuer", String.class);
