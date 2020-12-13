@@ -41,6 +41,28 @@ public final class ResourceUtils {
 
     public static String readResource(String resourceLocation, UrlStreamResolver urlResolver) throws IOException {
 
+        InputStream is = getResourceStream(resourceLocation, urlResolver);
+
+        if (is == null) {
+            return null;
+        }
+
+        StringWriter contents = new StringWriter();
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(is))) {
+            String line = null;
+            while ((line = reader.readLine()) != null) {
+                contents.write(line);
+            }
+        }
+        return contents.toString();
+    }
+
+    public static InputStream getResourceStream(String resourceLocation) throws IOException {
+        return getResourceStream(resourceLocation, null);
+    }
+
+    public static InputStream getResourceStream(String resourceLocation, UrlStreamResolver urlResolver) throws IOException {
+
         InputStream is = null;
 
         if (resourceLocation.startsWith(HTTP_BASED_SCHEME)) {
@@ -60,18 +82,7 @@ public final class ResourceUtils {
             }
         }
 
-        if (is == null) {
-            return null;
-        }
-
-        StringWriter contents = new StringWriter();
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(is))) {
-            String line = null;
-            while ((line = reader.readLine()) != null) {
-                contents.write(line);
-            }
-        }
-        return contents.toString();
+        return is;
     }
 
     public static UrlStreamResolver getUrlResolver() {
