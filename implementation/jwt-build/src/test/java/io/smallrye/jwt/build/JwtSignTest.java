@@ -25,6 +25,7 @@ import java.security.Key;
 import java.security.KeyPairGenerator;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
@@ -53,7 +54,6 @@ import org.jose4j.keys.EllipticCurves;
 import org.junit.Assert;
 import org.junit.Test;
 
-import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 // import io.smallrye.jwt.auth.principal.DefaultJWTCallerPrincipal;
 import io.smallrye.jwt.util.KeyUtils;
 
@@ -122,9 +122,34 @@ public class JwtSignTest {
     }
 
     @Test
-    public void testCustomIssuedAtExpiresAt() throws Exception {
+    public void testCustomIssuedAtExpiresAtLong() throws Exception {
+        Instant now = Instant.now();
+        String jwt = Jwt.claims().issuedAt(now).expiresAt(now.getEpochSecond() + 3000).sign();
+        verifyJwtCustomIssuedAtExpiresAt(now, jwt);
+    }
+
+    @Test
+    public void testCustomIssuedAtExpiresAtInstant() throws Exception {
         Instant now = Instant.now();
         String jwt = Jwt.claims().issuedAt(now).expiresAt(now.plusSeconds(3000)).sign();
+        verifyJwtCustomIssuedAtExpiresAt(now, jwt);
+    }
+
+    @Test
+    public void testCustomIssuedAtExpiresInLong() throws Exception {
+        Instant now = Instant.now();
+        String jwt = Jwt.claims().issuedAt(now).expiresIn(3000).sign();
+        verifyJwtCustomIssuedAtExpiresAt(now, jwt);
+    }
+
+    @Test
+    public void testCustomIssuedAtExpiresInDuration() throws Exception {
+        Instant now = Instant.now();
+        String jwt = Jwt.claims().issuedAt(now).expiresIn(Duration.ofSeconds(3000)).sign();
+        verifyJwtCustomIssuedAtExpiresAt(now, jwt);
+    }
+
+    private void verifyJwtCustomIssuedAtExpiresAt(Instant now, String jwt) throws Exception {
         JsonWebSignature jws = new JsonWebSignature();
         jws.setKey(KeyUtils.readPublicKey("/publicKey.pem"));
         jws.setCompactSerialization(jwt);
@@ -286,7 +311,7 @@ public class JwtSignTest {
         return getVerifiedJws(jwt, getPublicKey());
     }
 
-    private static JsonWebSignature getVerifiedJws(String jwt, Key key) throws Exception {
+    static JsonWebSignature getVerifiedJws(String jwt, Key key) throws Exception {
         JsonWebSignature jws = new JsonWebSignature();
         jws.setKey(key);
         jws.setCompactSerialization(jwt);
@@ -298,7 +323,7 @@ public class JwtSignTest {
         checkDefaultClaimsAndHeaders(headers, claims, "RS256", 300);
     }
 
-    private static void checkDefaultClaimsAndHeaders(Map<String, Object> headers, JwtClaims claims, String algo,
+    static void checkDefaultClaimsAndHeaders(Map<String, Object> headers, JwtClaims claims, String algo,
             long expectedLifespan)
             throws Exception {
         NumericDate iat = claims.getIssuedAt();
@@ -423,22 +448,6 @@ public class JwtSignTest {
         Assert.assertEquals("custom-value", claims.getClaimValue("customClaim"));
     }
 
-    @Test
-    public void testSignClaimsPS256() throws Exception {
-        String jwt = Jwt.claims()
-                .claim("customClaim", "custom-value")
-                .jws().algorithm(SignatureAlgorithm.PS256)
-                .sign();
-
-        JsonWebSignature jws = getVerifiedJws(jwt, getPublicKey());
-        JwtClaims claims = JwtClaims.parse(jws.getPayload());
-
-        Assert.assertEquals(4, claims.getClaimsMap().size());
-        checkDefaultClaimsAndHeaders(getJwsHeaders(jwt, 2), claims, "PS256", 300);
-
-        Assert.assertEquals("custom-value", claims.getClaimValue("customClaim"));
-    }
-
     private static EllipticCurveJsonWebKey createECJwk() throws Exception {
         return EcJwkGenerator.generateJwk(EllipticCurves.P256);
     }
@@ -536,7 +545,7 @@ public class JwtSignTest {
         }
     }
 
-    private static Map<String, Object> getJwsHeaders(String compactJws, int expectedSize) throws Exception {
+    static Map<String, Object> getJwsHeaders(String compactJws, int expectedSize) throws Exception {
         int firstDot = compactJws.indexOf(".");
         String headersJson = new Base64Url().base64UrlDecodeToUtf8String(compactJws.substring(0, firstDot));
         Map<String, Object> headers = JsonUtil.parseJson(headersJson);
