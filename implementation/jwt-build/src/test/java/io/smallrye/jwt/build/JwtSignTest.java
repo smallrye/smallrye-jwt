@@ -25,6 +25,7 @@ import java.security.Key;
 import java.security.KeyPairGenerator;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
@@ -121,9 +122,34 @@ public class JwtSignTest {
     }
 
     @Test
-    public void testCustomIssuedAtExpiresAt() throws Exception {
+    public void testCustomIssuedAtExpiresAtLong() throws Exception {
+        Instant now = Instant.now();
+        String jwt = Jwt.claims().issuedAt(now).expiresAt(now.getEpochSecond() + 3000).sign();
+        verifyJwtCustomIssuedAtExpiresAt(now, jwt);
+    }
+
+    @Test
+    public void testCustomIssuedAtExpiresAtInstant() throws Exception {
         Instant now = Instant.now();
         String jwt = Jwt.claims().issuedAt(now).expiresAt(now.plusSeconds(3000)).sign();
+        verifyJwtCustomIssuedAtExpiresAt(now, jwt);
+    }
+
+    @Test
+    public void testCustomIssuedAtExpiresInLong() throws Exception {
+        Instant now = Instant.now();
+        String jwt = Jwt.claims().issuedAt(now).expiresIn(3000).sign();
+        verifyJwtCustomIssuedAtExpiresAt(now, jwt);
+    }
+
+    @Test
+    public void testCustomIssuedAtExpiresInDuration() throws Exception {
+        Instant now = Instant.now();
+        String jwt = Jwt.claims().issuedAt(now).expiresIn(Duration.ofSeconds(3000)).sign();
+        verifyJwtCustomIssuedAtExpiresAt(now, jwt);
+    }
+
+    private void verifyJwtCustomIssuedAtExpiresAt(Instant now, String jwt) throws Exception {
         JsonWebSignature jws = new JsonWebSignature();
         jws.setKey(KeyUtils.readPublicKey("/publicKey.pem"));
         jws.setCompactSerialization(jwt);

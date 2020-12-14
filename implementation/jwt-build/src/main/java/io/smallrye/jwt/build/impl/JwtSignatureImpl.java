@@ -28,6 +28,7 @@ import io.smallrye.jwt.util.KeyUtils;
 class JwtSignatureImpl implements JwtSignature {
     JwtClaims claims = new JwtClaims();
     Map<String, Object> headers = new HashMap<>();
+    Long tokenLifespan;
 
     JwtSignatureImpl() {
     }
@@ -145,7 +146,7 @@ class JwtSignatureImpl implements JwtSignature {
     }
 
     private String signInternal(Key signingKey) {
-        JwtBuildUtils.setDefaultJwtClaims(claims);
+        JwtBuildUtils.setDefaultJwtClaims(claims, tokenLifespan);
         JsonWebSignature jws = new JsonWebSignature();
         for (Map.Entry<String, Object> entry : headers.entrySet()) {
             jws.setHeader(entry.getKey(), entry.getValue());
