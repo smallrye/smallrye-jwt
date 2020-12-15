@@ -32,6 +32,7 @@
     <module>basic</module>
     <module>tck</module>
   </modules>
+
   <build>
     <plugins>
       <plugin>

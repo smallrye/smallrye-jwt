@@ -105,6 +105,11 @@
           <dependenciesToScan>
             <dependency>org.eclipse.microprofile.jwt:microprofile-jwt-auth-tck</dependency>
           </dependenciesToScan>
+          <systemPropertyVariables>
+            <!--suppress UnresolvedMavenProperty -->
+            <!-- So we can pass the jacoco agent to the Arquillian VM Options. See arquillian.xml -->
+            <jacocoArgLine>${jacocoArgLine}</jacocoArgLine>
+          </systemPropertyVariables>
         </configuration>
       </plugin>
     </plugins>
@@ -165,30 +170,5 @@
         </plugins>
       </build>
     </profile>
-
-    <profile>
-      <id>coverage</id>
-      <properties>
-          <argLine>@{jacocoArgLine}</argLine>
-      </properties>
-
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.jacoco</groupId>
-            <artifactId>jacoco-maven-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>report-aggregate</id>
-                <phase>verify</phase>
-                <goals>
-                  <goal>report-aggregate</goal>
-                </goals>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-    </profiles>
+  </profiles>
 </project>
