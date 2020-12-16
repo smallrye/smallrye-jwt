@@ -42,8 +42,6 @@
     <version.jose4j>0.7.2</version.jose4j>
     <version.resteasy>3.14.0.Final</version.resteasy>
     <version.mokito>3.6.28</version.mokito>
-    <version.weld-junit4>2.0.1.Final</version.weld-junit4>
-    <sonar.coverage.jacoco.xmlReportPaths>${project.basedir}/testsuite/basic/target/site/jacoco-aggregate/jacoco.xml,${project.basedir}/../testsuite/basic/target/site/jacoco-aggregate/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
   </properties>
 
   <licenses>
@@ -141,11 +139,6 @@
         <version>${version.mokito}</version>
       </dependency>
       <dependency>
-        <groupId>org.jboss.weld</groupId>
-        <artifactId>weld-junit4</artifactId>
-        <version>${version.weld-junit4}</version>
-      </dependency>
-      <dependency>
         <groupId>io.smallrye.config</groupId>
         <artifactId>smallrye-config</artifactId>
         <version>${version.io.smallrye.config}</version>
@@ -158,37 +151,28 @@
     </dependencies>
   </dependencyManagement>
 
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-release-plugin</artifactId>
-        <version>${version.release.plugin}</version>
-        <configuration>
-          <autoVersionSubmodules>true</autoVersionSubmodules>
-          <tagNameFormat>@{project.version}</tagNameFormat>
-          <preparationGoals>verify</preparationGoals>
-          <pushChanges>false</pushChanges>
-          <localCheckout>true</localCheckout>
-          <remoteTagging>false</remoteTagging>
-          <arguments>-DskipTests ${release.arguments}</arguments>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-gpg-plugin</artifactId>
-        <version>${version.gpg.plugin}</version>
-        <configuration>
-          <gpgArguments>
-            <arg>--pinentry-mode</arg>
-            <arg>loopback</arg>
-          </gpgArguments>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
-
   <profiles>
+    <profile>
+      <id>coverage</id>
+      <properties>
+        <argLine>@{jacocoArgLine}</argLine>
+        <!--suppress UnresolvedMavenProperty -->
+        <sonar.coverage.jacoco.xmlReportPaths>
+          ${maven.multiModuleProjectDirectory}/coverage/target/site/jacoco-aggregate/jacoco.xml
+        </sonar.coverage.jacoco.xmlReportPaths>
+      </properties>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.jacoco</groupId>
+            <artifactId>jacoco-maven-plugin</artifactId>
+          </plugin>
+        </plugins>
+      </build>
+      <modules>
+        <module>coverage</module>
+      </modules>
+    </profile>
     <profile>
       <id>release</id>
       <activation>
