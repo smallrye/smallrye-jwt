@@ -29,6 +29,7 @@ public class SmallRyeJWTArchiveProcessor implements ApplicationArchiveProcessor 
 
             String[] deps = {
                     "io.smallrye:smallrye-jwt",
+                    "io.smallrye:smallrye-jwt-jaxrs",
                     "io.smallrye.config:smallrye-config",
                     "org.jboss.resteasy:resteasy-servlet-initializer",
                     "org.jboss.resteasy:resteasy-jaxrs",

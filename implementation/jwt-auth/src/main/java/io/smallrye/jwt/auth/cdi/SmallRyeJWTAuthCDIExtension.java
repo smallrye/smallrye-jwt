@@ -23,7 +23,6 @@ import javax.enterprise.inject.spi.BeforeBeanDiscovery;
 import javax.enterprise.inject.spi.CDI;
 import javax.enterprise.inject.spi.Extension;
 
-import io.smallrye.jwt.auth.jaxrs.JWTAuthenticationFilter;
 import io.smallrye.jwt.auth.mechanism.JWTHttpAuthenticationMechanism;
 import io.smallrye.jwt.auth.principal.DefaultJWTParser;
 import io.smallrye.jwt.config.JWTAuthContextInfoProvider;
@@ -42,6 +41,9 @@ import io.smallrye.jwt.config.JWTAuthContextInfoProvider;
  * @author Michael Edgar {@literal <michael@xlate.io>}
  */
 public class SmallRyeJWTAuthCDIExtension implements Extension {
+
+    private static final String HTTP_AUTH_MECHANISM_CLASS_NAME = "javax.security.enterprise.authentication.mechanism.http.HttpAuthenticationMechanism";
+    private static final String JWT_AUTHENTICATION_FILTER_CLASS_NAME = "io.smallrye.jwt.auth.jaxrs.JWTAuthenticationFilter";
 
     public static boolean isHttpAuthMechanismEnabled() {
         boolean enabled = false;
@@ -62,10 +64,27 @@ public class SmallRyeJWTAuthCDIExtension implements Extension {
 
     private static boolean isEESecurityAvailable() {
         try {
-            Class.forName("javax.security.enterprise.authentication.mechanism.http.HttpAuthenticationMechanism");
+            Class.forName(HTTP_AUTH_MECHANISM_CLASS_NAME);
             return true;
         } catch (@SuppressWarnings("unused") ClassNotFoundException e) {
             return false;
+        }
+    }
+
+    private static boolean isJaxrsAuthenticationFilterAvailable() {
+        try {
+            Class.forName(JWT_AUTHENTICATION_FILTER_CLASS_NAME);
+            return true;
+        } catch (@SuppressWarnings("unused") ClassNotFoundException e) {
+            return false;
+        }
+    }
+
+    private static Class<?> loadJaxrsAuthenticationFilter() {
+        try {
+            return Class.forName(JWT_AUTHENTICATION_FILTER_CLASS_NAME);
+        } catch (@SuppressWarnings("unused") ClassNotFoundException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -83,7 +102,6 @@ public class SmallRyeJWTAuthCDIExtension implements Extension {
         addAnnotatedType(event, beanManager, JWTCallerPrincipalFactoryProducer.class);
         addAnnotatedType(event, beanManager, JsonValueProducer.class);
         addAnnotatedType(event, beanManager, JWTAuthContextInfoProvider.class);
-        addAnnotatedType(event, beanManager, JWTAuthenticationFilter.class);
         addAnnotatedType(event, beanManager, PrincipalProducer.class);
         addAnnotatedType(event, beanManager, RawClaimTypeProducer.class);
         if (registerOptionalClaimTypeProducer()) {
@@ -93,8 +111,9 @@ public class SmallRyeJWTAuthCDIExtension implements Extension {
         if (isEESecurityAvailable()) {
             addAnnotatedType(event, beanManager, JWTHttpAuthenticationMechanism.class);
             CDILogging.log.jwtHttpAuthenticationMechanismRegistered();
-        } else {
+        } else if (isJaxrsAuthenticationFilterAvailable()) {
             // EE Security is not available, register the JAX-RS authentication filter.
+            addAnnotatedType(event, beanManager, loadJaxrsAuthenticationFilter());
             CDILogging.log.jwtHttpAuthenticationMechanismNotRegistered();
         }
     }
