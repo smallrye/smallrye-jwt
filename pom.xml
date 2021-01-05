@@ -138,7 +138,11 @@
         <artifactId>smallrye-jwt-build</artifactId>
         <version>${project.version}</version>
       </dependency>
-
+      <dependency>
+        <groupId>io.smallrye</groupId>
+        <artifactId>smallrye-jwt-jaxrs</artifactId>
+        <version>${project.version}</version>
+      </dependency>
       <!-- Unit/Integration test dependencies -->
       <dependency>
         <groupId>org.mockito</groupId>
