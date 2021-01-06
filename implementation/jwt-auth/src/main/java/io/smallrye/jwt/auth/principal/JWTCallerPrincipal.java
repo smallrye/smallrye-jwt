@@ -119,13 +119,7 @@ public abstract class JWTCallerPrincipal implements JsonWebToken {
                 ", acr='" + getClaim("acr") + '\'';
         StringBuilder tmp = new StringBuilder(toString);
         tmp.append(", groups=[");
-        for (String group : getGroups()) {
-            tmp.append(group);
-            tmp.append(',');
-        }
-        if (tmp.charAt(tmp.length() - 1) == ',') {
-            tmp.setLength(tmp.length() - 1);
-        }        
+        tmp.append(String.join(",", getGroups()));
         tmp.append("]}");
         return tmp.toString();
     }
