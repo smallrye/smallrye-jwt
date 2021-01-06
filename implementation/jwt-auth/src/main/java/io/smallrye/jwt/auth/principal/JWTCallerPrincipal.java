@@ -123,7 +123,9 @@ public abstract class JWTCallerPrincipal implements JsonWebToken {
             tmp.append(group);
             tmp.append(',');
         }
-        tmp.setLength(tmp.length() - 1);
+        if (tmp.charAt(tmp.length() - 1) == ',') {
+            tmp.setLength(tmp.length() - 1);
+        }        
         tmp.append("]}");
         return tmp.toString();
     }
