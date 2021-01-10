@@ -15,6 +15,7 @@
  */
 package io.smallrye.jwt.auth.mechanism;
 
+import java.io.IOException;
 import java.util.Set;
 
 import javax.enterprise.context.ApplicationScoped;
@@ -28,6 +29,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.microprofile.jwt.JsonWebToken;
+import org.jose4j.lang.UnresolvableKeyException;
 
 import io.smallrye.jwt.auth.AbstractBearerTokenExtractor;
 import io.smallrye.jwt.auth.cdi.PrincipalProducer;
@@ -78,14 +80,28 @@ public class JWTHttpAuthenticationMechanism implements HttpAuthenticationMechani
                 MechanismLogging.log.success();
                 return httpMessageContext.notifyContainerAboutLogin(jwtPrincipal, groups);
             } catch (Exception e) {
-                MechanismLogging.log.unableToValidateBearerToken(e);
-                return httpMessageContext.responseUnauthorized();
+                if (e.getCause() instanceof UnresolvableKeyException) {
+                    MechanismLogging.log.noUsableKey();
+                    return reportInternalError(httpMessageContext);
+                } else {
+                    MechanismLogging.log.unableToValidateBearerToken(e);
+                    return httpMessageContext.responseUnauthorized();
+                }
             }
         } else {
             MechanismLogging.log.noUsableBearerTokenFound();
             return httpMessageContext.isProtected() ? httpMessageContext.responseUnauthorized()
                     : httpMessageContext.doNothing();
         }
+    }
+
+    private AuthenticationStatus reportInternalError(HttpMessageContext httpMessageContext) {
+        try {
+            httpMessageContext.getResponse().sendError(500);
+        } catch (IOException ioException) {
+            throw new IllegalStateException(ioException);
+        }
+        return AuthenticationStatus.SEND_FAILURE;
     }
 
     private static class BearerTokenExtractor extends AbstractBearerTokenExtractor {

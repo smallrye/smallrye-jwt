@@ -22,4 +22,8 @@ interface MechanismLogging extends BasicLogger {
     @LogMessage(level = Logger.Level.DEBUG)
     @Message(id = 11002, value = "No usable bearer token was found in the request, continuing unauthenticated")
     void noUsableBearerTokenFound();
+
+    @LogMessage(level = Logger.Level.DEBUG)
+    @Message(id = 11003, value = "Failed to resolve the public key. Either corrupt or unavailable.")
+    void noUsableKey();
 }
