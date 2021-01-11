@@ -55,10 +55,10 @@ interface PrincipalMessages {
     ParseException verificationKeyUnresolvable();
 
     @Message(id = 7012, value = "Decryption key is unresolvable")
-    ParseException decryptionKeyUnresolvable();
+    ParseException decryptionKeyUnresolvable(@Cause Throwable throwable);
 
     @Message(id = 7013, value = "Encrypted token sequence is invalid")
-    ParseException encryptedTokenSequenceInvalid();
+    ParseException encryptedTokenSequenceInvalid(@Cause Throwable throwable);
 
     @Message(id = 7014, value = "Failed to load X509 certificates")
     ParseException failedToLoadCertificates();

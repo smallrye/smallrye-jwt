@@ -21,6 +21,7 @@ import java.security.Principal;
 
 import javax.annotation.Priority;
 import javax.inject.Inject;
+import javax.ws.rs.InternalServerErrorException;
 import javax.ws.rs.Priorities;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
@@ -29,11 +30,13 @@ import javax.ws.rs.core.Cookie;
 import javax.ws.rs.core.SecurityContext;
 
 import org.eclipse.microprofile.jwt.JsonWebToken;
+import org.jose4j.lang.UnresolvableKeyException;
 
 import io.smallrye.jwt.auth.AbstractBearerTokenExtractor;
 import io.smallrye.jwt.auth.cdi.PrincipalProducer;
 import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
 import io.smallrye.jwt.auth.principal.JWTParser;
+import io.smallrye.jwt.auth.principal.ParseException;
 
 /**
  * A JAX-RS ContainerRequestFilter prototype
@@ -69,8 +72,17 @@ public class JWTAuthenticationFilter implements ContainerRequestFilter {
                     JWTSecurityContext jwtSecurityContext = new JWTSecurityContext(securityContext, jwtPrincipal);
                     requestContext.setSecurityContext(jwtSecurityContext);
                     JAXRSLogging.log.success();
+                } catch (ParseException e) {
+                    if (e.getCause() instanceof UnresolvableKeyException) {
+                        JAXRSLogging.log.noUsableKey();
+                        throw new InternalServerErrorException(e);
+                    } else {
+                        JAXRSLogging.log.unableToValidateBearerToken(e);
+                        // RolesAllowedFilter currently returns the status in this case
+                    }
                 } catch (Exception e) {
-                    JAXRSLogging.log.unableParseJWT(e);
+                    JAXRSLogging.log.unableToValidateBearerToken(e);
+                    throw new InternalServerErrorException(e);
                 }
             }
         }

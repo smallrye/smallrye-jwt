@@ -86,10 +86,10 @@ public class DefaultJWTTokenParser {
             return jwe.getPlaintextString();
         } catch (UnresolvableKeyException e) {
             PrincipalLogging.log.decryptionKeyUnresolvable();
-            throw PrincipalMessages.msg.decryptionKeyUnresolvable();
+            throw PrincipalMessages.msg.decryptionKeyUnresolvable(e);
         } catch (JoseException e) {
             PrincipalLogging.log.encryptedTokenSequenceInvalid();
-            throw PrincipalMessages.msg.encryptedTokenSequenceInvalid();
+            throw PrincipalMessages.msg.encryptedTokenSequenceInvalid(e);
         }
     }
 
