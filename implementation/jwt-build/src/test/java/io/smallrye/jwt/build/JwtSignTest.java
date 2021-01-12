@@ -65,15 +65,17 @@ public class JwtSignTest {
     }
 
     @Test
-    public void testSignClaimsCustomExpAndIssuer() throws Exception {
+    public void testSignClaimsCustomExpAndIssuerAndAud() throws Exception {
         JwtBuildConfigSource configSource = getConfigSource();
         try {
             configSource.setLifespanPropertyRequired(true);
             configSource.setIssuerPropertyRequired(true);
-            signAndVerifyClaims(2000L, "https://custom-issuer");
+            configSource.setAudiencePropertyRequired(true);
+            signAndVerifyClaims(2000L, "https://custom-issuer", "https://custom-audience");
         } finally {
             configSource.setLifespanPropertyRequired(false);
             configSource.setIssuerPropertyRequired(false);
+            configSource.setAudiencePropertyRequired(false);
         }
     }
 
@@ -86,23 +88,28 @@ public class JwtSignTest {
         // verify
         JsonWebSignature jws = getVerifiedJws(jwt);
         JwtClaims claims = JwtClaims.parse(jws.getPayload());
-        Assert.assertEquals(6, claims.getClaimsMap().size());
+        Assert.assertEquals(7, claims.getClaimsMap().size());
         checkDefaultClaimsAndHeaders(getJwsHeaders(jwt, 2), claims);
         Assert.assertEquals("custom-value", claims.getClaimValue("customClaim"));
 
         Assert.assertEquals("new-value", claims.getClaimValue("newClaim"));
         Assert.assertEquals("https://default-issuer", claims.getIssuer());
+        Assert.assertEquals(1, claims.getAudience().size());
+        Assert.assertEquals("https://localhost:8081", claims.getAudience().get(0));
     }
 
     private JwtClaims signAndVerifyClaims() throws Exception {
-        return signAndVerifyClaims(null, null);
+        return signAndVerifyClaims(null, null, null);
     }
 
     @SuppressWarnings("deprecation")
-    private JwtClaims signAndVerifyClaims(Long customLifespan, String issuer) throws Exception {
+    private JwtClaims signAndVerifyClaims(Long customLifespan, String issuer, String aud) throws Exception {
         JwtClaimsBuilder builder = Jwt.claims().claim("customClaim", "custom-value");
         if (issuer == null) {
             builder.issuer("https://default-issuer");
+        }
+        if (aud == null) {
+            builder.audience("https://localhost:8081");
         }
         String jsonBeforeSign = builder.json();
         String jwt = builder.sign(getPrivateKey());
@@ -111,13 +118,14 @@ public class JwtSignTest {
         JsonWebSignature jws = getVerifiedJws(jwt);
         Assert.assertEquals(jsonAfterSign, jws.getPayload());
         JwtClaims claims = JwtClaims.parse(jws.getPayload());
-        Assert.assertEquals(5, claims.getClaimsMap().size());
+        Assert.assertEquals(6, claims.getClaimsMap().size());
         checkDefaultClaimsAndHeaders(getJwsHeaders(jwt, 2), claims, "RS256", customLifespan != null ? customLifespan : 300);
 
         Assert.assertEquals("custom-value", claims.getClaimValue("customClaim"));
-        if (issuer != null) {
-            Assert.assertEquals((issuer == null ? "https://default-issuer" : issuer), claims.getIssuer());
-        }
+        Assert.assertEquals((issuer == null ? "https://default-issuer" : issuer), claims.getIssuer());
+        List<String> audiences = claims.getAudience();
+        Assert.assertEquals(1, audiences.size());
+        Assert.assertEquals((aud == null ? "https://localhost:8081" : aud), audiences.get(0));
         return claims;
     }
 
