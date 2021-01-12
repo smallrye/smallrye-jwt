@@ -22,8 +22,6 @@ import javax.ws.rs.core.FeatureContext;
 
 import org.eclipse.microprofile.auth.LoginConfig;
 
-import io.smallrye.jwt.auth.cdi.SmallRyeJWTAuthCDIExtension;
-
 /**
  * JAX-RS Feature to support JWT authentication and authorization filters in
  * conjunction with the {@link SmallRyeJWTAuthCDIExtension}. This feature must
@@ -48,11 +46,8 @@ public class SmallRyeJWTAuthJaxRsFeature implements Feature {
         if (enabled) {
             context.register(JWTAuthorizationFilterRegistrar.class);
 
-            if (!SmallRyeJWTAuthCDIExtension.isHttpAuthMechanismEnabled()) {
-                context.register(JWTAuthenticationFilter.class);
-
-                JAXRSLogging.log.eeSecurityNotInUseButRegistered(JWTAuthenticationFilter.class.getSimpleName());
-            }
+            context.register(JWTAuthenticationFilter.class);
+            JAXRSLogging.log.eeSecurityNotInUseButRegistered(JWTAuthenticationFilter.class.getSimpleName());
 
             JAXRSLogging.log.mpJWTLoginConfigPresent(getClass().getSimpleName());
         } else {
