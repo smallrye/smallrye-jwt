@@ -35,6 +35,7 @@ import io.smallrye.jwt.auth.AbstractBearerTokenExtractor;
 import io.smallrye.jwt.auth.cdi.PrincipalProducer;
 import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
 import io.smallrye.jwt.auth.principal.JWTParser;
+import io.smallrye.jwt.auth.principal.ParseException;
 
 /**
  * A JAX-RS HttpAuthenticationMechanism prototype
@@ -79,7 +80,7 @@ public class JWTHttpAuthenticationMechanism implements HttpAuthenticationMechani
                 Set<String> groups = jwtPrincipal.getGroups();
                 MechanismLogging.log.success();
                 return httpMessageContext.notifyContainerAboutLogin(jwtPrincipal, groups);
-            } catch (Exception e) {
+            } catch (ParseException e) {
                 if (e.getCause() instanceof UnresolvableKeyException) {
                     MechanismLogging.log.noUsableKey();
                     return reportInternalError(httpMessageContext);
@@ -87,6 +88,9 @@ public class JWTHttpAuthenticationMechanism implements HttpAuthenticationMechani
                     MechanismLogging.log.unableToValidateBearerToken(e);
                     return httpMessageContext.responseUnauthorized();
                 }
+            } catch (Exception e) {
+                MechanismLogging.log.unableToValidateBearerToken(e);
+                return reportInternalError(httpMessageContext);
             }
         } else {
             MechanismLogging.log.noUsableBearerTokenFound();

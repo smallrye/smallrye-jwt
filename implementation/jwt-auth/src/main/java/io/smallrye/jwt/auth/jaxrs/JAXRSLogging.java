@@ -16,18 +16,22 @@ interface JAXRSLogging extends BasicLogger {
     void success();
 
     @LogMessage(level = Logger.Level.DEBUG)
-    @Message(id = 10001, value = "Unable to parse/validate JWT")
-    void unableParseJWT(@Cause Throwable throwable);
+    @Message(id = 10001, value = "Unable to validate bearer token")
+    void unableToValidateBearerToken(@Cause Throwable throwable);
 
     @LogMessage(level = Logger.Level.DEBUG)
-    @Message(id = 10002, value = "EE Security is not in use, %s has been registered")
+    @Message(id = 10002, value = "Failed to resolve the key. Either corrupt or unavailable.")
+    void noUsableKey();
+
+    @LogMessage(level = Logger.Level.DEBUG)
+    @Message(id = 10003, value = "EE Security is not in use, %s has been registered")
     void eeSecurityNotInUseButRegistered(String authenticationFilterName);
 
     @LogMessage(level = Logger.Level.DEBUG)
-    @Message(id = 10003, value = "MP-JWT LoginConfig present, %s is enabled")
+    @Message(id = 10004, value = "MP-JWT LoginConfig present, %s is enabled")
     void mpJWTLoginConfigPresent(String className);
 
     @LogMessage(level = Logger.Level.INFO)
-    @Message(id = 10004, value = "LoginConfig not found on Application class, %s will not be enabled")
+    @Message(id = 10005, value = "LoginConfig not found on Application class, %s will not be enabled")
     void mpJWTLoginConfigNotFound(String className);
 }
