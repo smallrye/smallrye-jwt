@@ -36,6 +36,6 @@ interface JAXRSLogging extends BasicLogger {
     void mpJWTLoginConfigNotFound(String className);
 
     @LogMessage(level = Logger.Level.DEBUG)
-    @Message(id = 10005, value = "An invalid JWT was sent to an unauthenticated endpoint")
+    @Message(id = 10006, value = "An invalid JWT was sent to an unauthenticated endpoint")
     void invalidJWTSentToUnauthenticatedEndpoint();
 }

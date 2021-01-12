@@ -72,8 +72,8 @@ public class DefaultJWTTokenParser {
             }
             jwe.setCompactSerialization(token);
             if (!"JWT".equals(jwe.getContentTypeHeaderValue())) {
-                PrincipalLogging.log.encryptedTokenSequenceInvalid();
-                throw PrincipalMessages.msg.encryptedTokenSequenceInvalid();
+                PrincipalLogging.log.encryptedTokenMissingContentType();
+                throw PrincipalMessages.msg.encryptedTokenMissingContentType();
             }
             return jwe.getPlaintextString();
         } catch (UnresolvableKeyException e) {
