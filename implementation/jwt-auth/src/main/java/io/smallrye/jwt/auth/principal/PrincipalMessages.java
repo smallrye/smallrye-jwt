@@ -65,4 +65,7 @@ interface PrincipalMessages {
 
     @Message(id = 7015, value = "The Expiration Time (exp=%s) claim value cannot be less than Issued At (iat=%s) claim value")
     ParseException failedToVerifyIatExp(NumericDate exp, NumericDate iat);
+
+    @Message(id = 7016, value = "Encrypted token headers must contain a content type header")
+    ParseException encryptedTokenMissingContentType();
 }
