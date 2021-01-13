@@ -38,6 +38,10 @@
       <artifactId>smallrye-jwt-jaxrs</artifactId>
     </dependency>
     <dependency>
+      <groupId>io.smallrye</groupId>
+      <artifactId>smallrye-jwt-cdi-extension</artifactId>
+    </dependency>
+    <dependency>
       <groupId>io.smallrye.config</groupId>
       <artifactId>smallrye-config</artifactId>
     </dependency>
