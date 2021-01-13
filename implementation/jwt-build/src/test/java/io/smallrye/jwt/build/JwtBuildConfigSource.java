@@ -10,6 +10,7 @@ public class JwtBuildConfigSource implements ConfigSource {
     boolean signingKeyAvailable = true;
     boolean lifespanPropertyRequired;
     boolean issuerPropertyRequired;
+    boolean audiencePropertyRequired;
     String encryptionKeyLocation = "/publicKey.pem";
     String signingKeyLocation = "/privateKey.pem";
 
@@ -25,6 +26,9 @@ public class JwtBuildConfigSource implements ConfigSource {
         }
         if (issuerPropertyRequired) {
             map.put("smallrye.jwt.new-token.issuer", "https://custom-issuer");
+        }
+        if (audiencePropertyRequired) {
+            map.put("smallrye.jwt.new-token.audience", "https://custom-audience");
         }
         return map;
     }
@@ -57,5 +61,9 @@ public class JwtBuildConfigSource implements ConfigSource {
 
     public void setIssuerPropertyRequired(boolean issuerPropertyRequired) {
         this.issuerPropertyRequired = issuerPropertyRequired;
+    }
+
+    public void setAudiencePropertyRequired(boolean audiencePropertyRequired) {
+        this.audiencePropertyRequired = audiencePropertyRequired;
     }
 }

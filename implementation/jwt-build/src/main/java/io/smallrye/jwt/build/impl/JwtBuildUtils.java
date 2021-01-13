@@ -35,6 +35,12 @@ public class JwtBuildUtils {
                 claims.setIssuer(issuer);
             }
         }
+        if (!claims.hasClaim(Claims.aud.name())) {
+            String audience = getConfigProperty("smallrye.jwt.new-token.audience", String.class);
+            if (audience != null) {
+                claims.setAudience(audience);
+            }
+        }
     }
 
     static <T> T getConfigProperty(String name, Class<T> cls) {

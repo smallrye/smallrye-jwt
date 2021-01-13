@@ -20,8 +20,9 @@ import javax.json.JsonObject;
  * lifespan value of 5 minutes to the 'iat' claim value. The 'smallrye.jwt.new-token.lifespan' property can be used to
  * customize a new token lifespan and its 'exp' claim values.
  * <p>
- * JwtClaimsBuilder implementations must set the 'iss' (issuer) claim if has not already been set and
- * the 'smallrye.jwt.new-token.issuer' property is set.
+ * The 'iss' (issuer) claim must be set if it has not already been set and the 'smallrye.jwt.new-token.issuer' property is set.
+ * The 'aud' (audience) claim must be set if it has not already been set and the 'smallrye.jwt.new-token.audience' property is
+ * set.
  * <p>
  * Note that JwtClaimsBuilder implementations are not expected to be thread-safe.
  * 
