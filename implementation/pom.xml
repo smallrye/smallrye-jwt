@@ -32,6 +32,8 @@
     <module>common</module>
     <module>jwt-auth</module>
     <module>jwt-jaxrs</module>
+    <module>jwt-http-mechanism</module>
+    <module>jwt-cdi-extension</module>
     <module>jwt-build</module>
   </modules>
 </project>
