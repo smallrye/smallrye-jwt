@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <!--
- ~  Copyright 2020 Red Hat, Inc.
+ ~  Copyright 2021 Red Hat, Inc.
  ~
  ~  Licensed under the Apache License, Version 2.0 (the "License");
  ~  you may not use this file except in compliance with the License.
@@ -25,14 +25,14 @@
     <version>3.0.0-SNAPSHOT</version>
   </parent>
 
-  <artifactId>smallrye-jwt-build</artifactId>
+  <artifactId>smallrye-jwt-cdi-extension</artifactId>
 
-  <name>SmallRye: MicroProfile JWT Build Implementation</name>
+  <name>SmallRye: MicroProfile JWT CDI Extension Implementation</name>
 
   <dependencies>
     <dependency>
-      <groupId>jakarta.json</groupId>
-      <artifactId>jakarta.json-api</artifactId>
+      <groupId>jakarta.enterprise</groupId>
+      <artifactId>jakarta.enterprise.cdi-api</artifactId>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -41,20 +41,31 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.microprofile.config</groupId>
-      <artifactId>microprofile-config-api</artifactId>
+      <groupId>jakarta.servlet</groupId>
+      <artifactId>jakarta.servlet-api</artifactId>
+      <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.microprofile.jwt</groupId>
-      <artifactId>microprofile-jwt-auth-api</artifactId>
+      <groupId>jakarta.json</groupId>
+      <artifactId>jakarta.json-api</artifactId>
+      <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>org.bitbucket.b_c</groupId>
-      <artifactId>jose4j</artifactId>
+      <groupId>jakarta.security.enterprise</groupId>
+      <artifactId>jakarta.security.enterprise-api</artifactId>
+      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>io.smallrye</groupId>
-      <artifactId>smallrye-jwt-common</artifactId>
+      <artifactId>smallrye-jwt</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.smallrye</groupId>
+      <artifactId>smallrye-jwt-jaxrs</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.smallrye</groupId>
+      <artifactId>smallrye-jwt-http-mechanism</artifactId>
     </dependency>
     <dependency>
       <groupId>org.jboss.logging</groupId>
@@ -68,52 +79,6 @@
       <groupId>org.jboss.logging</groupId>
       <artifactId>jboss-logging-processor</artifactId>
     </dependency>
-
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.glassfish</groupId>
-      <artifactId>jakarta.json</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.smallrye.config</groupId>
-      <artifactId>smallrye-config</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.bouncycastle</groupId>
-      <artifactId>bcprov-jdk15on</artifactId>
-      <scope>test</scope>
-    </dependency>
   </dependencies>
-
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <redirectTestOutputToFile>true</redirectTestOutputToFile>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-failsafe-plugin</artifactId>
-        <version>2.22.2</version>
-        <executions>
-          <execution>
-            <id>default-integration-test</id>
-            <goals>
-              <goal>integration-test</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
-  </build>
 
 </project>
