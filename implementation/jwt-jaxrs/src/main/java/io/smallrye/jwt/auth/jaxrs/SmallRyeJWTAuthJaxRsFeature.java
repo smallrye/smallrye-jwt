@@ -23,14 +23,9 @@ import javax.ws.rs.core.FeatureContext;
 import org.eclipse.microprofile.auth.LoginConfig;
 
 /**
- * JAX-RS Feature to support JWT authentication and authorization filters in
- * conjunction with the {@link SmallRyeJWTAuthCDIExtension}. This feature must
+ * JAX-RS Feature to support JWT authentication and authorization filters, This feature must
  * be enabled by client applications by using the
  * {@link Application#getClasses()} method or via another feature.
- *
- * Note, this feature is not enabled by default and requires that the
- * {@link SmallRyeJWTAuthCDIExtension} be enabled as well to function.
- *
  *
  * @author Michael Edgar {@literal <michael@xlate.io>}
  */
