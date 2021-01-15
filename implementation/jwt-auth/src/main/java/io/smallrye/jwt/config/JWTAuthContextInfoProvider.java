@@ -447,10 +447,10 @@ public class JWTAuthContextInfoProvider {
         }
 
         final Optional<String> theDecryptionKeyLocation;
-        if (mpJwtDecryptKeyLocation.isPresent()) {
+        if (mpJwtDecryptKeyLocation.isPresent() && !NONE.equals(mpJwtDecryptKeyLocation.get())) {
             theDecryptionKeyLocation = mpJwtDecryptKeyLocation;
         } else if (decryptionKeyLocation.isPresent()) {
-            //ConfigLogging.log.replacedConfig("smallrye.jwt.decrypt.key.location", "mp.jwt.decrypt.key.location");
+            ConfigLogging.log.replacedConfig("smallrye.jwt.decrypt.key.location", "mp.jwt.decrypt.key.location");
             theDecryptionKeyLocation = decryptionKeyLocation;
         } else {
             theDecryptionKeyLocation = Optional.empty();
