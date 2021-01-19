@@ -66,13 +66,11 @@ public class SmallryeJwtUtils {
         }
     }
 
-    public static void setTokenSchemes(JWTAuthContextInfo contextInfo, Optional<String> tokenSchemes) {
-        if (tokenSchemes.isPresent()) {
-            final List<String> schemes = new ArrayList<>();
-            for (final String s : tokenSchemes.get().split(",")) {
-                schemes.add(s.trim());
-            }
-            contextInfo.setTokenSchemes(schemes);
+    public static void setTokenSchemes(JWTAuthContextInfo contextInfo, String tokenSchemes) {
+        final List<String> schemes = new ArrayList<>();
+        for (final String s : tokenSchemes.split(",")) {
+            schemes.add(s.trim());
         }
+        contextInfo.setTokenSchemes(schemes);
     }
 }
