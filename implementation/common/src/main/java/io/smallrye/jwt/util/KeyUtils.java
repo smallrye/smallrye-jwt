@@ -274,7 +274,7 @@ public final class KeyUtils {
     }
 
     static String keyFactoryAlgorithm(SignatureAlgorithm algo) throws NoSuchAlgorithmException {
-        if (algo.name().startsWith("RS")) {
+        if (algo.name().startsWith("RS") || algo.name().startsWith("PS")) {
             return RSA;
         }
         if (algo.name().startsWith("ES")) {
@@ -357,20 +357,20 @@ public final class KeyUtils {
         return content;
     }
 
-    static PrivateKey tryAsPEMPrivateKey(String content) {
+    static PrivateKey tryAsPemSigningPrivateKey(String content, SignatureAlgorithm alg) {
         JWTUtilLogging.log.creatingKeyFromPemKey();
         try {
-            return decodePrivateKey(content);
+            return decodePrivateKey(content, alg);
         } catch (Exception e) {
             JWTUtilLogging.log.creatingKeyFromPemKeyFailed(e);
         }
         return null;
     }
 
-    static PublicKey tryAsPEMPublicKey(String content) {
+    static PublicKey tryAsPemEncryptionPublicKey(String content, KeyEncryptionAlgorithm alg) {
         JWTUtilLogging.log.creatingKeyFromPemKey();
         try {
-            return KeyUtils.decodePublicKey(content);
+            return decodeEncryptionPublicKey(content, alg);
         } catch (Exception e) {
             JWTUtilLogging.log.creatingKeyFromPemKeyFailed(e);
         }
@@ -424,9 +424,13 @@ public final class KeyUtils {
     }
 
     public static Key readEncryptionKey(String location, String kid) throws IOException {
+        return readEncryptionKey(location, kid, KeyEncryptionAlgorithm.RSA_OAEP_256);
+    }
+
+    public static Key readEncryptionKey(String location, String kid, KeyEncryptionAlgorithm alg) throws IOException {
         String content = readKeyContent(location);
 
-        Key key = tryAsPEMPublicKey(content);
+        Key key = tryAsPemEncryptionPublicKey(content, alg);
         if (key == null) {
             key = tryAsPEMCertificate(content);
         }
@@ -468,9 +472,13 @@ public final class KeyUtils {
     }
 
     public static Key readSigningKey(String location, String kid) throws IOException {
+        return readSigningKey(location, kid, SignatureAlgorithm.ES256);
+    }
+
+    public static Key readSigningKey(String location, String kid, SignatureAlgorithm alg) throws IOException {
         String content = readKeyContent(location);
 
-        Key key = tryAsPEMPrivateKey(content);
+        Key key = tryAsPemSigningPrivateKey(content, alg);
         if (key == null) {
             List<JsonWebKey> jwks = loadJsonWebKeys(content);
             if (jwks != null) {

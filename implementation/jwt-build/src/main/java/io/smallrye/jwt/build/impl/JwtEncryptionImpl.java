@@ -187,7 +187,10 @@ class JwtEncryptionImpl implements JwtEncryptionBuilder {
 
     Key getEncryptionKeyFromKeyLocation(String keyLocation) {
         try {
-            Key key = KeyUtils.readEncryptionKey(keyLocation, (String) headers.get("kid"));
+            String algHeader = (String) headers.get("alg");
+            KeyEncryptionAlgorithm alg = algHeader == null ? KeyEncryptionAlgorithm.RSA_OAEP_256
+                    : KeyEncryptionAlgorithm.fromAlgorithm(algHeader);
+            Key key = KeyUtils.readEncryptionKey(keyLocation, (String) headers.get("kid"), alg);
             if (key == null) {
                 throw ImplMessages.msg.encryptionKeyCanNotBeLoadedFromLocation(keyLocation);
             }
