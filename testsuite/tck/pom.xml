@@ -62,7 +62,7 @@
     </dependency>
     <dependency>
       <groupId>org.jboss.resteasy</groupId>
-      <artifactId>resteasy-jaxrs</artifactId>
+      <artifactId>resteasy-undertow</artifactId>
       <version>${version.resteasy}</version>
     </dependency>
     <dependency>

@@ -1,7 +1,10 @@
 package io.smallrye.jwt.build;
 
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import org.eclipse.microprofile.config.spi.ConfigSource;
 
@@ -65,5 +68,14 @@ public class JwtBuildConfigSource implements ConfigSource {
 
     public void setAudiencePropertyRequired(boolean audiencePropertyRequired) {
         this.audiencePropertyRequired = audiencePropertyRequired;
+    }
+
+    @Override
+    public Set<String> getPropertyNames() {
+        return new HashSet<>(Arrays.asList("smallrye.jwt.sign.key-location",
+                "smallrye.jwt.encrypt.key-location",
+                "smallrye.jwt.new-token.lifespan",
+                "smallrye.jwt.new-token.issuer",
+                "smallrye.jwt.new-token.audience"));
     }
 }
