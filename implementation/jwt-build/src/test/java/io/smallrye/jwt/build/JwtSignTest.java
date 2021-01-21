@@ -54,6 +54,7 @@ import org.jose4j.keys.EllipticCurves;
 import org.junit.Assert;
 import org.junit.Test;
 
+import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 // import io.smallrye.jwt.auth.principal.DefaultJWTCallerPrincipal;
 import io.smallrye.jwt.util.KeyUtils;
 
@@ -311,6 +312,10 @@ public class JwtSignTest {
         return KeyUtils.readPrivateKey("/privateKey.pem");
     }
 
+    private static PublicKey getEcPublicKey() throws Exception {
+        return KeyUtils.readPublicKey("/ecPublicKey.pem", SignatureAlgorithm.ES256);
+    }
+
     private static PublicKey getPublicKey() throws Exception {
         return KeyUtils.readPublicKey("/publicKey.pem");
     }
@@ -521,6 +526,33 @@ public class JwtSignTest {
         Assert.assertEquals("custom-value", claims.getClaimValue("customClaim"));
     }
 
+    @Test
+    public void testSignClaimsEcKey() throws Exception {
+        JwtBuildConfigSource configSource = getConfigSource();
+        configSource.setSigningKeyLocation("/ecPrivateKey.pem");
+        String jwt = null;
+        try {
+            jwt = Jwt.claims()
+                    .claim("customClaim", "custom-value")
+                    .jws()
+                    .algorithm(SignatureAlgorithm.ES256)
+                    .keyId("eckey1")
+                    .sign();
+        } finally {
+            configSource.setSigningKeyLocation("/privateKey.pem");
+        }
+
+        PublicKey ecKey = getEcPublicKey();
+        JsonWebSignature jws = getVerifiedJws(jwt, ecKey);
+        JwtClaims claims = JwtClaims.parse(jws.getPayload());
+
+        Assert.assertEquals(4, claims.getClaimsMap().size());
+        Map<String, Object> headers = getJwsHeaders(jwt, 3);
+        checkDefaultClaimsAndHeaders(headers, claims, "ES256", 300);
+        Assert.assertEquals("eckey1", headers.get("kid"));
+        Assert.assertEquals("custom-value", claims.getClaimValue("customClaim"));
+    }
+
     private static SecretKey createSecretKey() throws Exception {
         String jwkJson = "{\"kty\":\"oct\",\"k\":\"Fdh9u8rINxfivbrianbbVT1u232VQBZYKx1HGAGPt2I\"}";
         JsonWebKey jwk = JsonWebKey.Factory.newJwk(jwkJson);
@@ -561,7 +593,7 @@ public class JwtSignTest {
         return headers;
     }
 
-    private static JwtBuildConfigSource getConfigSource() {
+    static JwtBuildConfigSource getConfigSource() {
         for (ConfigSource cs : ConfigProvider.getConfig().getConfigSources()) {
             if (cs instanceof JwtBuildConfigSource) {
                 return (JwtBuildConfigSource) cs;

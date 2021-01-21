@@ -154,14 +154,15 @@ class JwtSignatureImpl implements JwtSignature {
         if (!headers.containsKey("typ")) {
             jws.setHeader("typ", "JWT");
         }
+
         String algorithm = (String) headers.get("alg");
-        if (algorithm == null) {
-            algorithm = keyAlgorithm(headers, signingKey);
-            jws.setAlgorithmHeaderValue(algorithm);
-        }
         if ("none".equals(algorithm)) {
             jws.setAlgorithmConstraints(AlgorithmConstraints.ALLOW_ONLY_NONE);
+        } else {
+            algorithm = keyAlgorithm(headers, signingKey, algorithm);
         }
+        jws.setAlgorithmHeaderValue(algorithm);
+
         jws.setPayload(claims.toJson());
         jws.setKey(signingKey);
         try {
@@ -171,12 +172,11 @@ class JwtSignatureImpl implements JwtSignature {
         }
     }
 
-    static String keyAlgorithm(Map<String, Object> headers, Key signingKey) {
-        String alg = (String) headers.get("alg");
+    static String keyAlgorithm(Map<String, Object> headers, Key signingKey, String alg) {
         if (signingKey instanceof RSAPrivateKey) {
             if (alg == null) {
                 return SignatureAlgorithm.RS256.name();
-            } else if (alg.startsWith("RS")) {
+            } else if (alg.startsWith("RS") || alg.startsWith("PS")) {
                 return alg;
             }
         } else if (signingKey instanceof ECPrivateKey) {
@@ -205,7 +205,9 @@ class JwtSignatureImpl implements JwtSignature {
 
     Key getSigningKeyFromKeyLocation(String keyLocation) {
         try {
-            Key key = KeyUtils.readSigningKey(keyLocation, (String) headers.get("kid"));
+            String algHeader = (String) headers.get("alg");
+            SignatureAlgorithm alg = algHeader == null ? SignatureAlgorithm.RS256 : SignatureAlgorithm.fromAlgorithm(algHeader);
+            Key key = KeyUtils.readSigningKey(keyLocation, (String) headers.get("kid"), alg);
             if (key == null) {
                 throw ImplMessages.msg.signingKeyCanNotBeLoadedFromLocation(keyLocation);
             }
