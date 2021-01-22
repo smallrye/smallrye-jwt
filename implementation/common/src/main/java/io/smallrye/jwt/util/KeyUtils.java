@@ -472,7 +472,7 @@ public final class KeyUtils {
     }
 
     public static Key readSigningKey(String location, String kid) throws IOException {
-        return readSigningKey(location, kid, SignatureAlgorithm.ES256);
+        return readSigningKey(location, kid, SignatureAlgorithm.RS256);
     }
 
     public static Key readSigningKey(String location, String kid, SignatureAlgorithm alg) throws IOException {
