@@ -9,7 +9,7 @@ public enum KeyEncryptionAlgorithm {
     RSA_OAEP("RSA-OAEP"),
     RSA_OAEP_256("RSA-OAEP-256"),
     ECDH_ES("ECDH-ES"),
-    ECDH_ES_A28KW("ECDH-ES+128KW"),
+    ECDH_ES_A128KW("ECDH-ES+128KW"),
     ECDH_ES_A192KW("ECDH-ES+192KW"),
     ECDH_ES_A256KW("ECDH-ES+A256KW"),
     A128KW("A128KW"),
@@ -32,4 +32,5 @@ public enum KeyEncryptionAlgorithm {
     public static KeyEncryptionAlgorithm fromAlgorithm(String algorithmName) {
         return KeyEncryptionAlgorithm.valueOf(algorithmName.replaceAll("-", "_").replaceAll("\\+", "_"));
     }
+
 }
