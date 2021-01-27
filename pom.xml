@@ -37,7 +37,7 @@
     <version.jakarta.servlet.api>4.0.4</version.jakarta.servlet.api>
     <version.jakarta.security.enterprise.api>1.0.2</version.jakarta.security.enterprise.api>
     <version.eclipse.microprofile.jwt>1.1.1</version.eclipse.microprofile.jwt>
-    <version.io.smallrye.config>1.10.0</version.io.smallrye.config>
+    <version.io.smallrye.config>1.10.1</version.io.smallrye.config>
     <version.microprofile.config>1.4</version.microprofile.config>
     <version.jose4j>0.7.5</version.jose4j>
     <version.resteasy>3.14.0.Final</version.resteasy>
