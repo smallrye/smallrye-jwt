@@ -2,8 +2,11 @@ package io.smallrye.jwt.build.impl;
 
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
@@ -30,6 +33,23 @@ import io.smallrye.jwt.build.JwtSignatureException;
  *
  */
 class JwtClaimsBuilderImpl extends JwtSignatureImpl implements JwtClaimsBuilder, JwtSignatureBuilder {
+
+    private static final StringVerifier STRING_VERIFIER = new StringVerifier();
+    private static final InstantVerifier INSTANT_VERIFIER = new InstantVerifier();
+    private static final StringCollectionVerifier STRING_COLLECTION_VERIFIER = new StringCollectionVerifier();
+    private static final Map<String, ClaimTypeVerifier> REGISTERED_CLAIM_VERIFIERS;
+    static {
+        REGISTERED_CLAIM_VERIFIERS = new HashMap<>();
+        REGISTERED_CLAIM_VERIFIERS.put(Claims.sub.name(), STRING_VERIFIER);
+        REGISTERED_CLAIM_VERIFIERS.put(Claims.iss.name(), STRING_VERIFIER);
+        REGISTERED_CLAIM_VERIFIERS.put(Claims.jti.name(), STRING_VERIFIER);
+        REGISTERED_CLAIM_VERIFIERS.put(Claims.upn.name(), STRING_VERIFIER);
+        REGISTERED_CLAIM_VERIFIERS.put(Claims.preferred_username.name(), STRING_VERIFIER);
+        REGISTERED_CLAIM_VERIFIERS.put(Claims.iat.name(), INSTANT_VERIFIER);
+        REGISTERED_CLAIM_VERIFIERS.put(Claims.exp.name(), INSTANT_VERIFIER);
+        REGISTERED_CLAIM_VERIFIERS.put(Claims.aud.name(), STRING_COLLECTION_VERIFIER);
+        REGISTERED_CLAIM_VERIFIERS.put(Claims.groups.name(), STRING_COLLECTION_VERIFIER);
+    }
 
     JwtClaimsBuilderImpl() {
 
@@ -58,7 +78,7 @@ class JwtClaimsBuilderImpl extends JwtSignatureImpl implements JwtClaimsBuilder,
      */
     @Override
     public JwtClaimsBuilder claim(String name, Object value) {
-        claims.setClaim(name, prepareValue(value));
+        claims.setClaim(name, verifyValueType(name, prepareValue(value)));
         return this;
     }
 
@@ -281,6 +301,10 @@ class JwtClaimsBuilderImpl extends JwtSignatureImpl implements JwtClaimsBuilder,
             return value;
         }
 
+        if (value instanceof Instant) {
+            return ((Instant) value).getEpochSecond();
+        }
+
         return value.toString();
     }
 
@@ -315,4 +339,47 @@ class JwtClaimsBuilderImpl extends JwtSignatureImpl implements JwtClaimsBuilder,
             throw ImplMessages.msg.unsupportedSignatureAlgorithm(value, ex);
         }
     }
+
+    private static Object verifyValueType(String name, Object value) {
+        ClaimTypeVerifier verifier = REGISTERED_CLAIM_VERIFIERS.get(name);
+        return verifier == null ? value : verifier.verify(name, value);
+    }
+
+    static interface ClaimTypeVerifier {
+        // Verify the claim value type
+        Object verify(String name, Object value);
+    }
+
+    static class StringVerifier implements ClaimTypeVerifier {
+        public Object verify(String name, Object value) {
+            if (value instanceof String) {
+                return value;
+            }
+            throw new IllegalArgumentException(String.format("'%s' claim value must be String", name));
+        }
+    }
+
+    static class InstantVerifier implements ClaimTypeVerifier {
+        public Object verify(String name, Object value) {
+            if (value instanceof Long) {
+                return value;
+            }
+            throw new IllegalArgumentException(String.format("'%s' claim value must be long", name));
+        }
+    }
+
+    static class StringCollectionVerifier implements ClaimTypeVerifier {
+        public Object verify(String name, Object value) {
+            if (value instanceof String) {
+                return value;
+            } else if (value instanceof Collection) {
+                Iterator<?> it = ((Collection<?>) value).iterator();
+                if (it.hasNext() && it.next() instanceof String) {
+                    return value;
+                }
+            }
+            throw new IllegalArgumentException(String.format("'%s' claim value must be String or Collection of Strings", name));
+        }
+    }
+
 }
