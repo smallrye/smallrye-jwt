@@ -94,6 +94,6 @@ interface ImplMessages {
     JwtException failureToReadJsonContentFromJsonResName(String jsonResName, String exceptionMessage,
             @Cause Throwable throwable);
 
-    @Message(id = 5027, value = "")
+    @Message(id = 5027, value = "Failure to encrypt the token")
     JwtEncryptionException encryptionException(@Cause Throwable throwable);
 }
