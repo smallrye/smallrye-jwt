@@ -105,6 +105,27 @@ public class KeyLocationResolverTest {
     }
 
     @Test
+    public void testLoadRsaKeyFromHttpJwks() throws Exception {
+        JWTAuthContextInfo contextInfo = new JWTAuthContextInfo("http://github.com/my_key.jwks", "issuer");
+        contextInfo.setJwksRefreshInterval(10);
+
+        KeyLocationResolver keyLocationResolver = new KeyLocationResolver(contextInfo) {
+            protected HttpsJwks initializeHttpsJwks(String loc) {
+                return mockedHttpsJwks;
+            }
+        };
+        RsaJsonWebKey jwk = new RsaJsonWebKey(rsaKey);
+        jwk.setKeyId("1");
+        when(mockedHttpsJwks.getJsonWebKeys()).thenReturn(Collections.singletonList(jwk));
+        keyLocationResolver = Mockito.spy(keyLocationResolver);
+        when(signature.getHeaders()).thenReturn(headers);
+        when(headers.getStringHeaderValue(JsonWebKey.KEY_ID_PARAMETER)).thenReturn("1");
+
+        assertEquals(rsaKey, keyLocationResolver.resolveKey(signature, emptyList()));
+        assertNull(keyLocationResolver.key);
+    }
+
+    @Test
     public void testLoadSecretKeyFromHttpsJwks() throws Exception {
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo("https://github.com/my_key.jwks", "issuer");
         contextInfo.setJwksRefreshInterval(10);
@@ -128,6 +149,37 @@ public class KeyLocationResolverTest {
     @Test
     public void testLoadHttpsJwksNonMathchingKidAndRefresh() throws Exception {
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo("https://github.com/my_key.jwks", "issuer");
+        contextInfo.setJwksRefreshInterval(10);
+
+        KeyLocationResolver keyLocationResolver = new KeyLocationResolver(contextInfo) {
+            protected HttpsJwks initializeHttpsJwks(String loc) {
+                return mockedHttpsJwks;
+            }
+        };
+        // token 'kid' is '1'
+        when(signature.getHeaders()).thenReturn(headers);
+        when(headers.getStringHeaderValue(JsonWebKey.KEY_ID_PARAMETER)).thenReturn("1");
+
+        final RsaJsonWebKey jwk = new RsaJsonWebKey(rsaKey);
+
+        // Return JWK Set with a non-matching JWK with 'kid' set to '2' 
+        jwk.setKeyId("2");
+        when(mockedHttpsJwks.getJsonWebKeys()).thenReturn(Collections.singletonList(jwk));
+
+        // Refresh JWK Set and get a matching JWK with 'kid' set to '1'
+        doAnswer((i) -> {
+            jwk.setKeyId("1");
+            return null;
+        }).when(mockedHttpsJwks).refresh();
+
+        keyLocationResolver = Mockito.spy(keyLocationResolver);
+        assertEquals(rsaKey, keyLocationResolver.resolveKey(signature, emptyList()));
+        assertNull(keyLocationResolver.key);
+    }
+
+    @Test
+    public void testLoadHttpJwksNonMathchingKidAndRefresh() throws Exception {
+        JWTAuthContextInfo contextInfo = new JWTAuthContextInfo("http://github.com/my_key.jwks", "issuer");
         contextInfo.setJwksRefreshInterval(10);
 
         KeyLocationResolver keyLocationResolver = new KeyLocationResolver(contextInfo) {
