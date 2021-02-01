@@ -1,5 +1,6 @@
 package io.smallrye.jwt.build;
 
+import java.time.Instant;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
@@ -7,6 +8,7 @@ import java.util.Set;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
 
+import org.eclipse.microprofile.jwt.Claims;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
 import io.smallrye.jwt.build.spi.JwtProvider;
@@ -100,9 +102,46 @@ public final class Jwt {
     /**
      * Creates a new instance of {@link JwtClaimsBuilder} with a specified claim.
      *
+     * Simple claim value are converted to {@link String} unless it is an instance of {@link Boolean}, {@link Number} or
+     * {@link Instant}. {@link Instant} values have their number of seconds from the epoch converted to long.
+     *
+     * Array claims can be set as {@link Collection} or {@link JsonArray}, complex claims can be set as {@link Map} or
+     * {@link JsonObject}. The members of the array claims can be complex claims.
+     *
+     * Types of the claims directly supported by this builder are enforced.
+     * The 'iss' (issuer), 'sub' (subject), 'upn', 'preferred_username' and 'jti' (token identifier) claims must be of
+     * {@link String} type.
+     * The 'aud' (audience) and 'groups' claims must be either of {@link String} or {@link Collection} of {@link String} type.
+     * The 'iat' (issued at) and 'exp' (expires at) claims must be either of long or {@link Instant} type.
+     *
      * @param name the claim name
      * @param value the claim value
-     * @return {@link JwtClaimsBuilder}
+     * @throws IllegalArgumentException - if the type of the claim directly supported by {@link JwtClaimsBuilder} is wrong
+     * @return JwtClaimsBuilder
+     */
+    public static JwtClaimsBuilder claim(Claims name, Object value) {
+        return claims().claim(name, value);
+    }
+
+    /**
+     * Creates a new instance of {@link JwtClaimsBuilder} with a specified claim.
+     *
+     * Simple claim value are converted to {@link String} unless it is an instance of {@link Boolean}, {@link Number} or
+     * {@link Instant}. {@link Instant} values have their number of seconds from the epoch converted to long.
+     *
+     * Array claims can be set as {@link Collection} or {@link JsonArray}, complex claims can be set as {@link Map} or
+     * {@link JsonObject}. The members of the array claims can be complex claims.
+     *
+     * Types of the claims directly supported by this builder are enforced.
+     * The 'iss' (issuer), 'sub' (subject), 'upn', 'preferred_username' and 'jti' (token identifier) claims must be of
+     * {@link String} type.
+     * The 'aud' (audience) and 'groups' claims must be either of {@link String} or {@link Collection} of {@link String} type.
+     * The 'iat' (issued at) and 'exp' (expires at) claims must be either of long or {@link Instant} type.
+     *
+     * @param name the claim name
+     * @param value the claim value
+     * @throws IllegalArgumentException - if the type of the claim directly supported by {@link JwtClaimsBuilder} is wrong
+     * @return JwtClaimsBuilder
      */
     public static JwtClaimsBuilder claim(String name, Object value) {
         return claims().claim(name, value);
