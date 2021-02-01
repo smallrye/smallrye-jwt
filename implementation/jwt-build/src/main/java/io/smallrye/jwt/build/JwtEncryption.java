@@ -57,7 +57,10 @@ public interface JwtEncryption {
 
     /**
      * Encrypt the claims or inner JWT with a key loaded from the location set with the
-     * "smallrye.jwt.encrypt.key-location" property.
+     * "smallrye.jwt.encrypt.key-location" or "smallrye.jwt.encrypt.key.location" properties.
+     * 
+     * Note: "smallrye.jwt.encrypt.key-location" property is deprecated and will be removed in the next major release.
+     * 
      * 'RSA-OAEP-256', 'ECDH-ES+A256KW' and 'A256KW' key encryption algorithms will be used by default
      * when public RSA, EC or secret keys are used unless a different one has been set with {@code JwtEncryptionBuilder}.
      * 'A256GCM' content encryption algorithms will be used unless a different one have been set with

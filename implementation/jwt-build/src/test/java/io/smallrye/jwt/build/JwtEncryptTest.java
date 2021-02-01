@@ -183,6 +183,7 @@ public class JwtEncryptTest {
     public void testEncryptWithConfiguredEcKeyAndA128CBCHS256() throws Exception {
         JwtBuildConfigSource configSource = JwtSignTest.getConfigSource();
         configSource.setEncryptionKeyLocation("/ecPublicKey.pem");
+        configSource.enableDeprecatedEncryptionKeyProperty(true);
         String jweCompact = null;
         try {
             jweCompact = Jwt.claims()
@@ -194,6 +195,7 @@ public class JwtEncryptTest {
                     .encrypt();
         } finally {
             configSource.setEncryptionKeyLocation("/publicKey.pem");
+            configSource.enableDeprecatedEncryptionKeyProperty(false);
         }
 
         checkJweHeaders(jweCompact, "ECDH-ES+A256KW", "A128CBC-HS256", 4);

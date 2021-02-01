@@ -6,11 +6,9 @@ import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.RSAPrivateKey;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.NoSuchElementException;
 
 import javax.crypto.SecretKey;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jose4j.jwa.AlgorithmConstraints;
 import org.jose4j.jws.AlgorithmIdentifiers;
 import org.jose4j.jws.JsonWebSignature;
@@ -26,6 +24,9 @@ import io.smallrye.jwt.util.KeyUtils;
  * Default JWT Signature implementation
  */
 class JwtSignatureImpl implements JwtSignature {
+    private static final String KEY_LOCATION_PROPERTY = "smallrye.jwt.sign.key.location";
+    private static final String DEPRECATED_KEY_LOCATION_PROPERTY = "smallrye.jwt.sign.key-location";
+
     JwtClaims claims = new JwtClaims();
     Map<String, Object> headers = new HashMap<>();
     Long tokenLifespan;
@@ -71,7 +72,7 @@ class JwtSignatureImpl implements JwtSignature {
         try {
             Key key = null;
             if (!"none".equals(headers.get("alg"))) {
-                key = getSigningKeyFromKeyLocation(getKeyLocationFromConfig());
+                key = getSigningKeyFromKeyLocation(getKeyLocationFromConfig(true));
             }
             return signInternal(key);
         } catch (JwtSignatureException ex) {
@@ -119,7 +120,7 @@ class JwtSignatureImpl implements JwtSignature {
     @Override
     public JwtEncryptionBuilder innerSign() throws JwtSignatureException {
 
-        if (!signingKeyConfigured()) {
+        if (getKeyLocationFromConfig(false) == null) {
             if (headers.containsKey("alg") && !"none".equals(headers.get("alg"))) {
                 throw ImplMessages.msg.signKeyPropertyRequired(headers.get("alg").toString());
             }
@@ -134,15 +135,6 @@ class JwtSignatureImpl implements JwtSignature {
     @Override
     public JwtEncryptionBuilder innerSignWithSecret(String secret) throws JwtSignatureException {
         return innerSign(KeyUtils.createSecretKeyFromSecret(secret));
-    }
-
-    private static boolean signingKeyConfigured() {
-        try {
-            ConfigProvider.getConfig().getValue("smallrye.jwt.sign.key-location", String.class);
-            return true;
-        } catch (NoSuchElementException ex) {
-            return false;
-        }
     }
 
     private String signInternal(Key signingKey) {
@@ -195,12 +187,21 @@ class JwtSignatureImpl implements JwtSignature {
         throw ImplMessages.msg.unsupportedSignatureAlgorithm(signingKey.getAlgorithm());
     }
 
-    static String getKeyLocationFromConfig() {
-        String keyLocation = JwtBuildUtils.getConfigProperty("smallrye.jwt.sign.key-location", String.class);
-        if (keyLocation == null) {
-            throw ImplMessages.msg.signKeyLocationNotConfigured();
+    static String getKeyLocationFromConfig(boolean throwException) {
+        String keyLocation = JwtBuildUtils.getConfigProperty(KEY_LOCATION_PROPERTY, String.class);
+        if (keyLocation != null) {
+            return keyLocation;
         }
-        return keyLocation;
+        keyLocation = JwtBuildUtils.getConfigProperty(DEPRECATED_KEY_LOCATION_PROPERTY, String.class);
+        if (keyLocation != null) {
+            ImplLogging.log.deprecatedProperty(DEPRECATED_KEY_LOCATION_PROPERTY);
+            return keyLocation;
+        }
+        if (throwException) {
+            throw ImplMessages.msg.signKeyLocationNotConfigured();
+        } else {
+            return null;
+        }
     }
 
     Key getSigningKeyFromKeyLocation(String keyLocation) {

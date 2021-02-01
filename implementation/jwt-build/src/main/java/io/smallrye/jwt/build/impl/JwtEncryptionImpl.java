@@ -21,6 +21,9 @@ import io.smallrye.jwt.util.KeyUtils;
  * Default JWT Encryption implementation
  */
 class JwtEncryptionImpl implements JwtEncryptionBuilder {
+    private static final String KEY_LOCATION_PROPERTY = "smallrye.jwt.encrypt.key.location";
+    private static final String DEPRECATED_KEY_LOCATION_PROPERTY = "smallrye.jwt.encrypt.key-location";
+
     boolean innerSigned;
     String claims;
     Map<String, Object> headers = new HashMap<>();
@@ -178,11 +181,16 @@ class JwtEncryptionImpl implements JwtEncryptionBuilder {
     }
 
     private static String getKeyLocationFromConfig() {
-        String keyLocation = JwtBuildUtils.getConfigProperty("smallrye.jwt.encrypt.key-location", String.class);
-        if (keyLocation == null) {
-            throw ImplMessages.msg.encryptionKeyLocationNotConfigured();
+        String keyLocation = JwtBuildUtils.getConfigProperty(KEY_LOCATION_PROPERTY, String.class);
+        if (keyLocation != null) {
+            return keyLocation;
         }
-        return keyLocation;
+        keyLocation = JwtBuildUtils.getConfigProperty(DEPRECATED_KEY_LOCATION_PROPERTY, String.class);
+        if (keyLocation != null) {
+            ImplLogging.log.deprecatedProperty(DEPRECATED_KEY_LOCATION_PROPERTY);
+            return keyLocation;
+        }
+        throw ImplMessages.msg.encryptionKeyLocationNotConfigured();
     }
 
     Key getEncryptionKeyFromKeyLocation(String keyLocation) {
