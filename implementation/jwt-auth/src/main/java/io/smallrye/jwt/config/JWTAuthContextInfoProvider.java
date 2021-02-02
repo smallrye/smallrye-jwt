@@ -295,7 +295,7 @@ public class JWTAuthContextInfoProvider {
 
     /**
      * JWK cache refresh interval in minutes. It will be ignored unless the 'mp.jwt.verify.publickey.location' property points
-     * to the HTTPS URL based JWK set.
+     * to the HTTP or HTTPS URL based JWK set.
      * Note this property will only be used if no HTTP Cache-Control response header with a positive 'max-age' parameter value
      * is available.
      */
@@ -307,7 +307,7 @@ public class JWTAuthContextInfoProvider {
      * Forced JWK cache refresh interval in minutes which is used to restrict the frequency of the forced refresh attempts which
      * may happen when the token verification fails due to the cache having no JWK key with a 'kid' property matching the
      * current token's 'kid' header.
-     * It will be ignored unless the 'mp.jwt.verify.publickey.location' points to the HTTPS URL based JWK set.
+     * It will be ignored unless the 'mp.jwt.verify.publickey.location' points to the HTTP or HTTPS URL based JWK set.
      */
     @Inject
     @ConfigProperty(name = "smallrye.jwt.jwks.forced-refresh-interval", defaultValue = "30")

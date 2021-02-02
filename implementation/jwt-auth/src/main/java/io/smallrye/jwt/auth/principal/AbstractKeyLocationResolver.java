@@ -39,6 +39,7 @@ import io.smallrye.jwt.util.ResourceUtils.UrlStreamResolver;
  * This implements the MP-JWT 1.1 mp.jwt.verify.publickey.location config property resolution logic
  */
 public class AbstractKeyLocationResolver {
+    private static final String HTTP_SCHEME = "http:";
     private static final String HTTPS_SCHEME = "https:";
 
     protected Key key;
@@ -92,7 +93,8 @@ public class AbstractKeyLocationResolver {
     }
 
     protected boolean isHttpsJwksInitialized(String keyLocation) throws IOException {
-        if (mayBeFormat(KeyFormat.JWK) && keyLocation != null && keyLocation.startsWith(HTTPS_SCHEME)) {
+        if (mayBeFormat(KeyFormat.JWK) && keyLocation != null
+                && (keyLocation.startsWith(HTTPS_SCHEME) || keyLocation.startsWith(HTTP_SCHEME))) {
             httpsJwks = initializeHttpsJwks(keyLocation);
             try {
                 httpsJwks.refresh();
