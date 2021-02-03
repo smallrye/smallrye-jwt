@@ -1,5 +1,5 @@
 name: SmallRye JWT
 release:
-  current-version: 3.0.0-RC2
+  current-version: 3.0.0-RC4
   next-version: 3.0.0-SNAPSHOT
 
