@@ -10,7 +10,6 @@ import java.util.Map;
 import javax.crypto.SecretKey;
 
 import org.jose4j.jwa.AlgorithmConstraints;
-import org.jose4j.jws.AlgorithmIdentifiers;
 import org.jose4j.jws.JsonWebSignature;
 import org.jose4j.jwt.JwtClaims;
 
@@ -70,10 +69,7 @@ class JwtSignatureImpl implements JwtSignature {
      */
     public String sign() throws JwtSignatureException {
         try {
-            Key key = null;
-            if (!"none".equals(headers.get("alg"))) {
-                key = getSigningKeyFromKeyLocation(getKeyLocationFromConfig(true));
-            }
+            Key key = getSigningKeyFromKeyLocation(getKeyLocationFromConfig());
             return signInternal(key);
         } catch (JwtSignatureException ex) {
             throw ex;
@@ -120,15 +116,6 @@ class JwtSignatureImpl implements JwtSignature {
     @Override
     public JwtEncryptionBuilder innerSign() throws JwtSignatureException {
 
-        if (getKeyLocationFromConfig(false) == null) {
-            if (headers.containsKey("alg") && !"none".equals(headers.get("alg"))) {
-                throw ImplMessages.msg.signKeyPropertyRequired(headers.get("alg").toString());
-            }
-            if (headers.containsKey("kid")) {
-                throw ImplMessages.msg.signAlgorithmRequired();
-            }
-            headers.put("alg", AlgorithmIdentifiers.NONE);
-        }
         return new JwtEncryptionImpl(sign(), true);
     }
 
@@ -187,7 +174,7 @@ class JwtSignatureImpl implements JwtSignature {
         throw ImplMessages.msg.unsupportedSignatureAlgorithm(signingKey.getAlgorithm());
     }
 
-    static String getKeyLocationFromConfig(boolean throwException) {
+    static String getKeyLocationFromConfig() {
         String keyLocation = JwtBuildUtils.getConfigProperty(KEY_LOCATION_PROPERTY, String.class);
         if (keyLocation != null) {
             return keyLocation;
@@ -197,11 +184,7 @@ class JwtSignatureImpl implements JwtSignature {
             ImplLogging.log.deprecatedProperty(DEPRECATED_KEY_LOCATION_PROPERTY);
             return keyLocation;
         }
-        if (throwException) {
-            throw ImplMessages.msg.signKeyLocationNotConfigured();
-        } else {
-            return null;
-        }
+        throw ImplMessages.msg.signKeyLocationNotConfigured();
     }
 
     Key getSigningKeyFromKeyLocation(String keyLocation) {
