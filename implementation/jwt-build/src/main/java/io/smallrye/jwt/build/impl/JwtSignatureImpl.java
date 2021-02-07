@@ -24,7 +24,6 @@ import io.smallrye.jwt.util.KeyUtils;
  */
 class JwtSignatureImpl implements JwtSignature {
     private static final String KEY_LOCATION_PROPERTY = "smallrye.jwt.sign.key.location";
-    private static final String DEPRECATED_KEY_LOCATION_PROPERTY = "smallrye.jwt.sign.key-location";
 
     JwtClaims claims = new JwtClaims();
     Map<String, Object> headers = new HashMap<>();
@@ -177,11 +176,6 @@ class JwtSignatureImpl implements JwtSignature {
     static String getKeyLocationFromConfig() {
         String keyLocation = JwtBuildUtils.getConfigProperty(KEY_LOCATION_PROPERTY, String.class);
         if (keyLocation != null) {
-            return keyLocation;
-        }
-        keyLocation = JwtBuildUtils.getConfigProperty(DEPRECATED_KEY_LOCATION_PROPERTY, String.class);
-        if (keyLocation != null) {
-            ImplLogging.log.deprecatedProperty(DEPRECATED_KEY_LOCATION_PROPERTY);
             return keyLocation;
         }
         throw ImplMessages.msg.signKeyLocationNotConfigured();
