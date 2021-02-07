@@ -10,9 +10,7 @@ import org.eclipse.microprofile.config.spi.ConfigSource;
 
 public class JwtBuildConfigSource implements ConfigSource {
     private static final String SIGN_KEY_LOCATION_PROPERTY = "smallrye.jwt.sign.key.location";
-    private static final String DEPRECATED_SIGN_KEY_LOCATION_PROPERTY = "smallrye.jwt.sign.key-location";
     private static final String ENC_KEY_LOCATION_PROPERTY = "smallrye.jwt.encrypt.key.location";
-    private static final String DEPRECATED_ENC_KEY_LOCATION_PROPERTY = "smallrye.jwt.encrypt.key-location";
 
     boolean signingKeyAvailable = true;
     boolean lifespanPropertyRequired;
@@ -62,14 +60,6 @@ public class JwtBuildConfigSource implements ConfigSource {
 
     public void setSigningKeyLocation(String location) {
         this.signingKeyLocation = location;
-    }
-
-    public void enableDeprecatedSigningKeyProperty(boolean enable) {
-        this.signingKeyLocProperty = enable ? DEPRECATED_SIGN_KEY_LOCATION_PROPERTY : SIGN_KEY_LOCATION_PROPERTY;
-    }
-
-    public void enableDeprecatedEncryptionKeyProperty(boolean enable) {
-        this.encryptionKeyLocProperty = enable ? DEPRECATED_ENC_KEY_LOCATION_PROPERTY : ENC_KEY_LOCATION_PROPERTY;
     }
 
     void setLifespanPropertyRequired(boolean lifespanPropertyRequired) {

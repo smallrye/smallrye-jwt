@@ -530,7 +530,6 @@ public class JwtSignTest {
     public void testSignClaimsEcKey() throws Exception {
         JwtBuildConfigSource configSource = getConfigSource();
         configSource.setSigningKeyLocation("/ecPrivateKey.pem");
-        configSource.enableDeprecatedSigningKeyProperty(true);
         String jwt = null;
         try {
             jwt = Jwt.claims()
@@ -541,7 +540,6 @@ public class JwtSignTest {
                     .sign();
         } finally {
             configSource.setSigningKeyLocation("/privateKey.pem");
-            configSource.enableDeprecatedSigningKeyProperty(false);
         }
 
         PublicKey ecKey = getEcPublicKey();
