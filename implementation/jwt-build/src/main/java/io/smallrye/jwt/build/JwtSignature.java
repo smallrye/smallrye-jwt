@@ -111,10 +111,6 @@ public interface JwtSignature {
      * or "smallrye.jwt.sign.key-location" properties and encrypt the inner JWT by moving to {@link JwtEncryptionBuilder}.
      * Note: "smallrye.jwt.sign.key-location" property is deprecated and will be removed in the next major release.
      *
-     * If no "smallrye.jwt.sign.key.location" or "smallrye.jwt.sign.key-location" properties and 'alg' algorithm header
-     * have been set then an insecure inner JWT with a "none" algorithm has to be created before being encrypted.
-     * Note: support for the "none" algorithm has been deprecated and will be removed in the next major release.
-     *
      * A key of size 2048 bits or larger MUST be used with the 'RS256' algorithm.
      *
      * @return JwtEncryption
