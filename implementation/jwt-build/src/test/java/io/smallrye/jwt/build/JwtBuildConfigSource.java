@@ -1,15 +1,16 @@
 package io.smallrye.jwt.build;
 
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import org.eclipse.microprofile.config.spi.ConfigSource;
 
 public class JwtBuildConfigSource implements ConfigSource {
     private static final String SIGN_KEY_LOCATION_PROPERTY = "smallrye.jwt.sign.key.location";
-    private static final String DEPRECATED_SIGN_KEY_LOCATION_PROPERTY = "smallrye.jwt.sign.key-location";
     private static final String ENC_KEY_LOCATION_PROPERTY = "smallrye.jwt.encrypt.key.location";
-    private static final String DEPRECATED_ENC_KEY_LOCATION_PROPERTY = "smallrye.jwt.encrypt.key-location";
 
     boolean signingKeyAvailable = true;
     boolean lifespanPropertyRequired;
@@ -61,14 +62,6 @@ public class JwtBuildConfigSource implements ConfigSource {
         this.signingKeyLocation = location;
     }
 
-    public void enableDeprecatedSigningKeyProperty(boolean enable) {
-        this.signingKeyLocProperty = enable ? DEPRECATED_SIGN_KEY_LOCATION_PROPERTY : SIGN_KEY_LOCATION_PROPERTY;
-    }
-
-    public void enableDeprecatedEncryptionKeyProperty(boolean enable) {
-        this.encryptionKeyLocProperty = enable ? DEPRECATED_ENC_KEY_LOCATION_PROPERTY : ENC_KEY_LOCATION_PROPERTY;
-    }
-
     void setLifespanPropertyRequired(boolean lifespanPropertyRequired) {
         this.lifespanPropertyRequired = lifespanPropertyRequired;
     }
@@ -79,5 +72,14 @@ public class JwtBuildConfigSource implements ConfigSource {
 
     public void setAudiencePropertyRequired(boolean audiencePropertyRequired) {
         this.audiencePropertyRequired = audiencePropertyRequired;
+    }
+
+    @Override
+    public Set<String> getPropertyNames() {
+        return new HashSet<>(Arrays.asList("smallrye.jwt.sign.key-location",
+                "smallrye.jwt.encrypt.key-location",
+                "smallrye.jwt.new-token.lifespan",
+                "smallrye.jwt.new-token.issuer",
+                "smallrye.jwt.new-token.audience"));
     }
 }

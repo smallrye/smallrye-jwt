@@ -17,10 +17,8 @@
 package io.smallrye.jwt.auth.cdi;
 
 import javax.enterprise.event.Observes;
-import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.spi.BeanManager;
 import javax.enterprise.inject.spi.BeforeBeanDiscovery;
-import javax.enterprise.inject.spi.CDI;
 import javax.enterprise.inject.spi.Extension;
 
 import io.smallrye.jwt.auth.jaxrs.JWTAuthenticationFilter;
@@ -43,26 +41,11 @@ import io.smallrye.jwt.config.JWTAuthContextInfoProvider;
  */
 public class SmallRyeJWTAuthCDIExtension implements Extension {
 
-    public static boolean isHttpAuthMechanismEnabled() {
-        boolean enabled = false;
-
-        if (isEESecurityAvailable()) {
-            Instance<JWTHttpAuthenticationMechanism> instance;
-
-            try {
-                instance = CDI.current().select(JWTHttpAuthenticationMechanism.class);
-                enabled = instance.isResolvable();
-            } catch (@SuppressWarnings("unused") Exception e) {
-                //Ignore exceptions, consider HTTP authentication mechanism to be disabled
-            }
-        }
-
-        return enabled;
-    }
+    private static final String HTTP_AUTH_MECHANISM_CLASS_NAME = "javax.security.enterprise.authentication.mechanism.http.HttpAuthenticationMechanism";
 
     private static boolean isEESecurityAvailable() {
         try {
-            Class.forName("javax.security.enterprise.authentication.mechanism.http.HttpAuthenticationMechanism");
+            Class.forName(HTTP_AUTH_MECHANISM_CLASS_NAME);
             return true;
         } catch (@SuppressWarnings("unused") ClassNotFoundException e) {
             return false;
@@ -83,7 +66,6 @@ public class SmallRyeJWTAuthCDIExtension implements Extension {
         addAnnotatedType(event, beanManager, JWTCallerPrincipalFactoryProducer.class);
         addAnnotatedType(event, beanManager, JsonValueProducer.class);
         addAnnotatedType(event, beanManager, JWTAuthContextInfoProvider.class);
-        addAnnotatedType(event, beanManager, JWTAuthenticationFilter.class);
         addAnnotatedType(event, beanManager, PrincipalProducer.class);
         addAnnotatedType(event, beanManager, RawClaimTypeProducer.class);
         if (registerOptionalClaimTypeProducer()) {
@@ -95,6 +77,7 @@ public class SmallRyeJWTAuthCDIExtension implements Extension {
             CDILogging.log.jwtHttpAuthenticationMechanismRegistered();
         } else {
             // EE Security is not available, register the JAX-RS authentication filter.
+            addAnnotatedType(event, beanManager, JWTAuthenticationFilter.class);
             CDILogging.log.jwtHttpAuthenticationMechanismNotRegistered();
         }
     }

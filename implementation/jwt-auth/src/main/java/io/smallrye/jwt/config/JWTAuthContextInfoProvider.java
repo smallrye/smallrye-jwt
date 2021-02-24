@@ -17,7 +17,6 @@
 package io.smallrye.jwt.config;
 
 import java.io.IOException;
-import java.security.interfaces.RSAPublicKey;
 import java.util.Optional;
 import java.util.Set;
 
@@ -27,13 +26,13 @@ import javax.enterprise.inject.Produces;
 import javax.inject.Inject;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.eclipse.microprofile.jwt.config.Names;
 
 import io.smallrye.jwt.KeyFormat;
 import io.smallrye.jwt.SmallryeJwtUtils;
 import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
-import io.smallrye.jwt.util.KeyUtils;
 import io.smallrye.jwt.util.ResourceUtils;
 
 /**
@@ -98,30 +97,34 @@ public class JWTAuthContextInfoProvider {
             boolean verifyCertificateThumbprint,
             String issuer) {
         JWTAuthContextInfoProvider provider = new JWTAuthContextInfoProvider();
-        provider.mpJwtPublicKey = Optional.of(publicKey);
-        provider.mpJwtLocation = !secretKey ? Optional.of(keyLocation) : Optional.empty();
-        provider.verifyKeyLocation = secretKey ? Optional.of(keyLocation) : Optional.empty();
+        provider.mpJwtPublicKey = publicKey;
+        provider.mpJwtPublicKeyAlgorithm = Optional.of(SignatureAlgorithm.RS256);
+        provider.mpJwtLocation = !secretKey ? keyLocation : NONE;
+        provider.verifyKeyLocation = secretKey ? keyLocation : NONE;
         provider.verifyCertificateThumbprint = verifyCertificateThumbprint;
         provider.mpJwtIssuer = issuer;
-        provider.decryptionKeyLocation = Optional.empty();
-        provider.mpJwtRequireIss = Optional.of(Boolean.TRUE);
-        provider.tokenHeader = AUTHORIZATION_HEADER;
-        provider.tokenCookie = Optional.empty();
+        provider.mpJwtDecryptKeyLocation = NONE;
+        provider.decryptionKeyLocation = NONE;
+        provider.mpJwtTokenHeader = Optional.of(AUTHORIZATION_HEADER);
+        provider.mpJwtTokenCookie = Optional.of(BEARER_SCHEME);
+        provider.tokenHeader = provider.mpJwtTokenHeader;
+        provider.tokenCookie = provider.mpJwtTokenCookie;
         provider.tokenKeyId = Optional.empty();
         provider.tokenDecryptionKeyId = Optional.empty();
-        provider.tokenSchemes = Optional.of(BEARER_SCHEME);
+        provider.tokenSchemes = BEARER_SCHEME;
         provider.requireNamedPrincipal = Optional.of(Boolean.TRUE);
         provider.defaultSubClaim = Optional.empty();
         provider.subPath = Optional.empty();
         provider.defaultGroupsClaim = Optional.empty();
         provider.groupsPath = Optional.empty();
-        provider.expGracePeriodSecs = Optional.of(60);
+        provider.expGracePeriodSecs = 60;
         provider.maxTimeToLiveSecs = Optional.empty();
-        provider.jwksRefreshInterval = Optional.empty();
+        provider.jwksRefreshInterval = 60;
         provider.forcedJwksRefreshInterval = 30;
         provider.signatureAlgorithm = Optional.of(SignatureAlgorithm.RS256);
         provider.keyEncryptionAlgorithm = KeyEncryptionAlgorithm.RSA_OAEP;
         provider.keyFormat = KeyFormat.ANY;
+        provider.mpJwtVerifyAudiences = Optional.empty();
         provider.expectedAudience = Optional.empty();
         provider.groupsSeparator = DEFAULT_GROUPS_SEPARATOR;
         provider.requiredClaims = Optional.empty();
@@ -135,7 +138,13 @@ public class JWTAuthContextInfoProvider {
      */
     @Inject
     @ConfigProperty(name = "mp.jwt.verify.publickey", defaultValue = NONE)
-    private Optional<String> mpJwtPublicKey;
+    private String mpJwtPublicKey;
+    /**
+     * @since 1.2
+     */
+    @Inject
+    @ConfigProperty(name = "mp.jwt.verify.publickey.algorithm")
+    private Optional<SignatureAlgorithm> mpJwtPublicKeyAlgorithm;
     /**
      * @since 1.1
      */
@@ -147,11 +156,13 @@ public class JWTAuthContextInfoProvider {
      */
     @Inject
     @ConfigProperty(name = "mp.jwt.verify.publickey.location", defaultValue = NONE)
-
+    private String mpJwtLocation;
     /**
-     * @since 1.1
+     * @since 1.2
      */
-    private Optional<String> mpJwtLocation;
+    @Inject
+    @ConfigProperty(name = "mp.jwt.decrypt.key.location", defaultValue = NONE)
+    private String mpJwtDecryptKeyLocation;
 
     /**
      * Verification key location.
@@ -161,11 +172,11 @@ public class JWTAuthContextInfoProvider {
      */
     @Inject
     @ConfigProperty(name = "smallrye.jwt.verify.key.location", defaultValue = NONE)
-    private Optional<String> verifyKeyLocation;
+    private String verifyKeyLocation;
 
     @Inject
-    @ConfigProperty(name = "smallrye.jwt.decrypt.key.location")
-    private Optional<String> decryptionKeyLocation;
+    @ConfigProperty(name = "smallrye.jwt.decrypt.key.location", defaultValue = NONE)
+    private String decryptionKeyLocation;
 
     /**
      * Supported JSON Web Algorithm encryption algorithm.
@@ -175,26 +186,45 @@ public class JWTAuthContextInfoProvider {
     private KeyEncryptionAlgorithm keyEncryptionAlgorithm;
 
     /**
-     * Not part of the 1.1 release, but talked about.
+     * @since 1.2
      */
-    @Deprecated
     @Inject
-    @ConfigProperty(name = "mp.jwt.verify.requireiss", defaultValue = "true")
-    private Optional<Boolean> mpJwtRequireIss;
+    @ConfigProperty(name = Names.TOKEN_HEADER)
+    private Optional<String> mpJwtTokenHeader;
+
+    /**
+     * @since 1.2
+     */
+    @Inject
+    @ConfigProperty(name = Names.TOKEN_COOKIE)
+    private Optional<String> mpJwtTokenCookie;
+
+    /**
+     * @since 1.2
+     */
+    @Inject
+    @ConfigProperty(name = "mp.jwt.verify.audiences")
+    Optional<Set<String>> mpJwtVerifyAudiences;
 
     // SmallRye JWT specific properties
     /**
      * HTTP header which is expected to contain a JWT token, default value is 'Authorization'
+     *
+     * @deprecated Use {@link JWTAuthContextInfoProvider#mpJwtTokenHeader}
      */
     @Inject
-    @ConfigProperty(name = "smallrye.jwt.token.header", defaultValue = AUTHORIZATION_HEADER)
-    private String tokenHeader;
+    @ConfigProperty(name = "smallrye.jwt.token.header")
+    @Deprecated
+    private Optional<String> tokenHeader;
 
     /**
      * Cookie name containing a JWT token. This property is ignored unless the "smallrye.jwt.token.header" is set to 'Cookie'
+     *
+     * @deprecated Use {@link JWTAuthContextInfoProvider#mpJwtTokenCookie}
      */
     @Inject
     @ConfigProperty(name = "smallrye.jwt.token.cookie")
+    @Deprecated
     private Optional<String> tokenCookie;
 
     /**
@@ -228,15 +258,15 @@ public class JWTAuthContextInfoProvider {
      */
     @Inject
     @ConfigProperty(name = "smallrye.jwt.token.schemes", defaultValue = BEARER_SCHEME)
-    private Optional<String> tokenSchemes;
+    private String tokenSchemes;
 
     /**
      * Check that the JWT has at least one of 'sub', 'upn' or 'preferred_user_name' set. If not the JWT validation will
      * fail.
      */
     @Inject
-    @ConfigProperty(name = "smallrye.jwt.require.named-principal", defaultValue = "false")
-    private Optional<Boolean> requireNamedPrincipal;
+    @ConfigProperty(name = "smallrye.jwt.require.named-principal", defaultValue = "true")
+    private Optional<Boolean> requireNamedPrincipal = Optional.of(Boolean.TRUE);
 
     /**
      * Default subject claim value. This property can be used to support the JWT tokens without a 'sub' claim.
@@ -283,7 +313,7 @@ public class JWTAuthContextInfoProvider {
 
     @Inject
     @ConfigProperty(name = "smallrye.jwt.expiration.grace", defaultValue = "60")
-    private Optional<Integer> expGracePeriodSecs;
+    private int expGracePeriodSecs;
 
     /**
      * The maximum number of seconds that a JWT may be issued for use. Effectively, the difference
@@ -301,7 +331,7 @@ public class JWTAuthContextInfoProvider {
      */
     @Inject
     @ConfigProperty(name = "smallrye.jwt.jwks.refresh-interval", defaultValue = "60")
-    private Optional<Integer> jwksRefreshInterval;
+    private int jwksRefreshInterval;
 
     /**
      * Forced JWK cache refresh interval in minutes which is used to restrict the frequency of the forced refresh attempts which
@@ -314,18 +344,13 @@ public class JWTAuthContextInfoProvider {
     private int forcedJwksRefreshInterval;
 
     /**
-     * List of supported JSON Web Algorithm RSA and Elliptic Curve signing algorithms, default is RS256.
-     */
-    @Inject
-    @ConfigProperty(name = "smallrye.jwt.whitelist.algorithms")
-    @Deprecated
-    private Optional<String> whitelistAlgorithms;
-
-    /**
      * Supported JSON Web Algorithm asymmetric signature algorithm (RS256 or ES256), default is RS256.
+     *
+     * @deprecated Use {@link JWTAuthContextInfoProvider#mpJwtPublicKeyAlgorithm}
      */
     @Inject
-    @ConfigProperty(name = "smallrye.jwt.verify.algorithm", defaultValue = "RS256")
+    @ConfigProperty(name = "smallrye.jwt.verify.algorithm")
+    @Deprecated
     private Optional<SignatureAlgorithm> signatureAlgorithm;
 
     /**
@@ -354,8 +379,8 @@ public class JWTAuthContextInfoProvider {
      * Public RSA keys with the 1024 bit length will be allowed if this property is set to 'true'.
      */
     @Inject
-    @ConfigProperty(name = "smallrye.jwt.verify.relax-key-validation", defaultValue = "false")
-    private boolean relaxVerificationKeyValidation;
+    @ConfigProperty(name = "smallrye.jwt.verify.relax-key-validation", defaultValue = "true")
+    private boolean relaxVerificationKeyValidation = true;
 
     /**
      * The audience value(s) that identify valid recipient(s) of a JWT. Audience validation
@@ -364,9 +389,11 @@ public class JWTAuthContextInfoProvider {
      * list per MP Config requirements for a collection property.
      *
      * @since 2.0.3
+     * @deprecated Use {@link JWTAuthContextInfoProvider#mpJwtVerifyAudiences}
      */
     @Inject
     @ConfigProperty(name = "smallrye.jwt.verify.aud")
+    @Deprecated
     Optional<Set<String>> expectedAudience;
 
     /**
@@ -377,32 +404,23 @@ public class JWTAuthContextInfoProvider {
     @ConfigProperty(name = "smallrye.jwt.required.claims")
     Optional<Set<String>> requiredClaims;
 
-    @SuppressWarnings("deprecation")
     @Produces
     Optional<JWTAuthContextInfo> getOptionalContextInfo() {
-        Optional<String> resolvedVerifyKeyLocation = verifyKeyLocation.isPresent() && !NONE.equals(verifyKeyLocation.get())
+        String resolvedVerifyKeyLocation = !NONE.equals(verifyKeyLocation)
                 ? verifyKeyLocation
                 : mpJwtLocation;
 
         // Log the config values
-        ConfigLogging.log.configValues(mpJwtPublicKey.orElse("missing"), mpJwtIssuer,
-                resolvedVerifyKeyLocation.orElse("missing"));
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo();
 
         if (mpJwtIssuer != null && !mpJwtIssuer.equals(NONE)) {
             contextInfo.setIssuedBy(mpJwtIssuer.trim());
-        } else {
-            // If there is no expected issuer configured, don't validate it; new in MP-JWT 1.1
-            contextInfo.setRequireIssuer(false);
         }
 
-        // Default is to require iss claim
-        contextInfo.setRequireIssuer(mpJwtRequireIss.orElse(true));
-
-        if (mpJwtPublicKey.isPresent() && !NONE.equals(mpJwtPublicKey.get())) {
-            contextInfo.setPublicKeyContent(mpJwtPublicKey.get());
-        } else if (resolvedVerifyKeyLocation.isPresent() && !NONE.equals(resolvedVerifyKeyLocation.get())) {
-            String resolvedVerifyKeyLocationTrimmed = resolvedVerifyKeyLocation.get().trim();
+        if (!NONE.equals(mpJwtPublicKey)) {
+            contextInfo.setPublicKeyContent(mpJwtPublicKey);
+        } else if (!NONE.equals(resolvedVerifyKeyLocation)) {
+            String resolvedVerifyKeyLocationTrimmed = resolvedVerifyKeyLocation.trim();
             if (resolvedVerifyKeyLocationTrimmed.startsWith("http")) {
                 contextInfo.setPublicKeyLocation(resolvedVerifyKeyLocationTrimmed);
             } else {
@@ -416,8 +434,19 @@ public class JWTAuthContextInfoProvider {
                 }
             }
         }
-        if (decryptionKeyLocation.isPresent() && !NONE.equals(decryptionKeyLocation.get())) {
-            String decryptionKeyLocationTrimmed = decryptionKeyLocation.get().trim();
+
+        final String theDecryptionKeyLocation;
+        if (!NONE.equals(mpJwtDecryptKeyLocation)) {
+            theDecryptionKeyLocation = mpJwtDecryptKeyLocation;
+        } else if (!NONE.equals(decryptionKeyLocation)) {
+            ConfigLogging.log.replacedConfig("smallrye.jwt.decrypt.key.location", "mp.jwt.decrypt.key.location");
+            theDecryptionKeyLocation = decryptionKeyLocation;
+        } else {
+            theDecryptionKeyLocation = NONE;
+        }
+
+        if (!NONE.equals(theDecryptionKeyLocation)) {
+            String decryptionKeyLocationTrimmed = theDecryptionKeyLocation.trim();
             if (decryptionKeyLocationTrimmed.startsWith("http")) {
                 contextInfo.setDecryptionKeyLocation(decryptionKeyLocationTrimmed);
             } else {
@@ -431,159 +460,71 @@ public class JWTAuthContextInfoProvider {
                 }
             }
         }
-        if (tokenHeader != null) {
-            contextInfo.setTokenHeader(tokenHeader);
+
+        if (mpJwtTokenHeader.isPresent()) {
+            contextInfo.setTokenHeader(mpJwtTokenHeader.get());
+        } else if (tokenHeader.isPresent()) {
+            ConfigLogging.log.replacedConfig("smallrye.jwt.token.header", "mp.jwt.token.header");
+            contextInfo.setTokenHeader(tokenHeader.get());
+        } else {
+            contextInfo.setTokenHeader(AUTHORIZATION_HEADER);
+        }
+
+        if (mpJwtTokenCookie.isPresent()) {
+            SmallryeJwtUtils.setContextTokenCookie(contextInfo, mpJwtTokenCookie);
+        } else if (tokenCookie.isPresent()) {
+            ConfigLogging.log.replacedConfig("smallrye.jwt.token.cookie", "mp.jwt.token.cookie");
+            SmallryeJwtUtils.setContextTokenCookie(contextInfo, tokenCookie);
+        } else {
+            SmallryeJwtUtils.setContextTokenCookie(contextInfo, Optional.of(BEARER_SCHEME));
         }
 
         contextInfo.setAlwaysCheckAuthorization(alwaysCheckAuthorization);
-
         contextInfo.setTokenKeyId(tokenKeyId.orElse(null));
         contextInfo.setTokenDecryptionKeyId(tokenDecryptionKeyId.orElse(null));
         contextInfo.setRequireNamedPrincipal(requireNamedPrincipal.orElse(null));
-        SmallryeJwtUtils.setContextTokenCookie(contextInfo, tokenCookie);
         SmallryeJwtUtils.setTokenSchemes(contextInfo, tokenSchemes);
         contextInfo.setDefaultSubjectClaim(defaultSubClaim.orElse(null));
         SmallryeJwtUtils.setContextSubPath(contextInfo, subPath);
         contextInfo.setDefaultGroupsClaim(defaultGroupsClaim.orElse(null));
         SmallryeJwtUtils.setContextGroupsPath(contextInfo, groupsPath);
-        contextInfo.setExpGracePeriodSecs(expGracePeriodSecs.orElse(null));
+        contextInfo.setExpGracePeriodSecs(expGracePeriodSecs);
         contextInfo.setMaxTimeToLiveSecs(maxTimeToLiveSecs.orElse(null));
-        contextInfo.setJwksRefreshInterval(jwksRefreshInterval.orElse(null));
+        contextInfo.setJwksRefreshInterval(jwksRefreshInterval);
         contextInfo.setForcedJwksRefreshInterval(forcedJwksRefreshInterval);
-        if (signatureAlgorithm.orElse(null) == SignatureAlgorithm.HS256 && resolvedVerifyKeyLocation == mpJwtLocation) {
-            throw ConfigMessages.msg.hs256NotSupported();
+        final Optional<SignatureAlgorithm> resolvedAlgorithm;
+        if (mpJwtPublicKeyAlgorithm.isPresent()) {
+            resolvedAlgorithm = mpJwtPublicKeyAlgorithm;
+        } else if (signatureAlgorithm.isPresent()) {
+            ConfigLogging.log.replacedConfig("smallrye.jwt.verify.algorithm", "mp.jwt.verify.publickey.algorithm");
+            resolvedAlgorithm = signatureAlgorithm;
+        } else {
+            resolvedAlgorithm = Optional.empty();
         }
-        contextInfo.setSignatureAlgorithm(signatureAlgorithm.orElse(SignatureAlgorithm.RS256));
+        if (resolvedAlgorithm.isPresent()) {
+            if (resolvedAlgorithm.get() == SignatureAlgorithm.HS256 && resolvedVerifyKeyLocation == mpJwtLocation) {
+                throw ConfigMessages.msg.hs256NotSupported();
+            }
+            contextInfo.setSignatureAlgorithm(resolvedAlgorithm.get());
+        } else {
+            contextInfo.setSignatureAlgorithm(SignatureAlgorithm.RS256);
+        }
+
         contextInfo.setKeyEncryptionAlgorithm(keyEncryptionAlgorithm);
         contextInfo.setKeyFormat(keyFormat);
-        contextInfo.setExpectedAudience(expectedAudience.orElse(null));
+        if (mpJwtVerifyAudiences.isPresent()) {
+            contextInfo.setExpectedAudience(mpJwtVerifyAudiences.get());
+        } else if (expectedAudience.isPresent()) {
+            ConfigLogging.log.replacedConfig("smallrye.jwt.verify.aud", "mp.jwt.verify.audiences");
+            contextInfo.setExpectedAudience(expectedAudience.get());
+        } else {
+            contextInfo.setExpectedAudience(null);
+        }
         contextInfo.setGroupsSeparator(groupsSeparator);
         contextInfo.setRequiredClaims(requiredClaims.orElse(null));
         contextInfo.setRelaxVerificationKeyValidation(relaxVerificationKeyValidation);
         contextInfo.setVerifyCertificateThumbprint(verifyCertificateThumbprint);
         return Optional.of(contextInfo);
-    }
-
-    @SuppressWarnings("deprecation")
-    protected void decodeMpJwtPublicKey(JWTAuthContextInfo contextInfo) {
-        if (!mpJwtPublicKey.isPresent() || NONE.equals(mpJwtPublicKey.get())) {
-            return;
-        }
-
-        // Need to decode what this is...
-        try {
-            RSAPublicKey pk = (RSAPublicKey) KeyUtils.decodeJWKSPublicKey(mpJwtPublicKey.get());
-            contextInfo.setSignerKey(pk);
-            ConfigLogging.log.publicKeyParsedAsJwk();
-        } catch (Exception e) {
-            // Try as PEM key value
-            ConfigLogging.log.parsingPublicKeyAsJwkFailed(e.getMessage());
-            try {
-                RSAPublicKey pk = (RSAPublicKey) KeyUtils.decodePublicKey(mpJwtPublicKey.get());
-                contextInfo.setSignerKey(pk);
-                ConfigLogging.log.publicKeyParsedAsPem();
-            } catch (Exception e1) {
-                throw ConfigMessages.msg.parsingPublicKeyFailed(e1);
-            }
-        }
-
-    }
-
-    public Optional<String> getMpJwtPublicKey() {
-        return mpJwtPublicKey;
-    }
-
-    public String getMpJwtIssuer() {
-        return mpJwtIssuer;
-    }
-
-    public Optional<String> getMpJwtLocation() {
-        return mpJwtLocation;
-    }
-
-    public Optional<Boolean> getMpJwtRequireIss() {
-        return mpJwtRequireIss;
-    }
-
-    public String getTokenHeader() {
-        return tokenHeader;
-    }
-
-    public Optional<String> getTokenCookie() {
-        return tokenCookie;
-    }
-
-    public boolean isAlwaysCheckAuthorization() {
-        return alwaysCheckAuthorization;
-    }
-
-    public Optional<String> getTokenKeyId() {
-        return tokenKeyId;
-    }
-
-    public Optional<String> getTokenSchemes() {
-        return tokenSchemes;
-    }
-
-    public Optional<Integer> getExpGracePeriodSecs() {
-        return expGracePeriodSecs;
-    }
-
-    public Optional<Long> getMaxTimeToLiveSecs() {
-        return maxTimeToLiveSecs;
-    }
-
-    public Optional<Integer> getJwksRefreshInterval() {
-        return jwksRefreshInterval;
-    }
-
-    public int getForcedJwksRefreshInterval() {
-        return forcedJwksRefreshInterval;
-    }
-
-    public Optional<String> getDefaultGroupsClaim() {
-        return defaultGroupsClaim;
-    }
-
-    public Optional<String> getGroupsPath() {
-        return groupsPath;
-    }
-
-    public String getGroupsSeparator() {
-        return groupsSeparator;
-    }
-
-    public Optional<String> getSubjectPath() {
-        return subPath;
-    }
-
-    public Optional<String> getDefaultSubjectClaim() {
-        return defaultSubClaim;
-    }
-
-    @Deprecated
-    public Optional<String> getWhitelistAlgorithms() {
-        return whitelistAlgorithms;
-    }
-
-    public Optional<SignatureAlgorithm> getSignatureAlgorithm() {
-        return signatureAlgorithm;
-    }
-
-    public KeyFormat getKeyFormat() {
-        return keyFormat;
-    }
-
-    public Optional<Set<String>> getExpectedAudience() {
-        return expectedAudience;
-    }
-
-    public Optional<Set<String>> getRequiredClaims() {
-        return requiredClaims;
-    }
-
-    public boolean isRelaxVerificationKeyValidation() {
-        return relaxVerificationKeyValidation;
     }
 
     @Produces

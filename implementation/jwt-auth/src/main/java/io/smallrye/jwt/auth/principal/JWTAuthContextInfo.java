@@ -18,7 +18,6 @@ package io.smallrye.jwt.auth.principal;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.interfaces.RSAPublicKey;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -57,20 +56,14 @@ public class JWTAuthContextInfo {
     private String subPath;
     private String defaultGroupsClaim;
     private String groupsPath;
-    private List<String> whitelistAlgorithms = new ArrayList<>();
     private SignatureAlgorithm signatureAlgorithm = SignatureAlgorithm.RS256;
     private KeyEncryptionAlgorithm keyEncryptionAlgorithm = KeyEncryptionAlgorithm.RSA_OAEP;
     private KeyFormat keyFormat = KeyFormat.ANY;
     private Set<String> expectedAudience;
     private String groupsSeparator = " ";
     private Set<String> requiredClaims;
-    private boolean relaxVerificationKeyValidation;
+    private boolean relaxVerificationKeyValidation = true;
     private boolean verifyCertificateThumbprint;
-
-    /**
-     * Flag that indicates whether the issuer is required and validated, or ignored, new in MP-JWT 1.1.
-     */
-    private boolean requireIssuer = true;
 
     public JWTAuthContextInfo() {
     }
@@ -120,7 +113,6 @@ public class JWTAuthContextInfo {
         this.subPath = orig.subPath;
         this.defaultGroupsClaim = orig.defaultGroupsClaim;
         this.groupsPath = orig.groupsPath;
-        this.whitelistAlgorithms = orig.whitelistAlgorithms;
         this.signatureAlgorithm = orig.signatureAlgorithm;
         this.keyEncryptionAlgorithm = orig.keyEncryptionAlgorithm;
         this.keyFormat = orig.keyFormat;
@@ -128,7 +120,6 @@ public class JWTAuthContextInfo {
         this.groupsSeparator = orig.groupsSeparator;
         this.requiredClaims = orig.requiredClaims;
         this.relaxVerificationKeyValidation = orig.relaxVerificationKeyValidation;
-        this.requireIssuer = orig.requireIssuer;
         this.verifyCertificateThumbprint = orig.verifyCertificateThumbprint;
     }
 
@@ -254,16 +245,6 @@ public class JWTAuthContextInfo {
         this.forcedJwksRefreshInterval = forcedJwksRefreshInterval;
     }
 
-    @Deprecated
-    public boolean isRequireIssuer() {
-        return requireIssuer;
-    }
-
-    @Deprecated
-    public void setRequireIssuer(boolean requireIssuer) {
-        this.requireIssuer = requireIssuer;
-    }
-
     public String getTokenHeader() {
         return tokenHeader;
     }
@@ -318,16 +299,6 @@ public class JWTAuthContextInfo {
 
     public void setGroupsPath(String groupsPath) {
         this.groupsPath = groupsPath;
-    }
-
-    @Deprecated
-    public List<String> getWhitelistAlgorithms() {
-        return whitelistAlgorithms;
-    }
-
-    @Deprecated
-    public void setWhitelistAlgorithms(final List<String> whitelistAlgorithms) {
-        this.whitelistAlgorithms = whitelistAlgorithms;
     }
 
     public String getTokenKeyId() {
@@ -428,13 +399,11 @@ public class JWTAuthContextInfo {
                 ", subPath='" + subPath + '\'' +
                 ", defaultGroupsClaim='" + defaultGroupsClaim + '\'' +
                 ", groupsPath='" + groupsPath + '\'' +
-                ", whitelistAlgorithms=" + whitelistAlgorithms +
                 ", signatureAlgorithm=" + signatureAlgorithm +
                 ", keyEncryptionAlgorithm=" + keyEncryptionAlgorithm +
                 ", keyFormat=" + keyFormat +
                 ", expectedAudience=" + expectedAudience +
                 ", groupsSeparator='" + groupsSeparator + '\'' +
-                ", requireIssuer=" + requireIssuer +
                 ", relaxVerificationKeyValidation=" + relaxVerificationKeyValidation +
                 ", verifyCertificateThumbprint=" + verifyCertificateThumbprint +
                 '}';

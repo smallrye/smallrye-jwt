@@ -6,8 +6,10 @@ import static org.eclipse.microprofile.jwt.tck.TCKConstants.TEST_ISSUER;
 import java.security.PublicKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.HashMap;
+import java.util.Map;
 
 import org.eclipse.microprofile.jwt.JsonWebToken;
+import org.eclipse.microprofile.jwt.tck.util.SignatureAlgorithm;
 import org.eclipse.microprofile.jwt.tck.util.TokenUtils;
 import org.jboss.arquillian.testng.Arquillian;
 import org.testng.Assert;
@@ -23,8 +25,8 @@ public class TestTokenWithSubPath extends Arquillian {
 
     @BeforeClass(alwaysRun = true)
     public static void generateToken() throws Exception {
-        HashMap<String, Long> timeClaims = new HashMap<>();
-        token = TokenUtils.generateTokenString("/TokenSubPath.json", null, timeClaims);
+        Map<String, Long> timeClaims = new HashMap<>();
+        token = TokenUtils.signClaims("/TokenSubPath.json", SignatureAlgorithm.RS256, null, timeClaims);
         publicKey = TokenUtils.readPublicKey("/publicKey.pem");
         if (publicKey == null) {
             throw new IllegalStateException("Failed to load /publicKey.pem resource");

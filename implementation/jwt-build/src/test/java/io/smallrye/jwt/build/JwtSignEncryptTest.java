@@ -32,7 +32,6 @@ import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.jose4j.base64url.Base64Url;
 import org.jose4j.json.JsonUtil;
-import org.jose4j.jwa.AlgorithmConstraints;
 import org.jose4j.jwe.JsonWebEncryption;
 import org.jose4j.jws.JsonWebSignature;
 import org.jose4j.jwt.JwtClaims;
@@ -142,37 +141,6 @@ public class JwtSignEncryptTest {
     }
 
     @Test
-    public void testInnerSignNoneAndEncryptWithPemRsaPublicKey() throws Exception {
-        JwtBuildConfigSource configSource = getConfigSource();
-        configSource.setSigningKeyAvailability(false);
-        String jweCompact = null;
-        try {
-            jweCompact = Jwt.claims()
-                    .claim("customClaim", "custom-value")
-                    .jws()
-                    .innerSign()
-                    .keyId("key-enc-key-id")
-                    .encrypt();
-        } finally {
-            configSource.setSigningKeyAvailability(true);
-        }
-
-        checkJweHeaders(jweCompact, "RSA-OAEP-256", "key-enc-key-id");
-
-        JsonWebEncryption jwe = getJsonWebEncryption(jweCompact);
-
-        String jwtCompact = jwe.getPlaintextString();
-
-        JsonWebSignature jws = getVerifiedJws(jwtCompact, null);
-        JwtClaims claims = JwtClaims.parse(jws.getPayload());
-
-        Assert.assertEquals(4, claims.getClaimsMap().size());
-        checkClaimsAndJwsHeaders(jwtCompact, claims, "none", null);
-
-        Assert.assertEquals("custom-value", claims.getClaimValue("customClaim"));
-    }
-
-    @Test
     public void testInnerSignAndEncryptWithJwkRsaPublicKey() throws Exception {
         JwtBuildConfigSource configSource = getConfigSource();
         configSource.setEncryptionKeyLocation("/publicKey.jwk");
@@ -254,9 +222,6 @@ public class JwtSignEncryptTest {
         JsonWebSignature jws = new JsonWebSignature();
         jws.setCompactSerialization(jwt);
         jws.setKey(key);
-        if (key == null) {
-            jws.setAlgorithmConstraints(AlgorithmConstraints.ALLOW_ONLY_NONE);
-        }
         Assert.assertTrue(jws.verifySignature());
         return jws;
     }

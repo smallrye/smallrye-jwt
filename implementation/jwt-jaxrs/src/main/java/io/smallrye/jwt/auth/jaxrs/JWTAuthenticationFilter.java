@@ -22,6 +22,7 @@ import java.security.Principal;
 import javax.annotation.Priority;
 import javax.inject.Inject;
 import javax.ws.rs.InternalServerErrorException;
+import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.Priorities;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
@@ -78,7 +79,7 @@ public class JWTAuthenticationFilter implements ContainerRequestFilter {
                         throw new InternalServerErrorException(e);
                     } else {
                         JAXRSLogging.log.unableToValidateBearerToken(e);
-                        // RolesAllowedFilter currently returns the status in this case
+                        throw new NotAuthorizedException(e);
                     }
                 } catch (Exception e) {
                     JAXRSLogging.log.unableToValidateBearerToken(e);

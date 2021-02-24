@@ -121,7 +121,7 @@ public class KeyLocationResolverTest {
 
     private static void verifyToken(String kid, String requiredKeyId, String publicKeyLocation) throws Exception {
         PrivateKey privateKey = TokenUtils.readPrivateKey("/privateKey.pem");
-        String token = TokenUtils.generateTokenString(privateKey, kid, "/Token1.json", null, null);
+        String token = TokenUtils.signClaims(privateKey, kid, "/Token1.json", null, null);
         JWTAuthContextInfoProvider provider = JWTAuthContextInfoProvider.createWithKeyLocation(publicKeyLocation,
                 "https://server.example.com");
         JWTAuthContextInfo contextInfo = provider.getContextInfo();
