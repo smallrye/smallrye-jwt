@@ -73,7 +73,7 @@ public abstract class JWTCallerPrincipalFactory {
 
         if (instance == null) {
             ServiceLoader<JWTCallerPrincipalFactory> sl = ServiceLoader.load(JWTCallerPrincipalFactory.class, cl);
-            URL u = cl.getResource("/META-INF/services/org.eclipse.microprofile.jwt.principal.JWTCallerPrincipalFactory");
+            URL u = cl.getResource("/META-INF/services/io.smallrye.jwt.auth.principal.JWTCallerPrincipalFactory");
             PrincipalLogging.log.loadSpi(cl, u, sl);
             try {
                 for (JWTCallerPrincipalFactory spi : sl) {

@@ -22,6 +22,7 @@ import java.io.InputStream;
 import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
+import java.security.InvalidAlgorithmParameterException;
 import java.security.Key;
 import java.security.KeyFactory;
 import java.security.KeyPair;
@@ -29,6 +30,7 @@ import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.security.SecureRandom;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.security.spec.PKCS8EncodedKeySpec;
@@ -36,6 +38,7 @@ import java.security.spec.X509EncodedKeySpec;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.List;
 
 import javax.crypto.SecretKey;
@@ -63,6 +66,22 @@ public final class KeyUtils {
     private static final String EC = "EC";
 
     private KeyUtils() {
+    }
+
+    protected static final EnumMap<KeyEncryptionAlgorithm, Integer> KEY_ENCRYPTION_BITS = new EnumMap(
+            KeyEncryptionAlgorithm.class);
+    static {
+        KEY_ENCRYPTION_BITS.put(KeyEncryptionAlgorithm.A128KW, 128);
+        KEY_ENCRYPTION_BITS.put(KeyEncryptionAlgorithm.A192KW, 192);
+        KEY_ENCRYPTION_BITS.put(KeyEncryptionAlgorithm.A256KW, 256);
+    }
+
+    protected static final EnumMap<SignatureAlgorithm, Integer> SIGNATURE_ALGORITHM_BITS = new EnumMap(
+            SignatureAlgorithm.class);
+    static {
+        SIGNATURE_ALGORITHM_BITS.put(SignatureAlgorithm.HS256, 256);
+        SIGNATURE_ALGORITHM_BITS.put(SignatureAlgorithm.HS384, 384);
+        SIGNATURE_ALGORITHM_BITS.put(SignatureAlgorithm.HS512, 512);
     }
 
     public static PrivateKey readPrivateKey(String pemResName) throws IOException, GeneralSecurityException {
@@ -195,6 +214,44 @@ public final class KeyUtils {
     public static SecretKey createSecretKeyFromSecret(String secret) {
         byte[] secretBytes = secret.getBytes(StandardCharsets.UTF_8);
         return new SecretKeySpec(secretBytes, "AES");
+    }
+
+    /**
+     * Generates a SecretKey.
+     *
+     * @param algo key encryption algorithm.
+     * @return SecretKey.
+     * @throws InvalidAlgorithmParameterException algorithm not found.
+     */
+    public static SecretKey generateSecretKey(KeyEncryptionAlgorithm algo) throws InvalidAlgorithmParameterException {
+        if (!KEY_ENCRYPTION_BITS.containsKey(algo)) {
+            throw JWTUtilMessages.msg.requiresSymmetricAlgo(algo.name());
+        }
+
+        byte[] secretBytes = new byte[KEY_ENCRYPTION_BITS.get(algo) / 8];
+        SecureRandom secureRandom = new SecureRandom();
+        secureRandom.nextBytes(secretBytes);
+
+        return new SecretKeySpec(secretBytes, "AES");
+    }
+
+    /**
+     * Generates a SecretKey.
+     *
+     * @param algo signature algorithm.
+     * @return SecretKey.
+     * @throws InvalidAlgorithmParameterException algorithm not found.
+     */
+    public static SecretKey generateSecretKey(SignatureAlgorithm algo) throws InvalidAlgorithmParameterException {
+        if (!SIGNATURE_ALGORITHM_BITS.containsKey(algo)) {
+            throw JWTUtilMessages.msg.requiresSymmetricAlgo(algo.name());
+        }
+
+        byte[] secretBytes = new byte[SIGNATURE_ALGORITHM_BITS.get(algo) / 8];
+        SecureRandom secureRandom = new SecureRandom();
+        secureRandom.nextBytes(secretBytes);
+
+        return new SecretKeySpec(secretBytes, "HMAC");
     }
 
     /**

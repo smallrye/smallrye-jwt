@@ -2,6 +2,7 @@ package io.smallrye.jwt.util;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.security.InvalidAlgorithmParameterException;
 import java.security.NoSuchAlgorithmException;
 
 import org.jboss.logging.Messages;
@@ -21,4 +22,7 @@ interface JWTUtilMessages {
 
     @Message(id = 2, value = "No resource with the named %s location exists")
     IOException keyNotFound(String keyLocation);
+
+    @Message(id = 3, value = "Algorithm %s is not a symmetric-key algorithm")
+    InvalidAlgorithmParameterException requiresSymmetricAlgo(String algorithmName);
 }
