@@ -11,7 +11,7 @@ import javax.crypto.SecretKey;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.jose4j.jwk.JsonWebKey;
 import org.jose4j.jwk.PublicJsonWebKey;
-import org.jose4j.jwt.consumer.InvalidJwtException;
+import org.jose4j.lang.UnresolvableKeyException;
 import org.junit.Test;
 
 import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
@@ -75,9 +75,9 @@ public class DefaultJWTParserTest {
         JWTAuthContextInfo config = new JWTAuthContextInfo("/certificate.pem", "https://server.example.com");
         config.setVerifyCertificateThumbprint(true);
         JWTParser parser = new DefaultJWTParser(config);
-        ParseException thrown = assertThrows("InvalidJwtException is expected",
+        ParseException thrown = assertThrows("UnresolvableKeyException is expected",
                 ParseException.class, () -> parser.parse(jwtString));
-        assertTrue(thrown.getCause() instanceof InvalidJwtException);
+        assertTrue(thrown.getCause() instanceof UnresolvableKeyException);
     }
 
     @Test
