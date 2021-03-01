@@ -12,6 +12,7 @@ public class JwtBuildConfigSource implements ConfigSource {
     private static final String DEPRECATED_ENC_KEY_LOCATION_PROPERTY = "smallrye.jwt.encrypt.key-location";
 
     boolean signingKeyAvailable = true;
+    boolean overrideMatchingClaims;
     boolean lifespanPropertyRequired;
     boolean issuerPropertyRequired;
     boolean audiencePropertyRequired;
@@ -35,6 +36,9 @@ public class JwtBuildConfigSource implements ConfigSource {
         }
         if (audiencePropertyRequired) {
             map.put("smallrye.jwt.new-token.audience", "https://custom-audience");
+        }
+        if (overrideMatchingClaims) {
+            map.put("smallrye.jwt.new-token.override-matching-claims", String.valueOf(overrideMatchingClaims));
         }
         return map;
     }
@@ -79,5 +83,9 @@ public class JwtBuildConfigSource implements ConfigSource {
 
     public void setAudiencePropertyRequired(boolean audiencePropertyRequired) {
         this.audiencePropertyRequired = audiencePropertyRequired;
+    }
+
+    public void setOverrideMatchingClaims(boolean override) {
+        overrideMatchingClaims = override;
     }
 }
