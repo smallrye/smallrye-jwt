@@ -264,15 +264,6 @@ class JwtClaimsBuilderImpl extends JwtSignatureImpl implements JwtClaimsBuilder,
      * {@inheritDoc}
      */
     @Override
-    public String json() {
-        JwtBuildUtils.setDefaultJwtClaims(claims, tokenLifespan);
-        return claims.toJson();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public JwtEncryptionBuilder jwe() {
         JwtBuildUtils.setDefaultJwtClaims(claims, tokenLifespan);
         return new JwtEncryptionImpl(claims.toJson());

@@ -138,7 +138,6 @@ public class JwtSignTest {
         return signAndVerifyClaims(null, null, null);
     }
 
-    @SuppressWarnings("deprecation")
     private JwtClaims signAndVerifyClaims(Long customLifespan, String issuer, String aud) throws Exception {
         JwtClaimsBuilder builder = Jwt.claims().claim("customClaim", "custom-value");
         if (issuer == null) {
@@ -147,12 +146,8 @@ public class JwtSignTest {
         if (aud == null) {
             builder.audience("https://localhost:8081");
         }
-        String jsonBeforeSign = builder.json();
         String jwt = builder.sign(getPrivateKey());
-        String jsonAfterSign = builder.json();
-        Assert.assertEquals(jsonBeforeSign, jsonAfterSign);
         JsonWebSignature jws = getVerifiedJws(jwt);
-        Assert.assertEquals(jsonAfterSign, jws.getPayload());
         JwtClaims claims = JwtClaims.parse(jws.getPayload());
         Assert.assertEquals(6, claims.getClaimsMap().size());
         checkDefaultClaimsAndHeaders(getJwsHeaders(jwt, 2), claims, "RS256", customLifespan != null ? customLifespan : 300);
