@@ -15,6 +15,10 @@ import io.smallrye.jwt.util.ResourceUtils;
  * JWT Token Build Utilities
  */
 public class JwtBuildUtils {
+    private static final String NEW_TOKEN_ISSUER = "smallrye.jwt.new-token.issuer";
+    private static final String NEW_TOKEN_AUDIENCE = "smallrye.jwt.new-token.audience";
+    private static final String NEW_TOKEN_OVERRIDE_CLAIMS = "smallrye.jwt.new-token.override-matching-claims";
+    private static final String NEW_TOKEN_LIFESPAN = "smallrye.jwt.new-token.lifespan";
 
     private JwtBuildUtils() {
         // no-op: utility class
@@ -29,14 +33,15 @@ public class JwtBuildUtils {
         if (!claims.hasClaim(Claims.jti.name())) {
             claims.setClaim(Claims.jti.name(), UUID.randomUUID().toString());
         }
-        if (!claims.hasClaim(Claims.iss.name())) {
-            String issuer = getConfigProperty("smallrye.jwt.new-token.issuer", String.class);
+        Boolean overrideMatchingClaims = getConfigProperty(NEW_TOKEN_OVERRIDE_CLAIMS, Boolean.class);
+        if (Boolean.TRUE.equals(overrideMatchingClaims) || !claims.hasClaim(Claims.iss.name())) {
+            String issuer = getConfigProperty(NEW_TOKEN_ISSUER, String.class);
             if (issuer != null) {
                 claims.setIssuer(issuer);
             }
         }
-        if (!claims.hasClaim(Claims.aud.name())) {
-            String audience = getConfigProperty("smallrye.jwt.new-token.audience", String.class);
+        if (Boolean.TRUE.equals(overrideMatchingClaims) || !claims.hasClaim(Claims.aud.name())) {
+            String audience = getConfigProperty(NEW_TOKEN_AUDIENCE, String.class);
             if (audience != null) {
                 claims.setAudience(audience);
             }
@@ -88,7 +93,7 @@ public class JwtBuildUtils {
             Long issuedAt = (value instanceof NumericDate) ? ((NumericDate) value).getValue() : (Long) value;
             Long lifespan = tokenLifespan;
             if (lifespan == null) {
-                lifespan = getConfigProperty("smallrye.jwt.new-token.lifespan", Long.class, 300L);
+                lifespan = getConfigProperty(NEW_TOKEN_LIFESPAN, Long.class, 300L);
             }
 
             claims.setExpirationTime(NumericDate.fromSeconds(issuedAt + lifespan));
