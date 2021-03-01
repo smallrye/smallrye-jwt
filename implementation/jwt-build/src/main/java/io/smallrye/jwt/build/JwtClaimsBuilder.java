@@ -26,6 +26,11 @@ import org.eclipse.microprofile.jwt.Claims;
  * The 'aud' (audience) claim must be set if it has not already been set and the 'smallrye.jwt.new-token.audience' property is
  * set.
  * <p>
+ * Note that 'smallrye.jwt.new-token.issuer' and 'smallrye.jwt.new-token.audience' property values, if set, will override
+ * the existing `iss` and `aud` claim values if the 'smallrye.jwt.new-token.override-matching-claims' is set to 'true'.
+ * For example, it can be useful when propagating a JWT token whose 'issuer' and/or `audience` properties have to be updated
+ * without using this interface.
+ * <p>
  * Note that JwtClaimsBuilder implementations are not expected to be thread-safe.
  * 
  * @see <a href="https://tools.ietf.org/html/rfc7519">RFC7515</a>

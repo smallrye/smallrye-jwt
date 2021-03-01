@@ -152,8 +152,13 @@ public class DefaultJWTTokenParser {
 
             return jwtContext;
         } catch (InvalidJwtException e) {
-            PrincipalLogging.log.tokenInvalid();
-            throw PrincipalMessages.msg.failedToVerifyToken(e);
+            if (e.getCause() instanceof UnresolvableKeyException) {
+                PrincipalLogging.log.verificationKeyUnresolvable();
+                throw PrincipalMessages.msg.failedToVerifyToken(e.getCause());
+            } else {
+                PrincipalLogging.log.tokenInvalid();
+                throw PrincipalMessages.msg.failedToVerifyToken(e);
+            }
         } catch (UnresolvableKeyException e) {
             PrincipalLogging.log.verificationKeyUnresolvable();
             throw PrincipalMessages.msg.failedToVerifyToken(e);
