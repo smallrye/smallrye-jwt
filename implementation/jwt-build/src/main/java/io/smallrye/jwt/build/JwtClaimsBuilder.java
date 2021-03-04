@@ -26,6 +26,11 @@ import org.eclipse.microprofile.jwt.Claims;
  * The 'aud' (audience) claim must be set if it has not already been set and the 'smallrye.jwt.new-token.audience' property is
  * set.
  * <p>
+ * Note that 'smallrye.jwt.new-token.issuer' and 'smallrye.jwt.new-token.audience' property values, if set, will override
+ * the existing `iss` and `aud` claim values if the 'smallrye.jwt.new-token.override-matching-claims' is set to 'true'.
+ * For example, it can be useful when propagating a JWT token whose 'issuer' and/or `audience` properties have to be updated
+ * without using this interface.
+ * <p>
  * Note that JwtClaimsBuilder implementations are not expected to be thread-safe.
  * 
  * @see <a href="https://tools.ietf.org/html/rfc7519">RFC7515</a>
@@ -197,19 +202,6 @@ public interface JwtClaimsBuilder extends JwtSignature {
      * @return JwtClaimsBuilder
      */
     JwtClaimsBuilder claim(String name, Object value);
-
-    /**
-     * Return a JSON representation of the claims before they have been signed or encrypted.
-     * Note that the 'iat' (issued at time), 'exp' (expiration time) and 'jti' (unique token identifier) claims
-     * must be set if they have not already been set before creating a JSON representation to ensure it is consistent
-     * with what will be signed or encrypted.
-     * This method will return the same JSON representation if called multiple times unless some new claims have
-     * been added since the previous call.
-     *
-     * @return the JSON representation
-     */
-    @Deprecated
-    String json();
 
     /**
      * Set JsonWebSignature headers and sign the claims by moving to {@link JwtSignatureBuilder}

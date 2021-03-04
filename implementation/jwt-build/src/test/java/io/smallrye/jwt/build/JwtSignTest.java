@@ -41,6 +41,7 @@ import javax.json.JsonObject;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.spi.ConfigSource;
+import org.eclipse.microprofile.jwt.Claims;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.jose4j.base64url.Base64Url;
 import org.jose4j.json.JsonUtil;
@@ -49,13 +50,13 @@ import org.jose4j.jwk.EllipticCurveJsonWebKey;
 import org.jose4j.jwk.JsonWebKey;
 import org.jose4j.jws.JsonWebSignature;
 import org.jose4j.jwt.JwtClaims;
+import org.jose4j.jwt.MalformedClaimException;
 import org.jose4j.jwt.NumericDate;
 import org.jose4j.keys.EllipticCurves;
 import org.junit.Assert;
 import org.junit.Test;
 
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
-// import io.smallrye.jwt.auth.principal.DefaultJWTCallerPrincipal;
 import io.smallrye.jwt.util.KeyUtils;
 
 public class JwtSignTest {
@@ -99,11 +100,44 @@ public class JwtSignTest {
         Assert.assertEquals("https://localhost:8081", claims.getAudience().get(0));
     }
 
+    @Test
+    public void testEnhanceAndResignTokenWithConfiguredIssuerAndAudUsed() throws Exception {
+        JsonWebToken token = new TestJsonWebToken(signAndVerifyClaims());
+
+        Assert.assertEquals("https://default-issuer", token.getIssuer());
+        Assert.assertEquals(1, token.getAudience().size());
+        Assert.assertEquals("https://localhost:8081", token.getAudience().iterator().next());
+
+        JwtBuildConfigSource configSource = getConfigSource();
+        configSource.setIssuerPropertyRequired(true);
+        configSource.setAudiencePropertyRequired(true);
+        configSource.setOverrideMatchingClaims(true);
+
+        try {
+            String jwt = Jwt.claims(token).claim("newClaim", "new-value").sign();
+
+            // verify
+            JsonWebSignature jws = getVerifiedJws(jwt);
+            JwtClaims claims = JwtClaims.parse(jws.getPayload());
+            Assert.assertEquals(7, claims.getClaimsMap().size());
+            checkDefaultClaimsAndHeaders(getJwsHeaders(jwt, 2), claims);
+            Assert.assertEquals("custom-value", claims.getClaimValue("customClaim"));
+
+            Assert.assertEquals("new-value", claims.getClaimValue("newClaim"));
+            Assert.assertEquals("https://custom-issuer", claims.getIssuer());
+            Assert.assertEquals(1, claims.getAudience().size());
+            Assert.assertEquals("https://custom-audience", claims.getAudience().get(0));
+        } finally {
+            configSource.setIssuerPropertyRequired(false);
+            configSource.setAudiencePropertyRequired(false);
+            configSource.setOverrideMatchingClaims(false);
+        }
+    }
+
     private JwtClaims signAndVerifyClaims() throws Exception {
         return signAndVerifyClaims(null, null, null);
     }
 
-    @SuppressWarnings("deprecation")
     private JwtClaims signAndVerifyClaims(Long customLifespan, String issuer, String aud) throws Exception {
         JwtClaimsBuilder builder = Jwt.claims().claim("customClaim", "custom-value");
         if (issuer == null) {
@@ -112,12 +146,8 @@ public class JwtSignTest {
         if (aud == null) {
             builder.audience("https://localhost:8081");
         }
-        String jsonBeforeSign = builder.json();
         String jwt = builder.sign(getPrivateKey());
-        String jsonAfterSign = builder.json();
-        Assert.assertEquals(jsonBeforeSign, jsonAfterSign);
         JsonWebSignature jws = getVerifiedJws(jwt);
-        Assert.assertEquals(jsonAfterSign, jws.getPayload());
         JwtClaims claims = JwtClaims.parse(jws.getPayload());
         Assert.assertEquals(6, claims.getClaimsMap().size());
         checkDefaultClaimsAndHeaders(getJwsHeaders(jwt, 2), claims, "RS256", customLifespan != null ? customLifespan : 300);
@@ -623,6 +653,13 @@ public class JwtSignTest {
         @SuppressWarnings("unchecked")
         @Override
         public <T> T getClaim(String claimName) {
+            if (Claims.aud.name().equals(claimName)) {
+                try {
+                    return (T) new HashSet<>(claims.getAudience());
+                } catch (MalformedClaimException ex) {
+                    throw new RuntimeException(ex);
+                }
+            }
             return (T) claims.getClaimValue(claimName);
         }
 

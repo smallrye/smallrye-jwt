@@ -46,7 +46,7 @@ public class KeyLocationResolverTest {
             verifyToken("key2", null, "publicKey.jwk");
             Assert.fail("ParseException is expected");
         } catch (ParseException ex) {
-            Assert.assertTrue(ex.getCause().getCause() instanceof UnresolvableKeyException);
+            Assert.assertTrue(ex.getCause() instanceof UnresolvableKeyException);
         }
     }
 
@@ -71,7 +71,7 @@ public class KeyLocationResolverTest {
             verifyToken("key2", "key1", "publicKeySet.jwk");
             Assert.fail("ParseException is expected");
         } catch (ParseException ex) {
-            Assert.assertTrue(ex.getCause().getCause() instanceof UnresolvableKeyException);
+            Assert.assertTrue(ex.getCause() instanceof UnresolvableKeyException);
         }
     }
 
@@ -81,7 +81,7 @@ public class KeyLocationResolverTest {
             verifyToken("key3", null, "publicKeySet.jwk");
             Assert.fail("ParseException is expected");
         } catch (ParseException ex) {
-            Assert.assertTrue(ex.getCause().getCause() instanceof UnresolvableKeyException);
+            Assert.assertTrue(ex.getCause() instanceof UnresolvableKeyException);
         }
     }
 
@@ -156,7 +156,7 @@ public class KeyLocationResolverTest {
             new DefaultJWTTokenParser().parse(jwt, contextInfo);
             Assert.fail("ParseException is expected due to the wrong key type");
         } catch (ParseException ex) {
-            Assert.assertTrue(ex.getCause().getCause() instanceof UnresolvableKeyException);
+            Assert.assertTrue(ex.getCause() instanceof UnresolvableKeyException);
         }
     }
 
