@@ -74,7 +74,7 @@ The claims can be signed immediately or after the `JSON Web Signature` headers h
 import io.smallrye.jwt.build.Jwt;
 ...
 
-// Sign the claims using the private key loaded from the location set with a 'smallrye.jwt.sign.key-location' property.
+// Sign the claims using the private key loaded from the location set with a 'smallrye.jwt.sign.key.location' property.
 // No 'jws()' transition is necessary.
 String jwt1 = Jwt.claims("/tokenClaims.json").sign();
 
@@ -95,7 +95,7 @@ transition:
 import io.smallrye.jwt.build.Jwt;
 ...
 
-// Encrypt the claims using the public key loaded from the location set with a 'smallrye.jwt.encrypt.key-location' property.
+// Encrypt the claims using the public key loaded from the location set with a 'smallrye.jwt.encrypt.key.location' property.
 String jwt1 = Jwt.claims("/tokenClaims.json").jwe().encrypt();
 
 // Set the headers and encrypt the claims with an RSA public key loaded in the code (the implementation of this method is omitted).
@@ -114,13 +114,13 @@ The claims can be signed and then the nested JWT token encrypted by combining th
 import io.smallrye.jwt.build.Jwt;
 ...
 
-// Sign the claims and encrypt the nested token using the private and public keys loaded from the locations set with the 'smallrye.jwt.sign.key-location' and 'smallrye.jwt.encrypt.key-location' properties respectively.
+// Sign the claims and encrypt the nested token using the private and public keys loaded from the locations set with the 'smallrye.jwt.sign.key.location' and 'smallrye.jwt.encrypt.key.location' properties respectively.
 String jwt = Jwt.claims("/tokenClaims.json").innerSign().encrypt();
 ----
 
 === Fast JWT Generation
 
-If `smallrye.jwt.sign.key-location` or/and `smallrye.jwt.encrypt.key-location` properties are set then one can secure the existing claims (resources, maps, JsonObjects) with a single call:
+If `smallrye.jwt.sign.key.location` or/and `smallrye.jwt.encrypt.key.location` properties are set then one can secure the existing claims (resources, maps, JsonObjects) with a single call:
 ```
 // More compact than Jwt.claims("/claims.json").sign();
 Jwt.sign("/claims.json");
