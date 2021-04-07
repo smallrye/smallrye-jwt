@@ -11,14 +11,11 @@ public interface JwtEncryption {
 
     /**
      * Encrypt the claims or inner JWT with {@link PublicKey}.
-     * 'RSA-OAEP-256' and 'ECDH-ES+A256KW' key encryption algorithms will be used by default
+     * 'RSA-OAEP' and 'ECDH-ES+A256KW' key encryption algorithms will be used by default
      * when public RSA or EC keys are used unless a different one has been set with {@code JwtEncryptionBuilder}.
      * 'A256GCM' content encryption algorithms will be used unless a different one have been set with
      * {@code JwtEncryptionBuilder}.
      * A key of size 2048 bits or larger MUST be used with the 'RSA-OAEP' and 'RSA-OAEP-256' algorithms.
-     *
-     * Note: Setting 'RSA-OAEP-256' as a default key encryption algorithm when public RSA keys are used is deprecated.
-     * Future version of this API will set 'RSA-OAEP' by default.
      *
      * @param keyEncryptionKey the key which encrypts the content encryption key
      * @return encrypted JWT token
@@ -40,14 +37,11 @@ public interface JwtEncryption {
     /**
      * Encrypt the claims or inner JWT with a public or secret key loaded from the custom location
      * which can point to a PEM, JWK or JWK set keys.
-     * 'RSA-OAEP-256', 'ECDH-ES+A256KW' and 'A256KW' key encryption algorithms will be used by default
+     * 'RSA-OAEP', 'ECDH-ES+A256KW' and 'A256KW' key encryption algorithms will be used by default
      * when public RSA, EC or secret keys are used unless a different one has been set with {@code JwtEncryptionBuilder}.
      * 'A256GCM' content encryption algorithms will be used unless a different one have been set with
      * {@code JwtEncryptionBuilder}.
      * A key of size 2048 bits or larger MUST be used with the 'RSA-OAEP' and 'RSA-OAEP-256' algorithms.
-     *
-     * Note: Setting 'RSA-OAEP-256' as a default key encryption algorithm when public RSA keys are used is deprecated.
-     * Future version of this API will set 'RSA-OAEP' by default.
      *
      * @param keyLocation the location of the keyEncryptionKey which encrypts the content encryption key
      * @return encrypted JWT token
@@ -61,14 +55,11 @@ public interface JwtEncryption {
      * 
      * Note: "smallrye.jwt.encrypt.key-location" property is deprecated and will be removed in the next major release.
      * 
-     * 'RSA-OAEP-256', 'ECDH-ES+A256KW' and 'A256KW' key encryption algorithms will be used by default
+     * 'RSA-OAEP', 'ECDH-ES+A256KW' and 'A256KW' key encryption algorithms will be used by default
      * when public RSA, EC or secret keys are used unless a different one has been set with {@code JwtEncryptionBuilder}.
      * 'A256GCM' content encryption algorithms will be used unless a different one have been set with
      * {@code JwtEncryptionBuilder}.
      * A key of size 2048 bits or larger MUST be used with the 'RSA-OAEP' and 'RSA-OAEP-256' algorithms.
-     *
-     * Note: Setting 'RSA-OAEP-256' as a default key encryption algorithm when public RSA keys are used is deprecated.
-     * Future version of this API will set 'RSA-OAEP' by default.
      *
      * @return encrypted JWT token
      * @throws JwtEncryptionException the exception if the encryption operation has failed
