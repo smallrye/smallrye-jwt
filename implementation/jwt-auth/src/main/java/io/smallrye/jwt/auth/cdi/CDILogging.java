@@ -93,7 +93,7 @@ interface CDILogging extends BasicLogger {
     void jwtHttpAuthenticationMechanismRegistered();
 
     @LogMessage(level = Logger.Level.INFO)
-    @Message(id = 12019, value = "EE Security is available, JWTHttpAuthenticationMechanism has been registered")
+    @Message(id = 12019, value = "EE Security is NOT available, JWTAuthenticationFilter has been registered")
     void jwtHttpAuthenticationMechanismNotRegistered();
 
     @LogMessage(level = Logger.Level.DEBUG)
