@@ -102,8 +102,7 @@ String jwt1 = Jwt.claims("/tokenClaims.json").jwe().encrypt();
 String jwt2 = Jwt.claims("/tokenClaims.json").jwe().header("custom-header", "custom-value").encrypt(getPublicKey());
 ----
 
-Note the `alg` (key management algorithm) header is set to `RSA-OAEP-256` (it will be changed to `RSA-OAEP` in a future
-version of smallrye-jwt) and the `enc` (content encryption header) is set to `A256GCM` by default.
+Note the `alg` (key management algorithm) header is set to `RSA-OAEP` and the `enc` (content encryption header) is set to `A256GCM` by default.
 
 == Sign the claims and encrypt the nested JWT token
 
