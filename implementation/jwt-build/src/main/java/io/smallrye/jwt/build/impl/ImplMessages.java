@@ -38,14 +38,14 @@ interface ImplMessages {
     @Message(id = 5007, value = "Key encryption key can not be loaded from: %s")
     IllegalArgumentException encryptionKeyCanNotBeLoadedFromLocation(String keyLocation);
 
-    @Message(id = 5008, value = "Please set a 'smallrye.jwt.encrypt.key-location' property")
+    @Message(id = 5008, value = "Please set a 'smallrye.jwt.encrypt.key.location' property")
     IllegalArgumentException encryptionKeyLocationNotConfigured();
 
     @Message(id = 5009, value = "")
     JwtSignatureException signatureException(@Cause Throwable throwable);
 
     @Message(id = 5010, value = "Inner JWT can not be created, "
-            + "'smallrye.jwt.sign.key-location' is not set but the 'alg' header is: %s")
+            + "'smallrye.jwt.sign.key.location' is not set but the 'alg' header is: %s")
     JwtSignatureException signKeyPropertyRequired(String algorithmName);
 
     @Message(id = 5011, value = "'none' algorithm is selected but the key id 'kid' header is set")
@@ -78,7 +78,7 @@ interface ImplMessages {
     @Message(id = 5020, value = "Signing key can not be loaded from: %s")
     IllegalArgumentException signingKeyCanNotBeLoadedFromLocation(String keyLocation);
 
-    @Message(id = 5021, value = "Please set a 'smallrye.jwt.sign.key-location' property")
+    @Message(id = 5021, value = "Please set a 'smallrye.jwt.sign.key.location' property")
     IllegalArgumentException signKeyLocationNotConfigured();
 
     @Message(id = 5022, value = "Failure to parse the JWT claims: %s")

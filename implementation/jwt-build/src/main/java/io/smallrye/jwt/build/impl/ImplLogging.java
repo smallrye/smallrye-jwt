@@ -13,8 +13,4 @@ interface ImplLogging extends BasicLogger {
     @LogMessage(level = Logger.Level.WARN)
     @Message(id = 1000, value = "%s property is deprecated and will be removed in the next major release")
     void deprecatedProperty(String property);
-
-    @LogMessage(level = Logger.Level.WARN)
-    @Message(id = 1001, value = "Inner-sign none signature mode is deprecated and will be removed in the next major release")
-    void deprecatedInnerSignNone();
 }
