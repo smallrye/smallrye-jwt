@@ -60,7 +60,7 @@ JwtClaimsBuilder builder5 = Jwt.claims(token);
 ----
 
 The API is fluent so the builder initialization can be done as part of the fluent API sequence. The builder will also
-set `iat (issued at) claim to the current time, `exp`(expires at) claim to a sum of the `iat` claim and `smallrye.jwt.new-token.lifespan`
+set `iat` (issued at) claim to the current time, `exp` (expires at) claim to a sum of the `iat` claim and `smallrye.jwt.new-token.lifespan`
 property values and `jti` (unique token identifier) claim if they have not already been set, so one can skip setting them when possible.
 
 The next step is to decide how to secure the claims.
