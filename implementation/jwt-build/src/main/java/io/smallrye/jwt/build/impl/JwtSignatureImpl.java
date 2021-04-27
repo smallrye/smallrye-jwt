@@ -10,6 +10,7 @@ import java.util.Map;
 import javax.crypto.SecretKey;
 
 import org.jose4j.jwa.AlgorithmConstraints;
+import org.jose4j.jwk.JsonWebKey;
 import org.jose4j.jws.JsonWebSignature;
 import org.jose4j.jwt.JwtClaims;
 
@@ -183,9 +184,32 @@ class JwtSignatureImpl implements JwtSignature {
 
     Key getSigningKeyFromKeyLocation(String keyLocation) {
         try {
+            String kid = (String) headers.get("kid");
             String algHeader = (String) headers.get("alg");
-            SignatureAlgorithm alg = algHeader == null ? SignatureAlgorithm.RS256 : SignatureAlgorithm.fromAlgorithm(algHeader);
-            Key key = KeyUtils.readSigningKey(keyLocation, (String) headers.get("kid"), alg);
+
+            String keyContent = KeyUtils.readKeyContent(keyLocation);
+            // Try PEM format first - default to RS256 if no algorithm header is set
+            Key key = KeyUtils.tryAsPemSigningPrivateKey(keyContent,
+                    (algHeader == null ? SignatureAlgorithm.RS256 : SignatureAlgorithm.fromAlgorithm(algHeader)));
+            if (key == null) {
+                // Try to load JWK from a single JWK resource or JWK set resource
+                JsonWebKey jwk = KeyUtils.getJwkKeyFromJwkSet(kid, keyContent);
+                if (jwk != null) {
+                    // if the user has already set the algorithm header then JWK `alg` header, if set, must match it
+                    key = KeyUtils.getPrivateOrSecretSigningKey(jwk,
+                            (algHeader == null ? null : SignatureAlgorithm.fromAlgorithm(algHeader)));
+                    if (key != null) {
+                        // if the algorithm header is not set then use JWK `alg`
+                        if (algHeader == null && jwk.getAlgorithm() != null) {
+                            headers.put("alg", jwk.getAlgorithm());
+                        }
+                        // if 'kid' header is not set then use JWK `kid`
+                        if (kid == null && jwk.getKeyId() != null) {
+                            headers.put("kid", jwk.getKeyId());
+                        }
+                    }
+                }
+            }
             if (key == null) {
                 throw ImplMessages.msg.signingKeyCanNotBeLoadedFromLocation(keyLocation);
             }

@@ -1,0 +1,6 @@
+{
+  "kty":"oct",
+  "k":"mHgOIP5oLngqXKq0123456",
+  "kid": "secretkey3",
+  "alg": "A128KW"
+}
