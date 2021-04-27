@@ -17,6 +17,9 @@
 
 package io.smallrye.jwt.auth.principal;
 
+import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
+
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -26,6 +29,7 @@ import java.security.PrivateKey;
 import java.util.Base64;
 
 import org.eclipse.microprofile.jwt.tck.util.TokenUtils;
+import org.jose4j.lang.UnresolvableKeyException;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -33,8 +37,26 @@ import io.smallrye.jwt.config.JWTAuthContextInfoProvider;
 import io.smallrye.jwt.util.KeyUtils;
 
 public class KeyLocationResolverKeyContentTest {
+
     @Test
     public void testVerifyWithPemKey() throws Exception {
+        verifyToken(null, readKeyContent("/publicKey.pem"));
+    }
+
+    @Test
+    public void testVerifyWithInvalidPemKey() throws Exception {
+        PrivateKey privateKey = TokenUtils.readPrivateKey("/privateKey.pem");
+        String token = TokenUtils.signClaims(privateKey, null, "/Token1.json", null, null);
+        JWTAuthContextInfoProvider provider = JWTAuthContextInfoProvider.createWithKey("invalidkey",
+                "https://server.example.com");
+        JWTAuthContextInfo contextInfo = provider.getContextInfo();
+        ParseException thrown = assertThrows("UnresolvableKeyException is expected",
+                ParseException.class, () -> new DefaultJWTTokenParser().parse(token, contextInfo));
+        assertTrue(thrown.getCause() instanceof UnresolvableKeyException);
+    }
+
+    @Test
+    public void testVerifyWithPemKeyTrimmed() throws Exception {
         verifyToken(null, KeyUtils.removePemKeyBeginEnd(readKeyContent("/publicKey.pem")));
     }
 
