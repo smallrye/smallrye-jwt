@@ -68,7 +68,7 @@ public final class KeyUtils {
     private KeyUtils() {
     }
 
-    protected static final EnumMap<KeyEncryptionAlgorithm, Integer> KEY_ENCRYPTION_BITS = new EnumMap(
+    protected static final EnumMap<KeyEncryptionAlgorithm, Integer> KEY_ENCRYPTION_BITS = new EnumMap<>(
             KeyEncryptionAlgorithm.class);
     static {
         KEY_ENCRYPTION_BITS.put(KeyEncryptionAlgorithm.A128KW, 128);
@@ -76,7 +76,7 @@ public final class KeyUtils {
         KEY_ENCRYPTION_BITS.put(KeyEncryptionAlgorithm.A256KW, 256);
     }
 
-    protected static final EnumMap<SignatureAlgorithm, Integer> SIGNATURE_ALGORITHM_BITS = new EnumMap(
+    protected static final EnumMap<SignatureAlgorithm, Integer> SIGNATURE_ALGORITHM_BITS = new EnumMap<>(
             SignatureAlgorithm.class);
     static {
         SIGNATURE_ALGORITHM_BITS.put(SignatureAlgorithm.HS256, 256);
@@ -356,7 +356,7 @@ public final class KeyUtils {
         return pem.trim();
     }
 
-    static String readKeyContent(String keyLocation) throws IOException {
+    public static String readKeyContent(String keyLocation) throws IOException {
 
         String content = ResourceUtils.readResource(keyLocation);
         if (content == null) {
@@ -365,7 +365,7 @@ public final class KeyUtils {
         return content;
     }
 
-    static PrivateKey tryAsPemSigningPrivateKey(String content, SignatureAlgorithm alg) {
+    public static PrivateKey tryAsPemSigningPrivateKey(String content, SignatureAlgorithm alg) {
         JWTUtilLogging.log.creatingKeyFromPemKey();
         try {
             return decodePrivateKey(content, alg);
@@ -375,7 +375,7 @@ public final class KeyUtils {
         return null;
     }
 
-    static PublicKey tryAsPemEncryptionPublicKey(String content, KeyEncryptionAlgorithm alg) {
+    public static PublicKey tryAsPemEncryptionPublicKey(String content, KeyEncryptionAlgorithm alg) {
         JWTUtilLogging.log.creatingKeyFromPemKey();
         try {
             return decodeEncryptionPublicKey(content, alg);
@@ -443,31 +443,18 @@ public final class KeyUtils {
             key = tryAsPEMCertificate(content);
         }
         if (key == null) {
-            List<JsonWebKey> jwks = loadJsonWebKeys(content);
-            if (jwks != null) {
-                key = getEncryptionKeyFromJwkSet(kid, jwks);
+            JsonWebKey jwk = getJwkKeyFromJwkSet(kid, content);
+            if (jwk != null) {
+                key = getPublicOrSecretEncryptingKey(jwk, alg);
             }
         }
         return key;
     }
 
-    static Key getEncryptionKeyFromJwkSet(String kid, List<JsonWebKey> keys) {
-        if (kid != null) {
-            for (JsonWebKey currentJwk : keys) {
-                if (kid.equals(currentJwk.getKeyId())) {
-                    return getPublicOrSecretEncryptingKey(currentJwk);
-                }
-            }
+    public static Key getPublicOrSecretEncryptingKey(JsonWebKey currentJwk, KeyEncryptionAlgorithm alg) {
+        if (alg != null && currentJwk.getAlgorithm() != null && !currentJwk.getAlgorithm().equals(alg.getAlgorithm())) {
+            return null;
         }
-        // if JWK set contains a single JWK only then try to use it
-        // but only if 'kid' is not set in both the token and this JWK
-        if (keys.size() == 1 && (kid == null || keys.get(0).getKeyId() == null)) {
-            return getPublicOrSecretEncryptingKey(keys.get(0));
-        }
-        return null;
-    }
-
-    static Key getPublicOrSecretEncryptingKey(JsonWebKey currentJwk) {
         List<String> keyOps = currentJwk.getKeyOps();
         if (keyOps == null || keyOps.contains("encryption")) {
             if ("oct".equals(currentJwk.getKeyType())) {
@@ -488,31 +475,37 @@ public final class KeyUtils {
 
         Key key = tryAsPemSigningPrivateKey(content, alg);
         if (key == null) {
-            List<JsonWebKey> jwks = loadJsonWebKeys(content);
-            if (jwks != null) {
-                key = getSigningKeyFromJwkSet(kid, jwks);
+            JsonWebKey jwk = getJwkKeyFromJwkSet(kid, content);
+            if (jwk != null) {
+                key = getPrivateOrSecretSigningKey(jwk, alg);
             }
         }
         return key;
     }
 
-    static Key getSigningKeyFromJwkSet(String kid, List<JsonWebKey> keys) {
-        if (kid != null) {
-            for (JsonWebKey currentJwk : keys) {
-                if (kid.equals(currentJwk.getKeyId())) {
-                    return getPrivateOrSecretSigningKey(currentJwk);
+    public static JsonWebKey getJwkKeyFromJwkSet(String kid, String keyContent) {
+        List<JsonWebKey> jwks = loadJsonWebKeys(keyContent);
+        if (jwks != null) {
+            if (kid != null) {
+                for (JsonWebKey currentJwk : jwks) {
+                    if (kid.equals(currentJwk.getKeyId())) {
+                        return currentJwk;
+                    }
                 }
             }
-        }
-        // if JWK set contains a single JWK only then try to use it
-        // but only if 'kid' is not set in both the token and this JWK
-        if (keys.size() == 1 && (kid == null || keys.get(0).getKeyId() == null)) {
-            return getPrivateOrSecretSigningKey(keys.get(0));
+            // if JWK set contains a single JWK only then try to use it
+            // but only if 'kid' is not set in both the token and this JWK
+            if (jwks.size() == 1 && (kid == null || jwks.get(0).getKeyId() == null)) {
+                return jwks.get(0);
+            }
         }
         return null;
     }
 
-    static Key getPrivateOrSecretSigningKey(JsonWebKey currentJwk) {
+    public static Key getPrivateOrSecretSigningKey(JsonWebKey currentJwk, SignatureAlgorithm alg) {
+        if (alg != null && currentJwk.getAlgorithm() != null && !currentJwk.getAlgorithm().equals(alg.getAlgorithm())) {
+            return null;
+        }
         List<String> keyOps = currentJwk.getKeyOps();
         if (keyOps == null || keyOps.contains("sign")) {
             if ("oct".equals(currentJwk.getKeyType())) {

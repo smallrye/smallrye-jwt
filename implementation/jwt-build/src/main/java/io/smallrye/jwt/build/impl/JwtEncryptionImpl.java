@@ -10,6 +10,7 @@ import java.util.Map;
 import javax.crypto.SecretKey;
 
 import org.jose4j.jwe.JsonWebEncryption;
+import org.jose4j.jwk.JsonWebKey;
 
 import io.smallrye.jwt.algorithm.ContentEncryptionAlgorithm;
 import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
@@ -189,10 +190,33 @@ class JwtEncryptionImpl implements JwtEncryptionBuilder {
 
     Key getEncryptionKeyFromKeyLocation(String keyLocation) {
         try {
+            String kid = (String) headers.get("kid");
             String algHeader = (String) headers.get("alg");
-            KeyEncryptionAlgorithm alg = algHeader == null ? KeyEncryptionAlgorithm.RSA_OAEP_256
-                    : KeyEncryptionAlgorithm.fromAlgorithm(algHeader);
-            Key key = KeyUtils.readEncryptionKey(keyLocation, (String) headers.get("kid"), alg);
+
+            String keyContent = KeyUtils.readKeyContent(keyLocation);
+            // Try PEM format first - default to RSA_OAEP_256 if no algorithm header is set
+            Key key = KeyUtils.tryAsPemEncryptionPublicKey(keyContent,
+                    (algHeader == null ? KeyEncryptionAlgorithm.RSA_OAEP_256
+                            : KeyEncryptionAlgorithm.fromAlgorithm(algHeader)));
+            if (key == null) {
+                // Try to load JWK from a single JWK resource or JWK set resource
+                JsonWebKey jwk = KeyUtils.getJwkKeyFromJwkSet(kid, keyContent);
+                if (jwk != null) {
+                    // if the user has already set the algorithm header then JWK `alg` header, if set, must match it
+                    key = KeyUtils.getPublicOrSecretEncryptingKey(jwk,
+                            (algHeader == null ? null : KeyEncryptionAlgorithm.fromAlgorithm(algHeader)));
+                    if (key != null) {
+                        // if the algorithm header is not set then use JWK `alg`
+                        if (algHeader == null && jwk.getAlgorithm() != null) {
+                            headers.put("alg", jwk.getAlgorithm());
+                        }
+                        // if 'kid' header is not set then use JWK `kid`
+                        if (kid == null && jwk.getKeyId() != null) {
+                            headers.put("kid", jwk.getKeyId());
+                        }
+                    }
+                }
+            }
             if (key == null) {
                 throw ImplMessages.msg.encryptionKeyCanNotBeLoadedFromLocation(keyLocation);
             }
