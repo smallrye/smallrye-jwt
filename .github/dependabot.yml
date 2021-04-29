@@ -1,0 +1,11 @@
+version: 2
+updates:
+- package-ecosystem: maven
+  directory: "/"
+  schedule:
+    interval: daily
+  open-pull-requests-limit: 10
+  ignore:
+  - dependency-name: jakarta.servlet:jakarta.servlet-api
+    versions:
+    - ">= 5.a, < 6"
