@@ -48,8 +48,7 @@ public interface JwtSignature {
 
     /**
      * Sign the claims with a key loaded from the location set with the "smallrye.jwt.sign.key.location"
-     * or "smallrye.jwt.sign.key-location" properties which can point to PEM, JWK or JWK set keys.
-     * Note: "smallrye.jwt.sign.key-location" property is deprecated and will be removed in the next major release.
+     * property which can point to PEM, JWK or JWK set keys.
      *
      * 'RS256' algorithm will be used unless a different algorithm has been set with {@code JwtSignatureBuilder}.
      * A key of size 2048 bits or larger MUST be used with the 'RS256' algorithm.
@@ -108,8 +107,7 @@ public interface JwtSignature {
 
     /**
      * Sign the claims with a key loaded from the location set with the "smallrye.jwt.sign.key.location"
-     * or "smallrye.jwt.sign.key-location" properties and encrypt the inner JWT by moving to {@link JwtEncryptionBuilder}.
-     * Note: "smallrye.jwt.sign.key-location" property is deprecated and will be removed in the next major release.
+     * property and encrypt the inner JWT by moving to {@link JwtEncryptionBuilder}.
      *
      * A key of size 2048 bits or larger MUST be used with the 'RS256' algorithm.
      *
