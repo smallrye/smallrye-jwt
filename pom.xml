@@ -41,7 +41,7 @@
     <version.microprofile.config>2.0</version.microprofile.config>
     <version.jose4j>0.7.7</version.jose4j>
     <version.resteasy>4.6.0.Final</version.resteasy>
-    <version.mokito>3.9.0</version.mokito>
+    <version.mokito>3.10.0</version.mokito>
   </properties>
 
   <licenses>
