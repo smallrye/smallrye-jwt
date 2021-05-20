@@ -30,9 +30,11 @@ public class JwtBuildUtils {
             claims.setIssuedAt(NumericDate.fromSeconds(currentTimeInSecs()));
         }
         setExpiryClaim(claims, tokenLifespan);
+
         if (!claims.hasClaim(Claims.jti.name())) {
             claims.setClaim(Claims.jti.name(), UUID.randomUUID().toString());
         }
+
         Boolean overrideMatchingClaims = getConfigProperty(NEW_TOKEN_OVERRIDE_CLAIMS, Boolean.class);
         if (Boolean.TRUE.equals(overrideMatchingClaims) || !claims.hasClaim(Claims.iss.name())) {
             String issuer = getConfigProperty(NEW_TOKEN_ISSUER, String.class);

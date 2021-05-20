@@ -45,19 +45,20 @@ public class JwtSignEncryptTest {
 
     @Test
     public void testSimpleInnerSignAndEncryptWithPemRsaPublicKey() throws Exception {
-        String jweCompact = Jwt.claims()
-                .claim("customClaim", "custom-value")
-                .innerSign()
-                .encrypt();
+        JwtClaimsBuilder builder = Jwt.claims().claim("customClaim", "custom-value");
+        String jti1 = checkRsaInnerSignedEncryptedClaims(builder.innerSign().encrypt());
+        Assert.assertNotNull(jti1);
+        String jti2 = checkRsaInnerSignedEncryptedClaims(builder.innerSign().encrypt());
+        Assert.assertNotNull(jti2);
 
-        checkRsaInnerSignedEncryptedClaims(jweCompact);
+        Assert.assertNotEquals(jti1, jti2);
     }
 
-    private void checkRsaInnerSignedEncryptedClaims(String jweCompact) throws Exception {
-        checkRsaInnerSignedEncryptedClaims(jweCompact, "RSA-OAEP-256");
+    private String checkRsaInnerSignedEncryptedClaims(String jweCompact) throws Exception {
+        return checkRsaInnerSignedEncryptedClaims(jweCompact, "RSA-OAEP-256");
     }
 
-    private void checkRsaInnerSignedEncryptedClaims(String jweCompact, String keyEncAlgo) throws Exception {
+    private String checkRsaInnerSignedEncryptedClaims(String jweCompact, String keyEncAlgo) throws Exception {
         checkJweHeaders(jweCompact, keyEncAlgo, null);
 
         JsonWebEncryption jwe = getJsonWebEncryption(jweCompact);
@@ -71,6 +72,7 @@ public class JwtSignEncryptTest {
         checkClaimsAndJwsHeaders(jwtCompact, claims, "RS256", null);
 
         Assert.assertEquals("custom-value", claims.getClaimValue("customClaim"));
+        return claims.getJwtId();
     }
 
     @Test

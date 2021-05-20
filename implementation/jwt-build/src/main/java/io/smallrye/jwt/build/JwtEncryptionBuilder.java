@@ -12,7 +12,9 @@ import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
  * The 'cty' (content type) header must be set to 'JWT' when the inner signed JWT is encrypted.
  * <p>
  * Note that JwtEncryptionBuilder implementations are not expected to be thread-safe.
- * 
+ * However reusing a single JwtEncryptionBuilder for creating more than one encrypted token is not recommended
+ * because a single JwtEncryptionBuilder can not provide a unique token identifier per every token.
+ *
  * @see <a href="https://tools.ietf.org/html/rfc7516">RFC7516</a>
  */
 public interface JwtEncryptionBuilder extends JwtEncryption {
