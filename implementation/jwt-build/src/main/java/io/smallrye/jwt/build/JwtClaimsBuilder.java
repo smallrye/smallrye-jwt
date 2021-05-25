@@ -17,6 +17,7 @@ import org.eclipse.microprofile.jwt.Claims;
  * <p>
  * JwtClaimsBuilder implementations must set the 'iat' (issued at time), 'exp' (expiration time)
  * and 'jti' (unique token identifier) claims unless they have already been set.
+ * JwtClaimsBuilder must ensure a 'jti' claim value is unique when the same builder is used for building more than one token.
  * <p>
  * By default the 'iat' claim is set to the current time in seconds and the 'exp' claim is set by adding a default token
  * lifespan value of 5 minutes to the 'iat' claim value. The 'smallrye.jwt.new-token.lifespan' property can be used to

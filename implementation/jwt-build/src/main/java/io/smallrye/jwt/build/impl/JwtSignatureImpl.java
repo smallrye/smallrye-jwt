@@ -9,6 +9,7 @@ import java.util.Map;
 
 import javax.crypto.SecretKey;
 
+import org.eclipse.microprofile.jwt.Claims;
 import org.jose4j.jwa.AlgorithmConstraints;
 import org.jose4j.jwk.JsonWebKey;
 import org.jose4j.jws.JsonWebSignature;
@@ -75,6 +76,8 @@ class JwtSignatureImpl implements JwtSignature {
             throw ex;
         } catch (Exception ex) {
             throw ImplMessages.msg.signatureException(ex);
+        } finally {
+            removeJti();
         }
     }
 
@@ -115,8 +118,11 @@ class JwtSignatureImpl implements JwtSignature {
      */
     @Override
     public JwtEncryptionBuilder innerSign() throws JwtSignatureException {
-
-        return new JwtEncryptionImpl(sign(), true);
+        try {
+            return new JwtEncryptionImpl(sign(), true);
+        } finally {
+            removeJti();
+        }
     }
 
     @Override
@@ -218,5 +224,9 @@ class JwtSignatureImpl implements JwtSignature {
             throw ImplMessages.msg.signingKeyCanNotBeLoadedFromLocation(keyLocation);
         }
 
+    }
+
+    void removeJti() {
+        claims.unsetClaim(Claims.jti.name());
     }
 }

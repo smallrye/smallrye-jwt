@@ -295,9 +295,16 @@ public class JwtSignTest {
 
     @Test
     public void testSignClaimsConfiguredKey() throws Exception {
-        String jwt = Jwt.claims()
-                .claim("customClaim", "custom-value")
-                .sign();
+        JwtClaimsBuilder builder = Jwt.claims().claim("customClaim", "custom-value");
+        String jti1 = doTestSignClaimsConfiguredKey(builder);
+        Assert.assertNotNull(jti1);
+        String jti2 = doTestSignClaimsConfiguredKey(builder);
+        Assert.assertNotNull(jti2);
+        Assert.assertNotEquals(jti1, jti2);
+    }
+
+    private String doTestSignClaimsConfiguredKey(JwtClaimsBuilder builder) throws Exception {
+        String jwt = builder.sign();
 
         JsonWebSignature jws = getVerifiedJws(jwt);
         JwtClaims claims = JwtClaims.parse(jws.getPayload());
@@ -306,6 +313,7 @@ public class JwtSignTest {
         checkDefaultClaimsAndHeaders(getJwsHeaders(jwt, 2), claims);
 
         Assert.assertEquals("custom-value", claims.getClaimValue("customClaim"));
+        return claims.getJwtId();
     }
 
     @Test
