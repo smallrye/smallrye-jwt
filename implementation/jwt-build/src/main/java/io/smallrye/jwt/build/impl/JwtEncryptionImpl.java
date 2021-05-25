@@ -22,7 +22,6 @@ import io.smallrye.jwt.util.KeyUtils;
  * Default JWT Encryption implementation
  */
 class JwtEncryptionImpl implements JwtEncryptionBuilder {
-    private static final String KEY_LOCATION_PROPERTY = "smallrye.jwt.encrypt.key.location";
 
     boolean innerSigned;
     String claims;
@@ -181,7 +180,7 @@ class JwtEncryptionImpl implements JwtEncryptionBuilder {
     }
 
     private static String getKeyLocationFromConfig() {
-        String keyLocation = JwtBuildUtils.getConfigProperty(KEY_LOCATION_PROPERTY, String.class);
+        String keyLocation = JwtBuildUtils.getConfigProperty(JwtBuildUtils.ENC_KEY_LOCATION_PROPERTY, String.class);
         if (keyLocation != null) {
             return keyLocation;
         }
@@ -199,6 +198,12 @@ class JwtEncryptionImpl implements JwtEncryptionBuilder {
                     (algHeader == null ? KeyEncryptionAlgorithm.RSA_OAEP_256
                             : KeyEncryptionAlgorithm.fromAlgorithm(algHeader)));
             if (key == null) {
+                if (kid == null) {
+                    kid = JwtBuildUtils.getConfigProperty(JwtBuildUtils.ENC_KEY_ID_PROPERTY, String.class);
+                    if (kid != null) {
+                        headers.put("kid", kid);
+                    }
+                }
                 // Try to load JWK from a single JWK resource or JWK set resource
                 JsonWebKey jwk = KeyUtils.getJwkKeyFromJwkSet(kid, keyContent);
                 if (jwk != null) {

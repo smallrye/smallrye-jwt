@@ -25,11 +25,10 @@ import io.smallrye.jwt.util.KeyUtils;
  * Default JWT Signature implementation
  */
 class JwtSignatureImpl implements JwtSignature {
-    private static final String KEY_LOCATION_PROPERTY = "smallrye.jwt.sign.key.location";
-
     JwtClaims claims = new JwtClaims();
     Map<String, Object> headers = new HashMap<>();
     Long tokenLifespan;
+    Key configuredPemKey;
 
     JwtSignatureImpl() {
     }
@@ -70,7 +69,7 @@ class JwtSignatureImpl implements JwtSignature {
      */
     public String sign() throws JwtSignatureException {
         try {
-            Key key = getSigningKeyFromKeyLocation(getKeyLocationFromConfig());
+            Key key = configuredPemKey != null ? configuredPemKey : getSigningKeyFromKeyLocation(getKeyLocationFromConfig());
             return signInternal(key);
         } catch (JwtSignatureException ex) {
             throw ex;
@@ -181,7 +180,7 @@ class JwtSignatureImpl implements JwtSignature {
     }
 
     static String getKeyLocationFromConfig() {
-        String keyLocation = JwtBuildUtils.getConfigProperty(KEY_LOCATION_PROPERTY, String.class);
+        String keyLocation = JwtBuildUtils.getConfigProperty(JwtBuildUtils.SIGN_KEY_LOCATION_PROPERTY, String.class);
         if (keyLocation != null) {
             return keyLocation;
         }
@@ -198,6 +197,13 @@ class JwtSignatureImpl implements JwtSignature {
             Key key = KeyUtils.tryAsPemSigningPrivateKey(keyContent,
                     (algHeader == null ? SignatureAlgorithm.RS256 : SignatureAlgorithm.fromAlgorithm(algHeader)));
             if (key == null) {
+                if (kid == null) {
+                    kid = JwtBuildUtils.getConfigProperty(JwtBuildUtils.SIGN_KEY_ID_PROPERTY, String.class);
+                    if (kid != null) {
+                        headers.put("kid", kid);
+                    }
+                }
+
                 // Try to load JWK from a single JWK resource or JWK set resource
                 JsonWebKey jwk = KeyUtils.getJwkKeyFromJwkSet(kid, keyContent);
                 if (jwk != null) {
@@ -215,6 +221,8 @@ class JwtSignatureImpl implements JwtSignature {
                         }
                     }
                 }
+            } else {
+                configuredPemKey = key;
             }
             if (key == null) {
                 throw ImplMessages.msg.signingKeyCanNotBeLoadedFromLocation(keyLocation);

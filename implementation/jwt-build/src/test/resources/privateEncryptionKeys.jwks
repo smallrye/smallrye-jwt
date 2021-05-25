@@ -1,0 +1,15 @@
+{
+"keys": [
+  {
+    "kty":"oct",
+    "k":"Fdh9u8rINxfivbrianbbVT1u232VQBZYKx1HGAGPt2I",
+    "kid": "secretkey1"
+  },
+  {
+    "kty":"oct",
+    "k":"mHgOIP5oLngqXKq0123456",
+    "kid": "secretkey3",
+    "alg": "A128KW"
+  }
+]
+}

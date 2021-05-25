@@ -45,13 +45,19 @@ public class JwtSignEncryptTest {
 
     @Test
     public void testSimpleInnerSignAndEncryptWithPemRsaPublicKey() throws Exception {
-        JwtClaimsBuilder builder = Jwt.claims().claim("customClaim", "custom-value");
-        String jti1 = checkRsaInnerSignedEncryptedClaims(builder.innerSign().encrypt());
-        Assert.assertNotNull(jti1);
-        String jti2 = checkRsaInnerSignedEncryptedClaims(builder.innerSign().encrypt());
-        Assert.assertNotNull(jti2);
-
-        Assert.assertNotEquals(jti1, jti2);
+        JwtBuildConfigSource configSource = getConfigSource();
+        try {
+            configSource.resetSigningKeyCallCount();
+            JwtClaimsBuilder builder = Jwt.claims().claim("customClaim", "custom-value");
+            String jti1 = checkRsaInnerSignedEncryptedClaims(builder.innerSign().encrypt());
+            Assert.assertNotNull(jti1);
+            String jti2 = checkRsaInnerSignedEncryptedClaims(builder.innerSign().encrypt());
+            Assert.assertNotNull(jti2);
+            Assert.assertNotEquals(jti1, jti2);
+            Assert.assertEquals(1, configSource.getSigningKeyCallCount());
+        } finally {
+            configSource.resetSigningKeyCallCount();
+        }
     }
 
     private String checkRsaInnerSignedEncryptedClaims(String jweCompact) throws Exception {
