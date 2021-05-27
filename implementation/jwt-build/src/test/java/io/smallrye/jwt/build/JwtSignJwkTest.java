@@ -53,6 +53,38 @@ public class JwtSignJwkTest {
     }
 
     @Test
+    public void testSignJwkSetNoConfiguredKid() throws Exception {
+        assertThrows("JwtSignatureException is expected", JwtSignatureException.class,
+                () -> Jwt.preferredUserName("alice").sign("/privateSigningKeys.jwks"));
+    }
+
+    @Test
+    public void testSignJwkSetWithKid() throws Exception {
+        String jwt = Jwt.preferredUserName("alice").jws().keyId("secretkey1").sign("/privateSigningKeys.jwks");
+        JsonWebSignature jws = getVerifiedJws(jwt, readSecretKey("/privateKey.jwk"));
+        Assert.assertEquals("secretkey1", jws.getHeader("kid"));
+        Assert.assertEquals("HS256", jws.getHeader("alg"));
+        JwtClaims claims = JwtClaims.parse(jws.getPayload());
+        Assert.assertEquals("alice", claims.getClaimValue("preferred_username"));
+    }
+
+    @Test
+    public void testSignJwkSetWithConfiguredKid() throws Exception {
+        JwtBuildConfigSource configSource = JwtSignTest.getConfigSource();
+        try {
+            configSource.setSigningKeyId("secretkey2");
+            String jwt = Jwt.preferredUserName("alice").sign("/privateSigningKeys.jwks");
+            JsonWebSignature jws = getVerifiedJws(jwt, readSecretKey("/privateKeyHS512.jwk", SignatureAlgorithm.HS512));
+            Assert.assertEquals("secretkey2", jws.getHeader("kid"));
+            Assert.assertEquals("HS512", jws.getHeader("alg"));
+            JwtClaims claims = JwtClaims.parse(jws.getPayload());
+            Assert.assertEquals("alice", claims.getClaimValue("preferred_username"));
+        } finally {
+            configSource.setSigningKeyId(null);
+        }
+    }
+
+    @Test
     public void testAlgorithmMismatch() throws Exception {
         assertThrows("JwtSignatureException is expected", JwtSignatureException.class,
                 () -> Jwt.preferredUserName("alice").jws().algorithm(SignatureAlgorithm.HS256)

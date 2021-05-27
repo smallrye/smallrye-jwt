@@ -8,54 +8,67 @@ import java.util.Set;
 
 import org.eclipse.microprofile.config.spi.ConfigSource;
 
-public class JwtBuildConfigSource implements ConfigSource {
-    private static final String SIGN_KEY_LOCATION_PROPERTY = "smallrye.jwt.sign.key.location";
-    private static final String ENC_KEY_LOCATION_PROPERTY = "smallrye.jwt.encrypt.key.location";
+import io.smallrye.jwt.build.impl.JwtBuildUtils;
 
-    boolean signingKeyAvailable = true;
+public class JwtBuildConfigSource implements ConfigSource {
+
+    private static final Set<String> PROPERTY_NAMES = new HashSet<>(Arrays.asList(JwtBuildUtils.SIGN_KEY_LOCATION_PROPERTY,
+            JwtBuildUtils.ENC_KEY_LOCATION_PROPERTY,
+            JwtBuildUtils.SIGN_KEY_ID_PROPERTY,
+            JwtBuildUtils.ENC_KEY_ID_PROPERTY,
+            JwtBuildUtils.NEW_TOKEN_ISSUER_PROPERTY,
+            JwtBuildUtils.NEW_TOKEN_AUDIENCE_PROPERTY,
+            JwtBuildUtils.NEW_TOKEN_LIFESPAN_PROPERTY,
+            JwtBuildUtils.NEW_TOKEN_OVERRIDE_CLAIMS_PROPERTY));
+
     boolean overrideMatchingClaims;
     boolean lifespanPropertyRequired;
     boolean issuerPropertyRequired;
     boolean audiencePropertyRequired;
+    int signingKeyCallCount;
     String encryptionKeyLocation = "/publicKey.pem";
     String signingKeyLocation = "/privateKey.pem";
-    String signingKeyLocProperty = SIGN_KEY_LOCATION_PROPERTY;
-    String encryptionKeyLocProperty = ENC_KEY_LOCATION_PROPERTY;
+
+    private String signingKeyId;
+    private String encryptionKeyId;
 
     @Override
     public Map<String, String> getProperties() {
         Map<String, String> map = new HashMap<>();
-        if (signingKeyAvailable) {
-            map.put(signingKeyLocProperty, signingKeyLocation);
+        map.put(JwtBuildUtils.SIGN_KEY_LOCATION_PROPERTY, signingKeyLocation);
+
+        if (encryptionKeyId != null) {
+            map.put(JwtBuildUtils.ENC_KEY_ID_PROPERTY, encryptionKeyId);
         }
-        map.put(encryptionKeyLocProperty, encryptionKeyLocation);
+        if (signingKeyId != null) {
+            map.put(JwtBuildUtils.SIGN_KEY_ID_PROPERTY, signingKeyId);
+        }
+        map.put(JwtBuildUtils.ENC_KEY_LOCATION_PROPERTY, encryptionKeyLocation);
         if (lifespanPropertyRequired) {
-            map.put("smallrye.jwt.new-token.lifespan", "2000");
+            map.put(JwtBuildUtils.NEW_TOKEN_LIFESPAN_PROPERTY, "2000");
         }
         if (issuerPropertyRequired) {
-            map.put("smallrye.jwt.new-token.issuer", "https://custom-issuer");
+            map.put(JwtBuildUtils.NEW_TOKEN_ISSUER_PROPERTY, "https://custom-issuer");
         }
         if (audiencePropertyRequired) {
-            map.put("smallrye.jwt.new-token.audience", "https://custom-audience");
+            map.put(JwtBuildUtils.NEW_TOKEN_AUDIENCE_PROPERTY, "https://custom-audience");
         }
-        if (overrideMatchingClaims) {
-            map.put("smallrye.jwt.new-token.override-matching-claims", String.valueOf(overrideMatchingClaims));
-        }
+
+        map.put(JwtBuildUtils.NEW_TOKEN_OVERRIDE_CLAIMS_PROPERTY, String.valueOf(overrideMatchingClaims));
         return map;
     }
 
     @Override
     public String getValue(String propertyName) {
+        if (JwtBuildUtils.SIGN_KEY_LOCATION_PROPERTY.equals(propertyName)) {
+            signingKeyCallCount++;
+        }
         return getProperties().get(propertyName);
     }
 
     @Override
     public String getName() {
         return "test-source";
-    }
-
-    public void setSigningKeyAvailability(boolean available) {
-        signingKeyAvailable = available;
     }
 
     public void setEncryptionKeyLocation(String location) {
@@ -80,15 +93,27 @@ public class JwtBuildConfigSource implements ConfigSource {
 
     @Override
     public Set<String> getPropertyNames() {
-        return new HashSet<>(Arrays.asList("smallrye.jwt.sign.key-location",
-                "smallrye.jwt.encrypt.key-location",
-                "smallrye.jwt.new-token.lifespan",
-                "smallrye.jwt.new-token.issuer",
-                "smallrye.jwt.new-token.audience",
-                "smallrye.jwt.new-token.override-matching-claims"));
+        return PROPERTY_NAMES;
     }
 
     public void setOverrideMatchingClaims(boolean override) {
         overrideMatchingClaims = override;
     }
+
+    public void resetSigningKeyCallCount() {
+        signingKeyCallCount = 0;
+    }
+
+    public Object getSigningKeyCallCount() {
+        return signingKeyCallCount;
+    }
+
+    public void setSigningKeyId(String signingKeyId) {
+        this.signingKeyId = signingKeyId;
+    }
+
+    public void setEncryptonKeyId(String encryptionKeyId) {
+        this.encryptionKeyId = encryptionKeyId;
+    }
+
 }
