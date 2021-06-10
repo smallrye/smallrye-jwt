@@ -39,7 +39,7 @@
     <version.io.smallrye.config>2.3.0</version.io.smallrye.config>
     <version.eclipse.microprofile.jwt>1.2.1</version.eclipse.microprofile.jwt>
     <version.microprofile.config>2.0</version.microprofile.config>
-    <version.jose4j>0.7.7</version.jose4j>
+    <version.jose4j>0.7.8</version.jose4j>
     <version.resteasy>4.6.0.Final</version.resteasy>
     <version.mokito>3.11.0</version.mokito>
   </properties>
