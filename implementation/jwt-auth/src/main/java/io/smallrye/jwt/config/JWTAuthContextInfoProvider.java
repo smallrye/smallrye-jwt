@@ -318,6 +318,8 @@ public class JWTAuthContextInfoProvider {
     /**
      * The maximum number of seconds that a JWT may be issued for use. Effectively, the difference
      * between the expiration date of the JWT and the issued at date must not exceed this value.
+     * Note that setting this property to a non-positive value relaxes the requirement for the token to have a valid 'iat'
+     * (issued at) claim.
      */
     @Inject
     @ConfigProperty(name = "smallrye.jwt.time-to-live")
