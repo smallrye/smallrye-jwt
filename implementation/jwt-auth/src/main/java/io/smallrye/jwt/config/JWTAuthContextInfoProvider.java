@@ -17,17 +17,23 @@
 package io.smallrye.jwt.config;
 
 import java.io.IOException;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.Dependent;
+import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.Produces;
 import javax.inject.Inject;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.jwt.config.Names;
 
+import io.smallrye.converters.api.Converter;
 import io.smallrye.jwt.KeyFormat;
 import io.smallrye.jwt.SmallryeJwtUtils;
 import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
@@ -45,6 +51,9 @@ public class JWTAuthContextInfoProvider {
     private static final String BEARER_SCHEME = "Bearer";
     private static final String NONE = "NONE";
     private static final String DEFAULT_GROUPS_SEPARATOR = " ";
+
+    @Inject
+    Instance<Converter<?>> converters;
 
     /**
      * Create JWTAuthContextInfoProvider with the public key and issuer
@@ -526,7 +535,23 @@ public class JWTAuthContextInfoProvider {
         contextInfo.setRequiredClaims(requiredClaims.orElse(null));
         contextInfo.setRelaxVerificationKeyValidation(relaxVerificationKeyValidation);
         contextInfo.setVerifyCertificateThumbprint(verifyCertificateThumbprint);
+
+        Map<Class<?>, Converter<?>> converterMap = createConverterMap();
+        contextInfo.setConverters(converterMap);
         return Optional.of(contextInfo);
+    }
+
+    private Map<Class<?>, Converter<?>> createConverterMap() {
+        if (converters != null && converters.isResolvable()) {
+            Map<Class<?>, Converter<?>> map = new HashMap<>();
+            for (Iterator<Converter<?>> it = converters.iterator(); it.hasNext();) {
+                Converter<?> converter = it.next();
+                map.put(String.class, converter);
+            }
+            return map;
+        } else {
+            return Collections.emptyMap();
+        }
     }
 
     @Produces

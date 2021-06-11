@@ -42,6 +42,7 @@
     <version.jose4j>0.7.8</version.jose4j>
     <version.resteasy>4.6.0.Final</version.resteasy>
     <version.mokito>3.11.1</version.mokito>
+    <version.smallrye.converters>1.0.0</version.smallrye.converters>
   </properties>
 
   <licenses>
@@ -113,6 +114,12 @@
         <groupId>org.bitbucket.b_c</groupId>
         <artifactId>jose4j</artifactId>
         <version>${version.jose4j}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.smallrye.converters</groupId>
+        <artifactId>smallrye-converters</artifactId>
+        <version>${version.smallrye.converters}</version>
       </dependency>
 
       <!-- Dependencies provided by the project -->
