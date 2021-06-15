@@ -21,6 +21,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.testng.Assert;
 
+import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 import io.smallrye.jwt.build.Jwt;
 import io.smallrye.jwt.config.JWTAuthContextInfoProvider;
 import io.smallrye.jwt.util.KeyUtils;
@@ -28,6 +29,10 @@ import io.smallrye.jwt.util.ResourceUtils;
 
 public class DefaultJWTTokenParserTest {
 
+    private static final String TOKEN_NO_ISSUED_AT = "eyJ0eXAiOiJKV1QiLA0KICJhbGciOiJIUzI1NiJ9"
+            + ".eyJpc3MiOiJqb2UiLA0KICJleHAiOjEzMDA4MTkzODAsDQogImh0dHA6Ly9leGFtcGxlLmNvbS9pc19yb290Ijp0cnVlfQ"
+            + ".dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk";
+    private static final String ENCODED_SECRET_KEY = "AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow";
     private static final String TCK_TOKEN1_AUD = "s6BhdRkqt3";
 
     RSAPublicKey publicKey;
@@ -98,6 +103,37 @@ public class DefaultJWTTokenParserTest {
         assertNull(config.getMaxTimeToLiveSecs());
         JwtContext context = parser.parse(TokenUtils.signClaims("/Token1.json"), config);
         assertNotNull(context);
+    }
+
+    @Test
+    public void testTokenNoIssuedAtFailed() throws Throwable {
+        JWTAuthContextInfo context = new JWTAuthContextInfo();
+        context.setIssuedBy("joe");
+        context.setSignatureAlgorithm(SignatureAlgorithm.HS256);
+        context.setSecretVerificationKey(KeyUtils.createSecretKeyFromEncodedSecret(ENCODED_SECRET_KEY));
+        context.setExpGracePeriodSecs(Integer.MAX_VALUE);
+        context.setDefaultSubjectClaim("iss");
+
+        ParseException thrown = assertThrows("InvalidJwtException is expected",
+                ParseException.class, () -> parser.parse(TOKEN_NO_ISSUED_AT, context));
+        assertTrue(thrown.getCause() instanceof InvalidJwtException);
+    }
+
+    @Test
+    public void testTokenNoIssuedAtAllowed() throws Throwable {
+        JWTAuthContextInfo context = new JWTAuthContextInfo();
+        context.setIssuedBy("joe");
+        context.setSignatureAlgorithm(SignatureAlgorithm.HS256);
+        context.setSecretVerificationKey(KeyUtils.createSecretKeyFromEncodedSecret(ENCODED_SECRET_KEY));
+        context.setMaxTimeToLiveSecs(0L);
+        context.setExpGracePeriodSecs(Integer.MAX_VALUE);
+        context.setDefaultSubjectClaim("iss");
+
+        JwtClaims claims = parser.parse(TOKEN_NO_ISSUED_AT, context).getJwtClaims();
+        assertEquals("joe", claims.getIssuer());
+        assertNotNull(claims.getExpirationTime());
+        assertTrue(claims.getClaimValue("http://example.com/is_root", Boolean.class));
+
     }
 
     @Test

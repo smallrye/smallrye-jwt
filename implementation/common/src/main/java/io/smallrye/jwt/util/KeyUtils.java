@@ -216,6 +216,11 @@ public final class KeyUtils {
         return new SecretKeySpec(secretBytes, "AES");
     }
 
+    public static SecretKey createSecretKeyFromEncodedSecret(String secret) {
+        byte[] secretBytes = Base64.getUrlDecoder().decode(secret);
+        return new SecretKeySpec(secretBytes, "AES");
+    }
+
     /**
      * Generates a SecretKey.
      *

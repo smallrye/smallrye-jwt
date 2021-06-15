@@ -118,7 +118,11 @@ public class DefaultJWTTokenParser {
 
             builder.setRequireExpirationTime();
 
-            builder.setRequireIssuedAt();
+            final boolean issuedAtRequired = authContextInfo.getMaxTimeToLiveSecs() == null
+                    || authContextInfo.getMaxTimeToLiveSecs() > 0;
+            if (issuedAtRequired) {
+                builder.setRequireIssuedAt();
+            }
 
             if (authContextInfo.getIssuedBy() != null) {
                 builder.setExpectedIssuer(authContextInfo.getIssuedBy());
@@ -141,7 +145,9 @@ public class DefaultJWTTokenParser {
             JwtContext jwtContext = jwtConsumer.process(token);
             JwtClaims claimsSet = jwtContext.getJwtClaims();
 
-            verifyIatAndExpAndTimeToLive(authContextInfo, claimsSet);
+            if (issuedAtRequired) {
+                verifyIatAndExpAndTimeToLive(authContextInfo, claimsSet);
+            }
             verifyRequiredClaims(authContextInfo, jwtContext);
 
             PrincipalUtils.setClaims(claimsSet, token, authContextInfo);
