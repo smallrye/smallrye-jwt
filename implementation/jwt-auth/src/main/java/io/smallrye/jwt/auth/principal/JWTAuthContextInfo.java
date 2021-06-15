@@ -20,10 +20,12 @@ import java.security.PublicKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import javax.crypto.SecretKey;
 
+import io.smallrye.converters.api.Converter;
 import io.smallrye.jwt.KeyFormat;
 import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
@@ -64,6 +66,7 @@ public class JWTAuthContextInfo {
     private Set<String> requiredClaims;
     private boolean relaxVerificationKeyValidation = true;
     private boolean verifyCertificateThumbprint;
+    private Map<Class<?>, Converter<?>> converters = Collections.emptyMap();
 
     public JWTAuthContextInfo() {
     }
@@ -121,6 +124,7 @@ public class JWTAuthContextInfo {
         this.requiredClaims = orig.requiredClaims;
         this.relaxVerificationKeyValidation = orig.relaxVerificationKeyValidation;
         this.verifyCertificateThumbprint = orig.verifyCertificateThumbprint;
+        this.converters = orig.converters;
     }
 
     @Deprecated
@@ -406,6 +410,7 @@ public class JWTAuthContextInfo {
                 ", groupsSeparator='" + groupsSeparator + '\'' +
                 ", relaxVerificationKeyValidation=" + relaxVerificationKeyValidation +
                 ", verifyCertificateThumbprint=" + verifyCertificateThumbprint +
+                ", converters=" + converters +
                 '}';
     }
 
@@ -423,5 +428,13 @@ public class JWTAuthContextInfo {
 
     public void setVerifyCertificateThumbprint(boolean verifyCertificateThumbprint) {
         this.verifyCertificateThumbprint = verifyCertificateThumbprint;
+    }
+
+    public Map<Class<?>, Converter<?>> getConverters() {
+        return converters;
+    }
+
+    public void setConverters(Map<Class<?>, Converter<?>> converters) {
+        this.converters = converters;
     }
 }

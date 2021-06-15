@@ -16,15 +16,20 @@
 package io.smallrye.jwt.auth.principal;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+
+import javax.json.JsonObject;
 
 import org.eclipse.microprofile.jwt.Claims;
 import org.jose4j.jwt.JwtClaims;
 import org.jose4j.jwt.MalformedClaimException;
 
+import io.smallrye.converters.api.Converter;
 import io.smallrye.jwt.JsonUtils;
 
 /**
@@ -34,6 +39,7 @@ import io.smallrye.jwt.JsonUtils;
  */
 public class DefaultJWTCallerPrincipal extends JWTCallerPrincipal {
     private final JwtClaims claimsSet;
+    private Map<Class<?>, Converter<?>> converters = Collections.emptyMap();
 
     /**
      * Create the DefaultJWTCallerPrincipal from the parsed JWT token and the extracted principal name
@@ -50,6 +56,11 @@ public class DefaultJWTCallerPrincipal extends JWTCallerPrincipal {
 
     public DefaultJWTCallerPrincipal(String tokenType, JwtClaims claimsSet) {
         this(getRawToken(claimsSet), tokenType, claimsSet);
+    }
+
+    public DefaultJWTCallerPrincipal(String tokenType, JwtClaims claimsSet, Map<Class<?>, Converter<?>> converters) {
+        this(getRawToken(claimsSet), tokenType, claimsSet);
+        this.converters = converters;
     }
 
     public DefaultJWTCallerPrincipal(JwtClaims claimsSet) {
@@ -166,9 +177,15 @@ public class DefaultJWTCallerPrincipal extends JWTCallerPrincipal {
 
     protected void replaceClaimValueWithJsonValue(String name) {
         try {
-            final Object object = claimsSet.getClaimValue(name, Object.class);
+            Object object = claimsSet.getClaimValue(name, Object.class);
             if (!(object instanceof String)) {
-                claimsSet.setClaim(name, JsonUtils.wrapValue(object));
+
+                object = JsonUtils.wrapValue(object);
+                if (object instanceof JsonObject && converters.containsKey(JsonObject.class)) {
+                    object = converters.get(JsonObject.class).convert(object.toString());
+                }
+
+                claimsSet.setClaim(name, object);
             }
         } catch (MalformedClaimException e) {
             PrincipalLogging.log.replaceClaimValueWithJsonFailure(name, e);
