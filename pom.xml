@@ -40,7 +40,7 @@
     <version.eclipse.microprofile.jwt>1.2.1</version.eclipse.microprofile.jwt>
     <version.microprofile.config>2.0</version.microprofile.config>
     <version.jose4j>0.7.8</version.jose4j>
-    <version.resteasy>4.7.0.Final</version.resteasy>
+    <version.resteasy>4.7.1.Final</version.resteasy>
     <version.mokito>3.11.2</version.mokito>
   </properties>
 
