@@ -139,7 +139,7 @@ public class JwtEncryptTest {
             Jwt.claims().jwe().encrypt(key);
             Assert.fail("JwtEncryptionException is expected due to the invalid key size");
         } catch (JwtEncryptionException ex) {
-            Assert.assertEquals("SRJWT05001: A key of size 2048 bits or larger MUST be used with the 'RSA-OAEP-256' algorithm",
+            Assert.assertEquals("SRJWT05001: A key of size 2048 bits or larger MUST be used with the 'RSA-OAEP' algorithm",
                     ex.getMessage());
         }
     }
@@ -284,7 +284,7 @@ public class JwtEncryptTest {
     }
 
     private static void checkJweHeaders(String jweCompact) throws Exception {
-        checkJweHeaders(jweCompact, "RSA-OAEP-256", 3);
+        checkJweHeaders(jweCompact, "RSA-OAEP", 3);
     }
 
     private static void checkJweHeaders(String jweCompact, String keyEncKeyAlg, int size) throws Exception {
@@ -306,7 +306,7 @@ public class JwtEncryptTest {
     private static void checkRsaEncJweHeaders(String jweCompact) throws Exception {
         Map<String, Object> jweHeaders = getJweHeaders(jweCompact);
         Assert.assertEquals(2, jweHeaders.size());
-        Assert.assertEquals("RSA-OAEP-256", jweHeaders.get("alg"));
+        Assert.assertEquals("RSA-OAEP", jweHeaders.get("alg"));
         Assert.assertEquals("A256GCM", jweHeaders.get("enc"));
     }
 

@@ -124,9 +124,23 @@ public class DefaultJWTParserTest {
     @Test
     public void testDecryptWithRsaPrivateKey() throws Exception {
         String jwtString = Jwt.upn("jdoe@example.com")
-                .jwe().keyAlgorithm(KeyEncryptionAlgorithm.RSA_OAEP)
+                .jwe()
                 .encrypt(KeyUtils.readEncryptionPublicKey("/publicKey.pem"));
         JsonWebToken jwt = new DefaultJWTParser().decrypt(jwtString, KeyUtils.readDecryptionPrivateKey("/privateKey.pem"));
+        assertEquals("jdoe@example.com", jwt.getName());
+    }
+
+    @Test
+    public void testDecryptWithRsaPrivateKeyRsaOaep256() throws Exception {
+        String jwtString = Jwt.upn("jdoe@example.com")
+                .jwe().keyAlgorithm(KeyEncryptionAlgorithm.RSA_OAEP_256)
+                .encrypt(KeyUtils.readEncryptionPublicKey("/publicKey.pem"));
+
+        JWTAuthContextInfo config = new JWTAuthContextInfo();
+        config.setDecryptionKeyLocation("/privateKey.pem");
+        config.setKeyEncryptionAlgorithm(KeyEncryptionAlgorithm.RSA_OAEP_256);
+        JsonWebToken jwt = new DefaultJWTParser().parse(jwtString, config);
+
         assertEquals("jdoe@example.com", jwt.getName());
     }
 

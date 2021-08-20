@@ -162,7 +162,7 @@ class JwtEncryptionImpl implements JwtEncryptionBuilder {
         }
         if (alg == null) {
             if (keyEncryptionKey instanceof RSAPublicKey) {
-                alg = KeyEncryptionAlgorithm.RSA_OAEP_256.getAlgorithm();
+                alg = KeyEncryptionAlgorithm.RSA_OAEP.getAlgorithm();
             } else if (keyEncryptionKey instanceof SecretKey) {
                 alg = KeyEncryptionAlgorithm.A256KW.getAlgorithm();
             } else if (keyEncryptionKey instanceof ECPublicKey) {
