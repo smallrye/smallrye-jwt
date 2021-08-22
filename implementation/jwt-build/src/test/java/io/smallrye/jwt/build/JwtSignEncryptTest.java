@@ -61,7 +61,7 @@ public class JwtSignEncryptTest {
     }
 
     private String checkRsaInnerSignedEncryptedClaims(String jweCompact) throws Exception {
-        return checkRsaInnerSignedEncryptedClaims(jweCompact, "RSA-OAEP-256");
+        return checkRsaInnerSignedEncryptedClaims(jweCompact, "RSA-OAEP");
     }
 
     private String checkRsaInnerSignedEncryptedClaims(String jweCompact, String keyEncAlgo) throws Exception {
@@ -133,7 +133,7 @@ public class JwtSignEncryptTest {
                 .keyId("key-enc-key-id")
                 .encrypt();
 
-        checkJweHeaders(jweCompact, "RSA-OAEP-256", "key-enc-key-id");
+        checkJweHeaders(jweCompact, "RSA-OAEP", "key-enc-key-id");
 
         JsonWebEncryption jwe = getJsonWebEncryption(jweCompact);
 
@@ -165,7 +165,7 @@ public class JwtSignEncryptTest {
             configSource.setEncryptionKeyLocation("/publicKey.pem");
         }
 
-        checkJweHeaders(jweCompact, "RSA-OAEP-256", "key1");
+        checkJweHeaders(jweCompact, "RSA-OAEP", "key1");
 
         JsonWebEncryption jwe = getJsonWebEncryption(jweCompact);
 
