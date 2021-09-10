@@ -24,7 +24,7 @@ jobs:
           echo '::error::Cannot release a SNAPSHOT version.'
           exit 1
 
-      - uses: radcortez/milestone-review-action@master
+      - uses: radcortez/milestone-review-action@main
         name: milestone review
         with:
           github-token: ${{secrets.GITHUB_TOKEN}}
