@@ -157,22 +157,40 @@ class JwtEncryptionImpl implements JwtEncryptionBuilder {
 
     private String getKeyEncryptionAlgorithm(Key keyEncryptionKey) {
         String alg = (String) headers.get("alg");
+        if (alg == null) {
+            try {
+                alg = JwtBuildUtils.getConfigProperty(JwtBuildUtils.NEW_TOKEN_KEY_ENCRYPTION_ALG_PROPERTY, String.class);
+                if (alg != null) {
+                    alg = KeyEncryptionAlgorithm.fromAlgorithm(alg).getAlgorithm();
+                }
+            } catch (Exception ex) {
+                throw ImplMessages.msg.unsupportedKeyEncryptionAlgorithm(alg);
+            }
+        }
         if ("dir".equals(alg)) {
             throw ImplMessages.msg.directContentEncryptionUnsupported();
         }
-        if (alg == null) {
-            if (keyEncryptionKey instanceof RSAPublicKey) {
-                alg = KeyEncryptionAlgorithm.RSA_OAEP.getAlgorithm();
-            } else if (keyEncryptionKey instanceof SecretKey) {
-                alg = KeyEncryptionAlgorithm.A256KW.getAlgorithm();
-            } else if (keyEncryptionKey instanceof ECPublicKey) {
-                alg = KeyEncryptionAlgorithm.ECDH_ES_A256KW.getAlgorithm();
+
+        if (keyEncryptionKey instanceof RSAPublicKey) {
+            if (alg == null) {
+                return KeyEncryptionAlgorithm.RSA_OAEP.getAlgorithm();
+            } else if (alg.startsWith("RS")) {
+                return alg;
+            }
+        } else if (keyEncryptionKey instanceof ECPublicKey) {
+            if (alg == null) {
+                return KeyEncryptionAlgorithm.ECDH_ES_A256KW.getAlgorithm();
+            } else if (alg.startsWith("EC")) {
+                return alg;
+            }
+        } else if (keyEncryptionKey instanceof SecretKey) {
+            if (alg == null) {
+                return KeyEncryptionAlgorithm.A256KW.getAlgorithm();
+            } else if (alg.startsWith("A") || alg.startsWith("PBE")) {
+                return alg;
             }
         }
-        if (alg == null) {
-            throw ImplMessages.msg.unsupportedKeyEncryptionAlgorithm(keyEncryptionKey.getAlgorithm());
-        }
-        return alg;
+        throw ImplMessages.msg.unsupportedKeyEncryptionAlgorithm(keyEncryptionKey.getAlgorithm());
     }
 
     private String getContentEncryptionAlgorithm() {

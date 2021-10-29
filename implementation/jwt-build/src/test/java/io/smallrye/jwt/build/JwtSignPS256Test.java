@@ -70,4 +70,26 @@ public class JwtSignPS256Test {
         Assert.assertEquals("custom-value", claims.getClaimValue("customClaim"));
     }
 
+    @Test
+    public void testSignClaimsPS256Configured() throws Exception {
+        JwtBuildConfigSource configSource = JwtSignTest.getConfigSource();
+        configSource.setSignatureAlgorithm("PS256");
+        String jwt = null;
+        try {
+            jwt = Jwt.claims()
+                    .claim("customClaim", "custom-value")
+                    .sign("/privateKey.pem");
+        } finally {
+            configSource.setSignatureAlgorithm(null);
+        }
+
+        JsonWebSignature jws = JwtSignTest.getVerifiedJws(jwt, KeyUtils.readPublicKey("/publicKey.pem"));
+        JwtClaims claims = JwtClaims.parse(jws.getPayload());
+
+        Assert.assertEquals(4, claims.getClaimsMap().size());
+        JwtSignTest.checkDefaultClaimsAndHeaders(JwtSignTest.getJwsHeaders(jwt, 2), claims, "PS256", 300);
+
+        Assert.assertEquals("custom-value", claims.getClaimValue("customClaim"));
+    }
+
 }
