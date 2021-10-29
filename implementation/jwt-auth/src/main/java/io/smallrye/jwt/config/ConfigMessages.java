@@ -11,8 +11,8 @@ import org.jboss.logging.annotations.MessageBundle;
 interface ConfigMessages {
     ConfigMessages msg = Messages.getBundle(ConfigMessages.class);
 
-    @Message(id = 2000, value = "HS256 verification algorithm is currently not supported")
-    DeploymentException hs256NotSupported();
+    @Message(id = 2000, value = "HMAC verification algorithms are not supported when the 'mp.jwt.verify.publickey.location' property is set, use 'smallrye.jwt.verify.key.location' instead")
+    DeploymentException hmacNotSupported();
 
     @Message(id = 2001, value = "Failed to decode the MP JWT Public Key")
     DeploymentException parsingPublicKeyFailed(@Cause Throwable throwable);
