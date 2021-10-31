@@ -346,13 +346,13 @@ public class JWTAuthContextInfoProvider {
     private int forcedJwksRefreshInterval;
 
     /**
-     * Supported JSON Web Algorithm asymmetric signature algorithm (RS256 or ES256), default is RS256.
+     * Supported JSON Web Algorithm asymmetric or symmetric signature algorithm.
      *
-     * @deprecated Use {@link JWTAuthContextInfoProvider#mpJwtPublicKeyAlgorithm}
+     * This property should only be used for setting a required symmetric algorithm such as 'HS256'.
+     * It is deprecated for setting asymmetric algorithms such as 'ES256' - use {@link #mpJwtPublicKeyAlgorithm} instead.
      */
     @Inject
     @ConfigProperty(name = "smallrye.jwt.verify.algorithm")
-    @Deprecated
     private Optional<SignatureAlgorithm> signatureAlgorithm;
 
     /**
@@ -498,15 +498,18 @@ public class JWTAuthContextInfoProvider {
         if (mpJwtPublicKeyAlgorithm.isPresent()) {
             resolvedAlgorithm = mpJwtPublicKeyAlgorithm;
         } else if (signatureAlgorithm.isPresent()) {
-            ConfigLogging.log.replacedConfig("smallrye.jwt.verify.algorithm", "mp.jwt.verify.publickey.algorithm");
+            if (signatureAlgorithm.get().getAlgorithm().startsWith("HS")) {
+                if (resolvedVerifyKeyLocation == mpJwtLocation) {
+                    throw ConfigMessages.msg.hmacNotSupported();
+                }
+            } else {
+                ConfigLogging.log.replacedConfig("smallrye.jwt.verify.algorithm", "mp.jwt.verify.publickey.algorithm");
+            }
             resolvedAlgorithm = signatureAlgorithm;
         } else {
             resolvedAlgorithm = Optional.empty();
         }
         if (resolvedAlgorithm.isPresent()) {
-            if (resolvedAlgorithm.get() == SignatureAlgorithm.HS256 && resolvedVerifyKeyLocation == mpJwtLocation) {
-                throw ConfigMessages.msg.hs256NotSupported();
-            }
             contextInfo.setSignatureAlgorithm(resolvedAlgorithm.get());
         } else {
             contextInfo.setSignatureAlgorithm(SignatureAlgorithm.RS256);
