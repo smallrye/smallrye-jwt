@@ -131,6 +131,45 @@ public class JwtEncryptTest {
     }
 
     @Test
+    public void testEncryptWithRsaOaep256() throws Exception {
+        String jweCompact = Jwt.claims()
+                .claim("customClaim", "custom-value")
+                .jwe().keyAlgorithm(KeyEncryptionAlgorithm.RSA_OAEP_256)
+                .keyId("key-enc-key-id")
+                .encrypt("publicKey.pem");
+
+        checkJweHeaders(jweCompact, "RSA-OAEP-256", 3);
+
+        JsonWebEncryption jwe = getJsonWebEncryption(jweCompact);
+
+        JwtClaims claims = JwtClaims.parse(jwe.getPlaintextString());
+        checkJwtClaims(claims);
+    }
+
+    @Test
+    public void testEncryptWithRsaOaep256Configured() throws Exception {
+        JwtBuildConfigSource configSource = JwtSignTest.getConfigSource();
+        configSource.setKeyEncryptionAlgorithm("RSA_OAEP_256");
+        String jweCompact = null;
+        try {
+            jweCompact = Jwt.claims()
+                    .claim("customClaim", "custom-value")
+                    .jwe()
+                    .keyId("key-enc-key-id")
+                    .encrypt("publicKey.pem");
+        } finally {
+            configSource.setKeyEncryptionAlgorithm(null);
+        }
+
+        checkJweHeaders(jweCompact, "RSA-OAEP-256", 3);
+
+        JsonWebEncryption jwe = getJsonWebEncryption(jweCompact);
+
+        JwtClaims claims = JwtClaims.parse(jwe.getPlaintextString());
+        checkJwtClaims(claims);
+    }
+
+    @Test
     public void testEncryptWithInvalidRSAKey() throws Exception {
         KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
         keyPairGenerator.initialize(1024);

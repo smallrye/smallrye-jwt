@@ -143,6 +143,8 @@ Smallrye JWT supports the following properties which can be used to customize th
 |smallrye.jwt.encrypt.key.id|none|Encryption key identifier which is checked only when JWK keys are used.
 |smallrye.jwt.sign.key.location|none|Location of a key which will be used to sign the claims when either a no-argument sign() or innerSign() method is called.
 |smallrye.jwt.sign.key.id|none|Signing key identifier which is checked only when JWK keys are used.
+|smallrye.jwt.new-token.signature-algorithm|RS256|Signature algorithm. This property will be checked if the JWT signature builder has not already set the signature algorithm.
+|smallrye.jwt.new-token.key-encryption-algorithm|RSA-OAEP|Key encryption algorithm. This property will be checked if the JWT encryption builder has not already set the key encryption algorithm.
 |smallrye.jwt.new-token.lifespan|300|Token lifespan in seconds which will be used to calculate an `exp` (expiry) claim value if this claim has not already been set.
 |smallrye.jwt.new-token.issuer|none|Token issuer which can be used to set an `iss` (issuer) claim value if this claim has not already been set.
 |smallrye.jwt.new-token.audience|none|Token audience which can be used to set an `aud` (audience) claim value if this claim has not already been set.

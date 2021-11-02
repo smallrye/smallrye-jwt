@@ -10,7 +10,6 @@ import java.util.Map;
 import javax.crypto.SecretKey;
 
 import org.eclipse.microprofile.jwt.Claims;
-import org.jose4j.jwa.AlgorithmConstraints;
 import org.jose4j.jwk.JsonWebKey;
 import org.jose4j.jws.JsonWebSignature;
 import org.jose4j.jwt.JwtClaims;
@@ -139,12 +138,8 @@ class JwtSignatureImpl implements JwtSignature {
             jws.setHeader("typ", "JWT");
         }
 
-        String algorithm = (String) headers.get("alg");
-        if ("none".equals(algorithm)) {
-            jws.setAlgorithmConstraints(AlgorithmConstraints.ALLOW_ONLY_NONE);
-        } else {
-            algorithm = keyAlgorithm(headers, signingKey, algorithm);
-        }
+        String algorithm = getSignatureAlgorithm(signingKey);
+
         jws.setAlgorithmHeaderValue(algorithm);
 
         jws.setPayload(claims.toJson());
@@ -156,7 +151,21 @@ class JwtSignatureImpl implements JwtSignature {
         }
     }
 
-    static String keyAlgorithm(Map<String, Object> headers, Key signingKey, String alg) {
+    private String getSignatureAlgorithm(Key signingKey) {
+        String alg = (String) headers.get("alg");
+        if (alg == null) {
+            try {
+                alg = JwtBuildUtils.getConfigProperty(JwtBuildUtils.NEW_TOKEN_SIGNATURE_ALG_PROPERTY, String.class);
+                if (alg != null) {
+                    alg = SignatureAlgorithm.valueOf(alg.toUpperCase()).getAlgorithm();
+                }
+            } catch (Exception ex) {
+                throw ImplMessages.msg.unsupportedSignatureAlgorithm(alg);
+            }
+        }
+        if ("none".equals(alg)) {
+            throw ImplMessages.msg.noneSignatureAlgorithmUnsupported();
+        }
         if (signingKey instanceof RSAPrivateKey) {
             if (alg == null) {
                 return SignatureAlgorithm.RS256.name();

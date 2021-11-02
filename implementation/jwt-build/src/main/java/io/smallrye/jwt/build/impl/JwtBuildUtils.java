@@ -24,6 +24,8 @@ public class JwtBuildUtils {
     public static final String NEW_TOKEN_AUDIENCE_PROPERTY = "smallrye.jwt.new-token.audience";
     public static final String NEW_TOKEN_OVERRIDE_CLAIMS_PROPERTY = "smallrye.jwt.new-token.override-matching-claims";
     public static final String NEW_TOKEN_LIFESPAN_PROPERTY = "smallrye.jwt.new-token.lifespan";
+    public static final String NEW_TOKEN_SIGNATURE_ALG_PROPERTY = "smallrye.jwt.new-token.signature-algorithm";
+    public static final String NEW_TOKEN_KEY_ENCRYPTION_ALG_PROPERTY = "smallrye.jwt.new-token.key-encryption-algorithm";
 
     private JwtBuildUtils() {
         // no-op: utility class

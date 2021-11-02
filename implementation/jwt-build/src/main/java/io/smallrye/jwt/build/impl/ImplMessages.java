@@ -48,8 +48,8 @@ interface ImplMessages {
             + "'smallrye.jwt.sign.key.location' is not set but the 'alg' header is: %s")
     JwtSignatureException signKeyPropertyRequired(String algorithmName);
 
-    @Message(id = 5011, value = "'none' algorithm is selected but the key id 'kid' header is set")
-    JwtSignatureException signAlgorithmRequired();
+    @Message(id = 5011, value = "None signature algorithm is currently not supported")
+    JwtSignatureException noneSignatureAlgorithmUnsupported();
 
     @Message(id = 5012, value = "Failure to create a signed JWT token: %s")
     JwtSignatureException signJwtTokenFailed(String exceptionMessage, @Cause Throwable throwable);

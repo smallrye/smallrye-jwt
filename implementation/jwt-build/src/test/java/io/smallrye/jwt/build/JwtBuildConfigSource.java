@@ -32,11 +32,21 @@ public class JwtBuildConfigSource implements ConfigSource {
     private String signingKeyId;
     private String encryptionKeyId;
 
+    private String signatureAlg;
+
+    private String keyEncryptionAlg;
+
     @Override
     public Map<String, String> getProperties() {
         Map<String, String> map = new HashMap<>();
         map.put(JwtBuildUtils.SIGN_KEY_LOCATION_PROPERTY, signingKeyLocation);
 
+        if (signatureAlg != null) {
+            map.put(JwtBuildUtils.NEW_TOKEN_SIGNATURE_ALG_PROPERTY, signatureAlg);
+        }
+        if (keyEncryptionAlg != null) {
+            map.put(JwtBuildUtils.NEW_TOKEN_KEY_ENCRYPTION_ALG_PROPERTY, keyEncryptionAlg);
+        }
         if (encryptionKeyId != null) {
             map.put(JwtBuildUtils.ENC_KEY_ID_PROPERTY, encryptionKeyId);
         }
@@ -114,6 +124,14 @@ public class JwtBuildConfigSource implements ConfigSource {
 
     public void setEncryptonKeyId(String encryptionKeyId) {
         this.encryptionKeyId = encryptionKeyId;
+    }
+
+    public void setSignatureAlgorithm(String alg) {
+        this.signatureAlg = alg;
+    }
+
+    public void setKeyEncryptionAlgorithm(String alg) {
+        this.keyEncryptionAlg = alg;
     }
 
 }
