@@ -55,7 +55,7 @@ class JwtSignatureImpl implements JwtSignature {
      */
     public String sign(String keyLocation) throws JwtSignatureException {
         try {
-            return signInternal(getSigningKeyFromKeyLocation(keyLocation));
+            return signInternal(getSigningKeyFromConfig(getKeyContentFromLocation(keyLocation)));
         } catch (JwtSignatureException ex) {
             throw ex;
         } catch (Exception ex) {
@@ -68,7 +68,7 @@ class JwtSignatureImpl implements JwtSignature {
      */
     public String sign() throws JwtSignatureException {
         try {
-            Key key = configuredPemKey != null ? configuredPemKey : getSigningKeyFromKeyLocation(getKeyLocationFromConfig());
+            Key key = configuredPemKey != null ? configuredPemKey : getSigningKeyFromConfig(getKeyContentFromConfig());
             return signInternal(key);
         } catch (JwtSignatureException ex) {
             throw ex;
@@ -188,59 +188,67 @@ class JwtSignatureImpl implements JwtSignature {
         throw ImplMessages.msg.unsupportedSignatureAlgorithm(signingKey.getAlgorithm());
     }
 
-    static String getKeyLocationFromConfig() {
-        String keyLocation = JwtBuildUtils.getConfigProperty(JwtBuildUtils.SIGN_KEY_LOCATION_PROPERTY, String.class);
-        if (keyLocation != null) {
-            return keyLocation;
-        }
-        throw ImplMessages.msg.signKeyLocationNotConfigured();
-    }
-
-    Key getSigningKeyFromKeyLocation(String keyLocation) {
+    static String getKeyContentFromLocation(String keyLocation) {
         try {
-            String kid = (String) headers.get("kid");
-            String algHeader = (String) headers.get("alg");
-
-            String keyContent = KeyUtils.readKeyContent(keyLocation);
-            // Try PEM format first - default to RS256 if no algorithm header is set
-            Key key = KeyUtils.tryAsPemSigningPrivateKey(keyContent,
-                    (algHeader == null ? SignatureAlgorithm.RS256 : SignatureAlgorithm.fromAlgorithm(algHeader)));
-            if (key == null) {
-                if (kid == null) {
-                    kid = JwtBuildUtils.getConfigProperty(JwtBuildUtils.SIGN_KEY_ID_PROPERTY, String.class);
-                    if (kid != null) {
-                        headers.put("kid", kid);
-                    }
-                }
-
-                // Try to load JWK from a single JWK resource or JWK set resource
-                JsonWebKey jwk = KeyUtils.getJwkKeyFromJwkSet(kid, keyContent);
-                if (jwk != null) {
-                    // if the user has already set the algorithm header then JWK `alg` header, if set, must match it
-                    key = KeyUtils.getPrivateOrSecretSigningKey(jwk,
-                            (algHeader == null ? null : SignatureAlgorithm.fromAlgorithm(algHeader)));
-                    if (key != null) {
-                        // if the algorithm header is not set then use JWK `alg`
-                        if (algHeader == null && jwk.getAlgorithm() != null) {
-                            headers.put("alg", jwk.getAlgorithm());
-                        }
-                        // if 'kid' header is not set then use JWK `kid`
-                        if (kid == null && jwk.getKeyId() != null) {
-                            headers.put("kid", jwk.getKeyId());
-                        }
-                    }
-                }
-            } else {
-                configuredPemKey = key;
-            }
-            if (key == null) {
-                throw ImplMessages.msg.signingKeyCanNotBeLoadedFromLocation(keyLocation);
-            }
-            return key;
+            return KeyUtils.readKeyContent(keyLocation);
         } catch (Exception ex) {
             throw ImplMessages.msg.signingKeyCanNotBeLoadedFromLocation(keyLocation);
         }
+    }
 
+    static String getKeyContentFromConfig() {
+
+        String keyLocation = JwtBuildUtils.getConfigProperty(JwtBuildUtils.SIGN_KEY_LOCATION_PROPERTY, String.class);
+        if (keyLocation != null) {
+            return getKeyContentFromLocation(keyLocation);
+        }
+        String keyContent = JwtBuildUtils.getConfigProperty(JwtBuildUtils.SIGN_KEY_PROPERTY, String.class);
+        if (keyContent != null) {
+            return keyContent;
+        }
+
+        throw ImplMessages.msg.signKeyNotConfigured();
+    }
+
+    Key getSigningKeyFromConfig(String keyContent) {
+        String kid = (String) headers.get("kid");
+        String algHeader = (String) headers.get("alg");
+
+        // Try PEM format first - default to RS256 if no algorithm header is set
+        Key key = KeyUtils.tryAsPemSigningPrivateKey(keyContent,
+                (algHeader == null ? SignatureAlgorithm.RS256 : SignatureAlgorithm.fromAlgorithm(algHeader)));
+        if (key == null) {
+            if (kid == null) {
+                kid = JwtBuildUtils.getConfigProperty(JwtBuildUtils.SIGN_KEY_ID_PROPERTY, String.class);
+                if (kid != null) {
+                    headers.put("kid", kid);
+                }
+            }
+
+            // Try to load JWK from a single JWK resource or JWK set resource
+            JsonWebKey jwk = KeyUtils.getJwkKeyFromJwkSet(kid, keyContent);
+            if (jwk != null) {
+                // if the user has already set the algorithm header then JWK `alg` header, if set, must match it
+                key = KeyUtils.getPrivateOrSecretSigningKey(jwk,
+                        (algHeader == null ? null : SignatureAlgorithm.fromAlgorithm(algHeader)));
+                if (key != null) {
+                    // if the algorithm header is not set then use JWK `alg`
+                    if (algHeader == null && jwk.getAlgorithm() != null) {
+                        headers.put("alg", jwk.getAlgorithm());
+                    }
+                    // if 'kid' header is not set then use JWK `kid`
+                    if (kid == null && jwk.getKeyId() != null) {
+                        headers.put("kid", jwk.getKeyId());
+                    }
+                }
+            }
+        } else {
+            configuredPemKey = key;
+        }
+        if (key == null) {
+            throw ImplMessages.msg.signingKeyCanNotBeCreatedFromContent();
+        }
+        return key;
     }
 
     void removeJti() {

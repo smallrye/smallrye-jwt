@@ -58,7 +58,7 @@ class JwtEncryptionImpl implements JwtEncryptionBuilder {
     @Override
     public String encrypt(String keyLocation) throws JwtEncryptionException {
         try {
-            return encryptInternal(getEncryptionKeyFromKeyLocation(keyLocation));
+            return encryptInternal(getEncryptionKeyFromKeyContent(getKeyContentFromLocation(keyLocation)));
         } catch (JwtEncryptionException ex) {
             throw ex;
         } catch (Exception ex) {
@@ -72,7 +72,7 @@ class JwtEncryptionImpl implements JwtEncryptionBuilder {
     @Override
     public String encrypt() throws JwtEncryptionException {
         try {
-            return encryptInternal(getEncryptionKeyFromKeyLocation(getKeyLocationFromConfig()));
+            return encryptInternal(getEncryptionKeyFromKeyContent(getKeyContentFromConfig()));
         } catch (JwtEncryptionException ex) {
             throw ex;
         } catch (Exception ex) {
@@ -197,56 +197,65 @@ class JwtEncryptionImpl implements JwtEncryptionBuilder {
         return headers.containsKey("enc") ? headers.get("enc").toString() : ContentEncryptionAlgorithm.A256GCM.name();
     }
 
-    private static String getKeyLocationFromConfig() {
-        String keyLocation = JwtBuildUtils.getConfigProperty(JwtBuildUtils.ENC_KEY_LOCATION_PROPERTY, String.class);
-        if (keyLocation != null) {
-            return keyLocation;
-        }
-        throw ImplMessages.msg.encryptionKeyLocationNotConfigured();
-    }
-
-    Key getEncryptionKeyFromKeyLocation(String keyLocation) {
+    private static String getKeyContentFromLocation(String keyLocation) {
         try {
-            String kid = (String) headers.get("kid");
-            String algHeader = (String) headers.get("alg");
-
-            String keyContent = KeyUtils.readKeyContent(keyLocation);
-            // Try PEM format first - default to RSA_OAEP_256 if no algorithm header is set
-            Key key = KeyUtils.tryAsPemEncryptionPublicKey(keyContent,
-                    (algHeader == null ? KeyEncryptionAlgorithm.RSA_OAEP_256
-                            : KeyEncryptionAlgorithm.fromAlgorithm(algHeader)));
-            if (key == null) {
-                if (kid == null) {
-                    kid = JwtBuildUtils.getConfigProperty(JwtBuildUtils.ENC_KEY_ID_PROPERTY, String.class);
-                    if (kid != null) {
-                        headers.put("kid", kid);
-                    }
-                }
-                // Try to load JWK from a single JWK resource or JWK set resource
-                JsonWebKey jwk = KeyUtils.getJwkKeyFromJwkSet(kid, keyContent);
-                if (jwk != null) {
-                    // if the user has already set the algorithm header then JWK `alg` header, if set, must match it
-                    key = KeyUtils.getPublicOrSecretEncryptingKey(jwk,
-                            (algHeader == null ? null : KeyEncryptionAlgorithm.fromAlgorithm(algHeader)));
-                    if (key != null) {
-                        // if the algorithm header is not set then use JWK `alg`
-                        if (algHeader == null && jwk.getAlgorithm() != null) {
-                            headers.put("alg", jwk.getAlgorithm());
-                        }
-                        // if 'kid' header is not set then use JWK `kid`
-                        if (kid == null && jwk.getKeyId() != null) {
-                            headers.put("kid", jwk.getKeyId());
-                        }
-                    }
-                }
-            }
-            if (key == null) {
-                throw ImplMessages.msg.encryptionKeyCanNotBeLoadedFromLocation(keyLocation);
-            }
-            return key;
+            return KeyUtils.readKeyContent(keyLocation);
         } catch (Exception ex) {
             throw ImplMessages.msg.encryptionKeyCanNotBeLoadedFromLocation(keyLocation);
         }
+    }
+
+    private static String getKeyContentFromConfig() {
+
+        String keyLocation = JwtBuildUtils.getConfigProperty(JwtBuildUtils.ENC_KEY_LOCATION_PROPERTY, String.class);
+        if (keyLocation != null) {
+            return getKeyContentFromLocation(keyLocation);
+        }
+        String keyContent = JwtBuildUtils.getConfigProperty(JwtBuildUtils.ENC_KEY_PROPERTY, String.class);
+        if (keyContent != null) {
+            return keyContent;
+        }
+
+        throw ImplMessages.msg.signKeyNotConfigured();
+    }
+
+    Key getEncryptionKeyFromKeyContent(String keyContent) {
+        String kid = (String) headers.get("kid");
+        String algHeader = (String) headers.get("alg");
+
+        // Try PEM format first - default to RSA_OAEP_256 if no algorithm header is set
+        Key key = KeyUtils.tryAsPemEncryptionPublicKey(keyContent,
+                (algHeader == null ? KeyEncryptionAlgorithm.RSA_OAEP_256
+                        : KeyEncryptionAlgorithm.fromAlgorithm(algHeader)));
+        if (key == null) {
+            if (kid == null) {
+                kid = JwtBuildUtils.getConfigProperty(JwtBuildUtils.ENC_KEY_ID_PROPERTY, String.class);
+                if (kid != null) {
+                    headers.put("kid", kid);
+                }
+            }
+            // Try to load JWK from a single JWK resource or JWK set resource
+            JsonWebKey jwk = KeyUtils.getJwkKeyFromJwkSet(kid, keyContent);
+            if (jwk != null) {
+                // if the user has already set the algorithm header then JWK `alg` header, if set, must match it
+                key = KeyUtils.getPublicOrSecretEncryptingKey(jwk,
+                        (algHeader == null ? null : KeyEncryptionAlgorithm.fromAlgorithm(algHeader)));
+                if (key != null) {
+                    // if the algorithm header is not set then use JWK `alg`
+                    if (algHeader == null && jwk.getAlgorithm() != null) {
+                        headers.put("alg", jwk.getAlgorithm());
+                    }
+                    // if 'kid' header is not set then use JWK `kid`
+                    if (kid == null && jwk.getKeyId() != null) {
+                        headers.put("kid", jwk.getKeyId());
+                    }
+                }
+            }
+        }
+        if (key == null) {
+            throw ImplMessages.msg.encryptionKeyCanNotBeCreatedFromContent();
+        }
+        return key;
     }
 
     private static KeyEncryptionAlgorithm toKeyEncryptionAlgorithm(String value) {

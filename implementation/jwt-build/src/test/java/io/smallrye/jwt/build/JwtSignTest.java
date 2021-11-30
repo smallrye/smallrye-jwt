@@ -294,7 +294,7 @@ public class JwtSignTest {
     }
 
     @Test
-    public void testSignClaimsConfiguredKey() throws Exception {
+    public void testSignClaimsConfiguredKeyLocation() throws Exception {
         JwtBuildConfigSource configSource = getConfigSource();
         try {
             configSource.resetSigningKeyCallCount();
@@ -307,6 +307,25 @@ public class JwtSignTest {
             Assert.assertEquals(1, configSource.getSigningKeyCallCount());
         } finally {
             configSource.resetSigningKeyCallCount();
+        }
+    }
+
+    @Test
+    public void testSignClaimsConfiguredKeyContent() throws Exception {
+        JwtBuildConfigSource configSource = getConfigSource();
+        try {
+            configSource.resetSigningKeyCallCount();
+            configSource.setUseSignKeyProperty(true);
+            JwtClaimsBuilder builder = Jwt.claims().claim("customClaim", "custom-value");
+            String jti1 = doTestSignClaimsConfiguredKey(builder);
+            Assert.assertNotNull(jti1);
+            String jti2 = doTestSignClaimsConfiguredKey(builder);
+            Assert.assertNotNull(jti2);
+            Assert.assertNotEquals(jti1, jti2);
+            Assert.assertEquals(1, configSource.getSigningKeyCallCount());
+        } finally {
+            configSource.resetSigningKeyCallCount();
+            configSource.setUseSignKeyProperty(false);
         }
     }
 

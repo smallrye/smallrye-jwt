@@ -38,8 +38,8 @@ interface ImplMessages {
     @Message(id = 5007, value = "Key encryption key can not be loaded from: %s")
     IllegalArgumentException encryptionKeyCanNotBeLoadedFromLocation(String keyLocation);
 
-    @Message(id = 5008, value = "Please set a 'smallrye.jwt.encrypt.key.location' property")
-    IllegalArgumentException encryptionKeyLocationNotConfigured();
+    @Message(id = 5008, value = "Please set 'smallrye.jwt.encrypt.key.location' or 'smallrye.jwt.encrypt.key' property")
+    IllegalArgumentException encryptionKeyNotConfigured();
 
     @Message(id = 5009, value = "")
     JwtSignatureException signatureException(@Cause Throwable throwable);
@@ -78,8 +78,8 @@ interface ImplMessages {
     @Message(id = 5020, value = "Signing key can not be loaded from: %s")
     IllegalArgumentException signingKeyCanNotBeLoadedFromLocation(String keyLocation);
 
-    @Message(id = 5021, value = "Please set a 'smallrye.jwt.sign.key.location' property")
-    IllegalArgumentException signKeyLocationNotConfigured();
+    @Message(id = 5021, value = "Please set 'smallrye.jwt.sign.key.location' or 'smallrye.jwt.sign.key' property")
+    IllegalArgumentException signKeyNotConfigured();
 
     @Message(id = 5022, value = "Failure to parse the JWT claims: %s")
     JwtException failureToParseJWTClaims(String exceptionMessage, @Cause Throwable throwable);
@@ -96,4 +96,10 @@ interface ImplMessages {
 
     @Message(id = 5027, value = "Failure to encrypt the token")
     JwtEncryptionException encryptionException(@Cause Throwable throwable);
+
+    @Message(id = 5028, value = "Signing key can not be created from the loaded content")
+    IllegalArgumentException signingKeyCanNotBeCreatedFromContent();
+
+    @Message(id = 5029, value = "Encryption key can not be created from the loaded content")
+    IllegalArgumentException encryptionKeyCanNotBeCreatedFromContent();
 }

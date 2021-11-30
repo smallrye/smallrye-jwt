@@ -9,11 +9,11 @@ import java.util.Set;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 
 import io.smallrye.jwt.build.impl.JwtBuildUtils;
+import io.smallrye.jwt.util.KeyUtils;
 
 public class JwtBuildConfigSource implements ConfigSource {
 
-    private static final Set<String> PROPERTY_NAMES = new HashSet<>(Arrays.asList(JwtBuildUtils.SIGN_KEY_LOCATION_PROPERTY,
-            JwtBuildUtils.ENC_KEY_LOCATION_PROPERTY,
+    private static final Set<String> PROPERTY_NAMES = new HashSet<>(Arrays.asList(
             JwtBuildUtils.SIGN_KEY_ID_PROPERTY,
             JwtBuildUtils.ENC_KEY_ID_PROPERTY,
             JwtBuildUtils.NEW_TOKEN_ISSUER_PROPERTY,
@@ -36,10 +36,30 @@ public class JwtBuildConfigSource implements ConfigSource {
 
     private String keyEncryptionAlg;
 
+    private boolean useSignKeyProperty;
+    private boolean useEncryptionKeyProperty;
+
     @Override
     public Map<String, String> getProperties() {
         Map<String, String> map = new HashMap<>();
-        map.put(JwtBuildUtils.SIGN_KEY_LOCATION_PROPERTY, signingKeyLocation);
+        if (!useSignKeyProperty) {
+            map.put(JwtBuildUtils.SIGN_KEY_LOCATION_PROPERTY, signingKeyLocation);
+        } else {
+            try {
+                map.put(JwtBuildUtils.SIGN_KEY_PROPERTY, KeyUtils.readKeyContent(signingKeyLocation));
+            } catch (Exception ex) {
+                throw new RuntimeException(ex);
+            }
+        }
+        if (!useEncryptionKeyProperty) {
+            map.put(JwtBuildUtils.ENC_KEY_LOCATION_PROPERTY, encryptionKeyLocation);
+        } else {
+            try {
+                map.put(JwtBuildUtils.ENC_KEY_PROPERTY, KeyUtils.readKeyContent(encryptionKeyLocation));
+            } catch (Exception ex) {
+                throw new RuntimeException(ex);
+            }
+        }
 
         if (signatureAlg != null) {
             map.put(JwtBuildUtils.NEW_TOKEN_SIGNATURE_ALG_PROPERTY, signatureAlg);
@@ -70,7 +90,8 @@ public class JwtBuildConfigSource implements ConfigSource {
 
     @Override
     public String getValue(String propertyName) {
-        if (JwtBuildUtils.SIGN_KEY_LOCATION_PROPERTY.equals(propertyName)) {
+        if (JwtBuildUtils.SIGN_KEY_LOCATION_PROPERTY.equals(propertyName) && !useSignKeyProperty
+                || JwtBuildUtils.SIGN_KEY_PROPERTY.equals(propertyName) && useSignKeyProperty) {
             signingKeyCallCount++;
         }
         return getProperties().get(propertyName);
@@ -103,7 +124,18 @@ public class JwtBuildConfigSource implements ConfigSource {
 
     @Override
     public Set<String> getPropertyNames() {
-        return PROPERTY_NAMES;
+        Set<String> names = new HashSet<>(PROPERTY_NAMES);
+        if (useSignKeyProperty) {
+            names.add(JwtBuildUtils.SIGN_KEY_PROPERTY);
+        } else {
+            names.add(JwtBuildUtils.SIGN_KEY_LOCATION_PROPERTY);
+        }
+        if (useEncryptionKeyProperty) {
+            names.add(JwtBuildUtils.ENC_KEY_PROPERTY);
+        } else {
+            names.add(JwtBuildUtils.ENC_KEY_LOCATION_PROPERTY);
+        }
+        return names;
     }
 
     public void setOverrideMatchingClaims(boolean override) {
@@ -132,6 +164,14 @@ public class JwtBuildConfigSource implements ConfigSource {
 
     public void setKeyEncryptionAlgorithm(String alg) {
         this.keyEncryptionAlg = alg;
+    }
+
+    public void setUseSignKeyProperty(boolean useSignKeyProperty) {
+        this.useSignKeyProperty = useSignKeyProperty;
+    }
+
+    public void setUseEncryptionKeyProperty(boolean useEncryptionKeyProperty) {
+        this.useEncryptionKeyProperty = useEncryptionKeyProperty;
     }
 
 }
