@@ -50,8 +50,8 @@ public interface JwtSignature {
     String sign(String keyLocation) throws JwtSignatureException;
 
     /**
-     * Sign the claims with a key loaded from the location set with the "smallrye.jwt.sign.key.location"
-     * property which can point to PEM, JWK or JWK set keys.
+     * Sign the claims with a key loaded from the location set with the "smallrye.jwt.sign.key.location" property
+     * or the key content set with the "smallrye.jwt.sign.key" property. Keys in PEM, JWK and JWK formats are supported.
      *
      * 'RS256' algorithm will be used unless a different algorithm has been set with {@code JwtSignatureBuilder} or
      * 'smallrye.jwt.new-token.signature-algorithm' property.
@@ -115,7 +115,8 @@ public interface JwtSignature {
 
     /**
      * Sign the claims with a key loaded from the location set with the "smallrye.jwt.sign.key.location"
-     * property and encrypt the inner JWT by moving to {@link JwtEncryptionBuilder}.
+     * property or the key content set with the "smallrye.jwt.sign.key" property and encrypt the inner JWT
+     * by moving to {@link JwtEncryptionBuilder}. Signing keys in PEM, JWK and JWK formats are supported.
      *
      * A key of size 2048 bits or larger MUST be used with the 'RS256' algorithm or 'smallrye.jwt.new-token.signature-algorithm'
      * property.

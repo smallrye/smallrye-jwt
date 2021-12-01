@@ -67,6 +67,28 @@ public class JwtEncryptTest {
     }
 
     @Test
+    public void testEncryptWithRsaPublicKeyContent() throws Exception {
+        JwtBuildConfigSource configSource = JwtSignTest.getConfigSource();
+        configSource.setUseEncryptionKeyProperty(true);
+        try {
+            String jweCompact = Jwt.claims()
+                    .claim("customClaim", "custom-value")
+                    .jwe()
+                    .keyId("key-enc-key-id")
+                    .encrypt();
+
+            checkJweHeaders(jweCompact);
+
+            JsonWebEncryption jwe = getJsonWebEncryption(jweCompact);
+
+            JwtClaims claims = JwtClaims.parse(jwe.getPlaintextString());
+            checkJwtClaims(claims);
+        } finally {
+            configSource.setUseEncryptionKeyProperty(false);
+        }
+    }
+
+    @Test
     public void testEncryptMapOfClaims() throws Exception {
         String jweCompact = Jwt.claims(Collections.singletonMap("customClaim", "custom-value"))
                 .jwe().encrypt();
