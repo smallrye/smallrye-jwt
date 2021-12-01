@@ -35,6 +35,7 @@ public class JwtBuildConfigSource implements ConfigSource {
     private String signatureAlg;
 
     private String keyEncryptionAlg;
+    private String contentEncryptionAlg;
 
     private boolean useSignKeyProperty;
     private boolean useEncryptionKeyProperty;
@@ -66,6 +67,9 @@ public class JwtBuildConfigSource implements ConfigSource {
         }
         if (keyEncryptionAlg != null) {
             map.put(JwtBuildUtils.NEW_TOKEN_KEY_ENCRYPTION_ALG_PROPERTY, keyEncryptionAlg);
+        }
+        if (contentEncryptionAlg != null) {
+            map.put(JwtBuildUtils.NEW_TOKEN_CONTENT_ENCRYPTION_ALG_PROPERTY, contentEncryptionAlg);
         }
         if (encryptionKeyId != null) {
             map.put(JwtBuildUtils.ENC_KEY_ID_PROPERTY, encryptionKeyId);
@@ -164,6 +168,10 @@ public class JwtBuildConfigSource implements ConfigSource {
 
     public void setKeyEncryptionAlgorithm(String alg) {
         this.keyEncryptionAlg = alg;
+    }
+
+    public void setContentEncryptionAlgorithm(String alg) {
+        this.contentEncryptionAlg = alg;
     }
 
     public void setUseSignKeyProperty(boolean useSignKeyProperty) {
