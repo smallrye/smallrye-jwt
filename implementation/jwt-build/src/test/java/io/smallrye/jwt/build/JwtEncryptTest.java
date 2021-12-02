@@ -266,6 +266,32 @@ public class JwtEncryptTest {
     }
 
     @Test
+    public void testEncryptWithConfiguredEcKeyAndContentAlgorithm() throws Exception {
+        JwtBuildConfigSource configSource = JwtSignTest.getConfigSource();
+        configSource.setEncryptionKeyLocation("/ecPublicKey.pem");
+        configSource.setContentEncryptionAlgorithm("A128CBC-HS256");
+        String jweCompact = null;
+        try {
+            jweCompact = Jwt.claims()
+                    .claim("customClaim", "custom-value")
+                    .jwe()
+                    .keyId("key-enc-key-id")
+                    .keyAlgorithm(KeyEncryptionAlgorithm.ECDH_ES_A256KW)
+                    .encrypt();
+        } finally {
+            configSource.setEncryptionKeyLocation("/publicKey.pem");
+            configSource.setContentEncryptionAlgorithm(null);
+        }
+
+        checkJweHeaders(jweCompact, "ECDH-ES+A256KW", "A128CBC-HS256", 4);
+
+        JsonWebEncryption jwe = getJsonWebEncryption(jweCompact, getEcPrivateKey());
+
+        JwtClaims claims = JwtClaims.parse(jwe.getPlaintextString());
+        checkJwtClaims(claims);
+    }
+
+    @Test
     public void testEncryptWithSecretKey() throws Exception {
         String jweCompact = Jwt.claims()
                 .claim("customClaim", "custom-value")

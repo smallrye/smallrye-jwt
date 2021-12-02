@@ -14,8 +14,9 @@ public interface JwtEncryption {
      * 'RSA-OAEP' and 'ECDH-ES+A256KW' key encryption algorithms will be used by default
      * when public RSA or EC keys are used unless a different one has been set with {@code JwtEncryptionBuilder} or
      * 'smallrye.jwt.new-token.key-encryption-algorithm' property.
-     * 'A256GCM' content encryption algorithms will be used unless a different one have been set with
-     * {@code JwtEncryptionBuilder}.
+     * 'A256GCM' content encryption algorithm will be used unless a different one has been set with
+     * {@code JwtEncryptionBuilder} or 'smallrye.jwt.new-token.content-encryption-algorithm' property.
+     *
      * A key of size 2048 bits or larger MUST be used with the 'RSA-OAEP' and 'RSA-OAEP-256' algorithms.
      *
      * @param keyEncryptionKey the key which encrypts the content encryption key
@@ -26,9 +27,10 @@ public interface JwtEncryption {
 
     /**
      * Encrypt the claims or inner JWT with {@link SecretKey}.
-     * 'A256KW' key and 'A256GCM' content encryption algorithms will be used
-     * unless different ones have been set with {@code JwtEncryptionBuilder} or
+     * 'A256KW' key encryption algorithm will be used unless a different one has been set with {@code JwtEncryptionBuilder} or
      * 'smallrye.jwt.new-token.key-encryption-algorithm' property.
+     * 'A256GCM' content encryption algorithm will be used unless a different one has been set with
+     * {@code JwtEncryptionBuilder} or 'smallrye.jwt.new-token.content-encryption-algorithm' property.
      *
      * @param keyEncryptionKey the key which encrypts the content encryption key
      * @return encrypted JWT token
@@ -42,8 +44,9 @@ public interface JwtEncryption {
      * 'RSA-OAEP', 'ECDH-ES+A256KW' and 'A256KW' key encryption algorithms will be used by default
      * when public RSA, EC or secret keys are used unless a different one has been set with {@code JwtEncryptionBuilder} or
      * 'smallrye.jwt.new-token.key-encryption-algorithm' property.
-     * 'A256GCM' content encryption algorithms will be used unless a different one have been set with
-     * {@code JwtEncryptionBuilder}.
+     * 'A256GCM' content encryption algorithm will be used unless a different one has been set with
+     * {@code JwtEncryptionBuilder} or 'smallrye.jwt.new-token.content-encryption-algorithm' property.
+     *
      * A key of size 2048 bits or larger MUST be used with the 'RSA-OAEP' and 'RSA-OAEP-256' algorithms.
      *
      * @param keyLocation the location of the keyEncryptionKey which encrypts the content encryption key
@@ -60,8 +63,9 @@ public interface JwtEncryption {
      * 'RSA-OAEP', 'ECDH-ES+A256KW' and 'A256KW' key encryption algorithms will be used by default
      * when public RSA, EC or secret keys are used unless a different one has been set with {@code JwtEncryptionBuilder} or
      * 'smallrye.jwt.new-token.key-encryption-algorithm' property.
-     * 'A256GCM' content encryption algorithms will be used unless a different one have been set with
-     * {@code JwtEncryptionBuilder}.
+     * 'A256GCM' content encryption algorithm will be used unless a different one have been set with
+     * {@code JwtEncryptionBuilder} or 'smallrye.jwt.new-token.content-encryption-algorithm' property.
+     *
      * A key of size 2048 bits or larger MUST be used with the 'RSA-OAEP' and 'RSA-OAEP-256' algorithms.
      *
      * @return encrypted JWT token
@@ -71,10 +75,10 @@ public interface JwtEncryption {
 
     /**
      * Encrypt the claims or inner JWT with a secret key string.
-     * 'A256KW' key encryption algorithms will be used by default unless a different one has been set with
+     * 'A256KW' key encryption algorithm will be used by default unless a different one has been set with
      * {@code JwtEncryptionBuilder} or 'smallrye.jwt.new-token.key-encryption-algorithm' property.
-     * 'A256GCM' content encryption algorithms will be used unless a different one have been set with
-     * {@code JwtEncryptionBuilder} or 'smallrye.jwt.new-token.key-encryption-algorithm' property.
+     * 'A256GCM' content encryption algorithm will be used unless a different one has been set with
+     * {@code JwtEncryptionBuilder} or 'smallrye.jwt.new-token.content-encryption-algorithm' property.
      *
      * @param secret the secret
      * @return encrypted JWT token

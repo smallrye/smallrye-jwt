@@ -28,6 +28,7 @@ public class JwtBuildUtils {
     public static final String NEW_TOKEN_LIFESPAN_PROPERTY = "smallrye.jwt.new-token.lifespan";
     public static final String NEW_TOKEN_SIGNATURE_ALG_PROPERTY = "smallrye.jwt.new-token.signature-algorithm";
     public static final String NEW_TOKEN_KEY_ENCRYPTION_ALG_PROPERTY = "smallrye.jwt.new-token.key-encryption-algorithm";
+    public static final String NEW_TOKEN_CONTENT_ENCRYPTION_ALG_PROPERTY = "smallrye.jwt.new-token.content-encryption-algorithm";
 
     private JwtBuildUtils() {
         // no-op: utility class

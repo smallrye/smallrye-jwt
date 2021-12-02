@@ -194,7 +194,18 @@ class JwtEncryptionImpl implements JwtEncryptionBuilder {
     }
 
     private String getContentEncryptionAlgorithm() {
-        return headers.containsKey("enc") ? headers.get("enc").toString() : ContentEncryptionAlgorithm.A256GCM.name();
+        String alg = (String) headers.get("enc");
+        if (alg == null) {
+            try {
+                alg = JwtBuildUtils.getConfigProperty(JwtBuildUtils.NEW_TOKEN_CONTENT_ENCRYPTION_ALG_PROPERTY, String.class);
+                if (alg != null) {
+                    alg = ContentEncryptionAlgorithm.fromAlgorithm(alg).getAlgorithm();
+                }
+            } catch (Exception ex) {
+                throw ImplMessages.msg.unsupportedContentEncryptionAlgorithm(alg);
+            }
+        }
+        return alg != null ? alg : ContentEncryptionAlgorithm.A256GCM.name();
     }
 
     private static String getKeyContentFromLocation(String keyLocation) {
