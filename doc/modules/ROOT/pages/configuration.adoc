@@ -111,6 +111,10 @@ public class SecuredResource {
 }
 ```
 
+Note that if you need to use `JWTParser` to verify the tokens with different verification constraints (for example, tokens have been signed by different providers, using different algorithms, etc) then please use a new instance of `io.smallrye.jwt.auth.principal.DefaultJWTParser` per every request - `DefaultJWTParser` has several methods for customizing the verification requirements.
+
+If the same provider uses different keys to secure the token then using a `JsonWebKey Set` containing several keys may also work with the injected `JWTParser`.
+
 = Token Decryption
 
 If your application needs to accept the tokens with the encrypted claims or with the encrypted inner signed claims then all you have to do is to set
