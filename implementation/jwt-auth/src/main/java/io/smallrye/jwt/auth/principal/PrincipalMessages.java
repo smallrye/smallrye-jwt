@@ -68,4 +68,7 @@ interface PrincipalMessages {
 
     @Message(id = 7016, value = "Encrypted token headers must contain a content type header")
     ParseException encryptedTokenMissingContentType();
+
+    @Message(id = 7017, value = "New JWTCallerPrincipalFactory instance can not be created")
+    ParseException newJWTCallerPrincipalFactoryFailure(@Cause Throwable throwable);
 }

@@ -106,6 +106,50 @@ public class DefaultJWTParserTest {
     }
 
     @Test
+    public void testVerifyWithRsaAndEcKeys() throws Exception {
+        String jwtString = Jwt.upn("jdoe@example.com").sign(KeyUtils.readPrivateKey("/privateKey.pem"));
+        JWTParser parser = new DefaultJWTParser();
+        JsonWebToken jwt = parser.verify(jwtString, KeyUtils.readPublicKey("/publicKey.pem"));
+        assertEquals("jdoe@example.com", jwt.getName());
+
+        jwtString = Jwt.upn("jdoe@example.com").sign(
+                KeyUtils.readPrivateKey("/ecPrivateKey.pem", SignatureAlgorithm.ES256));
+        jwt = parser.verify(jwtString,
+                KeyUtils.readPublicKey("/ecPublicKey.pem", SignatureAlgorithm.ES256));
+        assertEquals("jdoe@example.com", jwt.getName());
+    }
+
+    @Test
+    public void testVerifyWithRsaAndEcKeysWithInjectedFactory() throws Exception {
+        String jwtString = Jwt.upn("jdoe@example.com").sign(KeyUtils.readPrivateKey("/privateKey.pem"));
+        JWTParser parser = new DefaultJWTParser(new DefaultJWTCallerPrincipalFactory());
+        JsonWebToken jwt = parser.verify(jwtString, KeyUtils.readPublicKey("/publicKey.pem"));
+        assertEquals("jdoe@example.com", jwt.getName());
+
+        jwtString = Jwt.upn("jdoe@example.com").sign(
+                KeyUtils.readPrivateKey("/ecPrivateKey.pem", SignatureAlgorithm.ES256));
+        jwt = parser.verify(jwtString,
+                KeyUtils.readPublicKey("/ecPublicKey.pem", SignatureAlgorithm.ES256));
+        assertEquals("jdoe@example.com", jwt.getName());
+    }
+
+    @Test
+    public void testVerifyWithRsaAndEcKeysWithInjectedFactoryAndKeyLocation() throws Exception {
+        String jwtString = Jwt.upn("jdoe@example.com").issuer("https://server.example.com")
+                .sign(KeyUtils.readPrivateKey("/privateKey.pem"));
+        JWTParser parser = new DefaultJWTParser(new DefaultJWTCallerPrincipalFactory());
+        JsonWebToken jwt = parser.parse(jwtString, new JWTAuthContextInfo("/publicKey.pem", "https://server.example.com"));
+        assertEquals("jdoe@example.com", jwt.getName());
+
+        jwtString = Jwt.upn("jdoe@example.com").issuer("https://server.example.com").sign(
+                KeyUtils.readPrivateKey("/ecPrivateKey.pem", SignatureAlgorithm.ES256));
+        JWTAuthContextInfo context = new JWTAuthContextInfo("/ecPublicKey.pem", "https://server.example.com");
+        context.setSignatureAlgorithm(SignatureAlgorithm.ES256);
+        jwt = parser.parse(jwtString, context);
+        assertEquals("jdoe@example.com", jwt.getName());
+    }
+
+    @Test
     public void testVerifyWithSecretKey() throws Exception {
         SecretKey secretKey = createSecretKey();
         String jwtString = Jwt.upn("jdoe@example.com").sign(secretKey);
