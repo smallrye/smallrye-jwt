@@ -5,12 +5,15 @@ import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import java.security.cert.X509Certificate;
+import java.time.Instant;
 
 import javax.crypto.SecretKey;
 
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.jose4j.jwk.JsonWebKey;
 import org.jose4j.jwk.PublicJsonWebKey;
+import org.jose4j.jwt.consumer.ErrorCodes;
+import org.jose4j.jwt.consumer.InvalidJwtException;
 import org.jose4j.lang.UnresolvableKeyException;
 import org.junit.Test;
 
@@ -249,4 +252,40 @@ public class DefaultJWTParserTest {
         return (SecretKey) jwk.getKey();
     }
 
+    @Test
+    public void testParseExpiredTokenWithDefaultExpiryGrace() throws Exception {
+        // default is 60 secs
+        String jwtString = Jwt.upn("jdoe@example.com").issuer("https://server.example.com")
+                .issuedAt(Instant.now().minusSeconds(100))
+                .expiresAt(Instant.now().minusSeconds(20))
+                .sign(KeyUtils.readPrivateKey("/privateKey.pem"));
+        JWTAuthContextInfo config = new JWTAuthContextInfo("/publicKey.pem", "https://server.example.com");
+        JsonWebToken jwt = new DefaultJWTParser(config).parse(jwtString);
+        assertEquals("jdoe@example.com", jwt.getName());
+    }
+
+    @Test
+    public void testParseExpiredToken() throws Exception {
+        String jwtString = Jwt.upn("jdoe@example.com").issuer("https://server.example.com")
+                .issuedAt(Instant.now().minusSeconds(100))
+                .expiresAt(Instant.now().minusSeconds(80))
+                .sign(KeyUtils.readPrivateKey("/privateKey.pem"));
+        JWTAuthContextInfo config = new JWTAuthContextInfo("/publicKey.pem", "https://server.example.com");
+        ParseException thrown = assertThrows("UnresolvableKeyException is expected",
+                ParseException.class, () -> new DefaultJWTParser().parse(jwtString, config));
+        assertTrue(((InvalidJwtException) thrown.getCause()).getErrorDetails().get(0).getErrorCode() == ErrorCodes.EXPIRED);
+    }
+
+    @Test
+    public void testParseExpiredTokenWithZeroExpiryGrace() throws Exception {
+        String jwtString = Jwt.upn("jdoe@example.com").issuer("https://server.example.com")
+                .issuedAt(Instant.now().minusSeconds(100))
+                .expiresAt(Instant.now().minusSeconds(80))
+                .sign(KeyUtils.readPrivateKey("/privateKey.pem"));
+        JWTAuthContextInfo config = new JWTAuthContextInfo("/publicKey.pem", "https://server.example.com");
+        config.setExpGracePeriodSecs(0);
+        ParseException thrown = assertThrows("UnresolvableKeyException is expected",
+                ParseException.class, () -> new DefaultJWTParser().parse(jwtString, config));
+        assertTrue(((InvalidJwtException) thrown.getCause()).getErrorDetails().get(0).getErrorCode() == ErrorCodes.EXPIRED);
+    }
 }
