@@ -142,17 +142,19 @@ class JwtEncryptionImpl implements JwtEncryptionBuilder {
         String keyAlgorithm = getKeyEncryptionAlgorithm(key);
         jwe.setAlgorithmHeaderValue(keyAlgorithm);
         jwe.setEncryptionMethodHeaderParameter(getContentEncryptionAlgorithm());
-
-        if (key instanceof RSAPublicKey && keyAlgorithm.startsWith(KeyEncryptionAlgorithm.RSA_OAEP.getAlgorithm())
-                && ((RSAPublicKey) key).getModulus().bitLength() < 2048) {
-            throw ImplMessages.msg.encryptionKeySizeMustBeHigher(keyAlgorithm);
-        }
         jwe.setKey(key);
+        if (isRelaxKeyValidation()) {
+            jwe.setDoKeyValidation(false);
+        }
         try {
             return jwe.getCompactSerialization();
         } catch (org.jose4j.lang.JoseException ex) {
             throw ImplMessages.msg.joseSerializationError(ex.getMessage(), ex);
         }
+    }
+
+    private boolean isRelaxKeyValidation() {
+        return JwtBuildUtils.getConfigProperty(JwtBuildUtils.ENC_KEY_RELAX_VALIDATION_PROPERTY, Boolean.class, false);
     }
 
     private String getKeyEncryptionAlgorithm(Key keyEncryptionKey) {
@@ -220,7 +222,7 @@ class JwtEncryptionImpl implements JwtEncryptionBuilder {
 
         String keyLocation = JwtBuildUtils.getConfigProperty(JwtBuildUtils.ENC_KEY_LOCATION_PROPERTY, String.class);
         if (keyLocation != null) {
-            return getKeyContentFromLocation(keyLocation);
+            return getKeyContentFromLocation(keyLocation.trim());
         }
         String keyContent = JwtBuildUtils.getConfigProperty(JwtBuildUtils.ENC_KEY_PROPERTY, String.class);
         if (keyContent != null) {

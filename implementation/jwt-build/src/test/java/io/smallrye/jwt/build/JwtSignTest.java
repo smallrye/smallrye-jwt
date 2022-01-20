@@ -22,7 +22,7 @@ import static org.junit.Assert.assertTrue;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
-import java.security.KeyPairGenerator;
+import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.time.Duration;
@@ -279,17 +279,37 @@ public class JwtSignTest {
     }
 
     @Test
-    public void testSignWithInvalidRSAKey() throws Exception {
-        KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
-        keyPairGenerator.initialize(1024);
-        PrivateKey key = keyPairGenerator.generateKeyPair().getPrivate();
+    public void testSignWithShortRSAKey() throws Exception {
+        KeyPair keyPair = KeyUtils.generateKeyPair(1024);
         try {
-            Jwt.claims().sign(key);
+            Jwt.claims().sign(keyPair.getPrivate());
             Assert.fail("JwtSignatureException is expected due to the invalid key size");
         } catch (JwtSignatureException ex) {
             Assert.assertEquals(
                     "SRJWT05012: Failure to create a signed JWT token: An RSA key of size 2048 bits or larger MUST be used with the all JOSE RSA algorithms (given key was only 1024 bits).",
                     ex.getMessage());
+        }
+    }
+
+    @Test
+    public void testSignWithShortRSAKeyAndRelaxedValidation() throws Exception {
+        KeyPair keyPair = KeyUtils.generateKeyPair(1024);
+
+        JwtBuildConfigSource configSource = getConfigSource();
+        configSource.setRelaxSignatureKeyValidation(true);
+        try {
+            String jwt = Jwt.claims(Collections.singletonMap("customClaim", "custom-value"))
+                    .sign(keyPair.getPrivate());
+
+            JsonWebSignature jws = getVerifiedJws(jwt, keyPair.getPublic(), true);
+            JwtClaims claims = JwtClaims.parse(jws.getPayload());
+
+            Assert.assertEquals(4, claims.getClaimsMap().size());
+            checkDefaultClaimsAndHeaders(getJwsHeaders(jwt, 2), claims);
+
+            Assert.assertEquals("custom-value", claims.getClaimValue("customClaim"));
+        } finally {
+            configSource.setRelaxSignatureKeyValidation(false);
         }
     }
 
@@ -389,9 +409,16 @@ public class JwtSignTest {
     }
 
     static JsonWebSignature getVerifiedJws(String jwt, Key key) throws Exception {
+        return getVerifiedJws(jwt, key, false);
+    }
+
+    static JsonWebSignature getVerifiedJws(String jwt, Key key, boolean relaxKeyValidation) throws Exception {
         JsonWebSignature jws = new JsonWebSignature();
         jws.setKey(key);
         jws.setCompactSerialization(jwt);
+        if (relaxKeyValidation) {
+            jws.setDoKeyValidation(false);
+        }
         Assert.assertTrue(jws.verifySignature());
         return jws;
     }
@@ -562,6 +589,42 @@ public class JwtSignTest {
         checkDefaultClaimsAndHeaders(getJwsHeaders(jwt, 2), claims, "HS256", 300);
 
         Assert.assertEquals("custom-value", claims.getClaimValue("customClaim"));
+    }
+
+    @Test
+    public void testSignClaimsWithShortSecret() throws Exception {
+        String secret = "AyM1SysPpbyDfgZld3umj1qzKObw";
+
+        JwtSignatureException thrown = assertThrows("JwtSignatureException is expected",
+                JwtSignatureException.class, () -> Jwt.claims().claim("customClaim", "custom-value").signWithSecret(secret));
+        Assert.assertEquals(
+                "A key of the same size as the hash output (i.e. 256 bits for HS256) or larger MUST be used with the HMAC SHA"
+                        + " algorithms but this key is only 224 bits",
+                thrown.getCause().getMessage());
+    }
+
+    @Test
+    public void testSignClaimsWithShortSecretAndRelaxedValidation() throws Exception {
+        String secret = "AyM1SysPpbyDfgZld3umj1qzKObw";
+
+        JwtBuildConfigSource configSource = getConfigSource();
+        configSource.setRelaxSignatureKeyValidation(true);
+        try {
+            String jwt = Jwt.claims()
+                    .claim("customClaim", "custom-value")
+                    .signWithSecret(secret);
+
+            SecretKey secretKey = new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "AES");
+            JsonWebSignature jws = getVerifiedJws(jwt, secretKey, true);
+            JwtClaims claims = JwtClaims.parse(jws.getPayload());
+
+            Assert.assertEquals(4, claims.getClaimsMap().size());
+            checkDefaultClaimsAndHeaders(getJwsHeaders(jwt, 2), claims, "HS256", 300);
+
+            Assert.assertEquals("custom-value", claims.getClaimValue("customClaim"));
+        } finally {
+            configSource.setRelaxSignatureKeyValidation(false);
+        }
     }
 
     @Test

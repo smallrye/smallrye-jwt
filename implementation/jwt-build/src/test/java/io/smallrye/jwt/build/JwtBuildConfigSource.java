@@ -15,6 +15,8 @@ public class JwtBuildConfigSource implements ConfigSource {
 
     private static final Set<String> PROPERTY_NAMES = new HashSet<>(Arrays.asList(
             JwtBuildUtils.SIGN_KEY_ID_PROPERTY,
+            JwtBuildUtils.SIGN_KEY_RELAX_VALIDATION_PROPERTY,
+            JwtBuildUtils.ENC_KEY_RELAX_VALIDATION_PROPERTY,
             JwtBuildUtils.ENC_KEY_ID_PROPERTY,
             JwtBuildUtils.NEW_TOKEN_ISSUER_PROPERTY,
             JwtBuildUtils.NEW_TOKEN_AUDIENCE_PROPERTY,
@@ -39,6 +41,9 @@ public class JwtBuildConfigSource implements ConfigSource {
 
     private boolean useSignKeyProperty;
     private boolean useEncryptionKeyProperty;
+
+    private boolean relaxSignatureKeyValidation;
+    private boolean relaxEncryptionKeyValidation;
 
     @Override
     public Map<String, String> getProperties() {
@@ -86,6 +91,14 @@ public class JwtBuildConfigSource implements ConfigSource {
         }
         if (audiencePropertyRequired) {
             map.put(JwtBuildUtils.NEW_TOKEN_AUDIENCE_PROPERTY, "https://custom-audience");
+        }
+
+        if (relaxSignatureKeyValidation) {
+            map.put(JwtBuildUtils.SIGN_KEY_RELAX_VALIDATION_PROPERTY, String.valueOf(relaxSignatureKeyValidation));
+        }
+
+        if (relaxEncryptionKeyValidation) {
+            map.put(JwtBuildUtils.ENC_KEY_RELAX_VALIDATION_PROPERTY, String.valueOf(relaxEncryptionKeyValidation));
         }
 
         map.put(JwtBuildUtils.NEW_TOKEN_OVERRIDE_CLAIMS_PROPERTY, String.valueOf(overrideMatchingClaims));
@@ -180,6 +193,15 @@ public class JwtBuildConfigSource implements ConfigSource {
 
     public void setUseEncryptionKeyProperty(boolean useEncryptionKeyProperty) {
         this.useEncryptionKeyProperty = useEncryptionKeyProperty;
+    }
+
+    public void setRelaxSignatureKeyValidation(boolean relax) {
+        this.relaxSignatureKeyValidation = relax;
+
+    }
+
+    public void setRelaxEncryptionKeyValidation(boolean relax) {
+        this.relaxEncryptionKeyValidation = relax;
     }
 
 }

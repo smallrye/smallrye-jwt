@@ -18,9 +18,11 @@ public class JwtBuildUtils {
     public static final String SIGN_KEY_LOCATION_PROPERTY = "smallrye.jwt.sign.key.location";
     public static final String SIGN_KEY_PROPERTY = "smallrye.jwt.sign.key";
     public static final String SIGN_KEY_ID_PROPERTY = "smallrye.jwt.sign.key.id";
+    public static final String SIGN_KEY_RELAX_VALIDATION_PROPERTY = "smallrye.jwt.sign.relax-key-validation";
     public static final String ENC_KEY_LOCATION_PROPERTY = "smallrye.jwt.encrypt.key.location";
     public static final String ENC_KEY_PROPERTY = "smallrye.jwt.encrypt.key";
     public static final String ENC_KEY_ID_PROPERTY = "smallrye.jwt.encrypt.key.id";
+    public static final String ENC_KEY_RELAX_VALIDATION_PROPERTY = "smallrye.jwt.encrypt.relax-key-validation";
 
     public static final String NEW_TOKEN_ISSUER_PROPERTY = "smallrye.jwt.new-token.issuer";
     public static final String NEW_TOKEN_AUDIENCE_PROPERTY = "smallrye.jwt.new-token.audience";
