@@ -144,11 +144,18 @@ class JwtSignatureImpl implements JwtSignature {
 
         jws.setPayload(claims.toJson());
         jws.setKey(signingKey);
+        if (isRelaxKeyValidation()) {
+            jws.setDoKeyValidation(false);
+        }
         try {
             return jws.getCompactSerialization();
         } catch (Exception ex) {
             throw ImplMessages.msg.signJwtTokenFailed(ex.getMessage(), ex);
         }
+    }
+
+    private boolean isRelaxKeyValidation() {
+        return JwtBuildUtils.getConfigProperty(JwtBuildUtils.SIGN_KEY_RELAX_VALIDATION_PROPERTY, Boolean.class, false);
     }
 
     private String getSignatureAlgorithm(Key signingKey) {
@@ -200,7 +207,7 @@ class JwtSignatureImpl implements JwtSignature {
 
         String keyLocation = JwtBuildUtils.getConfigProperty(JwtBuildUtils.SIGN_KEY_LOCATION_PROPERTY, String.class);
         if (keyLocation != null) {
-            return getKeyContentFromLocation(keyLocation);
+            return getKeyContentFromLocation(keyLocation.trim());
         }
         String keyContent = JwtBuildUtils.getConfigProperty(JwtBuildUtils.SIGN_KEY_PROPERTY, String.class);
         if (keyContent != null) {

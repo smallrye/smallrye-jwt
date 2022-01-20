@@ -21,6 +21,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
+import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.PrivateKey;
 import java.security.PublicKey;
@@ -192,7 +193,7 @@ public class JwtEncryptTest {
     }
 
     @Test
-    public void testEncryptWithInvalidRSAKey() throws Exception {
+    public void testEncryptWithShortRSAKey() throws Exception {
         KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
         keyPairGenerator.initialize(1024);
         PublicKey key = keyPairGenerator.generateKeyPair().getPublic();
@@ -200,8 +201,27 @@ public class JwtEncryptTest {
             Jwt.claims().jwe().encrypt(key);
             Assert.fail("JwtEncryptionException is expected due to the invalid key size");
         } catch (JwtEncryptionException ex) {
-            Assert.assertEquals("SRJWT05001: A key of size 2048 bits or larger MUST be used with the 'RSA-OAEP' algorithm",
+            Assert.assertEquals(
+                    "SRJWT05003: An RSA key of size 2048 bits or larger MUST be used with the all JOSE RSA algorithms (given key was only 1024 bits).",
                     ex.getMessage());
+        }
+    }
+
+    @Test
+    public void testEncryptWithShortRSAKeyAndRelaxedValidation() throws Exception {
+        KeyPair keyPair = KeyUtils.generateKeyPair(1024);
+
+        JwtBuildConfigSource configSource = JwtSignTest.getConfigSource();
+        configSource.setRelaxEncryptionKeyValidation(true);
+        try {
+            String jwt = Jwt.claims(Collections.singletonMap("customClaim", "custom-value"))
+                    .jwe().encrypt(keyPair.getPublic());
+
+            JsonWebEncryption jwe = getJsonWebEncryption(jwt, keyPair.getPrivate(), true);
+            JwtClaims claims = JwtClaims.parse(jwe.getPlaintextString());
+            checkJwtClaims(claims);
+        } finally {
+            configSource.setRelaxEncryptionKeyValidation(false);
         }
     }
 
@@ -402,9 +422,17 @@ public class JwtEncryptTest {
     }
 
     private static JsonWebEncryption getJsonWebEncryption(String compactJwe, Key decryptionKey) throws Exception {
+        return getJsonWebEncryption(compactJwe, decryptionKey, false);
+    }
+
+    private static JsonWebEncryption getJsonWebEncryption(String compactJwe, Key decryptionKey, boolean relaxKeyValidation)
+            throws Exception {
         JsonWebEncryption jwe = new JsonWebEncryption();
         jwe.setCompactSerialization(compactJwe);
         jwe.setKey(decryptionKey);
+        if (relaxKeyValidation) {
+            jwe.setDoKeyValidation(false);
+        }
         return jwe;
     }
 
