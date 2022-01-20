@@ -51,6 +51,10 @@ public class DefaultJWTParser implements JWTParser {
         this(authContextInfo, new JWTCallerPrincipalFactoryProducer().getFactory());
     }
 
+    public DefaultJWTParser(JWTCallerPrincipalFactory factory) {
+        this(null, factory);
+    }
+
     public DefaultJWTParser(JWTAuthContextInfo authContextInfo, JWTCallerPrincipalFactory factory) {
         this.authContextInfo = authContextInfo;
         this.callerPrincipalFactory = factory;
@@ -62,7 +66,19 @@ public class DefaultJWTParser implements JWTParser {
 
     @Override
     public JsonWebToken parse(String bearerToken, JWTAuthContextInfo newAuthContextInfo) throws ParseException {
-        return getCallerPrincipalFactory().parse(bearerToken, newAuthContextInfo);
+        JWTCallerPrincipalFactory factory = getCallerPrincipalFactory();
+        if (newAuthContextInfo.getPublicKeyLocation() != null || newAuthContextInfo.getPublicKeyContent() != null
+                || newAuthContextInfo.getDecryptionKeyContent() != null
+                || newAuthContextInfo.getDecryptionKeyLocation() != null) {
+            // in these cases a `KeyLocationResolver` is cached
+            try {
+                factory = factory.getClass().getDeclaredConstructor().newInstance();
+            } catch (Throwable t) {
+                PrincipalMessages.msg.newJWTCallerPrincipalFactoryFailure(t);
+            }
+        }
+
+        return factory.parse(bearerToken, newAuthContextInfo);
     }
 
     @Override
@@ -117,7 +133,7 @@ public class DefaultJWTParser implements JWTParser {
 
     private JWTCallerPrincipalFactory getCallerPrincipalFactory() {
         if (callerPrincipalFactory == null) {
-            return new JWTCallerPrincipalFactoryProducer().getFactory();
+            return JWTCallerPrincipalFactory.instance();
         }
         return callerPrincipalFactory;
     }
