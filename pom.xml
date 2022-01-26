@@ -36,12 +36,22 @@
     <bouncycastle.version>1.70</bouncycastle.version>
     <version.jakarta.servlet.api>4.0.4</version.jakarta.servlet.api>
     <version.jakarta.security.enterprise.api>1.0.2</version.jakarta.security.enterprise.api>
-    <version.io.smallrye.config>2.8.2</version.io.smallrye.config>
     <version.eclipse.microprofile.jwt>1.2.2</version.eclipse.microprofile.jwt>
     <version.microprofile.config>2.0</version.microprofile.config>
     <version.jose4j>0.7.9</version.jose4j>
+    <version.mokito>4.2.0</version.mokito>
+
+    <!-- Test -->
+    <artifactId.arquillian.jetty>arquillian-jetty-embedded-9</artifactId.arquillian.jetty>
+    <version.arquillian.jetty>1.0.0.CR4</version.arquillian.jetty>
+    <version.jetty>9.4.44.v20210927</version.jetty>
     <version.resteasy>4.7.5.Final</version.resteasy>
-    <version.mokito>4.3.0</version.mokito>
+    <version.smallrye.config>2.8.2</version.smallrye.config>
+    <!-- RESTEasy REST Client relocated to another GAV, so these props are for jakarta auto migration -->
+    <groupId.resteasy.client>org.jboss.resteasy</groupId.resteasy.client>
+    <artifactId.resteasy.client>resteasy-client-microprofile</artifactId.resteasy.client>
+    <version.resteasy.client>4.7.5.Final</version.resteasy.client>
+    <!-- Wildfly -->
     <version.galleon>4.2.8.Final</version.galleon>
     <version.wildfly>25.0.1.Final</version.wildfly>
     <version.wildfly.plugin>2.1.0.Final</version.wildfly.plugin>
@@ -149,6 +159,7 @@
         <artifactId>smallrye-jwt-cdi-extension</artifactId>
         <version>${project.version}</version>
       </dependency>
+
       <!-- Unit/Integration test dependencies -->
       <dependency>
         <groupId>org.mockito</groupId>
@@ -156,14 +167,42 @@
         <version>${version.mokito}</version>
       </dependency>
       <dependency>
-        <groupId>io.smallrye.config</groupId>
-        <artifactId>smallrye-config</artifactId>
-        <version>${version.io.smallrye.config}</version>
-      </dependency>
-      <dependency>
         <groupId>org.bouncycastle</groupId>
         <artifactId>bcprov-jdk15on</artifactId>
         <version>${bouncycastle.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.arquillian.container</groupId>
+        <artifactId>${artifactId.arquillian.jetty}</artifactId>
+        <version>${version.arquillian.jetty}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-bom</artifactId>
+        <version>${version.jetty}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.jboss.weld.servlet</groupId>
+        <artifactId>weld-servlet-core</artifactId>
+        <version>${version.weld.core}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.jboss.resteasy</groupId>
+        <artifactId>resteasy-bom</artifactId>
+        <version>${version.resteasy}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>io.smallrye.config</groupId>
+        <artifactId>smallrye-config</artifactId>
+        <version>${version.smallrye.config}</version>
+        <scope>test</scope>
       </dependency>
     </dependencies>
   </dependencyManagement>
