@@ -7,12 +7,12 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
-import javax.enterprise.event.Observes;
-import javax.enterprise.inject.spi.BeanAttributes;
-import javax.enterprise.inject.spi.InjectionPoint;
-import javax.enterprise.inject.spi.ProcessBeanAttributes;
-import javax.enterprise.inject.spi.ProcessInjectionPoint;
-import javax.inject.Provider;
+import jakarta.enterprise.event.Observes;
+import jakarta.enterprise.inject.spi.BeanAttributes;
+import jakarta.enterprise.inject.spi.InjectionPoint;
+import jakarta.enterprise.inject.spi.ProcessBeanAttributes;
+import jakarta.enterprise.inject.spi.ProcessInjectionPoint;
+import jakarta.inject.Provider;
 
 import org.eclipse.microprofile.jwt.Claim;
 import org.eclipse.microprofile.jwt.Claims;
@@ -77,7 +77,7 @@ public class ProviderExtensionSupport {
     }
 
     private static boolean isJson(Type type) {
-        return type.getTypeName().startsWith("javax.json.Json");
+        return type.getTypeName().startsWith("jakarta.json.Json");
     }
 
     private Set<Type> providerOptionalTypes = new HashSet<>();

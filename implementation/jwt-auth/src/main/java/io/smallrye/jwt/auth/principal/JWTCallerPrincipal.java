@@ -20,8 +20,9 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
-import javax.json.JsonValue;
 import javax.security.auth.Subject;
+
+import jakarta.json.JsonValue;
 
 import org.eclipse.microprofile.jwt.Claims;
 import org.eclipse.microprofile.jwt.JsonWebToken;

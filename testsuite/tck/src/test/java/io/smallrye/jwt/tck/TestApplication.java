@@ -1,6 +1,6 @@
 package io.smallrye.jwt.tck;
 
-import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
+import static jakarta.ws.rs.core.MediaType.TEXT_PLAIN;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
@@ -8,18 +8,18 @@ import java.net.URL;
 import java.util.HashSet;
 import java.util.Set;
 
-import javax.enterprise.context.RequestScoped;
-import javax.servlet.ServletException;
-import javax.servlet.annotation.WebServlet;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.ApplicationPath;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.Response;
+import jakarta.enterprise.context.RequestScoped;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.ws.rs.ApplicationPath;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.client.ClientBuilder;
+import jakarta.ws.rs.client.WebTarget;
+import jakarta.ws.rs.core.Response;
 
 import org.jboss.arquillian.container.test.api.Deployment;
 import org.jboss.arquillian.container.test.api.RunAsClient;
@@ -79,7 +79,7 @@ public class TestApplication extends Arquillian {
     }
 
     @ApplicationPath("/rest")
-    public static class RestApplication extends javax.ws.rs.core.Application {
+    public static class RestApplication extends jakarta.ws.rs.core.Application {
         @Override
         public Set<Class<?>> getClasses() {
             final HashSet<Class<?>> classes = new HashSet<>();

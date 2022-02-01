@@ -6,10 +6,10 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.NoSuchElementException;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.context.RequestScoped;
-import javax.inject.Inject;
-import javax.inject.Provider;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.RequestScoped;
+import jakarta.inject.Inject;
+import jakarta.inject.Provider;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.weld.junit4.WeldInitiator;
