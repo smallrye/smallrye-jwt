@@ -46,7 +46,7 @@
     <version.arquillian.jetty>1.0.0.CR4</version.arquillian.jetty>
     <version.jetty>9.4.45.v20220203</version.jetty>
     <version.resteasy>4.7.5.Final</version.resteasy>
-    <version.smallrye.config>2.9.0</version.smallrye.config>
+    <version.smallrye.config>2.9.1</version.smallrye.config>
     <!-- RESTEasy REST Client relocated to another GAV, so these props are for jakarta auto migration -->
     <groupId.resteasy.client>org.jboss.resteasy</groupId.resteasy.client>
     <artifactId.resteasy.client>resteasy-client-microprofile</artifactId.resteasy.client>
