@@ -41,6 +41,7 @@ import io.smallrye.jwt.auth.cdi.PrincipalProducer;
 import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
 import io.smallrye.jwt.auth.principal.JWTParser;
 import io.smallrye.jwt.auth.principal.ParseException;
+import io.smallrye.jwt.auth.principal.UnmatchedTokenKidException;
 
 /**
  * A JAX-RS HttpAuthenticationMechanism prototype
@@ -97,7 +98,10 @@ public class JWTHttpAuthenticationMechanism implements HttpAuthenticationMechani
                 MechanismLogging.log.success();
                 return httpMessageContext.notifyContainerAboutLogin(jwtPrincipal, groups);
             } catch (ParseException e) {
-                if (e.getCause() instanceof UnresolvableKeyException) {
+                if (e.getCause() instanceof UnmatchedTokenKidException) {
+                    MechanismLogging.log.kidNotInJWkSet();
+                    return httpMessageContext.responseUnauthorized();
+                } else if (e.getCause() instanceof UnresolvableKeyException) {
                     MechanismLogging.log.noUsableKey();
                     return reportInternalError(httpMessageContext);
                 } else {

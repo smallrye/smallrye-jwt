@@ -16,6 +16,7 @@
  */
 package io.smallrye.jwt.auth.principal;
 
+import java.io.IOException;
 import java.security.Key;
 import java.security.PublicKey;
 import java.security.cert.X509Certificate;
@@ -26,6 +27,7 @@ import org.jose4j.jwk.PublicJsonWebKey;
 import org.jose4j.jws.JsonWebSignature;
 import org.jose4j.jwx.JsonWebStructure;
 import org.jose4j.keys.resolvers.VerificationKeyResolver;
+import org.jose4j.lang.JoseException;
 import org.jose4j.lang.UnresolvableKeyException;
 
 import io.smallrye.jwt.KeyFormat;
@@ -63,6 +65,14 @@ public class KeyLocationResolver extends AbstractKeyLocationResolver implements 
         Key theKey = tryAsVerificationJwk(jws);
 
         if (theKey == null) {
+            try {
+                if (httpsJwks != null && httpsJwks.getJsonWebKeys() != null && jws != null
+                        && jws.getKeyIdHeaderValue() != null) {
+                    throw PrincipalMessages.msg.unmatchedTokenKidException();
+                }
+            } catch (JoseException | IOException e) {
+                // ignore, if JWK is unavailable this was logged previously
+            }
             reportUnresolvableKeyException(authContextInfo.getPublicKeyContent(), authContextInfo.getPublicKeyLocation());
         }
         return theKey;
