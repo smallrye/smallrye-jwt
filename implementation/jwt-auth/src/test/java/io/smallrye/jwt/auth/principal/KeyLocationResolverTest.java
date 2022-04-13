@@ -24,12 +24,16 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.when;
 
 import java.nio.charset.StandardCharsets;
+import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAPublicKey;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
+import org.jose4j.http.Get;
 import org.jose4j.jwk.HttpsJwks;
 import org.jose4j.jwk.JsonWebKey;
 import org.jose4j.jwk.OctetSequenceJsonWebKey;
@@ -61,6 +65,8 @@ public class KeyLocationResolverTest {
     @Mock
     HttpsJwks mockedHttpsJwks;
     @Mock
+    Get mockedGet;
+    @Mock
     UrlStreamResolver urlResolver;
 
     RSAPublicKey rsaKey;
@@ -89,10 +95,81 @@ public class KeyLocationResolverTest {
         contextInfo.setJwksRefreshInterval(10);
 
         KeyLocationResolver keyLocationResolver = new KeyLocationResolver(contextInfo) {
-            protected HttpsJwks initializeHttpsJwks(String loc) {
+            protected HttpsJwks getHttpsJwks(String loc) {
                 return mockedHttpsJwks;
             }
+
+            protected Get getHttpGet() {
+                return mockedGet;
+            }
         };
+        Mockito.verify(mockedGet, Mockito.never()).setTrustedCertificates(Mockito.any(X509Certificate.class));
+        Mockito.verify(mockedGet, Mockito.never()).setHostnameVerifier(Mockito.any());
+        Mockito.verify(mockedHttpsJwks).setSimpleHttpGet(mockedGet);
+
+        RsaJsonWebKey jwk = new RsaJsonWebKey(rsaKey);
+        jwk.setKeyId("1");
+        when(mockedHttpsJwks.getJsonWebKeys()).thenReturn(Collections.singletonList(jwk));
+        keyLocationResolver = Mockito.spy(keyLocationResolver);
+        when(signature.getHeaders()).thenReturn(headers);
+        when(headers.getStringHeaderValue(JsonWebKey.KEY_ID_PARAMETER)).thenReturn("1");
+
+        assertEquals(rsaKey, keyLocationResolver.resolveKey(signature, emptyList()));
+        assertNull(keyLocationResolver.key);
+    }
+
+    @Test
+    public void testLoadRsaKeyFromHttpsJwksWithCertPathAndTrustAll() throws Exception {
+        JWTAuthContextInfo contextInfo = new JWTAuthContextInfo("https://github.com/my_key.jwks", "issuer");
+        contextInfo.setTlsCertificatePath("publicCrt.pem");
+        contextInfo.setTlsTrustAll(true);
+        contextInfo.setJwksRefreshInterval(10);
+
+        KeyLocationResolver keyLocationResolver = new KeyLocationResolver(contextInfo) {
+            protected HttpsJwks getHttpsJwks(String loc) {
+                return mockedHttpsJwks;
+            }
+
+            protected Get getHttpGet() {
+                return mockedGet;
+            }
+        };
+        Mockito.verify(mockedGet).setTrustedCertificates(Mockito.any(X509Certificate.class));
+        Mockito.verify(mockedGet).setHostnameVerifier(Mockito.any(AbstractKeyLocationResolver.TrustAllHostnameVerifier.class));
+        Mockito.verify(mockedHttpsJwks).setSimpleHttpGet(mockedGet);
+
+        RsaJsonWebKey jwk = new RsaJsonWebKey(rsaKey);
+        jwk.setKeyId("1");
+        when(mockedHttpsJwks.getJsonWebKeys()).thenReturn(Collections.singletonList(jwk));
+        keyLocationResolver = Mockito.spy(keyLocationResolver);
+        when(signature.getHeaders()).thenReturn(headers);
+        when(headers.getStringHeaderValue(JsonWebKey.KEY_ID_PARAMETER)).thenReturn("1");
+
+        assertEquals(rsaKey, keyLocationResolver.resolveKey(signature, emptyList()));
+        assertNull(keyLocationResolver.key);
+    }
+
+    @Test
+    public void testLoadRsaKeyFromHttpsJwksWithCertPathAndTrustedHosts() throws Exception {
+        JWTAuthContextInfo contextInfo = new JWTAuthContextInfo("https://github.com/my_key.jwks", "issuer");
+        contextInfo.setTlsCertificatePath("publicCrt.pem");
+        contextInfo.setTlsTrustedHosts(new HashSet<>(Arrays.asList("trusted-host")));
+        contextInfo.setJwksRefreshInterval(10);
+
+        KeyLocationResolver keyLocationResolver = new KeyLocationResolver(contextInfo) {
+            protected HttpsJwks getHttpsJwks(String loc) {
+                return mockedHttpsJwks;
+            }
+
+            protected Get getHttpGet() {
+                return mockedGet;
+            }
+        };
+        Mockito.verify(mockedGet).setTrustedCertificates(Mockito.any(X509Certificate.class));
+        Mockito.verify(mockedGet)
+                .setHostnameVerifier(Mockito.any(AbstractKeyLocationResolver.TrustedHostsHostnameVerifier.class));
+        Mockito.verify(mockedHttpsJwks).setSimpleHttpGet(mockedGet);
+
         RsaJsonWebKey jwk = new RsaJsonWebKey(rsaKey);
         jwk.setKeyId("1");
         when(mockedHttpsJwks.getJsonWebKeys()).thenReturn(Collections.singletonList(jwk));

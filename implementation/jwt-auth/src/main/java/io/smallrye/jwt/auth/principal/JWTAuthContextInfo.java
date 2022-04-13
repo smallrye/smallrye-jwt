@@ -64,6 +64,9 @@ public class JWTAuthContextInfo {
     private Set<String> requiredClaims;
     private boolean relaxVerificationKeyValidation = true;
     private boolean verifyCertificateThumbprint;
+    private String tlsCertificatePath;
+    private Set<String> tlsTrustedHosts;
+    private boolean tlsTrustAll;
 
     public JWTAuthContextInfo() {
     }
@@ -121,6 +124,9 @@ public class JWTAuthContextInfo {
         this.requiredClaims = orig.getRequiredClaims();
         this.relaxVerificationKeyValidation = orig.isRelaxVerificationKeyValidation();
         this.verifyCertificateThumbprint = orig.isVerifyCertificateThumbprint();
+        this.tlsCertificatePath = orig.getTlsCertificatePath();
+        this.tlsTrustedHosts = orig.getTlsTrustedHosts();
+        this.tlsTrustAll = orig.isTlsTrustAll();
     }
 
     @Deprecated
@@ -423,5 +429,29 @@ public class JWTAuthContextInfo {
 
     public void setVerifyCertificateThumbprint(boolean verifyCertificateThumbprint) {
         this.verifyCertificateThumbprint = verifyCertificateThumbprint;
+    }
+
+    public String getTlsCertificatePath() {
+        return tlsCertificatePath;
+    }
+
+    public void setTlsCertificatePath(String tlsCertificatePath) {
+        this.tlsCertificatePath = tlsCertificatePath;
+    }
+
+    public Set<String> getTlsTrustedHosts() {
+        return tlsTrustedHosts;
+    }
+
+    public void setTlsTrustedHosts(Set<String> tlsTrustedHosts) {
+        this.tlsTrustedHosts = tlsTrustedHosts;
+    }
+
+    public void setTlsTrustAll(boolean tlsTrustAll) {
+        this.tlsTrustAll = tlsTrustAll;
+    }
+
+    public boolean isTlsTrustAll() {
+        return this.tlsTrustAll;
     }
 }

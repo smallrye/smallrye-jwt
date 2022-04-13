@@ -128,6 +128,8 @@ public class JWTAuthContextInfoProvider {
         provider.expectedAudience = Optional.empty();
         provider.groupsSeparator = DEFAULT_GROUPS_SEPARATOR;
         provider.requiredClaims = Optional.empty();
+        provider.tlsCertificatePath = Optional.empty();
+        provider.tlsTrustedHosts = Optional.empty();
 
         return provider;
     }
@@ -406,6 +408,28 @@ public class JWTAuthContextInfoProvider {
     @ConfigProperty(name = "smallrye.jwt.required.claims")
     Optional<Set<String>> requiredClaims;
 
+    /**
+     * TLS Trusted Certificate Path.
+     */
+    @Inject
+    @ConfigProperty(name = "smallrye.jwt.tls.certificate.path")
+    private Optional<String> tlsCertificatePath;
+
+    /**
+     * TLS Trust All.
+     * If this property is set to 'true' then HTTPS HostnameVerifier will trust all the hostnames.
+     */
+    @Inject
+    @ConfigProperty(name = "smallrye.jwt.tls.trust-all", defaultValue = "false")
+    private boolean tlsTrustAll;
+
+    /**
+     * TLS Trusted Hosts. Set this property if `smallrye.jwt.tls.trust-all` property is disabled.
+     */
+    @Inject
+    @ConfigProperty(name = "smallrye.jwt.tls.hosts")
+    private Optional<Set<String>> tlsTrustedHosts;
+
     @Produces
     Optional<JWTAuthContextInfo> getOptionalContextInfo() {
         String resolvedVerifyKeyLocation = !NONE.equals(verifyKeyLocation)
@@ -489,6 +513,9 @@ public class JWTAuthContextInfoProvider {
         contextInfo.setDefaultSubjectClaim(defaultSubClaim.orElse(null));
         SmallryeJwtUtils.setContextSubPath(contextInfo, subPath);
         contextInfo.setDefaultGroupsClaim(defaultGroupsClaim.orElse(null));
+        contextInfo.setTlsCertificatePath(tlsCertificatePath.orElse(null));
+        contextInfo.setTlsTrustedHosts(tlsTrustedHosts.orElse(null));
+        contextInfo.setTlsTrustAll(tlsTrustAll);
         SmallryeJwtUtils.setContextGroupsPath(contextInfo, groupsPath);
         contextInfo.setExpGracePeriodSecs(expGracePeriodSecs);
         contextInfo.setMaxTimeToLiveSecs(maxTimeToLiveSecs.orElse(null));
