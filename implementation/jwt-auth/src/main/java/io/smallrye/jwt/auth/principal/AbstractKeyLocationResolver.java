@@ -22,7 +22,12 @@ import java.security.Key;
 import java.security.cert.X509Certificate;
 import java.util.Base64;
 import java.util.List;
+import java.util.Set;
 
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.SSLSession;
+
+import org.jose4j.http.Get;
 import org.jose4j.jwk.HttpsJwks;
 import org.jose4j.jwk.JsonWebKey;
 import org.jose4j.jwk.OctetSequenceJsonWebKey;
@@ -39,6 +44,7 @@ import io.smallrye.jwt.util.ResourceUtils.UrlStreamResolver;
  * This implements the MP-JWT 1.1 mp.jwt.verify.publickey.location config property resolution logic
  */
 public class AbstractKeyLocationResolver {
+
     private static final String HTTP_SCHEME = "http:";
     private static final String HTTPS_SCHEME = "https:";
 
@@ -85,14 +91,37 @@ public class AbstractKeyLocationResolver {
         return jws.getHeaders().getStringHeaderValue(JsonWebKey.KEY_ID_PARAMETER);
     }
 
-    protected HttpsJwks initializeHttpsJwks(String location) throws IOException {
+    protected HttpsJwks initializeHttpsJwks(String location)
+            throws IOException {
         PrincipalLogging.log.tryCreateKeyFromHttpsJWKS();
+        HttpsJwks theHttpsJwks = getHttpsJwks(location);
+        if (location.startsWith(HTTPS_SCHEME)) {
+            Get httpGet = getHttpGet();
+            if (authContextInfo.isTlsTrustAll()) {
+                httpGet.setHostnameVerifier(new TrustAllHostnameVerifier());
+            } else if (authContextInfo.getTlsTrustedHosts() != null) {
+                httpGet.setHostnameVerifier(new TrustedHostsHostnameVerifier(authContextInfo.getTlsTrustedHosts()));
+            }
+            if (authContextInfo.getTlsCertificatePath() != null) {
+                httpGet.setTrustedCertificates(loadPEMCertificate(readKeyContent(authContextInfo.getTlsCertificatePath())));
+            }
+            theHttpsJwks.setSimpleHttpGet(httpGet);
+        }
+        return theHttpsJwks;
+    }
+
+    protected HttpsJwks getHttpsJwks(String location) {
         HttpsJwks theHttpsJwks = new HttpsJwks(location);
         theHttpsJwks.setDefaultCacheDuration(authContextInfo.getJwksRefreshInterval().longValue() * 60L);
         return theHttpsJwks;
     }
 
-    protected boolean isHttpsJwksInitialized(String keyLocation) throws IOException {
+    protected Get getHttpGet() {
+        return new Get();
+    }
+
+    protected boolean isHttpsJwksInitialized(String keyLocation)
+            throws IOException {
         if (mayBeFormat(KeyFormat.JWK) && keyLocation != null
                 && (keyLocation.startsWith(HTTPS_SCHEME) || keyLocation.startsWith(HTTP_SCHEME))) {
             httpsJwks = initializeHttpsJwks(keyLocation);
@@ -287,5 +316,28 @@ public class AbstractKeyLocationResolver {
             PrincipalLogging.log.keyContentIsNotValidEncodedPEMCertificate(e);
         }
         return cert;
+    }
+
+    static class TrustAllHostnameVerifier implements HostnameVerifier {
+
+        @Override
+        public boolean verify(String hostname, SSLSession session) {
+            return true;
+        }
+    }
+
+    static class TrustedHostsHostnameVerifier implements HostnameVerifier {
+
+        Set<String> hosts;
+
+        TrustedHostsHostnameVerifier(Set<String> hosts) {
+            this.hosts = hosts;
+        }
+
+        @Override
+        public boolean verify(String hostname, SSLSession session) {
+            return hosts.contains(hostname);
+        }
+
     }
 }
