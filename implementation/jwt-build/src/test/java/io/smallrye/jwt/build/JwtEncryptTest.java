@@ -328,6 +328,23 @@ public class JwtEncryptTest {
     }
 
     @Test
+    public void testEncryptWithSecretKeyAndGsmKeyWrap() throws Exception {
+        String jweCompact = Jwt.claims()
+                .claim("customClaim", "custom-value")
+                .jwe()
+                .keyId("key-enc-key-id")
+                .keyAlgorithm(KeyEncryptionAlgorithm.A256GCMKW)
+                .encrypt(createSecretKey());
+
+        checkJweHeaders(jweCompact, "A256GCMKW", 5);
+
+        JsonWebEncryption jwe = getJsonWebEncryption(jweCompact, createSecretKey());
+
+        JwtClaims claims = JwtClaims.parse(jwe.getPlaintextString());
+        checkJwtClaims(claims);
+    }
+
+    @Test
     public void testEncryptWithSecret() throws Exception {
         String secret = "AyM1SysPpbyDfgZld3umj1qzKObwVMko";
 
@@ -407,6 +424,10 @@ public class JwtEncryptTest {
         Assert.assertEquals("key-enc-key-id", jweHeaders.get("kid"));
         if ("ECDH-ES+A256KW".equals(keyEncKeyAlg)) {
             Assert.assertNotNull(jweHeaders.get("epk"));
+        }
+        if ("A256GCMKW".equals(keyEncKeyAlg)) {
+            Assert.assertNotNull(jweHeaders.get("iv"));
+            Assert.assertNotNull(jweHeaders.get("tag"));
         }
     }
 
