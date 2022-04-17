@@ -64,6 +64,8 @@ SmallRye JWT supports many properties which can be used to customize the token p
 |smallrye.jwt.tls.certificate.path|none|Path to TLS trusted certificate which may need to be configured if the keys have to be fetched over `HTTPS`.
 |smallrye.jwt.tls.trust-all|false|Trust all the hostnames. If the keys have to be fetched over `HTTPS` and this property is set to `true` then all the hostnames are trusted by default.
 |smallrye.jwt.tls.trusted.hosts|none|Set of trusted hostnames. If the keys have to be fetched over `HTTPS` and `smallrye.jwt.tls.trust-all` is set to `false` then then this property can be used to configure the trusted hostnames.
+|smallrye.jwt.http.proxy.host|none|HTTP proxy host.
+|smallrye.jwt.http.proxy.port|80|HTTP proxy port.
 |===
 
 = Create JsonWebToken with JWTParser

@@ -17,6 +17,8 @@
 package io.smallrye.jwt.auth.principal;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.Proxy;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.security.cert.X509Certificate;
@@ -95,8 +97,8 @@ public class AbstractKeyLocationResolver {
             throws IOException {
         PrincipalLogging.log.tryCreateKeyFromHttpsJWKS();
         HttpsJwks theHttpsJwks = getHttpsJwks(location);
+        Get httpGet = getHttpGet();
         if (location.startsWith(HTTPS_SCHEME)) {
-            Get httpGet = getHttpGet();
             if (authContextInfo.isTlsTrustAll()) {
                 httpGet.setHostnameVerifier(new TrustAllHostnameVerifier());
             } else if (authContextInfo.getTlsTrustedHosts() != null) {
@@ -105,8 +107,12 @@ public class AbstractKeyLocationResolver {
             if (authContextInfo.getTlsCertificatePath() != null) {
                 httpGet.setTrustedCertificates(loadPEMCertificate(readKeyContent(authContextInfo.getTlsCertificatePath())));
             }
-            theHttpsJwks.setSimpleHttpGet(httpGet);
         }
+        if (authContextInfo.getHttpProxyHost() != null) {
+            httpGet.setHttpProxy(new Proxy(Proxy.Type.HTTP,
+                    new InetSocketAddress(authContextInfo.getHttpProxyHost(), authContextInfo.getHttpProxyPort())));
+        }
+        theHttpsJwks.setSimpleHttpGet(httpGet);
         return theHttpsJwks;
     }
 

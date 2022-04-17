@@ -130,6 +130,8 @@ public class JWTAuthContextInfoProvider {
         provider.requiredClaims = Optional.empty();
         provider.tlsCertificatePath = Optional.empty();
         provider.tlsTrustedHosts = Optional.empty();
+        provider.httpProxyHost = Optional.empty();
+        provider.httpProxyPort = 80;
 
         return provider;
     }
@@ -430,6 +432,20 @@ public class JWTAuthContextInfoProvider {
     @ConfigProperty(name = "smallrye.jwt.tls.hosts")
     private Optional<Set<String>> tlsTrustedHosts;
 
+    /**
+     * HTTP Proxy Host.
+     */
+    @Inject
+    @ConfigProperty(name = "smallrye.jwt.http.proxy.host")
+    private Optional<String> httpProxyHost;
+
+    /**
+     * HTTP Proxy Port.
+     */
+    @Inject
+    @ConfigProperty(name = "smallrye.jwt.http.proxy.port", defaultValue = "80")
+    private int httpProxyPort = 80;
+
     @Produces
     Optional<JWTAuthContextInfo> getOptionalContextInfo() {
         String resolvedVerifyKeyLocation = !NONE.equals(verifyKeyLocation)
@@ -516,6 +532,8 @@ public class JWTAuthContextInfoProvider {
         contextInfo.setTlsCertificatePath(tlsCertificatePath.orElse(null));
         contextInfo.setTlsTrustedHosts(tlsTrustedHosts.orElse(null));
         contextInfo.setTlsTrustAll(tlsTrustAll);
+        contextInfo.setHttpProxyHost(httpProxyHost.orElse(null));
+        contextInfo.setHttpProxyPort(httpProxyPort);
         SmallryeJwtUtils.setContextGroupsPath(contextInfo, groupsPath);
         contextInfo.setExpGracePeriodSecs(expGracePeriodSecs);
         contextInfo.setMaxTimeToLiveSecs(maxTimeToLiveSecs.orElse(null));
