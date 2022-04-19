@@ -23,6 +23,7 @@ import static org.junit.Assert.assertNull;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.when;
 
+import java.net.Proxy;
 import java.nio.charset.StandardCharsets;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAPublicKey;
@@ -150,10 +151,11 @@ public class KeyLocationResolverTest {
     }
 
     @Test
-    public void testLoadRsaKeyFromHttpsJwksWithCertPathAndTrustedHosts() throws Exception {
+    public void testLoadRsaKeyFromHttpsJwksWithCertPathAndTrustedHostsAndProxy() throws Exception {
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo("https://github.com/my_key.jwks", "issuer");
         contextInfo.setTlsCertificatePath("publicCrt.pem");
         contextInfo.setTlsTrustedHosts(new HashSet<>(Arrays.asList("trusted-host")));
+        contextInfo.setHttpProxyHost("proxyhost");
         contextInfo.setJwksRefreshInterval(10);
 
         KeyLocationResolver keyLocationResolver = new KeyLocationResolver(contextInfo) {
@@ -168,6 +170,7 @@ public class KeyLocationResolverTest {
         Mockito.verify(mockedGet).setTrustedCertificates(Mockito.any(X509Certificate.class));
         Mockito.verify(mockedGet)
                 .setHostnameVerifier(Mockito.any(AbstractKeyLocationResolver.TrustedHostsHostnameVerifier.class));
+        Mockito.verify(mockedGet).setHttpProxy(Mockito.any(Proxy.class));
         Mockito.verify(mockedHttpsJwks).setSimpleHttpGet(mockedGet);
 
         RsaJsonWebKey jwk = new RsaJsonWebKey(rsaKey);

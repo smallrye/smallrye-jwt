@@ -67,6 +67,8 @@ public class JWTAuthContextInfo {
     private String tlsCertificatePath;
     private Set<String> tlsTrustedHosts;
     private boolean tlsTrustAll;
+    private String httpProxyHost;
+    private int httpProxyPort;
 
     public JWTAuthContextInfo() {
     }
@@ -127,6 +129,8 @@ public class JWTAuthContextInfo {
         this.tlsCertificatePath = orig.getTlsCertificatePath();
         this.tlsTrustedHosts = orig.getTlsTrustedHosts();
         this.tlsTrustAll = orig.isTlsTrustAll();
+        this.httpProxyHost = orig.getHttpProxyHost();
+        this.httpProxyPort = orig.getHttpProxyPort();
     }
 
     @Deprecated
@@ -412,6 +416,11 @@ public class JWTAuthContextInfo {
                 ", groupsSeparator='" + groupsSeparator + '\'' +
                 ", relaxVerificationKeyValidation=" + relaxVerificationKeyValidation +
                 ", verifyCertificateThumbprint=" + verifyCertificateThumbprint +
+                ", tlsCertificatePath=" + tlsCertificatePath +
+                ", tlsTrustAll=" + tlsTrustAll +
+                ", tlsTrustedHosts=" + tlsTrustedHosts +
+                ", httpProxyHost=" + httpProxyHost +
+                ", httpProxyPort=" + httpProxyPort +
                 '}';
     }
 
@@ -453,5 +462,21 @@ public class JWTAuthContextInfo {
 
     public boolean isTlsTrustAll() {
         return this.tlsTrustAll;
+    }
+
+    public String getHttpProxyHost() {
+        return httpProxyHost;
+    }
+
+    public void setHttpProxyHost(String httpProxyHost) {
+        this.httpProxyHost = httpProxyHost;
+    }
+
+    public int getHttpProxyPort() {
+        return httpProxyPort;
+    }
+
+    public void setHttpProxyPort(int httpProxyPort) {
+        this.httpProxyPort = httpProxyPort;
     }
 }
