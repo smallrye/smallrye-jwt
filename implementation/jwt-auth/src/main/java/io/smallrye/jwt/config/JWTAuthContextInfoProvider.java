@@ -414,7 +414,7 @@ public class JWTAuthContextInfoProvider {
      * TLS Trusted Certificate Path.
      */
     @Inject
-    @ConfigProperty(name = "smallrye.jwt.tls.certificate.path")
+    @ConfigProperty(name = "smallrye.jwt.client.tls.certificate.path")
     private Optional<String> tlsCertificatePath;
 
     /**
@@ -422,14 +422,14 @@ public class JWTAuthContextInfoProvider {
      * If this property is set to 'true' then HTTPS HostnameVerifier will trust all the hostnames.
      */
     @Inject
-    @ConfigProperty(name = "smallrye.jwt.tls.trust-all", defaultValue = "false")
+    @ConfigProperty(name = "smallrye.jwt.client.tls.trust-all", defaultValue = "false")
     private boolean tlsTrustAll;
 
     /**
-     * TLS Trusted Hosts. Set this property if `smallrye.jwt.tls.trust-all` property is disabled.
+     * TLS Trusted Hosts. Set this property if `smallrye.jwt.client.tls.trust-all` property is disabled.
      */
     @Inject
-    @ConfigProperty(name = "smallrye.jwt.tls.hosts")
+    @ConfigProperty(name = "smallrye.jwt.client.tls.hosts")
     private Optional<Set<String>> tlsTrustedHosts;
 
     /**
