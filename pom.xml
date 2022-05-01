@@ -38,7 +38,7 @@
     <version.jakarta.security.enterprise.api>1.0.2</version.jakarta.security.enterprise.api>
     <version.eclipse.microprofile.jwt>1.2.2</version.eclipse.microprofile.jwt>
     <version.microprofile.config>2.0.1</version.microprofile.config>
-    <version.jose4j>0.7.11</version.jose4j>
+    <version.jose4j>0.7.12</version.jose4j>
     <version.mokito>4.5.1</version.mokito>
 
     <!-- Test -->
