@@ -192,6 +192,21 @@ public class DefaultJWTParserTest {
     }
 
     @Test
+    public void testDecryptWithRsaPrivateKeyInnerSigned() throws Exception {
+        String jwtString = Jwt.upn("jdoe@example.com")
+                .innerSign(KeyUtils.readPrivateKey(("/privateKey.pem")))
+                .encrypt(KeyUtils.readEncryptionPublicKey("/publicKey.pem"));
+
+        JWTAuthContextInfo config = new JWTAuthContextInfo();
+        config.setDecryptionKeyLocation("/privateKey.pem");
+        config.setPublicKeyLocation("/publicKey.pem");
+        config.setKeyEncryptionAlgorithm(KeyEncryptionAlgorithm.RSA_OAEP);
+        JsonWebToken jwt = new DefaultJWTParser().parse(jwtString, config);
+
+        assertEquals("jdoe@example.com", jwt.getName());
+    }
+
+    @Test
     public void testDecryptWithRsaPrivateKeyInJwkFormat() throws Exception {
         String content = ResourceUtils.readResource("/encryptPublicKey.jwk");
         PublicJsonWebKey jwk = (PublicJsonWebKey) KeyUtils.loadJsonWebKeys(content).get(0);

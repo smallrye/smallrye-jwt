@@ -21,7 +21,9 @@ public class JwtBuildConfigSource implements ConfigSource {
             JwtBuildUtils.NEW_TOKEN_ISSUER_PROPERTY,
             JwtBuildUtils.NEW_TOKEN_AUDIENCE_PROPERTY,
             JwtBuildUtils.NEW_TOKEN_LIFESPAN_PROPERTY,
-            JwtBuildUtils.NEW_TOKEN_OVERRIDE_CLAIMS_PROPERTY));
+            JwtBuildUtils.NEW_TOKEN_OVERRIDE_CLAIMS_PROPERTY,
+            JwtBuildUtils.SIGN_KEYSTORE_KEY_ALIAS,
+            JwtBuildUtils.ENC_KEYSTORE_KEY_ALIAS));
 
     boolean overrideMatchingClaims;
     boolean lifespanPropertyRequired;
@@ -39,6 +41,7 @@ public class JwtBuildConfigSource implements ConfigSource {
     private String keyEncryptionAlg;
     private String contentEncryptionAlg;
 
+    private boolean useKeyStore;
     private boolean useSignKeyProperty;
     private boolean useEncryptionKeyProperty;
 
@@ -48,8 +51,15 @@ public class JwtBuildConfigSource implements ConfigSource {
     @Override
     public Map<String, String> getProperties() {
         Map<String, String> map = new HashMap<>();
+        if (useKeyStore) {
+            map.put(JwtBuildUtils.KEYSTORE_PASSWORD, "password");
+        }
+
         if (!useSignKeyProperty) {
             map.put(JwtBuildUtils.SIGN_KEY_LOCATION_PROPERTY, signingKeyLocation);
+            if (useKeyStore) {
+                map.put(JwtBuildUtils.SIGN_KEYSTORE_KEY_ALIAS, "server");
+            }
         } else {
             try {
                 map.put(JwtBuildUtils.SIGN_KEY_PROPERTY, KeyUtils.readKeyContent(signingKeyLocation));
@@ -59,6 +69,9 @@ public class JwtBuildConfigSource implements ConfigSource {
         }
         if (!useEncryptionKeyProperty) {
             map.put(JwtBuildUtils.ENC_KEY_LOCATION_PROPERTY, encryptionKeyLocation);
+            if (useKeyStore) {
+                map.put(JwtBuildUtils.ENC_KEYSTORE_KEY_ALIAS, "server");
+            }
         } else {
             try {
                 map.put(JwtBuildUtils.ENC_KEY_PROPERTY, KeyUtils.readKeyContent(encryptionKeyLocation));
@@ -152,6 +165,11 @@ public class JwtBuildConfigSource implements ConfigSource {
         } else {
             names.add(JwtBuildUtils.ENC_KEY_LOCATION_PROPERTY);
         }
+        if (useKeyStore) {
+            names.add(JwtBuildUtils.KEYSTORE_PASSWORD);
+            names.add(JwtBuildUtils.SIGN_KEYSTORE_KEY_ALIAS);
+            names.add(JwtBuildUtils.ENC_KEYSTORE_KEY_ALIAS);
+        }
         return names;
     }
 
@@ -189,6 +207,10 @@ public class JwtBuildConfigSource implements ConfigSource {
 
     public void setUseSignKeyProperty(boolean useSignKeyProperty) {
         this.useSignKeyProperty = useSignKeyProperty;
+    }
+
+    public void setUseKeyStore(boolean useKeyStore) {
+        this.useKeyStore = useKeyStore;
     }
 
     public void setUseEncryptionKeyProperty(boolean useEncryptionKeyProperty) {

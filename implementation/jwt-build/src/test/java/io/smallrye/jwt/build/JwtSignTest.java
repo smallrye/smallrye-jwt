@@ -18,11 +18,13 @@ package io.smallrye.jwt.build;
 
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.security.KeyPair;
+import java.security.KeyStore;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.time.Duration;
@@ -32,6 +34,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import javax.crypto.SecretKey;
@@ -571,6 +574,31 @@ public class JwtSignTest {
         checkDefaultClaimsAndHeaders(getJwsHeaders(jwt, 2), claims, "HS256", 300);
 
         Assert.assertEquals("custom-value", claims.getClaimValue("customClaim"));
+    }
+
+    @Test
+    public void testSignWithKeyStore() throws Exception {
+        JwtBuildConfigSource configSource = getConfigSource();
+        configSource.setUseKeyStore(true);
+        configSource.setSigningKeyLocation("/keystore.p12");
+        try {
+            String jwt = Jwt.claims()
+                    .claim("customClaim", "custom-value")
+                    .sign();
+
+            KeyStore keyStore = KeyUtils.loadKeyStore("keystore.p12", "password", Optional.of("PKCS12"), Optional.empty());
+            PublicKey verificationKey = keyStore.getCertificate("server").getPublicKey();
+
+            JsonWebSignature jws = getVerifiedJws(jwt, verificationKey);
+            JwtClaims claims = JwtClaims.parse(jws.getPayload());
+
+            Assert.assertEquals(4, claims.getClaimsMap().size());
+            checkDefaultClaimsAndHeaders(getJwsHeaders(jwt, 2), claims, "RS256", 300);
+            Assert.assertEquals("custom-value", claims.getClaimValue("customClaim"));
+        } finally {
+            configSource.setUseKeyStore(false);
+            configSource.setSigningKeyLocation("/privateKey.pem");
+        }
     }
 
     @Test
