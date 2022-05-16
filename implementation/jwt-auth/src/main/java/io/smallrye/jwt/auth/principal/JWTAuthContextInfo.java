@@ -64,6 +64,7 @@ public class JWTAuthContextInfo {
     private Set<String> requiredClaims;
     private boolean relaxVerificationKeyValidation = true;
     private boolean verifyCertificateThumbprint;
+    private String tlsCertificate;
     private String tlsCertificatePath;
     private Set<String> tlsTrustedHosts;
     private boolean tlsTrustAll;
@@ -126,6 +127,7 @@ public class JWTAuthContextInfo {
         this.requiredClaims = orig.getRequiredClaims();
         this.relaxVerificationKeyValidation = orig.isRelaxVerificationKeyValidation();
         this.verifyCertificateThumbprint = orig.isVerifyCertificateThumbprint();
+        this.tlsCertificate = orig.getTlsCertificate();
         this.tlsCertificatePath = orig.getTlsCertificatePath();
         this.tlsTrustedHosts = orig.getTlsTrustedHosts();
         this.tlsTrustAll = orig.isTlsTrustAll();
@@ -438,6 +440,14 @@ public class JWTAuthContextInfo {
 
     public void setVerifyCertificateThumbprint(boolean verifyCertificateThumbprint) {
         this.verifyCertificateThumbprint = verifyCertificateThumbprint;
+    }
+
+    public String getTlsCertificate() {
+        return tlsCertificate;
+    }
+
+    public void setTlsCertificate(String tlsCertificate) {
+        this.tlsCertificate = tlsCertificate;
     }
 
     public String getTlsCertificatePath() {

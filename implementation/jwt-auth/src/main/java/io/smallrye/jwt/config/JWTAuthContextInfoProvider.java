@@ -128,6 +128,7 @@ public class JWTAuthContextInfoProvider {
         provider.expectedAudience = Optional.empty();
         provider.groupsSeparator = DEFAULT_GROUPS_SEPARATOR;
         provider.requiredClaims = Optional.empty();
+        provider.tlsCertificate = Optional.empty();
         provider.tlsCertificatePath = Optional.empty();
         provider.tlsTrustedHosts = Optional.empty();
         provider.httpProxyHost = Optional.empty();
@@ -411,7 +412,16 @@ public class JWTAuthContextInfoProvider {
     Optional<Set<String>> requiredClaims;
 
     /**
+     * TLS Trusted Certificate.
+     * If this property is set then the 'smallrye.jwt.client.tls.certificate.path' will be ignored.
+     */
+    @Inject
+    @ConfigProperty(name = "smallrye.jwt.client.tls.certificate")
+    private Optional<String> tlsCertificate;
+
+    /**
      * TLS Trusted Certificate Path.
+     * This property will be ignored if the 'smallrye.jwt.client.tls.certificate' is set.
      */
     @Inject
     @ConfigProperty(name = "smallrye.jwt.client.tls.certificate.path")
@@ -529,6 +539,7 @@ public class JWTAuthContextInfoProvider {
         contextInfo.setDefaultSubjectClaim(defaultSubClaim.orElse(null));
         SmallryeJwtUtils.setContextSubPath(contextInfo, subPath);
         contextInfo.setDefaultGroupsClaim(defaultGroupsClaim.orElse(null));
+        contextInfo.setTlsCertificate(tlsCertificate.orElse(null));
         contextInfo.setTlsCertificatePath(tlsCertificatePath.orElse(null));
         contextInfo.setTlsTrustedHosts(tlsTrustedHosts.orElse(null));
         contextInfo.setTlsTrustAll(tlsTrustAll);
