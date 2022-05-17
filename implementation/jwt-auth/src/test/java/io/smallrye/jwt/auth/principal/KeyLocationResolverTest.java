@@ -120,9 +120,9 @@ public class KeyLocationResolverTest {
     }
 
     @Test
-    public void testLoadRsaKeyFromHttpsJwksWithCertPathAndTrustAll() throws Exception {
+    public void testLoadRsaKeyFromHttpsJwksWithCertAndTrustAll() throws Exception {
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo("https://github.com/my_key.jwks", "issuer");
-        contextInfo.setTlsCertificatePath("publicCrt.pem");
+        contextInfo.setTlsCertificate(KeyUtils.readKeyContent("publicCrt.pem"));
         contextInfo.setTlsTrustAll(true);
         contextInfo.setJwksRefreshInterval(10);
 

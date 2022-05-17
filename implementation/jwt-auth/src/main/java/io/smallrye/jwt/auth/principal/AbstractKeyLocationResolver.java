@@ -104,7 +104,9 @@ public class AbstractKeyLocationResolver {
             } else if (authContextInfo.getTlsTrustedHosts() != null) {
                 httpGet.setHostnameVerifier(new TrustedHostsHostnameVerifier(authContextInfo.getTlsTrustedHosts()));
             }
-            if (authContextInfo.getTlsCertificatePath() != null) {
+            if (authContextInfo.getTlsCertificate() != null) {
+                httpGet.setTrustedCertificates(loadPEMCertificate(authContextInfo.getTlsCertificate()));
+            } else if (authContextInfo.getTlsCertificatePath() != null) {
                 httpGet.setTrustedCertificates(loadPEMCertificate(readKeyContent(authContextInfo.getTlsCertificatePath())));
             }
         }
