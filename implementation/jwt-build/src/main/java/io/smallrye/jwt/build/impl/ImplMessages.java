@@ -98,4 +98,10 @@ interface ImplMessages {
 
     @Message(id = 5029, value = "Encryption key can not be created from the loaded content")
     IllegalArgumentException encryptionKeyCanNotBeCreatedFromContent();
+
+    @Message(id = 5030, value = "Signing key can not be read from the keystore")
+    IllegalArgumentException signingKeyCanNotBeReadFromKeystore(@Cause Throwable throwable);
+
+    @Message(id = 5031, value = "Encryption key can not be read from the keystore")
+    IllegalArgumentException encryptionKeyCanNotBeReadFromKeystore(@Cause Throwable throwable);
 }

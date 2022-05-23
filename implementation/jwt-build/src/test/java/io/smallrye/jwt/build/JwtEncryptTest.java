@@ -18,15 +18,18 @@ package io.smallrye.jwt.build;
 
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
+import java.security.KeyStore;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Optional;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
@@ -86,6 +89,34 @@ public class JwtEncryptTest {
             checkJwtClaims(claims);
         } finally {
             configSource.setUseEncryptionKeyProperty(false);
+        }
+    }
+
+    @Test
+    public void testEncryptWithKeyStore() throws Exception {
+        JwtBuildConfigSource configSource = JwtSignTest.getConfigSource();
+        configSource.setUseKeyStore(true);
+        configSource.setEncryptionKeyLocation("/keystore.p12");
+
+        try {
+            String jweCompact = Jwt.claims()
+                    .claim("customClaim", "custom-value")
+                    .jwe()
+                    .keyId("key-enc-key-id")
+                    .encrypt();
+
+            checkJweHeaders(jweCompact);
+
+            KeyStore keyStore = KeyUtils.loadKeyStore("keystore.p12", "password", Optional.empty(), Optional.empty());
+            PrivateKey decryptionKey = (PrivateKey) keyStore.getKey("server", "password".toCharArray());
+
+            JsonWebEncryption jwe = getJsonWebEncryption(jweCompact, decryptionKey);
+
+            JwtClaims claims = JwtClaims.parse(jwe.getPlaintextString());
+            checkJwtClaims(claims);
+        } finally {
+            configSource.setUseKeyStore(false);
+            configSource.setEncryptionKeyLocation("/publicKey.pem");
         }
     }
 

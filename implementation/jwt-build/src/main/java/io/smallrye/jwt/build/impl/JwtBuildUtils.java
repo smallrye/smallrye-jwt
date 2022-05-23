@@ -1,7 +1,11 @@
 package io.smallrye.jwt.build.impl;
 
 import java.io.IOException;
+import java.security.KeyStore;
+import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -9,6 +13,7 @@ import org.eclipse.microprofile.jwt.Claims;
 import org.jose4j.jwt.JwtClaims;
 import org.jose4j.jwt.NumericDate;
 
+import io.smallrye.jwt.util.KeyUtils;
 import io.smallrye.jwt.util.ResourceUtils;
 
 /**
@@ -31,6 +36,14 @@ public class JwtBuildUtils {
     public static final String NEW_TOKEN_SIGNATURE_ALG_PROPERTY = "smallrye.jwt.new-token.signature-algorithm";
     public static final String NEW_TOKEN_KEY_ENCRYPTION_ALG_PROPERTY = "smallrye.jwt.new-token.key-encryption-algorithm";
     public static final String NEW_TOKEN_CONTENT_ENCRYPTION_ALG_PROPERTY = "smallrye.jwt.new-token.content-encryption-algorithm";
+
+    public static final String KEYSTORE_PASSWORD = "smallrye.jwt.keystore.password";
+    public static final String KEYSTORE_TYPE = "smallrye.jwt.keystore.type";
+    public static final String KEYSTORE_PROVIDER = "smallrye.jwt.keystore.provider";
+
+    public static final String SIGN_KEYSTORE_KEY_ALIAS = "smallrye.jwt.keystore.sign.key.alias";
+    public static final String SIGN_KEYSTORE_KEY_PASSWORD = "smallrye.jwt.keystore.sign.key.password";
+    public static final String ENC_KEYSTORE_KEY_ALIAS = "smallrye.jwt.keystore.encrypt.key.alias";
 
     private JwtBuildUtils() {
         // no-op: utility class
@@ -67,7 +80,11 @@ public class JwtBuildUtils {
     }
 
     static <T> T getConfigProperty(String name, Class<T> cls, T defaultValue) {
-        return ConfigProvider.getConfig().getOptionalValue(name, cls).orElse(defaultValue);
+        return getOptionalConfigProperty(name, cls).orElse(defaultValue);
+    }
+
+    static <T> Optional<T> getOptionalConfigProperty(String name, Class<T> cls) {
+        return ConfigProvider.getConfig().getOptionalValue(name, cls);
     }
 
     static String readJsonContent(String jsonResName) {
@@ -120,5 +137,43 @@ public class JwtBuildUtils {
         } catch (Exception ex) {
             throw ImplMessages.msg.failureToParseJWTClaims(ex.getMessage(), ex);
         }
+    }
+
+    static PrivateKey readPrivateKeyFromKeystore(String keyStorePath) {
+        Optional<String> keyStorePassword = getOptionalConfigProperty(KEYSTORE_PASSWORD, String.class);
+        if (keyStorePassword.isPresent()) {
+            Optional<String> signKeyStoreKeyAlias = getOptionalConfigProperty(SIGN_KEYSTORE_KEY_ALIAS, String.class);
+            if (signKeyStoreKeyAlias.isPresent()) {
+                try {
+                    KeyStore keyStore = KeyUtils.loadKeyStore(keyStorePath, keyStorePassword.get(),
+                            getOptionalConfigProperty(KEYSTORE_TYPE, String.class),
+                            getOptionalConfigProperty(KEYSTORE_PROVIDER, String.class));
+                    return (PrivateKey) keyStore.getKey(signKeyStoreKeyAlias.get(),
+                            getOptionalConfigProperty(SIGN_KEYSTORE_KEY_PASSWORD, String.class).orElse(keyStorePassword.get())
+                                    .toCharArray());
+                } catch (Exception ex) {
+                    throw ImplMessages.msg.signingKeyCanNotBeReadFromKeystore(ex);
+                }
+            }
+        }
+        return null;
+    }
+
+    static PublicKey readPublicKeyFromKeystore(String keyStorePath) {
+        Optional<String> keyStorePassword = getOptionalConfigProperty(KEYSTORE_PASSWORD, String.class);
+        if (keyStorePassword.isPresent()) {
+            Optional<String> encKeyStoreKeyAlias = getOptionalConfigProperty(ENC_KEYSTORE_KEY_ALIAS, String.class);
+            if (encKeyStoreKeyAlias.isPresent()) {
+                try {
+                    KeyStore keyStore = KeyUtils.loadKeyStore(keyStorePath, keyStorePassword.get(),
+                            getOptionalConfigProperty(KEYSTORE_TYPE, String.class),
+                            getOptionalConfigProperty(KEYSTORE_PROVIDER, String.class));
+                    return keyStore.getCertificate(encKeyStoreKeyAlias.get()).getPublicKey();
+                } catch (Exception ex) {
+                    throw ImplMessages.msg.encryptionKeyCanNotBeReadFromKeystore(ex);
+                }
+            }
+        }
+        return null;
     }
 }

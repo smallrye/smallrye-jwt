@@ -1,5 +1,6 @@
 package io.smallrye.jwt.build.impl;
 
+import java.io.InputStream;
 import java.security.Key;
 import java.security.PrivateKey;
 import java.security.interfaces.ECPrivateKey;
@@ -19,6 +20,7 @@ import io.smallrye.jwt.build.JwtEncryptionBuilder;
 import io.smallrye.jwt.build.JwtSignature;
 import io.smallrye.jwt.build.JwtSignatureException;
 import io.smallrye.jwt.util.KeyUtils;
+import io.smallrye.jwt.util.ResourceUtils;
 
 /**
  * Default JWT Signature implementation
@@ -55,7 +57,7 @@ class JwtSignatureImpl implements JwtSignature {
      */
     public String sign(String keyLocation) throws JwtSignatureException {
         try {
-            return signInternal(getSigningKeyFromConfig(getKeyContentFromLocation(keyLocation)));
+            return signInternal(getSigningKeyFromKeyContent(getKeyContentFromLocation(keyLocation)));
         } catch (JwtSignatureException ex) {
             throw ex;
         } catch (Exception ex) {
@@ -68,7 +70,29 @@ class JwtSignatureImpl implements JwtSignature {
      */
     public String sign() throws JwtSignatureException {
         try {
-            Key key = configuredPemKey != null ? configuredPemKey : getSigningKeyFromConfig(getKeyContentFromConfig());
+            Key key = configuredPemKey;
+            if (key == null) {
+                String keyLocation = JwtBuildUtils.getConfigProperty(JwtBuildUtils.SIGN_KEY_LOCATION_PROPERTY, String.class);
+                if (keyLocation != null) {
+                    key = JwtBuildUtils.readPrivateKeyFromKeystore(keyLocation.trim());
+                    if (key == null) {
+                        try (InputStream keyStream = ResourceUtils.getResourceStream(keyLocation.trim())) {
+                            key = getSigningKeyFromKeyContent(new String(ResourceUtils.readBytes(keyStream)));
+                        }
+                    }
+                } else {
+                    String keyContent = JwtBuildUtils.getConfigProperty(JwtBuildUtils.SIGN_KEY_PROPERTY, String.class);
+                    if (keyContent != null) {
+                        key = getSigningKeyFromKeyContent(keyContent);
+                    } else {
+                        throw ImplMessages.msg.signKeyNotConfigured();
+                    }
+                }
+            }
+            if (key == null) {
+                throw ImplMessages.msg.signingKeyCanNotBeCreatedFromContent();
+            }
+
             return signInternal(key);
         } catch (JwtSignatureException ex) {
             throw ex;
@@ -203,21 +227,7 @@ class JwtSignatureImpl implements JwtSignature {
         }
     }
 
-    static String getKeyContentFromConfig() {
-
-        String keyLocation = JwtBuildUtils.getConfigProperty(JwtBuildUtils.SIGN_KEY_LOCATION_PROPERTY, String.class);
-        if (keyLocation != null) {
-            return getKeyContentFromLocation(keyLocation.trim());
-        }
-        String keyContent = JwtBuildUtils.getConfigProperty(JwtBuildUtils.SIGN_KEY_PROPERTY, String.class);
-        if (keyContent != null) {
-            return keyContent;
-        }
-
-        throw ImplMessages.msg.signKeyNotConfigured();
-    }
-
-    Key getSigningKeyFromConfig(String keyContent) {
+    Key getSigningKeyFromKeyContent(String keyContent) {
         String kid = (String) headers.get("kid");
         String algHeader = (String) headers.get("alg");
 
@@ -251,9 +261,6 @@ class JwtSignatureImpl implements JwtSignature {
             }
         } else {
             configuredPemKey = key;
-        }
-        if (key == null) {
-            throw ImplMessages.msg.signingKeyCanNotBeCreatedFromContent();
         }
         return key;
     }

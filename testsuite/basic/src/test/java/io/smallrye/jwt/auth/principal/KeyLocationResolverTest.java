@@ -103,7 +103,7 @@ public class KeyLocationResolverTest {
     @Test
     public void testVerifyWithoutPrivateKey() throws Exception {
         PrivateKey privateKey = TokenUtils.readPrivateKey("/privateKey.pem");
-        String token = TokenUtils.generateTokenString(privateKey, "1", "/Token1.json", null, null);
+        String token = TokenUtils.signClaims(privateKey, "1", "/Token1.json", null, null);
         JWTAuthContextInfoProvider provider = JWTAuthContextInfoProvider.createWithKeyLocation("NONE",
                 "https://server.example.com");
         try {

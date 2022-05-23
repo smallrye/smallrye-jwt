@@ -17,6 +17,9 @@
 package io.smallrye.jwt.config;
 
 import java.io.IOException;
+import java.security.KeyStore;
+import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.util.Optional;
 import java.util.Set;
 
@@ -33,6 +36,7 @@ import io.smallrye.jwt.SmallryeJwtUtils;
 import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
+import io.smallrye.jwt.util.KeyUtils;
 import io.smallrye.jwt.util.ResourceUtils;
 
 /**
@@ -91,19 +95,58 @@ public class JWTAuthContextInfoProvider {
         return create(NONE, keyLocation, true, false, issuer);
     }
 
+    /**
+     * Create JWTAuthContextInfoProvider with the keystore and issuer
+     *
+     */
+    public static JWTAuthContextInfoProvider createWithVerifyKeyStoreLocation(String keyLocation,
+            Optional<String> theKeyStorePassword,
+            Optional<String> theKeyStoreVerifyKeyAlias,
+            Optional<String> theKeyStoreDecryptKeyAlias, String issuer) {
+        return create(NONE, keyLocation, Optional.empty(), Optional.empty(), theKeyStorePassword,
+                theKeyStoreVerifyKeyAlias,
+                theKeyStoreDecryptKeyAlias, false, false, issuer);
+    }
+
+    /**
+     * Create JWTAuthContextInfoProvider with the keystore and issuer
+     *
+     */
+    public static JWTAuthContextInfoProvider createWithKeyStoreLocation(String keyLocation,
+            Optional<String> theKeyStorePassword,
+            Optional<String> theKeyStoreVerifyKeyAlias,
+            Optional<String> theKeyStoreDecryptKeyAlias, String issuer) {
+        return create(NONE, keyLocation, Optional.empty(), Optional.empty(), theKeyStorePassword, theKeyStoreVerifyKeyAlias,
+                theKeyStoreDecryptKeyAlias, false, false, issuer);
+    }
+
     private static JWTAuthContextInfoProvider create(String publicKey,
             String keyLocation,
+            boolean secretKey,
+            boolean verifyCertificateThumbprint,
+            String issuer) {
+        return create(publicKey, keyLocation, Optional.empty(), Optional.empty(), Optional.empty(),
+                Optional.empty(), Optional.empty(), secretKey, verifyCertificateThumbprint, issuer);
+    }
+
+    private static JWTAuthContextInfoProvider create(String publicKey,
+            String keyLocation,
+            Optional<String> theKeyStoreType,
+            Optional<String> theKeyStoreProvider,
+            Optional<String> theKeyStorePassword,
+            Optional<String> theKeyStoreVerifyKeyAlias,
+            Optional<String> theKeyStoreDecryptKeyAlias,
             boolean secretKey,
             boolean verifyCertificateThumbprint,
             String issuer) {
         JWTAuthContextInfoProvider provider = new JWTAuthContextInfoProvider();
         provider.mpJwtPublicKey = publicKey;
         provider.mpJwtPublicKeyAlgorithm = Optional.of(SignatureAlgorithm.RS256);
-        provider.mpJwtLocation = !secretKey ? keyLocation : NONE;
+        provider.mpJwtLocation = !secretKey && !theKeyStoreDecryptKeyAlias.isPresent() ? keyLocation : NONE;
         provider.verifyKeyLocation = secretKey ? keyLocation : NONE;
         provider.verifyCertificateThumbprint = verifyCertificateThumbprint;
         provider.mpJwtIssuer = issuer;
-        provider.mpJwtDecryptKeyLocation = NONE;
+        provider.mpJwtDecryptKeyLocation = theKeyStoreDecryptKeyAlias.isPresent() ? keyLocation : NONE;
         provider.decryptionKeyLocation = NONE;
         provider.mpJwtTokenHeader = Optional.of(AUTHORIZATION_HEADER);
         provider.mpJwtTokenCookie = Optional.of(BEARER_SCHEME);
@@ -133,6 +176,12 @@ public class JWTAuthContextInfoProvider {
         provider.tlsTrustedHosts = Optional.empty();
         provider.httpProxyHost = Optional.empty();
         provider.httpProxyPort = 80;
+        provider.keyStoreType = theKeyStoreType;
+        provider.keyStoreProvider = theKeyStoreProvider;
+        provider.keyStorePassword = theKeyStorePassword;
+        provider.keyStoreVerifyKeyAlias = theKeyStoreVerifyKeyAlias;
+        provider.keyStoreDecryptKeyAlias = theKeyStoreDecryptKeyAlias;
+        provider.keyStoreDecryptKeyPassword = Optional.empty();
 
         return provider;
     }
@@ -456,6 +505,44 @@ public class JWTAuthContextInfoProvider {
     @ConfigProperty(name = "smallrye.jwt.http.proxy.port", defaultValue = "80")
     private int httpProxyPort = 80;
 
+    /**
+     * Key store type. If not given, the type is automatically detected
+     * based on the file name.
+     */
+    @ConfigProperty(name = "smallrye.jwt.keystore.type")
+    private Optional<String> keyStoreType = Optional.empty();
+
+    /**
+     * Key store provider. If not given, the provider is automatically detected
+     * based on the key store file type.
+     */
+    @ConfigProperty(name = "smallrye.jwt.keystore.provider")
+    private Optional<String> keyStoreProvider = Optional.empty();
+
+    /**
+     * Key store password.
+     */
+    @ConfigProperty(name = "smallrye.jwt.keystore.password")
+    private Optional<String> keyStorePassword = Optional.empty();
+
+    /**
+     * Key store verification key alias. Public verification key will be extracted from a matching certificate.
+     */
+    @ConfigProperty(name = "smallrye.jwt.keystore.verify.key.alias")
+    private Optional<String> keyStoreVerifyKeyAlias = Optional.empty();
+
+    /**
+     * Key store decryption key alias.
+     */
+    @ConfigProperty(name = "smallrye.jwt.keystore.decrypt.key.alias")
+    private Optional<String> keyStoreDecryptKeyAlias = Optional.empty();
+
+    /**
+     * Key store decryption key password, in case it's different from {@link #keyStorePassword}.
+     */
+    @ConfigProperty(name = "smallrye.jwt.keystore.decrypt.key.password")
+    private Optional<String> keyStoreDecryptKeyPassword = Optional.empty();
+
     @Produces
     Optional<JWTAuthContextInfo> getOptionalContextInfo() {
         String resolvedVerifyKeyLocation = !NONE.equals(verifyKeyLocation)
@@ -476,13 +563,21 @@ public class JWTAuthContextInfoProvider {
             if (resolvedVerifyKeyLocationTrimmed.startsWith("http")) {
                 contextInfo.setPublicKeyLocation(resolvedVerifyKeyLocationTrimmed);
             } else {
-                try {
-                    contextInfo.setPublicKeyContent(ResourceUtils.readResource(resolvedVerifyKeyLocationTrimmed));
-                    if (contextInfo.getPublicKeyContent() == null) {
-                        throw ConfigMessages.msg.invalidPublicKeyLocation();
+                if (isPublicKeyInKeystore()) {
+                    try {
+                        contextInfo.setPublicVerificationKey(getVerificationKeyFromKeystore(resolvedVerifyKeyLocationTrimmed));
+                    } catch (Exception ex) {
+                        throw ConfigMessages.msg.readingPublicKeyLocationFailed(ex);
                     }
-                } catch (IOException ex) {
-                    throw ConfigMessages.msg.readingPublicKeyLocationFailed(ex);
+                } else {
+                    try {
+                        contextInfo.setPublicKeyContent(ResourceUtils.readResource(resolvedVerifyKeyLocationTrimmed));
+                        if (contextInfo.getPublicKeyContent() == null) {
+                            throw ConfigMessages.msg.invalidPublicKeyLocation();
+                        }
+                    } catch (IOException ex) {
+                        throw ConfigMessages.msg.readingPublicKeyLocationFailed(ex);
+                    }
                 }
             }
         }
@@ -502,13 +597,21 @@ public class JWTAuthContextInfoProvider {
             if (decryptionKeyLocationTrimmed.startsWith("http")) {
                 contextInfo.setDecryptionKeyLocation(decryptionKeyLocationTrimmed);
             } else {
-                try {
-                    contextInfo.setDecryptionKeyContent(ResourceUtils.readResource(decryptionKeyLocationTrimmed));
-                    if (contextInfo.getDecryptionKeyContent() == null) {
-                        throw ConfigMessages.msg.invalidDecryptKeyLocation();
+                if (isPrivateKeyInKeystore()) {
+                    try {
+                        contextInfo.setPrivateDecryptionKey(getDecryptionKeyFromKeystore(decryptionKeyLocationTrimmed));
+                    } catch (Exception ex) {
+                        throw ConfigMessages.msg.readingDecryptKeyLocationFailed(ex);
                     }
-                } catch (IOException ex) {
-                    throw ConfigMessages.msg.readingDecryptKeyLocationFailed(ex);
+                } else {
+                    try {
+                        contextInfo.setDecryptionKeyContent(ResourceUtils.readResource(decryptionKeyLocationTrimmed));
+                        if (contextInfo.getDecryptionKeyContent() == null) {
+                            throw ConfigMessages.msg.invalidDecryptKeyLocation();
+                        }
+                    } catch (IOException ex) {
+                        throw ConfigMessages.msg.readingDecryptKeyLocationFailed(ex);
+                    }
                 }
             }
         }
@@ -586,6 +689,25 @@ public class JWTAuthContextInfoProvider {
         contextInfo.setRelaxVerificationKeyValidation(relaxVerificationKeyValidation);
         contextInfo.setVerifyCertificateThumbprint(verifyCertificateThumbprint);
         return Optional.of(contextInfo);
+    }
+
+    private PublicKey getVerificationKeyFromKeystore(String keyStorePath) throws Exception {
+        KeyStore keyStore = KeyUtils.loadKeyStore(keyStorePath, keyStorePassword.get(), keyStoreType, keyStoreProvider);
+        return keyStore.getCertificate(keyStoreVerifyKeyAlias.get()).getPublicKey();
+    }
+
+    private PrivateKey getDecryptionKeyFromKeystore(String keyStorePath) throws Exception {
+        KeyStore keyStore = KeyUtils.loadKeyStore(keyStorePath, keyStorePassword.get(), keyStoreType, keyStoreProvider);
+        return (PrivateKey) keyStore.getKey(keyStoreDecryptKeyAlias.get(),
+                keyStoreDecryptKeyPassword.orElse(keyStorePassword.get()).toCharArray());
+    }
+
+    private boolean isPublicKeyInKeystore() {
+        return keyStorePassword.isPresent() && keyStoreVerifyKeyAlias.isPresent();
+    }
+
+    private boolean isPrivateKeyInKeystore() {
+        return keyStorePassword.isPresent() && keyStoreDecryptKeyAlias.isPresent();
     }
 
     @Produces

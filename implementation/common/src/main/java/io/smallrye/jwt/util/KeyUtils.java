@@ -27,6 +27,7 @@ import java.security.Key;
 import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
+import java.security.KeyStore;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
@@ -40,6 +41,7 @@ import java.util.Base64;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
+import java.util.Optional;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
@@ -274,6 +276,32 @@ public final class KeyUtils {
         X509EncodedKeySpec spec = new X509EncodedKeySpec(encodedBytes);
         KeyFactory kf = KeyFactory.getInstance(keyFactoryAlgorithm(algo));
         return kf.generatePublic(spec);
+    }
+
+    public static KeyStore loadKeyStore(String keyStorePath, String keyStorePassword, Optional<String> keyStoreType,
+            Optional<String> keyStoreProvider)
+            throws Exception {
+        String theKeyStoreType = getKeyStoreType(keyStorePath, keyStoreType);
+        KeyStore keyStore = keyStoreProvider.isPresent()
+                ? KeyStore.getInstance(theKeyStoreType, keyStoreProvider.get())
+                : KeyStore.getInstance(theKeyStoreType);
+        try (InputStream is = ResourceUtils.getResourceStream(keyStorePath)) {
+            keyStore.load(is, keyStorePassword.toCharArray());
+        }
+        return keyStore;
+    }
+
+    private static String getKeyStoreType(String keyStorePath, Optional<String> keyStoreType) {
+        if (keyStoreType.isPresent()) {
+            return keyStoreType.get().toUpperCase();
+        }
+        final String pathName = keyStorePath.toString();
+        if (pathName.endsWith(".p12") || pathName.endsWith(".pkcs12") || pathName.endsWith(".pfx")) {
+            return "PKCS12";
+        } else {
+            // assume jks
+            return "JKS";
+        }
     }
 
     public static PublicKey decodeEncryptionPublicKey(String pemEncoded, KeyEncryptionAlgorithm algo)

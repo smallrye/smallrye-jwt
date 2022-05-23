@@ -17,6 +17,7 @@
 package io.smallrye.jwt.util;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -83,6 +84,16 @@ public final class ResourceUtils {
         }
 
         return is;
+    }
+
+    public static byte[] readBytes(InputStream is) throws IOException {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        byte[] buf = new byte[1024];
+        int r;
+        while ((r = is.read(buf)) > 0) {
+            out.write(buf, 0, r);
+        }
+        return out.toByteArray();
     }
 
     public static UrlStreamResolver getUrlResolver() {

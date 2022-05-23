@@ -1,5 +1,6 @@
 package io.smallrye.jwt.build.impl;
 
+import java.io.InputStream;
 import java.security.Key;
 import java.security.PublicKey;
 import java.security.interfaces.ECPublicKey;
@@ -17,6 +18,7 @@ import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
 import io.smallrye.jwt.build.JwtEncryptionBuilder;
 import io.smallrye.jwt.build.JwtEncryptionException;
 import io.smallrye.jwt.util.KeyUtils;
+import io.smallrye.jwt.util.ResourceUtils;
 
 /**
  * Default JWT Encryption implementation
@@ -72,7 +74,28 @@ class JwtEncryptionImpl implements JwtEncryptionBuilder {
     @Override
     public String encrypt() throws JwtEncryptionException {
         try {
-            return encryptInternal(getEncryptionKeyFromKeyContent(getKeyContentFromConfig()));
+            Key key = null;
+
+            String keyLocation = JwtBuildUtils.getConfigProperty(JwtBuildUtils.ENC_KEY_LOCATION_PROPERTY, String.class);
+            if (keyLocation != null) {
+                key = JwtBuildUtils.readPublicKeyFromKeystore(keyLocation.trim());
+                if (key == null) {
+                    try (InputStream keyStream = ResourceUtils.getResourceStream(keyLocation.trim())) {
+                        key = getEncryptionKeyFromKeyContent(new String(ResourceUtils.readBytes(keyStream)));
+                    }
+                }
+            } else {
+                String keyContent = JwtBuildUtils.getConfigProperty(JwtBuildUtils.ENC_KEY_PROPERTY, String.class);
+                if (keyContent != null) {
+                    key = getEncryptionKeyFromKeyContent(keyContent);
+                } else {
+                    throw ImplMessages.msg.encryptionKeyNotConfigured();
+                }
+            }
+            if (key == null) {
+                throw ImplMessages.msg.encryptionKeyCanNotBeCreatedFromContent();
+            }
+            return encryptInternal(key);
         } catch (JwtEncryptionException ex) {
             throw ex;
         } catch (Exception ex) {
@@ -216,20 +239,6 @@ class JwtEncryptionImpl implements JwtEncryptionBuilder {
         } catch (Exception ex) {
             throw ImplMessages.msg.encryptionKeyCanNotBeLoadedFromLocation(keyLocation);
         }
-    }
-
-    private static String getKeyContentFromConfig() {
-
-        String keyLocation = JwtBuildUtils.getConfigProperty(JwtBuildUtils.ENC_KEY_LOCATION_PROPERTY, String.class);
-        if (keyLocation != null) {
-            return getKeyContentFromLocation(keyLocation.trim());
-        }
-        String keyContent = JwtBuildUtils.getConfigProperty(JwtBuildUtils.ENC_KEY_PROPERTY, String.class);
-        if (keyContent != null) {
-            return keyContent;
-        }
-
-        throw ImplMessages.msg.signKeyNotConfigured();
     }
 
     Key getEncryptionKeyFromKeyContent(String keyContent) {
