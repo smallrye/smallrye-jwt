@@ -6,8 +6,8 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
-import javax.json.JsonArray;
-import javax.json.JsonObject;
+import jakarta.json.JsonArray;
+import jakarta.json.JsonObject;
 
 import org.eclipse.microprofile.jwt.Claims;
 

@@ -3,8 +3,8 @@ package io.smallrye.jwt.build.impl;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import javax.json.JsonObject;
-import javax.json.JsonValue;
+import jakarta.json.JsonObject;
+import jakarta.json.JsonValue;
 
 import org.eclipse.microprofile.jwt.Claims;
 import org.eclipse.microprofile.jwt.JsonWebToken;

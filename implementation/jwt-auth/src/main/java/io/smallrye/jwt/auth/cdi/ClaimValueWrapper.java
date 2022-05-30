@@ -22,9 +22,9 @@ import java.security.Provider;
 import java.util.Optional;
 import java.util.Set;
 
-import javax.enterprise.inject.Instance;
-import javax.enterprise.inject.spi.InjectionPoint;
-import javax.json.JsonValue;
+import jakarta.enterprise.inject.Instance;
+import jakarta.enterprise.inject.spi.InjectionPoint;
+import jakarta.json.JsonValue;
 
 import org.eclipse.microprofile.jwt.ClaimValue;
 

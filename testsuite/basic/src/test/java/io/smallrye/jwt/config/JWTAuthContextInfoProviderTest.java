@@ -11,7 +11,7 @@ import java.util.Collections;
 import java.util.Optional;
 import java.util.Scanner;
 
-import javax.enterprise.inject.spi.DeploymentException;
+import jakarta.enterprise.inject.spi.DeploymentException;
 
 import org.junit.Before;
 import org.junit.Test;

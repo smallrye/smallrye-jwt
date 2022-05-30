@@ -1,6 +1,6 @@
 package io.smallrye.jwt.config;
 
-import javax.enterprise.inject.spi.DeploymentException;
+import jakarta.enterprise.inject.spi.DeploymentException;
 
 import org.jboss.logging.Messages;
 import org.jboss.logging.annotations.Cause;

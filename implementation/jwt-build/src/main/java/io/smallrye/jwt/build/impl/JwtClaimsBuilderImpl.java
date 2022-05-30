@@ -13,9 +13,10 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import javax.crypto.SecretKey;
-import javax.json.JsonNumber;
-import javax.json.JsonString;
-import javax.json.JsonValue;
+
+import jakarta.json.JsonNumber;
+import jakarta.json.JsonString;
+import jakarta.json.JsonValue;
 
 import org.eclipse.microprofile.jwt.Claims;
 import org.jose4j.jwt.JwtClaims;

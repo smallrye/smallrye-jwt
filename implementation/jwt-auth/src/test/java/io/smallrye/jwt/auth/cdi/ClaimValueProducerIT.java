@@ -9,7 +9,7 @@ import java.util.HashMap;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 
-import javax.enterprise.util.TypeLiteral;
+import jakarta.enterprise.util.TypeLiteral;
 
 import org.eclipse.microprofile.jwt.ClaimValue;
 import org.eclipse.microprofile.jwt.Claims;
