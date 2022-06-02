@@ -34,7 +34,7 @@
 
   <properties>
     <bouncycastle.version>1.70</bouncycastle.version>
-    <version.jakarta.servlet.api>4.0.4</version.jakarta.servlet.api>
+    <version.jakarta.servlet.api>6.0.0</version.jakarta.servlet.api>
     <version.jakarta.security.enterprise.api>1.0.2</version.jakarta.security.enterprise.api>
     <version.eclipse.microprofile.jwt>1.2.2</version.eclipse.microprofile.jwt>
     <version.microprofile.config>2.0.1</version.microprofile.config>
