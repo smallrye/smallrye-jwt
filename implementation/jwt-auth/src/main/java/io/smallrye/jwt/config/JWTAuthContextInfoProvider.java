@@ -58,7 +58,18 @@ public class JWTAuthContextInfoProvider {
      * @return a new instance of JWTAuthContextInfoProvider
      */
     public static JWTAuthContextInfoProvider createWithKey(String publicKey, String issuer) {
-        return create(publicKey, NONE, false, false, issuer);
+        return create(publicKey, NONE, false, false, issuer, Optional.empty());
+    }
+
+    /**
+     * Create JWTAuthContextInfoProvider with the decryption key and issuer
+     *
+     * @param privateKey the decryption key value
+     * @param issuer the issuer
+     * @return a new instance of JWTAuthContextInfoProvider
+     */
+    public static JWTAuthContextInfoProvider createWithDecryptionKey(String decryptionKey, String issuer) {
+        return create(NONE, NONE, false, false, issuer, Optional.of(decryptionKey));
     }
 
     /**
@@ -69,7 +80,7 @@ public class JWTAuthContextInfoProvider {
      * @return a new instance of JWTAuthContextInfoProvider
      */
     public static JWTAuthContextInfoProvider createWithKeyLocation(String keyLocation, String issuer) {
-        return create(NONE, keyLocation, false, false, issuer);
+        return create(NONE, keyLocation, false, false, issuer, Optional.empty());
     }
 
     /**
@@ -81,7 +92,7 @@ public class JWTAuthContextInfoProvider {
      * @return a new instance of JWTAuthContextInfoProvider
      */
     public static JWTAuthContextInfoProvider createWithCertificate(String keyLocation, String issuer) {
-        return create(NONE, keyLocation, false, true, issuer);
+        return create(NONE, keyLocation, false, true, issuer, Optional.empty());
     }
 
     /**
@@ -92,7 +103,7 @@ public class JWTAuthContextInfoProvider {
      * @return a new instance of JWTAuthContextInfoProvider
      */
     public static JWTAuthContextInfoProvider createWithSecretKeyLocation(String keyLocation, String issuer) {
-        return create(NONE, keyLocation, true, false, issuer);
+        return create(NONE, keyLocation, true, false, issuer, Optional.empty());
     }
 
     /**
@@ -105,7 +116,7 @@ public class JWTAuthContextInfoProvider {
             Optional<String> theKeyStoreDecryptKeyAlias, String issuer) {
         return create(NONE, keyLocation, Optional.empty(), Optional.empty(), theKeyStorePassword,
                 theKeyStoreVerifyKeyAlias,
-                theKeyStoreDecryptKeyAlias, false, false, issuer);
+                theKeyStoreDecryptKeyAlias, false, false, issuer, Optional.empty());
     }
 
     /**
@@ -117,16 +128,17 @@ public class JWTAuthContextInfoProvider {
             Optional<String> theKeyStoreVerifyKeyAlias,
             Optional<String> theKeyStoreDecryptKeyAlias, String issuer) {
         return create(NONE, keyLocation, Optional.empty(), Optional.empty(), theKeyStorePassword, theKeyStoreVerifyKeyAlias,
-                theKeyStoreDecryptKeyAlias, false, false, issuer);
+                theKeyStoreDecryptKeyAlias, false, false, issuer, Optional.empty());
     }
 
     private static JWTAuthContextInfoProvider create(String publicKey,
             String keyLocation,
             boolean secretKey,
             boolean verifyCertificateThumbprint,
-            String issuer) {
+            String issuer,
+            Optional<String> decryptionKey) {
         return create(publicKey, keyLocation, Optional.empty(), Optional.empty(), Optional.empty(),
-                Optional.empty(), Optional.empty(), secretKey, verifyCertificateThumbprint, issuer);
+                Optional.empty(), Optional.empty(), secretKey, verifyCertificateThumbprint, issuer, decryptionKey);
     }
 
     private static JWTAuthContextInfoProvider create(String publicKey,
@@ -138,7 +150,8 @@ public class JWTAuthContextInfoProvider {
             Optional<String> theKeyStoreDecryptKeyAlias,
             boolean secretKey,
             boolean verifyCertificateThumbprint,
-            String issuer) {
+            String issuer,
+            Optional<String> decryptionKey) {
         JWTAuthContextInfoProvider provider = new JWTAuthContextInfoProvider();
         provider.mpJwtPublicKey = publicKey;
         provider.mpJwtPublicKeyAlgorithm = Optional.of(SignatureAlgorithm.RS256);
@@ -147,6 +160,7 @@ public class JWTAuthContextInfoProvider {
         provider.verifyCertificateThumbprint = verifyCertificateThumbprint;
         provider.mpJwtIssuer = issuer;
         provider.mpJwtDecryptKeyLocation = theKeyStoreDecryptKeyAlias.isPresent() ? keyLocation : NONE;
+        provider.jwtDecryptKey = decryptionKey;
         provider.decryptionKeyLocation = NONE;
         provider.mpJwtTokenHeader = Optional.of(AUTHORIZATION_HEADER);
         provider.mpJwtTokenCookie = Optional.of(BEARER_SCHEME);
@@ -218,6 +232,10 @@ public class JWTAuthContextInfoProvider {
     @ConfigProperty(name = "mp.jwt.decrypt.key.location", defaultValue = NONE)
     private String mpJwtDecryptKeyLocation;
 
+    @Inject
+    @ConfigProperty(name = "smallrye.jwt.decrypt.key")
+    private Optional<String> jwtDecryptKey;
+
     /**
      * Verification key location.
      * This property can point to both public and secret keys and if it is set then 'mp.jwt.verify.publickey.location' will be
@@ -228,6 +246,12 @@ public class JWTAuthContextInfoProvider {
     @ConfigProperty(name = "smallrye.jwt.verify.key.location", defaultValue = NONE)
     private String verifyKeyLocation;
 
+    /**
+     * Decryption key location
+     *
+     * @deprecated Use {@link JWTAuthContextInfoProvider#mpJwtDecryptKeyLocation}
+     */
+    @Deprecated
     @Inject
     @ConfigProperty(name = "smallrye.jwt.decrypt.key.location", defaultValue = NONE)
     private String decryptionKeyLocation;
@@ -592,7 +616,9 @@ public class JWTAuthContextInfoProvider {
             theDecryptionKeyLocation = NONE;
         }
 
-        if (!NONE.equals(theDecryptionKeyLocation)) {
+        if (jwtDecryptKey.isPresent()) {
+            contextInfo.setDecryptionKeyContent(jwtDecryptKey.get());
+        } else if (!NONE.equals(theDecryptionKeyLocation)) {
             String decryptionKeyLocationTrimmed = theDecryptionKeyLocation.trim();
             if (decryptionKeyLocationTrimmed.startsWith("http")) {
                 contextInfo.setDecryptionKeyLocation(decryptionKeyLocationTrimmed);

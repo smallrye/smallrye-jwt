@@ -187,4 +187,15 @@ public class KeyLocationResolverTest {
         JwtClaims jwt = new DefaultJWTTokenParser().parse(jwtString, contextInfo).getJwtClaims();
         Assert.assertEquals("Alice", jwt.getClaimValueAsString("upn"));
     }
+
+    @Test
+    public void testDecryptToken() throws Exception {
+        String jwtString = Jwt.issuer("https://server.example.com").upn("Alice").jwe().encrypt("publicKey.pem");
+        String decryptionKey = KeyUtils.readKeyContent("privateKey.pem");
+        JWTAuthContextInfoProvider provider = JWTAuthContextInfoProvider.createWithDecryptionKey(decryptionKey,
+                "https://server.example.com");
+        JWTAuthContextInfo contextInfo = provider.getContextInfo();
+        JwtClaims jwt = new DefaultJWTTokenParser().parse(jwtString, contextInfo).getJwtClaims();
+        Assert.assertEquals("Alice", jwt.getClaimValueAsString("upn"));
+    }
 }
