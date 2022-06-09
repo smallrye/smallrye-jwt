@@ -604,6 +604,12 @@ public class JWTAuthContextInfoProvider {
                     }
                 }
             }
+        } else if (isPublicKeyInKeystore()) {
+            try {
+                contextInfo.setPublicVerificationKey(getVerificationKeyFromKeystore(null));
+            } catch (Exception ex) {
+                throw ConfigMessages.msg.readingPublicKeyLocationFailed(ex);
+            }
         }
 
         final String theDecryptionKeyLocation;
@@ -639,6 +645,12 @@ public class JWTAuthContextInfoProvider {
                         throw ConfigMessages.msg.readingDecryptKeyLocationFailed(ex);
                     }
                 }
+            }
+        } else if (isPrivateKeyInKeystore()) {
+            try {
+                contextInfo.setPrivateDecryptionKey(getDecryptionKeyFromKeystore(null));
+            } catch (Exception ex) {
+                throw ConfigMessages.msg.readingDecryptKeyLocationFailed(ex);
             }
         }
 
