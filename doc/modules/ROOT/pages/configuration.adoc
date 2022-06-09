@@ -59,6 +59,7 @@ SmallRye JWT supports many properties which can be used to customize the token p
 |smallrye.jwt.verify.aud|none|Comma separated list of the audiences that a token `aud` claim may contain. This property is deprecated. Use `mp.jwt.verify.audiences` instead.
 |smallrye.jwt.required.claims|none|Comma separated list of the claims that a token must contain.
 |smallrye.jwt.decrypt.key.location|none|Config property allows for an external or internal location of Private Decryption Key to be specified. This property is deprecated, use `mp.jwt.decrypt.key.location`.
+|smallrye.jwt.decrypt.key|none|Decryption key supplied as a string.
 |smallrye.jwt.decrypt.algorithm|`RSA_OAEP`|Decryption algorithm.
 |smallrye.jwt.token.decryption.kid|none|Decryption Key identifier. If it is set then the decryption JWK key as well every JWT token must have a matching `kid` header.
 |smallrye.jwt.client.tls.certificate|none|TLS trusted certificate which may need to be configured if the keys have to be fetched over `HTTPS`. If this property is set then the `smallrye.jwt.client.tls.certificate.path` property will be ignored.
