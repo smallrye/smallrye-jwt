@@ -285,8 +285,12 @@ public final class KeyUtils {
         KeyStore keyStore = keyStoreProvider.isPresent()
                 ? KeyStore.getInstance(theKeyStoreType, keyStoreProvider.get())
                 : KeyStore.getInstance(theKeyStoreType);
-        try (InputStream is = ResourceUtils.getResourceStream(keyStorePath)) {
-            keyStore.load(is, keyStorePassword.toCharArray());
+        if (keyStorePath != null) {
+            try (InputStream is = ResourceUtils.getResourceStream(keyStorePath)) {
+                keyStore.load(is, keyStorePassword.toCharArray());
+            }
+        } else {
+            keyStore.load(null, keyStorePassword.toCharArray());
         }
         return keyStore;
     }
