@@ -64,7 +64,7 @@ public class JWTAuthContextInfoProvider {
     /**
      * Create JWTAuthContextInfoProvider with the decryption key and issuer
      *
-     * @param privateKey the decryption key value
+     * @param decryptionKey the decryption key value
      * @param issuer the issuer
      * @return a new instance of JWTAuthContextInfoProvider
      */
