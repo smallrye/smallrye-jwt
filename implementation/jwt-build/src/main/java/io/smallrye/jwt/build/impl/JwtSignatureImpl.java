@@ -215,6 +215,13 @@ class JwtSignatureImpl implements JwtSignature {
             } else if (alg.startsWith("HS")) {
                 return alg;
             }
+        } else if (signingKey instanceof PrivateKey) {
+            // for example, sun.security.pkcs11.P11Key$P11PrivateKey
+            if (alg == null) {
+                return SignatureAlgorithm.RS256.name();
+            } else if (alg.startsWith("RS") || alg.startsWith("PS") || alg.startsWith("ES")) {
+                return alg;
+            }
         }
         throw ImplMessages.msg.unsupportedSignatureAlgorithm(signingKey.getAlgorithm());
     }
