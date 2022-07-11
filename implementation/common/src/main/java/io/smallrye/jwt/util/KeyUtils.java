@@ -30,8 +30,10 @@ import java.security.KeyPairGenerator;
 import java.security.KeyStore;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
+import java.security.Provider;
 import java.security.PublicKey;
 import java.security.SecureRandom;
+import java.security.Security;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.security.spec.PKCS8EncodedKeySpec;
@@ -282,8 +284,9 @@ public final class KeyUtils {
             Optional<String> keyStoreProvider)
             throws Exception {
         String theKeyStoreType = getKeyStoreType(keyStorePath, keyStoreType);
-        KeyStore keyStore = keyStoreProvider.isPresent()
-                ? KeyStore.getInstance(theKeyStoreType, keyStoreProvider.get())
+        Provider provider = keyStoreProvider.isPresent() ? Security.getProvider(keyStoreProvider.get()) : null;
+        KeyStore keyStore = provider != null
+                ? KeyStore.getInstance(theKeyStoreType, provider)
                 : KeyStore.getInstance(theKeyStoreType);
         if (keyStorePath != null) {
             try (InputStream is = ResourceUtils.getResourceStream(keyStorePath)) {

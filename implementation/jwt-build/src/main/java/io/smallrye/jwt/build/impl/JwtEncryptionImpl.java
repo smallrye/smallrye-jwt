@@ -85,11 +85,14 @@ class JwtEncryptionImpl implements JwtEncryptionBuilder {
                     }
                 }
             } else {
-                String keyContent = JwtBuildUtils.getConfigProperty(JwtBuildUtils.ENC_KEY_PROPERTY, String.class);
-                if (keyContent != null) {
-                    key = getEncryptionKeyFromKeyContent(keyContent);
-                } else {
-                    throw ImplMessages.msg.encryptionKeyNotConfigured();
+                key = JwtBuildUtils.readPublicKeyFromKeystore(null);
+                if (key == null) {
+                    String keyContent = JwtBuildUtils.getConfigProperty(JwtBuildUtils.ENC_KEY_PROPERTY, String.class);
+                    if (keyContent != null) {
+                        key = getEncryptionKeyFromKeyContent(keyContent);
+                    } else {
+                        throw ImplMessages.msg.encryptionKeyNotConfigured();
+                    }
                 }
             }
             if (key == null) {
