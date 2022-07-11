@@ -81,11 +81,14 @@ class JwtSignatureImpl implements JwtSignature {
                         }
                     }
                 } else {
-                    String keyContent = JwtBuildUtils.getConfigProperty(JwtBuildUtils.SIGN_KEY_PROPERTY, String.class);
-                    if (keyContent != null) {
-                        key = getSigningKeyFromKeyContent(keyContent);
-                    } else {
-                        throw ImplMessages.msg.signKeyNotConfigured();
+                    key = JwtBuildUtils.readPrivateKeyFromKeystore(null);
+                    if (key == null) {
+                        String keyContent = JwtBuildUtils.getConfigProperty(JwtBuildUtils.SIGN_KEY_PROPERTY, String.class);
+                        if (keyContent != null) {
+                            key = getSigningKeyFromKeyContent(keyContent);
+                        } else {
+                            throw ImplMessages.msg.signKeyNotConfigured();
+                        }
                     }
                 }
             }
