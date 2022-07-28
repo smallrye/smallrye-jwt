@@ -65,7 +65,7 @@ SmallRye JWT supports many properties which can be used to customize the token p
 |smallrye.jwt.client.tls.certificate|none|TLS trusted certificate which may need to be configured if the keys have to be fetched over `HTTPS`. If this property is set then the `smallrye.jwt.client.tls.certificate.path` property will be ignored.
 |smallrye.jwt.client.tls.certificate.path|none|Path to TLS trusted certificate which may need to be configured if the keys have to be fetched over `HTTPS`. This property will be ignored if the `smallrye.jwt.client.tls.certificate` property is set.
 |smallrye.jwt.client.tls.trust-all|false|Trust all the hostnames. If the keys have to be fetched over `HTTPS` and this property is set to `true` then all the hostnames are trusted by default.
-|smallrye.jwt.client.tls.trusted.hosts|none|Set of trusted hostnames. If the keys have to be fetched over `HTTPS` and `smallrye.jwt.client.tls.trust-all` is set to `false` then then this property can be used to configure the trusted hostnames.
+|smallrye.jwt.client.tls.hosts|none|Set of trusted hostnames. If the keys have to be fetched over `HTTPS` and `smallrye.jwt.client.tls.trust-all` is set to `false` then then this property can be used to configure the trusted hostnames.
 |smallrye.jwt.http.proxy.host|none|HTTP proxy host.
 |smallrye.jwt.http.proxy.port|80|HTTP proxy port.
 |smallrye.jwt.keystore.type|`JKS`|This property can be used to customize a keystore type if either `mp.jwt.verify.publickey.location` or mp.jwt.decrypt.key.location` points to a `KeyStore` file. If it is not set then the file name will be checked to determine the keystore type before defaulting to `JKS`.
