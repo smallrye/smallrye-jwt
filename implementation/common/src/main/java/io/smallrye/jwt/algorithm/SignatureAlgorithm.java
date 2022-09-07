@@ -12,6 +12,7 @@ public enum SignatureAlgorithm {
     ES256,
     ES384,
     ES512,
+    ES256K,
     HS256,
     HS384,
     HS512,

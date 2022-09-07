@@ -18,7 +18,6 @@ package io.smallrye.jwt.build;
 
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -51,6 +50,7 @@ import org.jose4j.json.JsonUtil;
 import org.jose4j.jwk.EcJwkGenerator;
 import org.jose4j.jwk.EllipticCurveJsonWebKey;
 import org.jose4j.jwk.JsonWebKey;
+import org.jose4j.jws.EcdsaUsingShaAlgorithm.EcdsaSECP256K1UsingSha256;
 import org.jose4j.jws.JsonWebSignature;
 import org.jose4j.jwt.JwtClaims;
 import org.jose4j.jwt.MalformedClaimException;
@@ -682,7 +682,7 @@ public class JwtSignTest {
     }
 
     @Test
-    public void testSignClaimsEcKey() throws Exception {
+    public void testSignClaimsES256() throws Exception {
         JwtBuildConfigSource configSource = getConfigSource();
         configSource.setSigningKeyLocation("/ecPrivateKey.pem");
         String jwt = null;
@@ -706,6 +706,27 @@ public class JwtSignTest {
         checkDefaultClaimsAndHeaders(headers, claims, "ES256", 300);
         Assert.assertEquals("eckey1", headers.get("kid"));
         Assert.assertEquals("custom-value", claims.getClaimValue("customClaim"));
+    }
+
+    @Test
+    public void testSignClaimsES256K() throws Exception {
+        if (new EcdsaSECP256K1UsingSha256().isAvailable()) {
+            EllipticCurveJsonWebKey keyPairJwk = EcJwkGenerator.generateJwk(EllipticCurves.SECP256K1);
+
+            String jwt = Jwt.claims()
+                    .claim("customClaim", "custom-value")
+                    .jws()
+                    .algorithm(SignatureAlgorithm.ES256K)
+                    .sign(keyPairJwk.getEcPrivateKey());
+
+            JsonWebSignature jws = getVerifiedJws(jwt, keyPairJwk.getECPublicKey());
+            JwtClaims claims = JwtClaims.parse(jws.getPayload());
+
+            Assert.assertEquals(4, claims.getClaimsMap().size());
+            Map<String, Object> headers = getJwsHeaders(jwt, 2);
+            checkDefaultClaimsAndHeaders(headers, claims, "ES256K", 300);
+            Assert.assertEquals("custom-value", claims.getClaimValue("customClaim"));
+        }
     }
 
     private static SecretKey createSecretKey() throws Exception {
