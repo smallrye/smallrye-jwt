@@ -16,8 +16,8 @@
  */
 package io.smallrye.jwt.auth.cdi;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.Produces;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Produces;
 
 import io.smallrye.jwt.auth.principal.JWTCallerPrincipalFactory;
 

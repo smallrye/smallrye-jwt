@@ -21,7 +21,7 @@ import static org.junit.Assert.assertThrows;
 import java.time.Instant;
 import java.util.Arrays;
 
-import javax.json.Json;
+import jakarta.json.Json;
 
 import org.eclipse.microprofile.jwt.Claims;
 import org.junit.Test;

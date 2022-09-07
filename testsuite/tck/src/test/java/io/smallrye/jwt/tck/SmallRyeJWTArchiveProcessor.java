@@ -3,7 +3,7 @@ package io.smallrye.jwt.tck;
 import java.io.File;
 import java.util.Map;
 
-import javax.enterprise.inject.spi.Extension;
+import jakarta.enterprise.inject.spi.Extension;
 
 import org.jboss.arquillian.container.test.spi.client.deployment.ApplicationArchiveProcessor;
 import org.jboss.arquillian.test.spi.TestClass;
