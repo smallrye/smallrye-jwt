@@ -233,7 +233,7 @@ class JwtSignatureImpl implements JwtSignature {
         try {
             return KeyUtils.readKeyContent(keyLocation);
         } catch (Exception ex) {
-            throw ImplMessages.msg.signingKeyCanNotBeLoadedFromLocation(keyLocation);
+            throw ImplMessages.msg.signingKeyCanNotBeLoadedFromLocation(keyLocation, ex);
         }
     }
 
