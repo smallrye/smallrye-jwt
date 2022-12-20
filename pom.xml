@@ -52,7 +52,7 @@
     <artifactId.resteasy.client>microprofile-rest-client</artifactId.resteasy.client>
     <version.resteasy.client>2.0.0.Beta1</version.resteasy.client>
     <!-- Wildfly -->
-    <version.galleon>5.0.5.Final</version.galleon>
+    <version.galleon>5.0.7.Final</version.galleon>
     <version.wildfly>25.0.1.Final</version.wildfly>
     <version.wildfly.plugin>3.0.2.Final</version.wildfly.plugin>
   </properties>
