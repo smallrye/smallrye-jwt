@@ -18,7 +18,6 @@ package io.smallrye.jwt.build;
 
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -48,13 +47,18 @@ import org.eclipse.microprofile.jwt.Claims;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.jose4j.base64url.Base64Url;
 import org.jose4j.json.JsonUtil;
+import org.jose4j.jwa.AlgorithmConstraints;
 import org.jose4j.jwk.EcJwkGenerator;
 import org.jose4j.jwk.EllipticCurveJsonWebKey;
 import org.jose4j.jwk.JsonWebKey;
+import org.jose4j.jwk.PublicJsonWebKey;
 import org.jose4j.jws.JsonWebSignature;
 import org.jose4j.jwt.JwtClaims;
 import org.jose4j.jwt.MalformedClaimException;
 import org.jose4j.jwt.NumericDate;
+import org.jose4j.jwt.consumer.InvalidJwtSignatureException;
+import org.jose4j.jwt.consumer.JwtConsumerBuilder;
+import org.jose4j.keys.EdDsaKeyUtil;
 import org.jose4j.keys.EllipticCurves;
 import org.junit.Assert;
 import org.junit.Test;
@@ -399,6 +403,15 @@ public class JwtSignTest {
         return KeyUtils.readPrivateKey("/privateKey.pem");
     }
 
+    private static PrivateKey getEdEcPrivateKey() throws Exception {
+        return (PrivateKey) KeyUtils.readSigningKey("/edEcPrivateKey.jwk", null, null);
+    }
+
+    private static PublicKey getEdEcPublicKey() throws Exception {
+        String keyContent = KeyUtils.readKeyContent("/edEcPublicKey.jwk");
+        return PublicJsonWebKey.Factory.newPublicJwk(keyContent).getPublicKey();
+    }
+
     private static PublicKey getEcPublicKey() throws Exception {
         return KeyUtils.readPublicKey("/ecPublicKey.pem", SignatureAlgorithm.ES256);
     }
@@ -553,6 +566,104 @@ public class JwtSignTest {
         checkDefaultClaimsAndHeaders(getJwsHeaders(jwt, 2), claims, "ES256", 300);
 
         Assert.assertEquals("custom-value", claims.getClaimValue("customClaim"));
+    }
+
+    @Test
+    public void testSignClaimsEd25519() throws Exception {
+        if (Runtime.version().version().get(0) >= 17) {
+            EdDsaKeyUtil keyUtil = new EdDsaKeyUtil();
+            KeyPair keyPairEd25519 = keyUtil.generateKeyPair(EdDsaKeyUtil.ED25519);
+            KeyPair keyPairEd448 = keyUtil.generateKeyPair(EdDsaKeyUtil.ED448);
+
+            String jwt = Jwt.claims()
+                    .claim("customClaim", "custom-value")
+                    .sign(keyPairEd25519.getPrivate());
+
+            JsonWebSignature jws = getVerifiedJws(jwt, keyPairEd25519.getPublic());
+            JwtClaims claims = JwtClaims.parse(jws.getPayload());
+
+            Assert.assertEquals(4, claims.getClaimsMap().size());
+            Map<String, Object> headers = getJwsHeaders(jwt, 2);
+            checkDefaultClaimsAndHeaders(headers, claims, "EdDSA", 300);
+
+            Assert.assertEquals("custom-value", claims.getClaimValue("customClaim"));
+
+            JwtConsumerBuilder builder = new JwtConsumerBuilder();
+            builder.setVerificationKey(keyPairEd448.getPublic());
+            builder.setJwsAlgorithmConstraints(
+                    new AlgorithmConstraints(AlgorithmConstraints.ConstraintType.PERMIT, "EdDSA"));
+            try {
+                builder.build().process(jwt);
+                Assert.fail("ED25519 curve was used to sign the token, must not be verified with ED448");
+            } catch (InvalidJwtSignatureException ex) {
+
+            }
+        }
+    }
+
+    @Test
+    public void testSignClaimsEd25519WithJwk() throws Exception {
+        if (Runtime.version().version().get(0) >= 17) {
+            EdDsaKeyUtil keyUtil = new EdDsaKeyUtil();
+            KeyPair keyPairEd448 = keyUtil.generateKeyPair(EdDsaKeyUtil.ED448);
+
+            String jwt = Jwt.claims()
+                    .claim("customClaim", "custom-value")
+                    .sign(getEdEcPrivateKey());
+
+            JsonWebSignature jws = getVerifiedJws(jwt, getEdEcPublicKey());
+            JwtClaims claims = JwtClaims.parse(jws.getPayload());
+
+            Assert.assertEquals(4, claims.getClaimsMap().size());
+            Map<String, Object> headers = getJwsHeaders(jwt, 2);
+            checkDefaultClaimsAndHeaders(headers, claims, "EdDSA", 300);
+
+            Assert.assertEquals("custom-value", claims.getClaimValue("customClaim"));
+
+            JwtConsumerBuilder builder = new JwtConsumerBuilder();
+            builder.setVerificationKey(keyPairEd448.getPublic());
+            builder.setJwsAlgorithmConstraints(
+                    new AlgorithmConstraints(AlgorithmConstraints.ConstraintType.PERMIT, "EdDSA"));
+            try {
+                builder.build().process(jwt);
+                Assert.fail("ED25519 curve was used to sign the token, must not be verified with ED448");
+            } catch (InvalidJwtSignatureException ex) {
+
+            }
+        }
+    }
+
+    @Test
+    public void testSignClaimsEd448() throws Exception {
+        if (Runtime.version().version().get(0) >= 17) {
+            EdDsaKeyUtil keyUtil = new EdDsaKeyUtil();
+            KeyPair keyPairEd25519 = keyUtil.generateKeyPair(EdDsaKeyUtil.ED25519);
+            KeyPair keyPairEd448 = keyUtil.generateKeyPair(EdDsaKeyUtil.ED448);
+
+            String jwt = Jwt.claims()
+                    .claim("customClaim", "custom-value")
+                    .sign(keyPairEd448.getPrivate());
+
+            JsonWebSignature jws = getVerifiedJws(jwt, keyPairEd448.getPublic());
+            JwtClaims claims = JwtClaims.parse(jws.getPayload());
+
+            Assert.assertEquals(4, claims.getClaimsMap().size());
+            Map<String, Object> headers = getJwsHeaders(jwt, 2);
+            checkDefaultClaimsAndHeaders(headers, claims, "EdDSA", 300);
+
+            Assert.assertEquals("custom-value", claims.getClaimValue("customClaim"));
+
+            JwtConsumerBuilder builder = new JwtConsumerBuilder();
+            builder.setVerificationKey(keyPairEd25519.getPublic());
+            builder.setJwsAlgorithmConstraints(
+                    new AlgorithmConstraints(AlgorithmConstraints.ConstraintType.PERMIT, "EdDSA"));
+            try {
+                builder.build().process(jwt);
+                Assert.fail("ED448 curve was used to sign the token, must not be verified with ED25519");
+            } catch (InvalidJwtSignatureException ex) {
+
+            }
+        }
     }
 
     private static EllipticCurveJsonWebKey createECJwk() throws Exception {

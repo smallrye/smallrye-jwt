@@ -18,7 +18,6 @@ package io.smallrye.jwt.build;
 
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
@@ -42,6 +41,8 @@ import org.jose4j.jwe.JsonWebEncryption;
 import org.jose4j.jwk.EcJwkGenerator;
 import org.jose4j.jwk.EllipticCurveJsonWebKey;
 import org.jose4j.jwk.JsonWebKey;
+import org.jose4j.jwk.OctetKeyPairJsonWebKey;
+import org.jose4j.jwk.OkpJwkGenerator;
 import org.jose4j.jwt.JwtClaims;
 import org.jose4j.keys.EllipticCurves;
 import org.jose4j.keys.PbkdfKey;
@@ -271,6 +272,44 @@ public class JwtEncryptTest {
 
         JwtClaims claims = JwtClaims.parse(jwe.getPlaintextString());
         checkJwtClaims(claims);
+    }
+
+    @Test
+    public void testEncryptWithEcKeyX25519() throws Exception {
+        if (Runtime.version().version().get(0) >= 17) {
+            OctetKeyPairJsonWebKey jwk = OkpJwkGenerator.generateJwk(OctetKeyPairJsonWebKey.SUBTYPE_X25519);
+            String jweCompact = Jwt.claims()
+                    .claim("customClaim", "custom-value")
+                    .jwe()
+                    .keyId("key-enc-key-id")
+                    .encrypt(jwk.getPublicKey());
+
+            checkJweHeaders(jweCompact, "ECDH-ES+A256KW", 4);
+
+            JsonWebEncryption jwe = getJsonWebEncryption(jweCompact, jwk.getPrivateKey());
+
+            JwtClaims claims = JwtClaims.parse(jwe.getPlaintextString());
+            checkJwtClaims(claims);
+        }
+    }
+
+    @Test
+    public void testEncryptWithEcKeyX448() throws Exception {
+        if (Runtime.version().version().get(0) >= 17) {
+            OctetKeyPairJsonWebKey jwk = OkpJwkGenerator.generateJwk(OctetKeyPairJsonWebKey.SUBTYPE_X448);
+            String jweCompact = Jwt.claims()
+                    .claim("customClaim", "custom-value")
+                    .jwe()
+                    .keyId("key-enc-key-id")
+                    .encrypt(jwk.getPublicKey());
+
+            checkJweHeaders(jweCompact, "ECDH-ES+A256KW", 4);
+
+            JsonWebEncryption jwe = getJsonWebEncryption(jweCompact, jwk.getPrivateKey());
+
+            JwtClaims claims = JwtClaims.parse(jwe.getPlaintextString());
+            checkJwtClaims(claims);
+        }
     }
 
     @Test
