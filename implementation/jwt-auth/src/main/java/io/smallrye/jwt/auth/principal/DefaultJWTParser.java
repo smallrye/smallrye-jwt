@@ -16,6 +16,7 @@
  */
 package io.smallrye.jwt.auth.principal;
 
+import java.security.Key;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.interfaces.ECPrivateKey;
@@ -38,6 +39,9 @@ import io.smallrye.jwt.util.KeyUtils;
  */
 @ApplicationScoped
 public class DefaultJWTParser implements JWTParser {
+
+    private static final String ED_EC_PUBLIC_KEY_INTERFACE = "java.security.interfaces.EdECPublicKey";
+    private static final String XEC_PRIVATE_KEY_INTERFACE = "java.security.interfaces.XECPrivateKey";
 
     @Inject
     private JWTAuthContextInfo authContextInfo;
@@ -88,6 +92,8 @@ public class DefaultJWTParser implements JWTParser {
         newAuthContextInfo.setPublicVerificationKey(key);
         if (key instanceof ECPublicKey) {
             setSignatureAlgorithmIfNeeded(newAuthContextInfo, "ES", SignatureAlgorithm.ES256);
+        } else if (isEdECPublicKey(key)) {
+            setSignatureAlgorithmIfNeeded(newAuthContextInfo, "EdDSA", SignatureAlgorithm.EDDSA);
         } else {
             setSignatureAlgorithmIfNeeded(newAuthContextInfo, "RS", SignatureAlgorithm.RS256);
         }
@@ -111,7 +117,7 @@ public class DefaultJWTParser implements JWTParser {
     public JsonWebToken decrypt(String bearerToken, PrivateKey key) throws ParseException {
         JWTAuthContextInfo newAuthContextInfo = copyAuthContextInfo();
         newAuthContextInfo.setPrivateDecryptionKey(key);
-        if (key instanceof ECPrivateKey) {
+        if (key instanceof ECPrivateKey || isXecPrivateKey(key)) {
             setKeyEncryptionAlgorithmIfNeeded(newAuthContextInfo, "EC", KeyEncryptionAlgorithm.ECDH_ES_A256KW);
         } else {
             setKeyEncryptionAlgorithmIfNeeded(newAuthContextInfo, "RS", KeyEncryptionAlgorithm.RSA_OAEP);
@@ -157,5 +163,13 @@ public class DefaultJWTParser implements JWTParser {
         if (algo == null || !algo.getAlgorithm().startsWith(algoStart)) {
             newAuthContextInfo.setKeyEncryptionAlgorithm(newAlgo);
         }
+    }
+
+    private static boolean isEdECPublicKey(Key verificationKey) {
+        return KeyUtils.isSupportedKey(verificationKey, ED_EC_PUBLIC_KEY_INTERFACE);
+    }
+
+    private static boolean isXecPrivateKey(Key encKey) {
+        return KeyUtils.isSupportedKey(encKey, XEC_PRIVATE_KEY_INTERFACE);
     }
 }

@@ -26,6 +26,8 @@ import io.smallrye.jwt.util.ResourceUtils;
  * Default JWT Signature implementation
  */
 class JwtSignatureImpl implements JwtSignature {
+    private static final String ED_EC_PRIVATE_KEY_INTERFACE = "java.security.interfaces.EdECPrivateKey";
+
     JwtClaims claims = new JwtClaims();
     Map<String, Object> headers = new HashMap<>();
     Long tokenLifespan;
@@ -156,6 +158,9 @@ class JwtSignatureImpl implements JwtSignature {
     }
 
     private String signInternal(Key signingKey) {
+        if (signingKey == null) {
+            throw ImplMessages.msg.signingKeyIsNull();
+        }
         JwtBuildUtils.setDefaultJwtClaims(claims, tokenLifespan);
         JsonWebSignature jws = new JsonWebSignature();
         for (Map.Entry<String, Object> entry : headers.entrySet()) {
@@ -220,6 +225,11 @@ class JwtSignatureImpl implements JwtSignature {
             }
         } else if (signingKey instanceof PrivateKey) {
             // for example, sun.security.pkcs11.P11Key$P11PrivateKey
+            if (isEdECPrivateKey(signingKey)) {
+                if (alg == null || alg.equals(SignatureAlgorithm.EDDSA.getAlgorithm())) {
+                    return SignatureAlgorithm.EDDSA.getAlgorithm();
+                }
+            }
             if (alg == null) {
                 return SignatureAlgorithm.RS256.name();
             } else if (alg.startsWith("RS") || alg.startsWith("PS") || alg.startsWith("ES")) {
@@ -227,6 +237,10 @@ class JwtSignatureImpl implements JwtSignature {
             }
         }
         throw ImplMessages.msg.unsupportedSignatureAlgorithm(signingKey.getAlgorithm());
+    }
+
+    private static boolean isEdECPrivateKey(Key signingKey) {
+        return KeyUtils.isSupportedKey(signingKey, ED_EC_PRIVATE_KEY_INTERFACE);
     }
 
     static String getKeyContentFromLocation(String keyLocation) {
