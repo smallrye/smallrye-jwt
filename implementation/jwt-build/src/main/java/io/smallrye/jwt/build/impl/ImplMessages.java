@@ -104,4 +104,10 @@ interface ImplMessages {
 
     @Message(id = 5031, value = "Encryption key can not be read from the keystore")
     IllegalArgumentException encryptionKeyCanNotBeReadFromKeystore(@Cause Throwable throwable);
+
+    @Message(id = 5032, value = "Signing key is null")
+    NullPointerException signingKeyIsNull();
+
+    @Message(id = 5033, value = "Encryption key is null")
+    NullPointerException encryptionKeyIsNull();
 }

@@ -562,4 +562,13 @@ public final class KeyUtils {
         }
         return null;
     }
+
+    public static boolean isSupportedKey(Key key, String keyInterfaceName) {
+        for (Class<?> intf : key.getClass().getInterfaces()) {
+            if (keyInterfaceName.equals(intf.getName())) {
+                return true;
+            }
+        }
+        return false;
+    }
 }
