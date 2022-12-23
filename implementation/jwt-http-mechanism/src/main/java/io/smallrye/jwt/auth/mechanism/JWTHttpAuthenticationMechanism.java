@@ -15,15 +15,20 @@
  */
 package io.smallrye.jwt.auth.mechanism;
 
+import static javax.security.enterprise.identitystore.IdentityStore.ValidationType.PROVIDE_GROUPS;
+
 import java.io.IOException;
 import java.util.Set;
 
 import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.inject.Instance;
 import javax.inject.Inject;
 import javax.security.enterprise.AuthenticationException;
 import javax.security.enterprise.AuthenticationStatus;
 import javax.security.enterprise.authentication.mechanism.http.HttpAuthenticationMechanism;
 import javax.security.enterprise.authentication.mechanism.http.HttpMessageContext;
+import javax.security.enterprise.identitystore.CredentialValidationResult;
+import javax.security.enterprise.identitystore.IdentityStore;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -53,6 +58,9 @@ public class JWTHttpAuthenticationMechanism implements HttpAuthenticationMechani
     @Inject
     private PrincipalProducer producer;
 
+    @Inject
+    private Instance<IdentityStore> identityStores;
+
     public JWTHttpAuthenticationMechanism() {
     }
 
@@ -78,6 +86,14 @@ public class JWTHttpAuthenticationMechanism implements HttpAuthenticationMechani
                 JsonWebToken jwtPrincipal = jwtParser.parse(bearerToken);
                 producer.setJsonWebToken(jwtPrincipal);
                 Set<String> groups = jwtPrincipal.getGroups();
+                String name = jwtPrincipal.getName();
+                for (IdentityStore identityStore : identityStores) {
+                    if (identityStore.validationTypes().contains(PROVIDE_GROUPS)) {
+                        CredentialValidationResult credentialValidationResult = new CredentialValidationResult(name, groups);
+                        Set<String> callerGroups = identityStore.getCallerGroups(credentialValidationResult);
+                        groups.addAll(callerGroups);
+                    }
+                }
                 MechanismLogging.log.success();
                 return httpMessageContext.notifyContainerAboutLogin(jwtPrincipal, groups);
             } catch (ParseException e) {
