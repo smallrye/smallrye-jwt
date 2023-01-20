@@ -73,7 +73,7 @@
     <connection>scm:git:git@github.com:smallrye/smallrye-jwt.git</connection>
     <developerConnection>scm:git:git@github.com:smallrye/smallrye-jwt.git</developerConnection>
     <url>https://github.com/smallrye/smallrye-jwt/</url>
-    <tag>3.6.1</tag>
+    <tag>HEAD</tag>
   </scm>
 
   <modules>
