@@ -72,7 +72,7 @@ interface ImplMessages {
     IllegalArgumentException keyWithKidNotFound(String keyId);
 
     @Message(id = 5020, value = "Signing key can not be loaded from: %s")
-    IllegalArgumentException signingKeyCanNotBeLoadedFromLocation(String keyLocation);
+    IllegalArgumentException signingKeyCanNotBeLoadedFromLocation(String keyLocation, @Cause Throwable throwable);
 
     @Message(id = 5021, value = "Please set 'smallrye.jwt.sign.key.location' or 'smallrye.jwt.sign.key' property")
     IllegalArgumentException signKeyNotConfigured();
@@ -104,4 +104,10 @@ interface ImplMessages {
 
     @Message(id = 5031, value = "Encryption key can not be read from the keystore")
     IllegalArgumentException encryptionKeyCanNotBeReadFromKeystore(@Cause Throwable throwable);
+
+    @Message(id = 5032, value = "Signing key is null")
+    NullPointerException signingKeyIsNull();
+
+    @Message(id = 5033, value = "Encryption key is null")
+    NullPointerException encryptionKeyIsNull();
 }

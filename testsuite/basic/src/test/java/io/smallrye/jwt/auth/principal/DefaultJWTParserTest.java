@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
+import java.security.PublicKey;
 import java.security.cert.X509Certificate;
 import java.time.Instant;
 
@@ -11,6 +12,8 @@ import javax.crypto.SecretKey;
 
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.jose4j.jwk.JsonWebKey;
+import org.jose4j.jwk.OctetKeyPairJsonWebKey;
+import org.jose4j.jwk.OkpJwkGenerator;
 import org.jose4j.jwk.PublicJsonWebKey;
 import org.jose4j.jwt.consumer.ErrorCodes;
 import org.jose4j.jwt.consumer.InvalidJwtException;
@@ -106,6 +109,20 @@ public class DefaultJWTParserTest {
         JsonWebToken jwt = new DefaultJWTParser().verify(jwtString,
                 KeyUtils.readPublicKey("/ecPublicKey.pem", SignatureAlgorithm.ES256));
         assertEquals("jdoe@example.com", jwt.getName());
+    }
+
+    @Test
+    public void testVerifyWithEdEcPublicKey() throws Exception {
+        if (Runtime.version().version().get(0) >= 17) {
+            String jwtString = Jwt.upn("jdoe@example.com").sign("/edEcPrivateKey.jwk");
+            JsonWebToken jwt = new DefaultJWTParser().verify(jwtString, getEdEcPublicKey());
+            assertEquals("jdoe@example.com", jwt.getName());
+        }
+    }
+
+    private static PublicKey getEdEcPublicKey() throws Exception {
+        String keyContent = KeyUtils.readKeyContent("/edEcPublicKey.jwk");
+        return PublicJsonWebKey.Factory.newPublicJwk(keyContent).getPublicKey();
     }
 
     @Test
@@ -228,6 +245,16 @@ public class DefaultJWTParserTest {
         JsonWebToken jwt = new DefaultJWTParser().decrypt(jwtString,
                 KeyUtils.readDecryptionPrivateKey("/ecPrivateKey.pem", KeyEncryptionAlgorithm.ECDH_ES_A256KW));
         assertEquals("jdoe@example.com", jwt.getName());
+    }
+
+    @Test
+    public void testDecryptWithEcPrivateKeyX25519() throws Exception {
+        if (Runtime.version().version().get(0) >= 17) {
+            OctetKeyPairJsonWebKey jwk = OkpJwkGenerator.generateJwk(OctetKeyPairJsonWebKey.SUBTYPE_X25519);
+            String jwtString = Jwt.upn("jdoe@example.com").jwe().encrypt(jwk.getPublicKey());
+            JsonWebToken jwt = new DefaultJWTParser().decrypt(jwtString, jwk.getPrivateKey());
+            assertEquals("jdoe@example.com", jwt.getName());
+        }
     }
 
     @Test

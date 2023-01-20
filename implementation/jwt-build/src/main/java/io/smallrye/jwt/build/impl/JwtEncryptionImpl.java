@@ -24,6 +24,7 @@ import io.smallrye.jwt.util.ResourceUtils;
  * Default JWT Encryption implementation
  */
 class JwtEncryptionImpl implements JwtEncryptionBuilder {
+    private static final String XEC_PUBLIC_KEY_INTERFACE = "java.security.interfaces.XECPublicKey";
 
     boolean innerSigned;
     String claims;
@@ -157,6 +158,10 @@ class JwtEncryptionImpl implements JwtEncryptionBuilder {
     }
 
     private String encryptInternal(Key key) {
+        if (key == null) {
+            throw ImplMessages.msg.encryptionKeyIsNull();
+        }
+
         JsonWebEncryption jwe = new JsonWebEncryption();
         jwe.setPlaintext(claims);
         for (Map.Entry<String, Object> entry : headers.entrySet()) {
@@ -205,7 +210,7 @@ class JwtEncryptionImpl implements JwtEncryptionBuilder {
             } else if (alg.startsWith("RS")) {
                 return alg;
             }
-        } else if (keyEncryptionKey instanceof ECPublicKey) {
+        } else if (keyEncryptionKey instanceof ECPublicKey || isXecPublicKey(keyEncryptionKey)) {
             if (alg == null) {
                 return KeyEncryptionAlgorithm.ECDH_ES_A256KW.getAlgorithm();
             } else if (alg.startsWith("EC")) {
@@ -219,6 +224,10 @@ class JwtEncryptionImpl implements JwtEncryptionBuilder {
             }
         }
         throw ImplMessages.msg.unsupportedKeyEncryptionAlgorithm(keyEncryptionKey.getAlgorithm());
+    }
+
+    private static boolean isXecPublicKey(Key encKey) {
+        return KeyUtils.isSupportedKey(encKey, XEC_PUBLIC_KEY_INTERFACE);
     }
 
     private String getContentEncryptionAlgorithm() {

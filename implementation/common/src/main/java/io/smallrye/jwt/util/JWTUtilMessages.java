@@ -3,6 +3,7 @@ package io.smallrye.jwt.util;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.security.InvalidAlgorithmParameterException;
+import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 
 import org.jboss.logging.Messages;
@@ -25,4 +26,7 @@ interface JWTUtilMessages {
 
     @Message(id = 3, value = "Algorithm %s is not a symmetric-key algorithm")
     InvalidAlgorithmParameterException requiresSymmetricAlgo(String algorithmName);
+
+    @Message(id = 4, value = "Keystore provider %s is not found")
+    KeyStoreException keystoreProviderNotFound(String provider);
 }

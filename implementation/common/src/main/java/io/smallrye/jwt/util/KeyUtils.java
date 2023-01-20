@@ -285,7 +285,13 @@ public final class KeyUtils {
             Optional<String> keyStoreProvider)
             throws Exception {
         String theKeyStoreType = getKeyStoreType(keyStorePath, keyStoreType);
-        Provider provider = keyStoreProvider.isPresent() ? Security.getProvider(keyStoreProvider.get()) : null;
+        Provider provider = null;
+        if (keyStoreProvider.isPresent()) {
+            provider = Security.getProvider(keyStoreProvider.get());
+            if (provider == null) {
+                throw JWTUtilMessages.msg.keystoreProviderNotFound(keyStoreProvider.get());
+            }
+        }
         KeyStore keyStore = provider != null
                 ? KeyStore.getInstance(theKeyStoreType, provider)
                 : KeyStore.getInstance(theKeyStoreType);
@@ -556,5 +562,14 @@ public final class KeyUtils {
             }
         }
         return null;
+    }
+
+    public static boolean isSupportedKey(Key key, String keyInterfaceName) {
+        for (Class<?> intf : key.getClass().getInterfaces()) {
+            if (keyInterfaceName.equals(intf.getName())) {
+                return true;
+            }
+        }
+        return false;
     }
 }
