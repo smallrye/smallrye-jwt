@@ -18,7 +18,6 @@ mvn versions:update-property -Dproperty=version.smallrye.config -DnewVersion=[3.
 mvn versions:update-property -Dproperty=version.eclipse.microprofile.jwt -DnewVersion=[2.0] -N
 mvn versions:update-property -Dproperty=version.microprofile.config -DnewVersion=[3.0] -N
 mvn versions:set-property -Dproperty=artifactId.arquillian.jetty -DnewVersion=arquillian-jetty-embedded-11 -N
-mvn versions:set-property -Dproperty=version.arquillian.jetty -DnewVersion=1.0.0.CR4 -N
 mvn versions:update-property -Dproperty=version.jetty -DnewVersion=[11.0.7] -N
 mvn versions:set-property -Dproperty=version.resteasy -DnewVersion=6.0.0.Final -N
 mvn versions:set-property -Dproperty=groupId.resteasy.client -DnewVersion=org.jboss.resteasy.microprofile -N
