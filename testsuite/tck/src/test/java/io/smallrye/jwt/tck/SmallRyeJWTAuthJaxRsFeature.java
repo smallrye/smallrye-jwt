@@ -1,6 +1,6 @@
 package io.smallrye.jwt.tck;
 
-import javax.ws.rs.ext.Provider;
+import jakarta.ws.rs.ext.Provider;
 
 /**
  * This is to register the JAX-RS Feature to add the SmallRye JWT Filters. This cannot be registed as a Provider

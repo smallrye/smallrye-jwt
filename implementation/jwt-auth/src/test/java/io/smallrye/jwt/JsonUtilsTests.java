@@ -16,7 +16,7 @@
  */
 package io.smallrye.jwt;
 
-import static javax.json.JsonValue.NULL;
+import static jakarta.json.JsonValue.NULL;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -24,10 +24,10 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.json.Json;
-import javax.json.JsonArray;
-import javax.json.JsonObject;
-import javax.json.JsonValue;
+import jakarta.json.Json;
+import jakarta.json.JsonArray;
+import jakarta.json.JsonObject;
+import jakarta.json.JsonValue;
 
 import org.junit.Test;
 

@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 
 # move to jakarta parent
-find . -type f -name 'pom.xml' -exec sed -i '' 's/smallrye-parent/smallrye-jakarta-parent/g' {} +
+find . -type f -name 'pom.xml' -exec sed -i 's/smallrye-parent/smallrye-jakarta-parent/g' {} +
 # java sources
-find . -type f -name '*.java' -exec sed -i '' 's/javax./jakarta./g' {} +
-find . -type f -name '*.java' -exec sed -i '' 's/jakarta.crypto./javax.crypto./g' {} +
-find . -type f -name '*.java' -exec sed -i '' 's/jakarta.security.auth./javax.security.auth./g' {} +
-find . -type f -name '*.java' -exec sed -i '' 's/jakarta.net.ssl./javax.net.ssl./g' {} +
+find . -type f -name '*.java' -exec sed -i 's/javax./jakarta./g' {} +
+find . -type f -name '*.java' -exec sed -i 's/jakarta.crypto./javax.crypto./g' {} +
+find . -type f -name '*.java' -exec sed -i 's/jakarta.security.auth./javax.security.auth./g' {} +
+find . -type f -name '*.java' -exec sed -i 's/jakarta.net.ssl./javax.net.ssl./g' {} +
 # service loader files
 find . -path "*/src/main/resources/META-INF/services/javax*" | sed -e 'p;s/javax/jakarta/g' | xargs -n2 git mv
 
-mvn build-helper:parse-version versions:set -DnewVersion=\${parsedVersion.nextMajorVersion}.0.0-SNAPSHOT -Pcoverage
+mvn build-helper:parse-version versions:set -DnewVersion=\${parsedVersion.nextMajorVersion}.0.1-SNAPSHOT -Pcoverage
 
 mvn versions:update-property -Dproperty=version.jakarta.servlet.api -DnewVersion=[5.0.0] -N
 mvn versions:update-property -Dproperty=version.jakarta.security.enterprise.api -DnewVersion=[2.0.0] -N

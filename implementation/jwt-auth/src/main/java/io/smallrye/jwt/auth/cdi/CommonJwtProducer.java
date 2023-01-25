@@ -19,10 +19,10 @@ package io.smallrye.jwt.auth.cdi;
 import java.lang.annotation.Annotation;
 import java.util.Optional;
 
-import javax.enterprise.context.RequestScoped;
-import javax.enterprise.inject.spi.InjectionPoint;
-import javax.inject.Inject;
-import javax.json.JsonValue;
+import jakarta.enterprise.context.RequestScoped;
+import jakarta.enterprise.inject.spi.InjectionPoint;
+import jakarta.inject.Inject;
+import jakarta.json.JsonValue;
 
 import org.eclipse.microprofile.jwt.Claim;
 import org.eclipse.microprofile.jwt.Claims;

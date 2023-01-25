@@ -16,10 +16,10 @@
  */
 package io.smallrye.jwt.auth.cdi;
 
-import javax.enterprise.event.Observes;
-import javax.enterprise.inject.spi.BeanManager;
-import javax.enterprise.inject.spi.BeforeBeanDiscovery;
-import javax.enterprise.inject.spi.Extension;
+import jakarta.enterprise.event.Observes;
+import jakarta.enterprise.inject.spi.BeanManager;
+import jakarta.enterprise.inject.spi.BeforeBeanDiscovery;
+import jakarta.enterprise.inject.spi.Extension;
 
 import io.smallrye.jwt.auth.jaxrs.JWTAuthenticationFilter;
 import io.smallrye.jwt.auth.mechanism.JWTHttpAuthenticationMechanism;
@@ -30,7 +30,7 @@ import io.smallrye.jwt.config.JWTAuthContextInfoProvider;
  * Extension to support JWT producers as well as the internal
  * components of SmallRye JWT in a CDI environment. Applications wishing
  * to use MP-JWT with SmallRye should enable this extension by adding
- * a file named META-INF/services/javax.enterprise.inject.spi.Extension
+ * a file named META-INF/services/jakarta.enterprise.inject.spi.Extension
  * to their project with a line giving the fully qualified class name of
  * this class.
  *
@@ -41,7 +41,7 @@ import io.smallrye.jwt.config.JWTAuthContextInfoProvider;
  */
 public class SmallRyeJWTAuthCDIExtension implements Extension {
 
-    private static final String HTTP_AUTH_MECHANISM_CLASS_NAME = "javax.security.enterprise.authentication.mechanism.http.HttpAuthenticationMechanism";
+    private static final String HTTP_AUTH_MECHANISM_CLASS_NAME = "jakarta.security.enterprise.authentication.mechanism.http.HttpAuthenticationMechanism";
 
     private static boolean isEESecurityAvailable() {
         try {

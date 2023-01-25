@@ -1,7 +1,7 @@
 package io.smallrye.jwt.auth.cdi;
 
-import javax.enterprise.inject.spi.DeploymentException;
-import javax.enterprise.inject.spi.InjectionPoint;
+import jakarta.enterprise.inject.spi.DeploymentException;
+import jakarta.enterprise.inject.spi.InjectionPoint;
 
 import org.jboss.logging.Messages;
 import org.jboss.logging.annotations.Message;

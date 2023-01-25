@@ -21,12 +21,12 @@
 
   <parent>
     <groupId>io.smallrye</groupId>
-    <artifactId>smallrye-parent</artifactId>
+    <artifactId>smallrye-jakarta-parent</artifactId>
     <version>37</version>
   </parent>
 
   <artifactId>smallrye-jwt-parent</artifactId>
-  <version>3.6.2-SNAPSHOT</version>
+  <version>4.0.1-SNAPSHOT</version>
 
   <packaging>pom</packaging>
   <name>SmallRye: MicroProfile JWT Parent</name>
@@ -34,23 +34,23 @@
 
   <properties>
     <bouncycastle.version>1.70</bouncycastle.version>
-    <version.jakarta.servlet.api>4.0.4</version.jakarta.servlet.api>
-    <version.jakarta.security.enterprise.api>1.0.2</version.jakarta.security.enterprise.api>
-    <version.eclipse.microprofile.jwt>1.2.2</version.eclipse.microprofile.jwt>
-    <version.microprofile.config>2.0.1</version.microprofile.config>
+    <version.jakarta.servlet.api>5.0.0</version.jakarta.servlet.api>
+    <version.jakarta.security.enterprise.api>2.0.0</version.jakarta.security.enterprise.api>
+    <version.eclipse.microprofile.jwt>2.0</version.eclipse.microprofile.jwt>
+    <version.microprofile.config>3.0</version.microprofile.config>
     <version.jose4j>0.9.2</version.jose4j>
     <version.mokito>5.0.0</version.mokito>
 
     <!-- Test -->
-    <artifactId.arquillian.jetty>arquillian-jetty-embedded-9</artifactId.arquillian.jetty>
+    <artifactId.arquillian.jetty>arquillian-jetty-embedded-11</artifactId.arquillian.jetty>
     <version.arquillian.jetty>1.0.0.Final</version.arquillian.jetty>
-    <version.jetty>9.4.50.v20221201</version.jetty>
-    <version.resteasy>4.7.7.Final</version.resteasy>
-    <version.smallrye.config>2.13.1</version.smallrye.config>
+    <version.jetty>11.0.7</version.jetty>
+    <version.resteasy>6.0.0.Final</version.resteasy>
+    <version.smallrye.config>3.0.0</version.smallrye.config>
     <!-- RESTEasy REST Client relocated to another GAV, so these props are for jakarta auto migration -->
-    <groupId.resteasy.client>org.jboss.resteasy</groupId.resteasy.client>
-    <artifactId.resteasy.client>resteasy-client-microprofile</artifactId.resteasy.client>
-    <version.resteasy.client>4.7.7.Final</version.resteasy.client>
+    <groupId.resteasy.client>org.jboss.resteasy.microprofile</groupId.resteasy.client>
+    <artifactId.resteasy.client>microprofile-rest-client</artifactId.resteasy.client>
+    <version.resteasy.client>2.0.0.Beta1</version.resteasy.client>
     <!-- Wildfly -->
     <version.galleon>5.0.7.Final</version.galleon>
     <version.wildfly>25.0.1.Final</version.wildfly>

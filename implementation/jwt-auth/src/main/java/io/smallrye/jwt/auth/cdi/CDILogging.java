@@ -2,9 +2,9 @@ package io.smallrye.jwt.auth.cdi;
 
 import java.util.Optional;
 
-import javax.enterprise.inject.spi.Annotated;
-import javax.enterprise.inject.spi.BeanManager;
-import javax.enterprise.inject.spi.InjectionPoint;
+import jakarta.enterprise.inject.spi.Annotated;
+import jakarta.enterprise.inject.spi.BeanManager;
+import jakarta.enterprise.inject.spi.InjectionPoint;
 
 import org.jboss.logging.BasicLogger;
 import org.jboss.logging.Logger;

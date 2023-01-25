@@ -7,8 +7,8 @@ import static org.junit.Assert.assertNull;
 import java.util.HashMap;
 import java.util.Optional;
 
-import javax.json.JsonString;
-import javax.json.JsonValue;
+import jakarta.json.JsonString;
+import jakarta.json.JsonValue;
 
 import org.eclipse.microprofile.jwt.Claims;
 import org.eclipse.microprofile.jwt.JsonWebToken;

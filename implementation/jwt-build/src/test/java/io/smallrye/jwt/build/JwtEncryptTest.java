@@ -32,8 +32,9 @@ import java.util.Optional;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
-import javax.json.Json;
-import javax.json.JsonObject;
+
+import jakarta.json.Json;
+import jakarta.json.JsonObject;
 
 import org.jose4j.base64url.Base64Url;
 import org.jose4j.json.JsonUtil;
