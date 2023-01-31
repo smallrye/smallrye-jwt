@@ -28,6 +28,7 @@ import org.jose4j.keys.resolvers.DecryptionKeyResolver;
 import org.jose4j.lang.UnresolvableKeyException;
 
 import io.smallrye.jwt.KeyFormat;
+import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
 import io.smallrye.jwt.util.KeyUtils;
 
 /**
@@ -68,8 +69,13 @@ public class DecryptionKeyLocationResolver extends AbstractKeyLocationResolver i
     }
 
     private Key tryAsDecryptionJwk(JsonWebEncryption jwe) throws UnresolvableKeyException {
-        JsonWebKey jwk = super.tryAsJwk(jwe, authContextInfo.getKeyEncryptionAlgorithm().getAlgorithm());
-        return fromJwkToDecryptionKey(jwk);
+        for (KeyEncryptionAlgorithm algo : authContextInfo.getKeyEncryptionAlgorithm()) {
+            JsonWebKey jwk = super.tryAsJwk(jwe, algo.getAlgorithm());
+            if (jwk != null) {
+                return fromJwkToDecryptionKey(jwk);
+            }
+        }
+        return null;
     }
 
     private Key fromJwkToDecryptionKey(JsonWebKey jwk) {
@@ -100,9 +106,13 @@ public class DecryptionKeyLocationResolver extends AbstractKeyLocationResolver i
                 return;
             }
         }
-        JsonWebKey jwk = loadFromJwk(content, authContextInfo.getTokenDecryptionKeyId(),
-                authContextInfo.getKeyEncryptionAlgorithm().getAlgorithm());
-        key = fromJwkToDecryptionKey(jwk);
+        for (KeyEncryptionAlgorithm keyAlgo : authContextInfo.getKeyEncryptionAlgorithm()) {
+            JsonWebKey jwk = loadFromJwk(content, authContextInfo.getTokenDecryptionKeyId(),
+                    keyAlgo.getAlgorithm());
+            if (jwk != null) {
+                key = fromJwkToDecryptionKey(jwk);
+            }
+        }
     }
 
     static PrivateKey tryAsPEMPrivateKey(String content) {

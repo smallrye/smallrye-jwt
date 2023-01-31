@@ -7,6 +7,7 @@ import static org.junit.Assert.assertTrue;
 import java.security.PublicKey;
 import java.security.cert.X509Certificate;
 import java.time.Instant;
+import java.util.Collections;
 
 import javax.crypto.SecretKey;
 
@@ -202,7 +203,7 @@ public class DefaultJWTParserTest {
 
         JWTAuthContextInfo config = new JWTAuthContextInfo();
         config.setDecryptionKeyLocation("/privateKey.pem");
-        config.setKeyEncryptionAlgorithm(KeyEncryptionAlgorithm.RSA_OAEP_256);
+        config.setKeyEncryptionAlgorithm(Collections.singleton(KeyEncryptionAlgorithm.RSA_OAEP_256));
         JsonWebToken jwt = new DefaultJWTParser().parse(jwtString, config);
 
         assertEquals("jdoe@example.com", jwt.getName());
@@ -217,7 +218,7 @@ public class DefaultJWTParserTest {
         JWTAuthContextInfo config = new JWTAuthContextInfo();
         config.setDecryptionKeyLocation("/privateKey.pem");
         config.setPublicKeyLocation("/publicKey.pem");
-        config.setKeyEncryptionAlgorithm(KeyEncryptionAlgorithm.RSA_OAEP);
+        config.setKeyEncryptionAlgorithm(Collections.singleton(KeyEncryptionAlgorithm.RSA_OAEP));
         JsonWebToken jwt = new DefaultJWTParser().parse(jwtString, config);
 
         assertEquals("jdoe@example.com", jwt.getName());
@@ -281,7 +282,7 @@ public class DefaultJWTParserTest {
                 .encrypt(secretKey);
         JWTAuthContextInfo config = new JWTAuthContextInfo();
         config.setSecretDecryptionKey(secretKey);
-        config.setKeyEncryptionAlgorithm(KeyEncryptionAlgorithm.A256KW);
+        config.setKeyEncryptionAlgorithm(Collections.singleton(KeyEncryptionAlgorithm.A256KW));
         config.setSecretVerificationKey(secretKey);
         config.setSignatureAlgorithm(SignatureAlgorithm.HS256);
         JsonWebToken jwt = new DefaultJWTParser().parse(jwtString, config);

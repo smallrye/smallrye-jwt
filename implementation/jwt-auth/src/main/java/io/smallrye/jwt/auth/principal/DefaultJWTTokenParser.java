@@ -18,6 +18,7 @@ package io.smallrye.jwt.auth.principal;
 
 import static java.util.Collections.emptyList;
 
+import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -34,6 +35,8 @@ import org.jose4j.keys.resolvers.DecryptionKeyResolver;
 import org.jose4j.keys.resolvers.VerificationKeyResolver;
 import org.jose4j.lang.JoseException;
 import org.jose4j.lang.UnresolvableKeyException;
+
+import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
 
 /**
  * Default JWT token validator
@@ -62,7 +65,7 @@ public class DefaultJWTTokenParser {
             JsonWebEncryption jwe = new JsonWebEncryption();
             jwe.setAlgorithmConstraints(
                     new AlgorithmConstraints(AlgorithmConstraints.ConstraintType.PERMIT,
-                            authContextInfo.getKeyEncryptionAlgorithm().getAlgorithm()));
+                            encryptionAlgorithms(authContextInfo)));
             if (authContextInfo.getPrivateDecryptionKey() != null) {
                 jwe.setKey(authContextInfo.getPrivateDecryptionKey());
             } else if (authContextInfo.getSecretDecryptionKey() != null) {
@@ -83,6 +86,14 @@ public class DefaultJWTTokenParser {
             PrincipalLogging.log.encryptedTokenSequenceInvalid();
             throw PrincipalMessages.msg.encryptedTokenSequenceInvalid(e);
         }
+    }
+
+    private String[] encryptionAlgorithms(JWTAuthContextInfo authContextInfo) {
+        Set<String> algorithms = new HashSet<>();
+        for (KeyEncryptionAlgorithm keyEncAlgo : authContextInfo.getKeyEncryptionAlgorithm()) {
+            algorithms.add(keyEncAlgo.getAlgorithm());
+        }
+        return algorithms.toArray(new String[] {});
     }
 
     private JwtContext parseClaims(String token, JWTAuthContextInfo authContextInfo, ProtectionLevel level)
@@ -113,7 +124,7 @@ public class DefaultJWTTokenParser {
                 }
                 builder.setJweAlgorithmConstraints(
                         new AlgorithmConstraints(AlgorithmConstraints.ConstraintType.PERMIT,
-                                authContextInfo.getKeyEncryptionAlgorithm().getAlgorithm()));
+                                encryptionAlgorithms(authContextInfo)));
             }
 
             builder.setRequireExpirationTime();
