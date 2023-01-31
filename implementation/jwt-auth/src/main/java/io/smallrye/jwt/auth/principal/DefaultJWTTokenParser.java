@@ -119,7 +119,7 @@ public class DefaultJWTTokenParser {
             builder.setRequireExpirationTime();
 
             final boolean issuedAtRequired = authContextInfo.getMaxTimeToLiveSecs() == null
-                    || authContextInfo.getMaxTimeToLiveSecs() > 0;
+                    || authContextInfo.getMaxTimeToLiveSecs() > 0 || authContextInfo.getTokenAge() != null;
             if (issuedAtRequired) {
                 builder.setRequireIssuedAt();
             }
@@ -211,8 +211,15 @@ public class DefaultJWTTokenParser {
             if (exp.getValue() - iat.getValue() > maxTimeToLiveSecs) {
                 throw PrincipalMessages.msg.expExceeded(exp, maxTimeToLiveSecs, iat);
             }
-        } else {
-            PrincipalLogging.log.noMaxTTLSpecified();
+        }
+
+        final Long tokenAge = authContextInfo.getTokenAge();
+
+        if (tokenAge != null) {
+            long now = System.currentTimeMillis() / 1000;
+            if (now - iat.getValue() > tokenAge) {
+                throw PrincipalMessages.msg.tokenAgeExceeded(tokenAge);
+            }
         }
     }
 

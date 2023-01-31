@@ -39,6 +39,7 @@ public class JWTAuthContextInfo {
     private String issuedBy;
     private int expGracePeriodSecs = 60;
     private Long maxTimeToLiveSecs;
+    private Long tokenAge;
     private String publicKeyLocation;
     private String publicKeyContent;
     private String decryptionKeyLocation;
@@ -102,6 +103,7 @@ public class JWTAuthContextInfo {
         this.issuedBy = orig.getIssuedBy();
         this.expGracePeriodSecs = orig.getExpGracePeriodSecs();
         this.maxTimeToLiveSecs = orig.getMaxTimeToLiveSecs();
+        this.tokenAge = orig.getTokenAge();
         this.publicKeyLocation = orig.getPublicKeyLocation();
         this.publicKeyContent = orig.getPublicKeyContent();
         this.decryptionKeyLocation = orig.getDecryptionKeyLocation();
@@ -395,6 +397,7 @@ public class JWTAuthContextInfo {
                 ", issuedBy='" + issuedBy + '\'' +
                 ", expGracePeriodSecs=" + expGracePeriodSecs +
                 ", maxTimeToLiveSecs=" + maxTimeToLiveSecs +
+                ", tokenAge=" + tokenAge +
                 ", publicKeyLocation='" + publicKeyLocation + '\'' +
                 ", publicKeyContent='" + publicKeyContent + '\'' +
                 ", decryptionKeyLocation='" + decryptionKeyLocation + '\'' +
@@ -488,5 +491,13 @@ public class JWTAuthContextInfo {
 
     public void setHttpProxyPort(int httpProxyPort) {
         this.httpProxyPort = httpProxyPort;
+    }
+
+    public Long getTokenAge() {
+        return tokenAge;
+    }
+
+    public void setTokenAge(Long tokenAge) {
+        this.tokenAge = tokenAge;
     }
 }

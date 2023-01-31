@@ -176,6 +176,7 @@ public class JWTAuthContextInfoProvider {
         provider.groupsPath = Optional.empty();
         provider.expGracePeriodSecs = 60;
         provider.maxTimeToLiveSecs = Optional.empty();
+        provider.mpJwtVerifyTokenAge = Optional.empty();
         provider.jwksRefreshInterval = 60;
         provider.forcedJwksRefreshInterval = 30;
         provider.signatureAlgorithm = Optional.of(SignatureAlgorithm.RS256);
@@ -283,6 +284,13 @@ public class JWTAuthContextInfoProvider {
     @Inject
     @ConfigProperty(name = "mp.jwt.verify.audiences")
     Optional<Set<String>> mpJwtVerifyAudiences;
+
+    /**
+     * @since 2.1
+     */
+    @Inject
+    @ConfigProperty(name = "mp.jwt.verify.token.age")
+    Optional<Long> mpJwtVerifyTokenAge;
 
     // SmallRye JWT specific properties
     /**
@@ -689,6 +697,7 @@ public class JWTAuthContextInfoProvider {
         SmallryeJwtUtils.setContextGroupsPath(contextInfo, groupsPath);
         contextInfo.setExpGracePeriodSecs(expGracePeriodSecs);
         contextInfo.setMaxTimeToLiveSecs(maxTimeToLiveSecs.orElse(null));
+        contextInfo.setTokenAge(mpJwtVerifyTokenAge.orElse(null));
         contextInfo.setJwksRefreshInterval(jwksRefreshInterval);
         contextInfo.setForcedJwksRefreshInterval(forcedJwksRefreshInterval);
         final Optional<SignatureAlgorithm> resolvedAlgorithm;

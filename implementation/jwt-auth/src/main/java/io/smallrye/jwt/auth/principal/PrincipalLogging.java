@@ -68,10 +68,6 @@ interface PrincipalLogging extends BasicLogger {
     void claimValueIsNotAJson(String claimPath);
 
     @LogMessage(level = Logger.Level.DEBUG)
-    @Message(id = 8013, value = "No max TTL has been specified in configuration")
-    void noMaxTTLSpecified();
-
-    @LogMessage(level = Logger.Level.DEBUG)
     @Message(id = 8014, value = "Required claims %s are not present in the JWT")
     void missingClaims(String missingClaims);
 

@@ -16,6 +16,7 @@ include::attributes.adoc[]
 |mp.jwt.decrypt.key.location|none|Config property allows for an external or internal location of Private Decryption Key to be specified.
 |mp.jwt.verify.issuer|none|Expected value of the JWT `iss` (issuer) claim.
 |mp.jwt.verify.audiences|`none`|Comma separated list of the audiences that a token `aud` claim may contain.
+|mp.jwt.verify.token.age|`none`|Number of seconds that must not elapse since the `iat` (issued at) time.
 |mp.jwt.token.header|`Authorization`|Set this property if another header such as `Cookie` is used to pass the token.
 |mp.jwt.token.cookie|`Bearer`|Name of the cookie containing a token. This property will be effective only if  `mp.jwt.token.header` is set to `Cookie`.
 |===

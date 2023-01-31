@@ -71,4 +71,7 @@ interface PrincipalMessages {
 
     @Message(id = 7017, value = "New JWTCallerPrincipalFactory instance can not be created")
     ParseException newJWTCallerPrincipalFactoryFailure(@Cause Throwable throwable);
+
+    @Message(id = 7018, value = "The token age has exceeded %d seconds")
+    ParseException tokenAgeExceeded(long tokenAge);
 }
