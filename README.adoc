@@ -10,7 +10,7 @@ image:https://img.shields.io/maven-central/v/io.smallrye/smallrye-jwt?color=gree
 
 = SmallRye JWT
 
-SmallRye JWT is a library for implementing the {microprofile-jwt}[{mp-jwt-name}]. Currently it is focused on supporting the MP-JWT 1.2 spec. It deals with the decryption and/or signature verification of the JWT token and parsing it into a JsonWebToken implementation.
+SmallRye JWT is a library for implementing the {microprofile-jwt}[{mp-jwt-name}]. Currently it is focused on supporting the MP-JWT 2.1 spec. It deals with the decryption and/or signature verification of the JWT token and parsing it into a JsonWebToken implementation.
 
 == Instructions
 
