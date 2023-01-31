@@ -20,6 +20,9 @@ import java.io.IOException;
 import java.security.KeyStore;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
@@ -176,10 +179,13 @@ public class JWTAuthContextInfoProvider {
         provider.groupsPath = Optional.empty();
         provider.expGracePeriodSecs = 60;
         provider.maxTimeToLiveSecs = Optional.empty();
+        provider.mpJwtVerifyTokenAge = Optional.empty();
         provider.jwksRefreshInterval = 60;
         provider.forcedJwksRefreshInterval = 30;
         provider.signatureAlgorithm = Optional.of(SignatureAlgorithm.RS256);
-        provider.keyEncryptionAlgorithm = KeyEncryptionAlgorithm.RSA_OAEP;
+        provider.keyEncryptionAlgorithm = Optional.empty();
+        provider.mpJwtDecryptKeyAlgorithm = new HashSet<>(Arrays.asList(KeyEncryptionAlgorithm.RSA_OAEP,
+                KeyEncryptionAlgorithm.RSA_OAEP_256));
         provider.keyFormat = KeyFormat.ANY;
         provider.mpJwtVerifyAudiences = Optional.empty();
         provider.expectedAudience = Optional.empty();
@@ -232,6 +238,14 @@ public class JWTAuthContextInfoProvider {
     @ConfigProperty(name = "mp.jwt.decrypt.key.location", defaultValue = NONE)
     private String mpJwtDecryptKeyLocation;
 
+    /**
+     * @since 2.1
+     */
+    @Inject
+    @ConfigProperty(name = "mp.jwt.decrypt.key.algorithm", defaultValue = "RSA_OAEP,RSA_OAEP_256")
+    private Set<KeyEncryptionAlgorithm> mpJwtDecryptKeyAlgorithm = new HashSet<>(Arrays.asList(KeyEncryptionAlgorithm.RSA_OAEP,
+            KeyEncryptionAlgorithm.RSA_OAEP_256));;
+
     @Inject
     @ConfigProperty(name = "smallrye.jwt.decrypt.key")
     private Optional<String> jwtDecryptKey;
@@ -260,8 +274,9 @@ public class JWTAuthContextInfoProvider {
      * Supported JSON Web Algorithm encryption algorithm.
      */
     @Inject
-    @ConfigProperty(name = "smallrye.jwt.decrypt.algorithm", defaultValue = "RSA_OAEP")
-    private KeyEncryptionAlgorithm keyEncryptionAlgorithm;
+    @ConfigProperty(name = "smallrye.jwt.decrypt.algorithm")
+    @Deprecated
+    private Optional<KeyEncryptionAlgorithm> keyEncryptionAlgorithm;
 
     /**
      * @since 1.2
@@ -283,6 +298,13 @@ public class JWTAuthContextInfoProvider {
     @Inject
     @ConfigProperty(name = "mp.jwt.verify.audiences")
     Optional<Set<String>> mpJwtVerifyAudiences;
+
+    /**
+     * @since 2.1
+     */
+    @Inject
+    @ConfigProperty(name = "mp.jwt.verify.token.age")
+    Optional<Long> mpJwtVerifyTokenAge;
 
     // SmallRye JWT specific properties
     /**
@@ -689,6 +711,7 @@ public class JWTAuthContextInfoProvider {
         SmallryeJwtUtils.setContextGroupsPath(contextInfo, groupsPath);
         contextInfo.setExpGracePeriodSecs(expGracePeriodSecs);
         contextInfo.setMaxTimeToLiveSecs(maxTimeToLiveSecs.orElse(null));
+        contextInfo.setTokenAge(mpJwtVerifyTokenAge.orElse(null));
         contextInfo.setJwksRefreshInterval(jwksRefreshInterval);
         contextInfo.setForcedJwksRefreshInterval(forcedJwksRefreshInterval);
         final Optional<SignatureAlgorithm> resolvedAlgorithm;
@@ -712,7 +735,14 @@ public class JWTAuthContextInfoProvider {
             contextInfo.setSignatureAlgorithm(SignatureAlgorithm.RS256);
         }
 
-        contextInfo.setKeyEncryptionAlgorithm(keyEncryptionAlgorithm);
+        final Set<KeyEncryptionAlgorithm> theDecryptionKeyAlgorithm;
+        if (!keyEncryptionAlgorithm.isEmpty()) {
+            ConfigLogging.log.replacedConfig("smallrye.jwt.decrypt.algorithm", "mp.jwt.decrypt.key.algorithm");
+            theDecryptionKeyAlgorithm = Collections.singleton(keyEncryptionAlgorithm.get());
+        } else {
+            theDecryptionKeyAlgorithm = mpJwtDecryptKeyAlgorithm;
+        }
+        contextInfo.setKeyEncryptionAlgorithm(theDecryptionKeyAlgorithm);
         contextInfo.setKeyFormat(keyFormat);
         if (mpJwtVerifyAudiences.isPresent()) {
             contextInfo.setExpectedAudience(mpJwtVerifyAudiences.get());

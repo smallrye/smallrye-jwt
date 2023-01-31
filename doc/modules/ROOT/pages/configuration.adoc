@@ -14,8 +14,10 @@ include::attributes.adoc[]
 |mp.jwt.verify.publickey.location|none|Config property allows for an external or internal location of Public Key to be specified.
 |mp.jwt.verify.publickey.algorithm|`RS256`|Signature algorithm. Set it to `ES256` to support the Elliptic Curve signature algorithm.
 |mp.jwt.decrypt.key.location|none|Config property allows for an external or internal location of Private Decryption Key to be specified.
+|mp.jwt.decrypt.key.algorithm|RSA-OAEP, RSA-OAEP-256|Decryption algorithm, both `RSA-OAEP` and `RSA-OAEP-256` will be supported by default. Set it to `RSA-OAEP-256` to support `RSA-OAEP` with `SHA-256` only.
 |mp.jwt.verify.issuer|none|Expected value of the JWT `iss` (issuer) claim.
 |mp.jwt.verify.audiences|`none`|Comma separated list of the audiences that a token `aud` claim may contain.
+|mp.jwt.verify.token.age|`none`|Number of seconds that must not elapse since the `iat` (issued at) time.
 |mp.jwt.token.header|`Authorization`|Set this property if another header such as `Cookie` is used to pass the token.
 |mp.jwt.token.cookie|`Bearer`|Name of the cookie containing a token. This property will be effective only if  `mp.jwt.token.header` is set to `Cookie`.
 |===
@@ -60,7 +62,7 @@ SmallRye JWT supports many properties which can be used to customize the token p
 |smallrye.jwt.required.claims|none|Comma separated list of the claims that a token must contain.
 |smallrye.jwt.decrypt.key.location|none|Config property allows for an external or internal location of Private Decryption Key to be specified. This property is deprecated, use `mp.jwt.decrypt.key.location`.
 |smallrye.jwt.decrypt.key|none|Decryption key supplied as a string.
-|smallrye.jwt.decrypt.algorithm|`RSA_OAEP`|Decryption algorithm.
+|smallrye.jwt.decrypt.algorithm|`RSA_OAEP`|Decryption algorithm. This property is deprecated, use `mp.jwt.decrypt.key.algorithm`.
 |smallrye.jwt.token.decryption.kid|none|Decryption Key identifier. If it is set then the decryption JWK key as well every JWT token must have a matching `kid` header.
 |smallrye.jwt.client.tls.certificate|none|TLS trusted certificate which may need to be configured if the keys have to be fetched over `HTTPS`. If this property is set then the `smallrye.jwt.client.tls.certificate.path` property will be ignored.
 |smallrye.jwt.client.tls.certificate.path|none|Path to TLS trusted certificate which may need to be configured if the keys have to be fetched over `HTTPS`. This property will be ignored if the `smallrye.jwt.client.tls.certificate` property is set.

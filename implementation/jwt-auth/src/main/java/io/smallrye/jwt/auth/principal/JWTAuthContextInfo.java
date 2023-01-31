@@ -18,7 +18,9 @@ package io.smallrye.jwt.auth.principal;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.interfaces.RSAPublicKey;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -39,6 +41,7 @@ public class JWTAuthContextInfo {
     private String issuedBy;
     private int expGracePeriodSecs = 60;
     private Long maxTimeToLiveSecs;
+    private Long tokenAge;
     private String publicKeyLocation;
     private String publicKeyContent;
     private String decryptionKeyLocation;
@@ -57,7 +60,8 @@ public class JWTAuthContextInfo {
     private String defaultGroupsClaim;
     private String groupsPath;
     private SignatureAlgorithm signatureAlgorithm = SignatureAlgorithm.RS256;
-    private KeyEncryptionAlgorithm keyEncryptionAlgorithm = KeyEncryptionAlgorithm.RSA_OAEP;
+    private Set<KeyEncryptionAlgorithm> keyEncryptionAlgorithm = new HashSet<>(Arrays.asList(KeyEncryptionAlgorithm.RSA_OAEP,
+            KeyEncryptionAlgorithm.RSA_OAEP_256));
     private KeyFormat keyFormat = KeyFormat.ANY;
     private Set<String> expectedAudience;
     private String groupsSeparator = " ";
@@ -102,6 +106,7 @@ public class JWTAuthContextInfo {
         this.issuedBy = orig.getIssuedBy();
         this.expGracePeriodSecs = orig.getExpGracePeriodSecs();
         this.maxTimeToLiveSecs = orig.getMaxTimeToLiveSecs();
+        this.tokenAge = orig.getTokenAge();
         this.publicKeyLocation = orig.getPublicKeyLocation();
         this.publicKeyContent = orig.getPublicKeyContent();
         this.decryptionKeyLocation = orig.getDecryptionKeyLocation();
@@ -217,11 +222,11 @@ public class JWTAuthContextInfo {
         this.decryptionKeyLocation = keyLocation;
     }
 
-    public KeyEncryptionAlgorithm getKeyEncryptionAlgorithm() {
+    public Set<KeyEncryptionAlgorithm> getKeyEncryptionAlgorithm() {
         return this.keyEncryptionAlgorithm;
     }
 
-    public void setKeyEncryptionAlgorithm(KeyEncryptionAlgorithm algorithm) {
+    public void setKeyEncryptionAlgorithm(Set<KeyEncryptionAlgorithm> algorithm) {
         this.keyEncryptionAlgorithm = algorithm;
     }
 
@@ -395,6 +400,7 @@ public class JWTAuthContextInfo {
                 ", issuedBy='" + issuedBy + '\'' +
                 ", expGracePeriodSecs=" + expGracePeriodSecs +
                 ", maxTimeToLiveSecs=" + maxTimeToLiveSecs +
+                ", tokenAge=" + tokenAge +
                 ", publicKeyLocation='" + publicKeyLocation + '\'' +
                 ", publicKeyContent='" + publicKeyContent + '\'' +
                 ", decryptionKeyLocation='" + decryptionKeyLocation + '\'' +
@@ -488,5 +494,13 @@ public class JWTAuthContextInfo {
 
     public void setHttpProxyPort(int httpProxyPort) {
         this.httpProxyPort = httpProxyPort;
+    }
+
+    public Long getTokenAge() {
+        return tokenAge;
+    }
+
+    public void setTokenAge(Long tokenAge) {
+        this.tokenAge = tokenAge;
     }
 }

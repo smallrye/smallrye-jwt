@@ -21,6 +21,8 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.ECPublicKey;
+import java.util.Collections;
+import java.util.Set;
 
 import javax.crypto.SecretKey;
 
@@ -159,9 +161,10 @@ public class DefaultJWTParser implements JWTParser {
 
     private void setKeyEncryptionAlgorithmIfNeeded(JWTAuthContextInfo newAuthContextInfo, String algoStart,
             KeyEncryptionAlgorithm newAlgo) {
-        KeyEncryptionAlgorithm algo = newAuthContextInfo.getKeyEncryptionAlgorithm();
-        if (algo == null || !algo.getAlgorithm().startsWith(algoStart)) {
-            newAuthContextInfo.setKeyEncryptionAlgorithm(newAlgo);
+        Set<KeyEncryptionAlgorithm> algo = newAuthContextInfo.getKeyEncryptionAlgorithm();
+        if (algo == null ||
+                !algo.stream().anyMatch(s -> s.getAlgorithm().startsWith(algoStart))) {
+            newAuthContextInfo.setKeyEncryptionAlgorithm(Collections.singleton(newAlgo));
         }
     }
 
