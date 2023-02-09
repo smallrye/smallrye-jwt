@@ -45,7 +45,7 @@
     <artifactId.arquillian.jetty>arquillian-jetty-embedded-9</artifactId.arquillian.jetty>
     <version.arquillian.jetty>1.0.0.Final</version.arquillian.jetty>
     <version.jetty>9.4.50.v20221201</version.jetty>
-    <version.resteasy>4.7.7.Final</version.resteasy>
+    <version.resteasy>4.7.8.Final</version.resteasy>
     <version.smallrye.config>2.13.2</version.smallrye.config>
     <!-- RESTEasy REST Client relocated to another GAV, so these props are for jakarta auto migration -->
     <groupId.resteasy.client>org.jboss.resteasy</groupId.resteasy.client>
