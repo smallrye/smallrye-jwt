@@ -21,8 +21,8 @@
 
   <parent>
     <groupId>io.smallrye</groupId>
-    <artifactId>smallrye-jakarta-parent</artifactId>
-    <version>37</version>
+    <artifactId>smallrye-parent</artifactId>
+    <version>39</version>
   </parent>
 
   <artifactId>smallrye-jwt-parent</artifactId>
@@ -55,6 +55,7 @@
     <version.galleon>5.0.7.Final</version.galleon>
     <version.wildfly>25.0.1.Final</version.wildfly>
     <version.wildfly.plugin>4.0.0.Final</version.wildfly.plugin>
+    <version.smallrye.testing>2.3.0</version.smallrye.testing>
   </properties>
 
   <licenses>
@@ -161,6 +162,21 @@
       </dependency>
 
       <!-- Unit/Integration test dependencies -->
+      <dependency>
+        <groupId>io.smallrye.testing</groupId>
+        <artifactId>smallrye-testing-bom</artifactId>
+        <version>${version.smallrye.testing}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>io.smallrye.testing</groupId>
+        <artifactId>smallrye-testing-bom-tck</artifactId>
+        <version>${version.smallrye.testing}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
       <dependency>
         <groupId>org.mockito</groupId>
         <artifactId>mockito-core</artifactId>
