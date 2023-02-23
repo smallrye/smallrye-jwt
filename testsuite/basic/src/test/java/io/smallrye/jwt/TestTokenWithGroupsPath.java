@@ -16,8 +16,9 @@
  */
 package io.smallrye.jwt;
 
-import static org.eclipse.microprofile.jwt.tck.TCKConstants.TEST_GROUP_JWT;
 import static org.eclipse.microprofile.jwt.tck.TCKConstants.TEST_ISSUER;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.security.PublicKey;
 import java.security.interfaces.RSAPublicKey;
@@ -27,10 +28,8 @@ import java.util.Set;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.eclipse.microprofile.jwt.tck.util.SignatureAlgorithm;
 import org.eclipse.microprofile.jwt.tck.util.TokenUtils;
-import org.jboss.arquillian.testng.Arquillian;
-import org.testng.Assert;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
 import io.smallrye.jwt.auth.principal.JWTCallerPrincipalFactory;
@@ -39,14 +38,14 @@ import io.smallrye.jwt.auth.principal.JWTCallerPrincipalFactory;
  * A more extensive test of the how the token JSON content types are mapped
  * to values via the JsonWebToken implementation.
  */
-public class TestTokenWithGroupsPath extends Arquillian {
+class TestTokenWithGroupsPath {
     /** The test generated JWT token string */
     private static String token;
     /** The /publicKey.pem instance */
     private static PublicKey publicKey;
 
-    @BeforeClass(alwaysRun = true)
-    public static void generateToken() throws Exception {
+    @BeforeAll
+    static void generateToken() throws Exception {
         HashMap<String, Long> timeClaims = new HashMap<>();
         token = TokenUtils.signClaims("/TokenGroupsPath.json", SignatureAlgorithm.RS256, null, timeClaims);
         publicKey = TokenUtils.readPublicKey("/publicKey.pem");
@@ -55,78 +54,77 @@ public class TestTokenWithGroupsPath extends Arquillian {
         }
     }
 
-    @Test(groups = TEST_GROUP_JWT, description = "validate the groups claim can be mapped from a custom array claim")
-    public void groupsIsAvailableInCustomArray() throws Exception {
+    @Test
+    void groupsIsAvailableInCustomArray() throws Exception {
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo((RSAPublicKey) publicKey, TEST_ISSUER);
         contextInfo.setGroupsPath("realm/access/groups/array");
         JWTCallerPrincipalFactory factory = JWTCallerPrincipalFactory.instance();
         JsonWebToken jwt = factory.parse(token, contextInfo);
         Set<String> groups = jwt.getGroups();
-        Assert.assertEquals(groups.size(), 1);
-        Assert.assertTrue(groups.contains("microprofile_jwt_user"));
+        assertEquals(groups.size(), 1);
+        assertTrue(groups.contains("microprofile_jwt_user"));
     }
 
-    @Test(groups = TEST_GROUP_JWT, description = "validate the groups claim can be mapped from a custom array claim with namespace")
-    public void groupsIsAvailableInCustomArrayWithNamespace() throws Exception {
+    @Test
+    void groupsIsAvailableInCustomArrayWithNamespace() throws Exception {
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo((RSAPublicKey) publicKey, TEST_ISSUER);
         contextInfo.setGroupsPath("realm/access/\"https://idp/groups\"/array");
         JWTCallerPrincipalFactory factory = JWTCallerPrincipalFactory.instance();
         JsonWebToken jwt = factory.parse(token, contextInfo);
         Set<String> groups = jwt.getGroups();
-        Assert.assertEquals(groups.size(), 1);
-        Assert.assertTrue(groups.contains("namespace_microprofile_jwt_user"));
+        assertEquals(groups.size(), 1);
+        assertTrue(groups.contains("namespace_microprofile_jwt_user"));
     }
 
-    @Test(groups = TEST_GROUP_JWT, description = "validate the groups claim can be mapped from a standard scope claim")
-    public void groupsIsAvailableInScopeStringClaim() throws Exception {
+    @Test
+    void groupsIsAvailableInScopeStringClaim() throws Exception {
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo((RSAPublicKey) publicKey, TEST_ISSUER);
         contextInfo.setGroupsPath("scope");
         JWTCallerPrincipalFactory factory = JWTCallerPrincipalFactory.instance();
         JsonWebToken jwt = factory.parse(token, contextInfo);
         Set<String> groups = jwt.getGroups();
-        Assert.assertEquals(groups.size(), 2);
-        Assert.assertTrue(groups.contains("write"));
-        Assert.assertTrue(groups.contains("read"));
+        assertEquals(groups.size(), 2);
+        assertTrue(groups.contains("write"));
+        assertTrue(groups.contains("read"));
     }
 
-    @Test(groups = TEST_GROUP_JWT, description = "validate the groups claim can be mapped from a standard scope claim")
-    public void groupsIsAvailableInCommaSeparatedStringClaim() throws Exception {
+    @Test
+    void groupsIsAvailableInCommaSeparatedStringClaim() throws Exception {
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo((RSAPublicKey) publicKey, TEST_ISSUER);
         contextInfo.setGroupsPath("auth");
         contextInfo.setGroupsSeparator(",");
         JWTCallerPrincipalFactory factory = JWTCallerPrincipalFactory.instance();
         JsonWebToken jwt = factory.parse(token, contextInfo);
         Set<String> groups = jwt.getGroups();
-        Assert.assertEquals(groups.size(), 2);
-        Assert.assertTrue(groups.contains("write"));
-        Assert.assertTrue(groups.contains("read"));
+        assertEquals(groups.size(), 2);
+        assertTrue(groups.contains("write"));
+        assertTrue(groups.contains("read"));
     }
 
-    @Test(groups = TEST_GROUP_JWT, description = "validate the custom groups claim is not available on the long path")
-    public void groupsClaimIsNotAvailableOnTooDeepPath() throws Exception {
+    @Test
+    void groupsClaimIsNotAvailableOnTooDeepPath() throws Exception {
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo((RSAPublicKey) publicKey, TEST_ISSUER);
         contextInfo.setGroupsPath("realm/access/groups/array/5");
         JWTCallerPrincipalFactory factory = JWTCallerPrincipalFactory.instance();
         JsonWebToken jwt = factory.parse(token, contextInfo);
-        Assert.assertTrue(jwt.getGroups().isEmpty());
+        assertTrue(jwt.getGroups().isEmpty());
     }
 
-    @Test(groups = TEST_GROUP_JWT, description = "validate the custom groups claim is not available if the claim is not array")
-    public void groupsClaimIsNotAvailableIfClaimIsNotArray() throws Exception {
+    @Test
+    void groupsClaimIsNotAvailableIfClaimIsNotArray() throws Exception {
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo((RSAPublicKey) publicKey, TEST_ISSUER);
         contextInfo.setGroupsPath("realm/access/groups");
         JWTCallerPrincipalFactory factory = JWTCallerPrincipalFactory.instance();
         JsonWebToken jwt = factory.parse(token, contextInfo);
-        Assert.assertTrue(jwt.getGroups().isEmpty());
+        assertTrue(jwt.getGroups().isEmpty());
     }
 
-    @Test(groups = TEST_GROUP_JWT, description = "validate the custom groups claim is not available on the wrong path")
-    public void groupsClaimIsNotAvailableOnWrongPath() throws Exception {
+    @Test
+    void groupsClaimIsNotAvailableOnWrongPath() throws Exception {
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo((RSAPublicKey) publicKey, TEST_ISSUER);
         contextInfo.setGroupsPath("realm/access/group/array");
         JWTCallerPrincipalFactory factory = JWTCallerPrincipalFactory.instance();
         JsonWebToken jwt = factory.parse(token, contextInfo);
-        Assert.assertTrue(jwt.getGroups().isEmpty());
+        assertTrue(jwt.getGroups().isEmpty());
     }
-
 }

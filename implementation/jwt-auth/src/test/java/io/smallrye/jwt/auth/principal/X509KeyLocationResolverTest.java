@@ -17,7 +17,8 @@
 package io.smallrye.jwt.auth.principal;
 
 import static java.util.Collections.emptyList;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
 
 import java.security.cert.X509Certificate;
@@ -30,20 +31,18 @@ import org.jose4j.jws.JsonWebSignature;
 import org.jose4j.keys.X509Util;
 import org.jose4j.lang.JoseException;
 import org.jose4j.lang.UnresolvableKeyException;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import io.smallrye.jwt.util.KeyUtils;
 import io.smallrye.jwt.util.ResourceUtils;
 import io.smallrye.jwt.util.ResourceUtils.UrlStreamResolver;
 
-@RunWith(MockitoJUnitRunner.class)
-public class X509KeyLocationResolverTest {
+@ExtendWith(MockitoExtension.class)
+class X509KeyLocationResolverTest {
 
     @Mock
     JsonWebSignature signature;
@@ -57,7 +56,7 @@ public class X509KeyLocationResolverTest {
     String x5tS256;
     String x5c;
 
-    public X509KeyLocationResolverTest() throws Exception {
+    X509KeyLocationResolverTest() throws Exception {
         X509Certificate certificate = KeyUtils.getCertificate(ResourceUtils.readResource("publicCrt.pem"));
         x5t = X509Util.x5t(certificate);
         x5tS256 = X509Util.x5tS256(certificate);
@@ -65,11 +64,8 @@ public class X509KeyLocationResolverTest {
         key = (RSAPublicKey) certificate.getPublicKey();
     }
 
-    @Rule
-    public ExpectedException expectedEx = ExpectedException.none();
-
     @Test
-    public void testLoadHttpsJwksWithX5t() throws Exception {
+    void loadHttpsJwksWithX5t() throws Exception {
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo("https://github.com/my_key.jwks", "issuer");
         contextInfo.setJwksRefreshInterval(10);
 
@@ -87,7 +83,7 @@ public class X509KeyLocationResolverTest {
     }
 
     @Test
-    public void testLoadHttpsPemCert() throws Exception {
+    void loadHttpsPemCert() throws Exception {
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo("https://github.com/my_key.crt", "issuer");
         contextInfo.setJwksRefreshInterval(10);
         Mockito.doThrow(new JoseException("")).when(mockedHttpsJwks).refresh();
@@ -107,7 +103,7 @@ public class X509KeyLocationResolverTest {
     }
 
     @Test
-    public void testLoadPemCertOnClassPath() throws Exception {
+    void loadPemCertOnClassPath() throws Exception {
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo("publicCrt.pem", "issuer");
         X509KeyLocationResolver keyLocationResolver = new X509KeyLocationResolver(contextInfo);
         when(signature.getX509CertSha1ThumbprintHeaderValue()).thenReturn(x5t);
@@ -115,7 +111,7 @@ public class X509KeyLocationResolverTest {
     }
 
     @Test
-    public void testLoadJWKWithCertOnClassPathWithX5t() throws Exception {
+    void loadJWKWithCertOnClassPathWithX5t() throws Exception {
         RsaJsonWebKey jwk = new RsaJsonWebKey(key);
         jwk.setOtherParameter("x5c", Collections.singletonList(x5c));
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo();
@@ -126,7 +122,7 @@ public class X509KeyLocationResolverTest {
     }
 
     @Test
-    public void testLoadJWKWithCertOnClassPathWithX5tS256() throws Exception {
+    void loadJWKWithCertOnClassPathWithX5tS256() throws Exception {
         RsaJsonWebKey jwk = new RsaJsonWebKey(key);
         jwk.setOtherParameter("x5c", Collections.singletonList(x5c));
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo();
@@ -137,16 +133,13 @@ public class X509KeyLocationResolverTest {
     }
 
     @Test
-    public void testLoadJWKWithCertOnClassPathWithWrongX5tS256() throws Exception {
-
-        expectedEx.expect(UnresolvableKeyException.class);
-
+    void loadJWKWithCertOnClassPathWithWrongX5tS256() throws Exception {
         RsaJsonWebKey jwk = new RsaJsonWebKey(key);
         jwk.setOtherParameter("x5c", Collections.singletonList(x5c));
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo();
         contextInfo.setPublicKeyContent(jwk.toJson());
         X509KeyLocationResolver keyLocationResolver = new X509KeyLocationResolver(contextInfo);
         when(signature.getX509CertSha256ThumbprintHeaderValue()).thenReturn(x5tS256 + "1");
-        keyLocationResolver.resolveKey(signature, emptyList());
+        assertThrows(UnresolvableKeyException.class, () -> keyLocationResolver.resolveKey(signature, emptyList()));
     }
 }

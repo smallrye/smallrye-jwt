@@ -13,7 +13,7 @@ import org.eclipse.microprofile.jwt.Claims;
 
 /**
  * JWT Claims Builder.
- * 
+ *
  * <p>
  * JwtClaimsBuilder implementations must set the 'iat' (issued at time), 'exp' (expiration time)
  * and 'jti' (unique token identifier) claims unless they have already been set.
@@ -33,14 +33,14 @@ import org.eclipse.microprofile.jwt.Claims;
  * without using this interface.
  * <p>
  * Note that JwtClaimsBuilder implementations are not expected to be thread-safe.
- * 
+ *
  * @see <a href="https://tools.ietf.org/html/rfc7519">RFC7515</a>
  */
 public interface JwtClaimsBuilder extends JwtSignature {
 
     /**
      * Set an issuer 'iss' claim
-     * 
+     *
      * @param issuer the issuer
      * @return JwtClaimsBuilder
      */
@@ -48,7 +48,7 @@ public interface JwtClaimsBuilder extends JwtSignature {
 
     /**
      * Set a subject 'sub' claim
-     * 
+     *
      * @param subject the subject
      * @return JwtClaimsBuilder
      */
@@ -56,7 +56,7 @@ public interface JwtClaimsBuilder extends JwtSignature {
 
     /**
      * Set a 'upn' claim
-     * 
+     *
      * @param upn the upn
      * @return JwtClaimsBuilder
      */
@@ -64,7 +64,7 @@ public interface JwtClaimsBuilder extends JwtSignature {
 
     /**
      * Set a preferred user name 'preferred_username' claim
-     * 
+     *
      * @param preferredUserName the preferred user name
      * @return JwtClaimsBuilder
      */
@@ -72,7 +72,7 @@ public interface JwtClaimsBuilder extends JwtSignature {
 
     /**
      * Set an issuedAt 'iat' claim
-     * 
+     *
      * @param issuedAt the issuedAt time in seconds
      * @return JwtClaimsBuilder
      */
@@ -80,7 +80,7 @@ public interface JwtClaimsBuilder extends JwtSignature {
 
     /**
      * Set an issuedAt 'iat' claim
-     * 
+     *
      * @param issuedAt the issuedAt time in seconds
      * @return JwtClaimsBuilder
      */
@@ -90,7 +90,7 @@ public interface JwtClaimsBuilder extends JwtSignature {
 
     /**
      * Set an expiry 'exp' claim
-     * 
+     *
      * @param expiresAt the absolute expiry time in seconds
      * @return JwtClaimsBuilder
      */
@@ -98,7 +98,7 @@ public interface JwtClaimsBuilder extends JwtSignature {
 
     /**
      * Set an expiry 'exp' claim
-     * 
+     *
      * @param expiresAt the absolute expiry time in seconds
      * @return JwtClaimsBuilder
      */
@@ -108,7 +108,7 @@ public interface JwtClaimsBuilder extends JwtSignature {
 
     /**
      * Set a relative expiry time.
-     * 
+     *
      * @param expiresIn the relative expiry time in seconds which will be added to the 'iat' (issued at) claim value
      *        to calculate the value of the 'exp' (expires at) claim.
      * @return JwtClaimsBuilder
@@ -117,7 +117,7 @@ public interface JwtClaimsBuilder extends JwtSignature {
 
     /**
      * Set a relative expiry time.
-     * 
+     *
      * @param expiresIn the relative expiry time in seconds which will be added to the 'iat' (issued at) claim value
      *        to calculate the value of the 'exp' (expires at) claim.
      * @return JwtClaimsBuilder
@@ -128,7 +128,7 @@ public interface JwtClaimsBuilder extends JwtSignature {
 
     /**
      * Set a single value 'groups' claim
-     * 
+     *
      * @param group the groups
      * @return JwtClaimsBuilder
      */
@@ -136,7 +136,7 @@ public interface JwtClaimsBuilder extends JwtSignature {
 
     /**
      * Set a multiple value 'groups' claim
-     * 
+     *
      * @param groups the groups
      * @return JwtClaimsBuilder
      */
@@ -144,7 +144,7 @@ public interface JwtClaimsBuilder extends JwtSignature {
 
     /**
      * Set a single value audience 'aud' claim
-     * 
+     *
      * @param audience the audience
      * @return JwtClaimsBuilder
      */
@@ -152,7 +152,7 @@ public interface JwtClaimsBuilder extends JwtSignature {
 
     /**
      * Set a multiple value audience 'aud' claim
-     * 
+     *
      * @param audiences the audiences
      * @return JwtClaimsBuilder
      */
@@ -206,14 +206,14 @@ public interface JwtClaimsBuilder extends JwtSignature {
 
     /**
      * Set JsonWebSignature headers and sign the claims by moving to {@link JwtSignatureBuilder}
-     * 
+     *
      * @return JwtSignatureBuilder
      */
     JwtSignatureBuilder jws();
 
     /**
      * Set JsonWebEncryption headers and encrypt the claims by moving to {@link JwtEncryptionBuilder}
-     * 
+     *
      * @return JwtSignatureBuilder
      */
     JwtEncryptionBuilder jwe();

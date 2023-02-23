@@ -1,6 +1,8 @@
 package io.smallrye.jwt.auth.principal;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.security.interfaces.RSAPublicKey;
 import java.util.Set;
@@ -8,10 +10,10 @@ import java.util.Set;
 import org.eclipse.microprofile.jwt.Claims;
 import org.eclipse.microprofile.jwt.tck.util.TokenUtils;
 import org.jose4j.jwt.consumer.JwtContext;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-public class DefaultJWTCallerPrincipalTest {
+class DefaultJWTCallerPrincipalTest {
 
     private static final String TCK_TOKEN1_AUD = "s6BhdRkqt3";
 
@@ -20,16 +22,16 @@ public class DefaultJWTCallerPrincipalTest {
     JWTAuthContextInfo config;
     JwtContext context;
 
-    @Before
-    public void setUp() throws Exception {
-        publicKey = (RSAPublicKey) TokenUtils.readPublicKey("/publicKey.pem");
+    @BeforeEach
+    void setUp() throws Exception {
+        publicKey = TokenUtils.readPublicKey("/publicKey.pem");
         parser = new DefaultJWTTokenParser();
         config = new JWTAuthContextInfo(publicKey, "https://server.example.com");
         context = parser.parse(TokenUtils.signClaims("/Token1.json"), config);
     }
 
     @Test
-    public void testGetAudience() {
+    void getAudience() {
         DefaultJWTCallerPrincipal principal = new DefaultJWTCallerPrincipal(context.getJwtClaims());
         Set<String> audience = principal.getAudience();
         assertNotNull(audience);
@@ -38,7 +40,7 @@ public class DefaultJWTCallerPrincipalTest {
     }
 
     @Test
-    public void testGetAudienceClaimValue() {
+    void getAudienceClaimValue() {
         DefaultJWTCallerPrincipal principal = new DefaultJWTCallerPrincipal(context.getJwtClaims());
         @SuppressWarnings("unchecked")
         Set<String> audience = (Set<String>) principal.getClaimValue(Claims.aud.name());
@@ -48,12 +50,11 @@ public class DefaultJWTCallerPrincipalTest {
     }
 
     @Test
-    public void testGetAudienceClaim() {
+    void getAudienceClaim() {
         DefaultJWTCallerPrincipal principal = new DefaultJWTCallerPrincipal(context.getJwtClaims());
         Set<String> audience = principal.getClaim(Claims.aud.name());
         assertNotNull(audience);
         assertEquals(1, audience.size());
         assertArrayEquals(new String[] { TCK_TOKEN1_AUD }, audience.toArray(new String[0]));
     }
-
 }

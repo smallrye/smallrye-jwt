@@ -14,11 +14,11 @@
  *   limitations under the License.
  *
  */
-
 package io.smallrye.jwt.auth.principal;
 
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.BufferedReader;
 import java.io.InputStream;
@@ -30,44 +30,42 @@ import java.util.Base64;
 
 import org.eclipse.microprofile.jwt.tck.util.TokenUtils;
 import org.jose4j.lang.UnresolvableKeyException;
-import org.testng.Assert;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 import io.smallrye.jwt.config.JWTAuthContextInfoProvider;
 import io.smallrye.jwt.util.KeyUtils;
 
-public class KeyLocationResolverKeyContentTest {
-
+class KeyLocationResolverKeyContentTest {
     @Test
-    public void testVerifyWithPemKey() throws Exception {
+    void verifyWithPemKey() throws Exception {
         verifyToken(null, readKeyContent("/publicKey.pem"));
     }
 
     @Test
-    public void testVerifyWithInvalidPemKey() throws Exception {
+    void verifyWithInvalidPemKey() throws Exception {
         PrivateKey privateKey = TokenUtils.readPrivateKey("/privateKey.pem");
         String token = TokenUtils.signClaims(privateKey, null, "/Token1.json", null, null);
         JWTAuthContextInfoProvider provider = JWTAuthContextInfoProvider.createWithKey("invalidkey",
                 "https://server.example.com");
         JWTAuthContextInfo contextInfo = provider.getContextInfo();
-        ParseException thrown = assertThrows("UnresolvableKeyException is expected",
-                ParseException.class, () -> new DefaultJWTTokenParser().parse(token, contextInfo));
+        ParseException thrown = assertThrows(ParseException.class, () -> new DefaultJWTTokenParser().parse(token, contextInfo),
+                "UnresolvableKeyException is expected");
         assertTrue(thrown.getCause() instanceof UnresolvableKeyException);
     }
 
     @Test
-    public void testVerifyWithPemKeyTrimmed() throws Exception {
+    void verifyWithPemKeyTrimmed() throws Exception {
         verifyToken(null, KeyUtils.removePemKeyBeginEnd(readKeyContent("/publicKey.pem")));
     }
 
     @Test
-    public void testVerifyWithJwkKey() throws Exception {
+    void verifyWithJwkKey() throws Exception {
         verifyToken(null,
                 Base64.getUrlEncoder().encodeToString(readKeyContent("/publicKey.jwk").getBytes(StandardCharsets.UTF_8)));
     }
 
     @Test
-    public void testVerifyWithJwkKeySet() throws Exception {
+    void verifyWithJwkKeySet() throws Exception {
         verifyToken("key1",
                 Base64.getUrlEncoder().encodeToString(readKeyContent("/publicKeySet.jwk").getBytes(StandardCharsets.UTF_8)));
     }
@@ -78,7 +76,7 @@ public class KeyLocationResolverKeyContentTest {
         JWTAuthContextInfoProvider provider = JWTAuthContextInfoProvider.createWithKey(publicKey,
                 "https://server.example.com");
         JWTAuthContextInfo contextInfo = provider.getContextInfo();
-        Assert.assertNotNull(new DefaultJWTTokenParser().parse(token, contextInfo));
+        assertNotNull(new DefaultJWTTokenParser().parse(token, contextInfo));
     }
 
     private String readKeyContent(String keyLocation) throws Exception {

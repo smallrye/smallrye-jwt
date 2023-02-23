@@ -59,7 +59,7 @@ public interface JwtEncryption {
      * Encrypt the claims or inner JWT with a key loaded from the location set with the
      * "smallrye.jwt.encrypt.key.location" property or the key content set with the "smallrye.jwt.encrypt.key" property.
      * Keys in PEM, JWK and JWK formats are supported.
-     * 
+     *
      * 'RSA-OAEP', 'ECDH-ES+A256KW' and 'A256KW' key encryption algorithms will be used by default
      * when public RSA, EC or secret keys are used unless a different one has been set with {@code JwtEncryptionBuilder} or
      * 'smallrye.jwt.new-token.key-encryption-algorithm' property.

@@ -16,11 +16,11 @@
  */
 package io.smallrye.jwt;
 
-import static org.eclipse.microprofile.jwt.tck.TCKConstants.TEST_GROUP_JWT;
 import static org.eclipse.microprofile.jwt.tck.TCKConstants.TEST_ISSUER;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.security.PublicKey;
-import java.security.interfaces.RSAPublicKey;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -28,10 +28,8 @@ import java.util.Set;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.eclipse.microprofile.jwt.tck.util.SignatureAlgorithm;
 import org.eclipse.microprofile.jwt.tck.util.TokenUtils;
-import org.jboss.arquillian.testng.Arquillian;
-import org.testng.Assert;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
 import io.smallrye.jwt.auth.principal.JWTCallerPrincipalFactory;
@@ -40,14 +38,14 @@ import io.smallrye.jwt.auth.principal.JWTCallerPrincipalFactory;
  * A more extensive test of the how the token JSON content types are mapped
  * to values via the JsonWebToken implementation.
  */
-public class TestTokenWithGroupsString extends Arquillian {
+class TestTokenWithGroupsString {
     /** The test generated JWT token string */
     private static String token;
     /** The /publicKey.pem instance */
     private static PublicKey publicKey;
 
-    @BeforeClass(alwaysRun = true)
-    public static void generateToken() throws Exception {
+    @BeforeAll
+    static void generateToken() throws Exception {
         Map<String, Long> timeClaims = new HashMap<>();
         token = TokenUtils.signClaims("/TokenGroupsString.json", SignatureAlgorithm.RS256, null, timeClaims);
         publicKey = TokenUtils.readPublicKey("/publicKey.pem");
@@ -56,14 +54,14 @@ public class TestTokenWithGroupsString extends Arquillian {
         }
     }
 
-    @Test(groups = TEST_GROUP_JWT, description = "validate the groups string claims with multiple roles")
-    public void groupsString() throws Exception {
-        JWTAuthContextInfo contextInfo = new JWTAuthContextInfo((RSAPublicKey) publicKey, TEST_ISSUER);
+    @Test
+    void groupsString() throws Exception {
+        JWTAuthContextInfo contextInfo = new JWTAuthContextInfo(publicKey, TEST_ISSUER);
         JWTCallerPrincipalFactory factory = JWTCallerPrincipalFactory.instance();
         JsonWebToken jwt = factory.parse(token, contextInfo);
         Set<String> groups = jwt.getGroups();
-        Assert.assertEquals(groups.size(), 2);
-        Assert.assertTrue(groups.contains("role1"));
-        Assert.assertTrue(groups.contains("role2"));
+        assertEquals(groups.size(), 2);
+        assertTrue(groups.contains("role1"));
+        assertTrue(groups.contains("role2"));
     }
 }

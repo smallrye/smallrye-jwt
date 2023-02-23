@@ -1,9 +1,11 @@
 package io.smallrye.jwt.auth.cdi;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.HashMap;
 import java.util.NoSuchElementException;
@@ -15,19 +17,21 @@ import org.eclipse.microprofile.jwt.ClaimValue;
 import org.eclipse.microprofile.jwt.Claims;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.jboss.weld.context.bound.BoundRequestContext;
-import org.jboss.weld.junit4.WeldInitiator;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.jboss.weld.junit5.WeldInitiator;
+import org.jboss.weld.junit5.WeldJunit5Extension;
+import org.jboss.weld.junit5.WeldSetup;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
-public class ClaimValueProducerIT {
-
-    @Rule
-    public WeldInitiator weld = WeldInitiator.of(PrincipalProducer.class,
+@ExtendWith(WeldJunit5Extension.class)
+class ClaimValueProducerIT {
+    @WeldSetup
+    WeldInitiator weld = WeldInitiator.of(PrincipalProducer.class,
             CommonJwtProducer.class,
             ClaimValueProducer.class,
             ClaimValue.class);
@@ -38,17 +42,17 @@ public class ClaimValueProducerIT {
     BoundRequestContext context;
     PrincipalProducer jwtProducer;
 
-    @Before
-    public void setUp() {
+    @BeforeEach
+    void setUp() {
         MockitoAnnotations.initMocks(this);
         context = weld.select(BoundRequestContext.class).get();
-        context.associate(new HashMap<String, Object>());
+        context.associate(new HashMap<>());
         // Start Request Scope
         context.activate();
     }
 
-    @After
-    public void tearDown() {
+    @AfterEach
+    void tearDown() {
         // End Request Scope
         context.deactivate();
     }
@@ -66,7 +70,7 @@ public class ClaimValueProducerIT {
     }
 
     @Test
-    public void testIssuerNull() {
+    void issuerNull() {
         ClaimValue<String> issuer = selectClaimValue("iss");
         assertNotNull(issuer);
         assertEquals("iss", issuer.getName());
@@ -74,7 +78,7 @@ public class ClaimValueProducerIT {
     }
 
     @Test
-    public void testIssuerInjected() {
+    void issuerInjected() {
         jwtProducer = weld.select(PrincipalProducer.class).get();
         jwtProducer.setJsonWebToken(jwt);
         Mockito.when(jwt.claim(Claims.iss.name())).thenReturn(Optional.of("issuer1"));
@@ -85,18 +89,18 @@ public class ClaimValueProducerIT {
         assertEquals("issuer1", issuer.getValue());
     }
 
-    @Test(expected = NoSuchElementException.class)
-    public void testOptionalIssuerNotPresent() {
+    @Test
+    void optionalIssuerNotPresent() {
         ClaimValue<Optional<String>> issuer = selectOptionalClaimValue("iss");
 
         assertNotNull(issuer);
         assertEquals("iss", issuer.getName());
-        assertTrue(!issuer.getValue().isPresent());
-        issuer.getValue().get();
+        assertFalse(issuer.getValue().isPresent());
+        assertThrows(NoSuchElementException.class, () -> issuer.getValue().get());
     }
 
     @Test
-    public void testOptionalIssuerInjected() {
+    void optionalIssuerInjected() {
         jwtProducer = weld.select(PrincipalProducer.class).get();
         jwtProducer.setJsonWebToken(jwt);
         Mockito.when(jwt.claim(Claims.iss.name())).thenReturn(Optional.of("issuer1"));

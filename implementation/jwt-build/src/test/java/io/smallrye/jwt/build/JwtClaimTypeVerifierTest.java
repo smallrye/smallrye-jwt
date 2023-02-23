@@ -16,95 +16,83 @@
  */
 package io.smallrye.jwt.build;
 
-import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.time.Instant;
-import java.util.Arrays;
+import java.util.List;
 
 import jakarta.json.Json;
 
 import org.eclipse.microprofile.jwt.Claims;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-public class JwtClaimTypeVerifierTest {
-
+class JwtClaimTypeVerifierTest {
     @Test
-    public void testSub() {
+    void sub() {
         Jwt.claim(Claims.sub, "1");
-        assertThrows("IllegalArgumentException is expected", IllegalArgumentException.class,
-                () -> Jwt.claim(Claims.sub, 1));
+        assertThrows(IllegalArgumentException.class, () -> Jwt.claim(Claims.sub, 1), "IllegalArgumentException is expected");
     }
 
     @Test
-    public void testIss() {
+    void iss() {
         Jwt.claim(Claims.iss, "1");
-        assertThrows("IllegalArgumentException is expected", IllegalArgumentException.class,
-                () -> Jwt.claim(Claims.iss, 1));
+        assertThrows(IllegalArgumentException.class, () -> Jwt.claim(Claims.iss, 1), "IllegalArgumentException is expected");
     }
 
     @Test
-    public void testUpn() {
+    void upn() {
         Jwt.claim(Claims.upn, "1");
-        assertThrows("IllegalArgumentException is expected", IllegalArgumentException.class,
-                () -> Jwt.claim(Claims.upn, 1));
+        assertThrows(IllegalArgumentException.class, () -> Jwt.claim(Claims.upn, 1), "IllegalArgumentException is expected");
     }
 
     @Test
-    public void testJti() {
+    void jti() {
         Jwt.claim(Claims.jti, "1");
-        assertThrows("IllegalArgumentException is expected", IllegalArgumentException.class,
-                () -> Jwt.claim(Claims.jti, 1));
+        assertThrows(IllegalArgumentException.class, () -> Jwt.claim(Claims.jti, 1), "IllegalArgumentException is expected");
     }
 
     @Test
-    public void testPreferredUserName() {
+    void preferredUserName() {
         Jwt.claim(Claims.preferred_username, "1");
-        assertThrows("IllegalArgumentException is expected", IllegalArgumentException.class,
-                () -> Jwt.claim(Claims.preferred_username, 1));
+        assertThrows(IllegalArgumentException.class, () -> Jwt.claim(Claims.preferred_username, 1),
+                "IllegalArgumentException is expected");
     }
 
     @Test
-    public void testIat() {
+    void iat() {
         Jwt.claim(Claims.iat, Instant.now().getEpochSecond());
         Jwt.claim(Claims.iat, Instant.now());
-        assertThrows("IllegalArgumentException is expected", IllegalArgumentException.class,
-                () -> Jwt.claim(Claims.iat, "1"));
+        assertThrows(IllegalArgumentException.class, () -> Jwt.claim(Claims.iat, "1"), "IllegalArgumentException is expected");
     }
 
     @Test
-    public void testExp() {
+    void exp() {
         Jwt.claim(Claims.exp, Instant.now().getEpochSecond());
         Jwt.claim(Claims.exp, Instant.now());
-        assertThrows("IllegalArgumentException is expected", IllegalArgumentException.class,
-                () -> Jwt.claim(Claims.exp, "1"));
+        assertThrows(IllegalArgumentException.class, () -> Jwt.claim(Claims.exp, "1"), "IllegalArgumentException is expected");
     }
 
     @Test
-    public void testAud() {
+    void aud() {
         Jwt.claim(Claims.aud, "1");
-        Jwt.claim(Claims.aud, Arrays.asList("1"));
+        Jwt.claim(Claims.aud, List.of("1"));
         Jwt.claim(Claims.aud, Json.createArrayBuilder().add("1").build());
-        assertThrows("IllegalArgumentException is expected", IllegalArgumentException.class,
-                () -> Jwt.claim(Claims.aud, 1));
-        assertThrows("IllegalArgumentException is expected", IllegalArgumentException.class,
-                () -> Jwt.claim(Claims.aud,
-                        Arrays.asList(1)));
-        assertThrows("IllegalArgumentException is expected", IllegalArgumentException.class,
-                () -> Jwt.claim(Claims.aud, Json.createArrayBuilder().add(1).build()));
+        assertThrows(IllegalArgumentException.class, () -> Jwt.claim(Claims.aud, 1), "IllegalArgumentException is expected");
+        assertThrows(IllegalArgumentException.class, () -> Jwt.claim(Claims.aud, List.of(1)),
+                "IllegalArgumentException is expected");
+        assertThrows(IllegalArgumentException.class, () -> Jwt.claim(Claims.aud, Json.createArrayBuilder().add(1).build()),
+                "IllegalArgumentException is expected");
     }
 
     @Test
-    public void testGroups() {
+    void groups() {
         Jwt.claim(Claims.groups, "1");
-        Jwt.claim(Claims.groups, Arrays.asList("1"));
+        Jwt.claim(Claims.groups, List.of("1"));
         Jwt.claim(Claims.groups, Json.createArrayBuilder().add("1").build());
-        assertThrows("IllegalArgumentException is expected", IllegalArgumentException.class,
-                () -> Jwt.claim(Claims.groups, 1));
-        assertThrows("IllegalArgumentException is expected", IllegalArgumentException.class,
-                () -> Jwt.claim(Claims.groups,
-                        Arrays.asList(1)));
-        assertThrows("IllegalArgumentException is expected", IllegalArgumentException.class,
-                () -> Jwt.claim(Claims.groups, Json.createArrayBuilder().add(1).build()));
+        assertThrows(IllegalArgumentException.class, () -> Jwt.claim(Claims.groups, 1), "IllegalArgumentException is expected");
+        assertThrows(IllegalArgumentException.class, () -> Jwt.claim(Claims.groups, List.of(1)),
+                "IllegalArgumentException is expected");
+        assertThrows(IllegalArgumentException.class, () -> Jwt.claim(Claims.groups, Json.createArrayBuilder().add(1).build()),
+                "IllegalArgumentException is expected");
     }
-
 }

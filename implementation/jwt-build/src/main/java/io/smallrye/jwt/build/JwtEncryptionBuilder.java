@@ -5,7 +5,7 @@ import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
 
 /**
  * JWT JsonWebEncryption Builder.
- * 
+ *
  * <p>
  * JwtEncryptionBuilder implementations must set the 'alg' (algorithm) header to 'RSA-OAEP-256'
  * and 'enc' (content encryption algorithm) header to 'A256GCM' unless they have already been set.
@@ -23,7 +23,7 @@ public interface JwtEncryptionBuilder extends JwtEncryption {
      * Set an 'alg' key encryption algorithm.
      * Note that only 'RSA-OAEP-256' (default), 'ECDH-ES+A256KW' and 'A256KW' algorithms must be supported.
      * A key of size 2048 bits or larger MUST be used with 'RSA-OAEP-256' algorithm.
-     * 
+     *
      * @since 2.1.3
      *
      * @param algorithm the key encryption algorithm
@@ -62,7 +62,7 @@ public interface JwtEncryptionBuilder extends JwtEncryption {
      * Note that only 'A256GCM' (default) and 'A128CBC-HS256' algorithms must be supported.
      *
      * @deprecated Use {@link #contentAlgorithm}
-     * 
+     *
      * @param algorithm the content encryption algorithm
      * @return JwtEncryptionBuilder
      */
@@ -85,7 +85,7 @@ public interface JwtEncryptionBuilder extends JwtEncryption {
      * Set a 'kid' key encryption key id.
      *
      * @deprecated Use {@link #keyId}
-     * 
+     *
      * @param keyId the key id
      * @return JwtEncryptionBuilder
      */
@@ -96,13 +96,13 @@ public interface JwtEncryptionBuilder extends JwtEncryption {
 
     /**
      * Custom JWT encryption header.
-     * 
+     *
      * If the 'alg' (algorithm) header is set with this method then it
      * has to match one of the {@link KeyEncryptionAlgorithm} values.
-     * 
+     *
      * If the 'enc' (encryption) header is set with this method then it
      * has to match one of the {@link ContentEncryptionAlgorithm} values.
-     * 
+     *
      * @param name the header name
      * @param value the header value
      * @return JwtEncryptionBuilder

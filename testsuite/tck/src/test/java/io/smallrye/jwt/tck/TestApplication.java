@@ -9,7 +9,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 import jakarta.enterprise.context.RequestScoped;
-import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -51,9 +50,8 @@ public class TestApplication extends Arquillian {
 
     @Test
     @RunAsClient
-    public void servlet() throws Exception {
+    public void servlet() {
         String uri = baseURL.toExternalForm() + "servlet";
-        System.out.println("uri = " + uri);
         WebTarget echoEndpointTarget = ClientBuilder.newClient().target(uri);
         Response response = echoEndpointTarget.request(TEXT_PLAIN).get();
         Assert.assertEquals(response.getStatus(), HttpURLConnection.HTTP_OK);
@@ -61,9 +59,8 @@ public class TestApplication extends Arquillian {
 
     @Test
     @RunAsClient
-    public void rest() throws Exception {
+    public void rest() {
         String uri = baseURL.toExternalForm() + "rest";
-        System.out.println("uri = " + uri);
         WebTarget echoEndpointTarget = ClientBuilder.newClient().target(uri);
         Response response = echoEndpointTarget.request(TEXT_PLAIN).get();
         Assert.assertEquals(response.getStatus(), HttpURLConnection.HTTP_OK);
@@ -72,8 +69,7 @@ public class TestApplication extends Arquillian {
     @WebServlet(urlPatterns = "/servlet")
     public static class TestServlet extends HttpServlet {
         @Override
-        protected void doGet(final HttpServletRequest req, final HttpServletResponse resp)
-                throws ServletException, IOException {
+        protected void doGet(final HttpServletRequest req, final HttpServletResponse resp) throws IOException {
             resp.getWriter().write("hello");
         }
     }

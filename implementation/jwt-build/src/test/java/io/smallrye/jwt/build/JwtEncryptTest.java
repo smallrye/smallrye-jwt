@@ -16,8 +16,11 @@
  */
 package io.smallrye.jwt.build;
 
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
@@ -47,17 +50,15 @@ import org.jose4j.jwk.OkpJwkGenerator;
 import org.jose4j.jwt.JwtClaims;
 import org.jose4j.keys.EllipticCurves;
 import org.jose4j.keys.PbkdfKey;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import io.smallrye.jwt.algorithm.ContentEncryptionAlgorithm;
 import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
 import io.smallrye.jwt.util.KeyUtils;
 
 public class JwtEncryptTest {
-
     @Test
-    public void testEncryptWithRsaPublicKey() throws Exception {
+    void encryptWithRsaPublicKey() throws Exception {
         String jweCompact = Jwt.claims()
                 .claim("customClaim", "custom-value")
                 .jwe()
@@ -73,7 +74,7 @@ public class JwtEncryptTest {
     }
 
     @Test
-    public void testEncryptWithRsaPublicKeyContent() throws Exception {
+    void encryptWithRsaPublicKeyContent() throws Exception {
         JwtBuildConfigSource configSource = JwtSignTest.getConfigSource();
         configSource.setUseEncryptionKeyProperty(true);
         try {
@@ -95,7 +96,7 @@ public class JwtEncryptTest {
     }
 
     @Test
-    public void testEncryptWithKeyStore() throws Exception {
+    void encryptWithKeyStore() throws Exception {
         JwtBuildConfigSource configSource = JwtSignTest.getConfigSource();
         configSource.setUseKeyStore(true);
         configSource.setEncryptionKeyLocation("/keystore.p12");
@@ -123,7 +124,7 @@ public class JwtEncryptTest {
     }
 
     @Test
-    public void testEncryptMapOfClaims() throws Exception {
+    void encryptMapOfClaims() throws Exception {
         String jweCompact = Jwt.claims(Collections.singletonMap("customClaim", "custom-value"))
                 .jwe().encrypt();
 
@@ -131,14 +132,14 @@ public class JwtEncryptTest {
     }
 
     @Test
-    public void testEncryptMapOfClaimsShortcut() throws Exception {
+    void encryptMapOfClaimsShortcut() throws Exception {
         String jweCompact = Jwt.encrypt(Collections.singletonMap("customClaim", "custom-value"));
 
         doTestEncryptedClaims(jweCompact);
     }
 
     @Test
-    public void testEncryptJsonObject() throws Exception {
+    void encryptJsonObject() throws Exception {
         JsonObject json = Json.createObjectBuilder().add("customClaim", "custom-value").build();
         String jweCompact = Jwt.claims(json).jwe().encrypt();
 
@@ -146,7 +147,7 @@ public class JwtEncryptTest {
     }
 
     @Test
-    public void testEncryptJsonObjectShortcut() throws Exception {
+    void encryptJsonObjectShortcut() throws Exception {
         JsonObject json = Json.createObjectBuilder().add("customClaim", "custom-value").build();
         String jweCompact = Jwt.encrypt(json);
 
@@ -154,12 +155,12 @@ public class JwtEncryptTest {
     }
 
     @Test
-    public void testEncryptExistingClaims() throws Exception {
+    void encryptExistingClaims() throws Exception {
         doTestEncryptedClaims(Jwt.claims("/customClaim.json").jwe().encrypt());
     }
 
     @Test
-    public void testEncryptExistingClaimsShortcut() throws Exception {
+    void encryptExistingClaimsShortcut() throws Exception {
         doTestEncryptedClaims(Jwt.encrypt("/customClaim.json"));
     }
 
@@ -171,7 +172,7 @@ public class JwtEncryptTest {
     }
 
     @Test
-    public void testEncryptWithRsaPublicKeyLocation() throws Exception {
+    void encryptWithRsaPublicKeyLocation() throws Exception {
         String jweCompact = Jwt.claims()
                 .claim("customClaim", "custom-value")
                 .jwe()
@@ -187,7 +188,7 @@ public class JwtEncryptTest {
     }
 
     @Test
-    public void testEncryptWithRsaOaep256() throws Exception {
+    void encryptWithRsaOaep256() throws Exception {
         String jweCompact = Jwt.claims()
                 .claim("customClaim", "custom-value")
                 .jwe().keyAlgorithm(KeyEncryptionAlgorithm.RSA_OAEP_256)
@@ -203,7 +204,7 @@ public class JwtEncryptTest {
     }
 
     @Test
-    public void testEncryptWithRsaOaep256Configured() throws Exception {
+    void encryptWithRsaOaep256Configured() throws Exception {
         JwtBuildConfigSource configSource = JwtSignTest.getConfigSource();
         configSource.setKeyEncryptionAlgorithm("RSA_OAEP_256");
         String jweCompact = null;
@@ -226,22 +227,22 @@ public class JwtEncryptTest {
     }
 
     @Test
-    public void testEncryptWithShortRSAKey() throws Exception {
+    void encryptWithShortRSAKey() throws Exception {
         KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
         keyPairGenerator.initialize(1024);
         PublicKey key = keyPairGenerator.generateKeyPair().getPublic();
         try {
             Jwt.claims().jwe().encrypt(key);
-            Assert.fail("JwtEncryptionException is expected due to the invalid key size");
+            fail("JwtEncryptionException is expected due to the invalid key size");
         } catch (JwtEncryptionException ex) {
-            Assert.assertEquals(
+            assertEquals(
                     "SRJWT05003: An RSA key of size 2048 bits or larger MUST be used with the all JOSE RSA algorithms (given key was only 1024 bits).",
                     ex.getMessage());
         }
     }
 
     @Test
-    public void testEncryptWithShortRSAKeyAndRelaxedValidation() throws Exception {
+    void encryptWithShortRSAKeyAndRelaxedValidation() throws Exception {
         KeyPair keyPair = KeyUtils.generateKeyPair(1024);
 
         JwtBuildConfigSource configSource = JwtSignTest.getConfigSource();
@@ -259,7 +260,7 @@ public class JwtEncryptTest {
     }
 
     @Test
-    public void testEncryptWithEcKey() throws Exception {
+    void encryptWithEcKey() throws Exception {
         EllipticCurveJsonWebKey jwk = createECJwk();
         String jweCompact = Jwt.claims()
                 .claim("customClaim", "custom-value")
@@ -276,7 +277,7 @@ public class JwtEncryptTest {
     }
 
     @Test
-    public void testEncryptWithEcKeyX25519() throws Exception {
+    void encryptWithEcKeyX25519() throws Exception {
         if (Runtime.version().version().get(0) >= 17) {
             OctetKeyPairJsonWebKey jwk = OkpJwkGenerator.generateJwk(OctetKeyPairJsonWebKey.SUBTYPE_X25519);
             String jweCompact = Jwt.claims()
@@ -295,7 +296,7 @@ public class JwtEncryptTest {
     }
 
     @Test
-    public void testEncryptWithEcKeyX448() throws Exception {
+    void encryptWithEcKeyX448() throws Exception {
         if (Runtime.version().version().get(0) >= 17) {
             OctetKeyPairJsonWebKey jwk = OkpJwkGenerator.generateJwk(OctetKeyPairJsonWebKey.SUBTYPE_X448);
             String jweCompact = Jwt.claims()
@@ -314,7 +315,7 @@ public class JwtEncryptTest {
     }
 
     @Test
-    public void testEncryptWithEcKeyAndA128CBCHS256() throws Exception {
+    void encryptWithEcKeyAndA128CBCHS256() throws Exception {
         EllipticCurveJsonWebKey jwk = createECJwk();
         String jweCompact = Jwt.claims()
                 .claim("customClaim", "custom-value")
@@ -332,7 +333,7 @@ public class JwtEncryptTest {
     }
 
     @Test
-    public void testEncryptWithConfiguredEcKeyAndA128CBCHS256() throws Exception {
+    void encryptWithConfiguredEcKeyAndA128CBCHS256() throws Exception {
         JwtBuildConfigSource configSource = JwtSignTest.getConfigSource();
         configSource.setEncryptionKeyLocation("/ecPublicKey.pem");
         String jweCompact = null;
@@ -357,7 +358,7 @@ public class JwtEncryptTest {
     }
 
     @Test
-    public void testEncryptWithConfiguredEcKeyAndContentAlgorithm() throws Exception {
+    void encryptWithConfiguredEcKeyAndContentAlgorithm() throws Exception {
         JwtBuildConfigSource configSource = JwtSignTest.getConfigSource();
         configSource.setEncryptionKeyLocation("/ecPublicKey.pem");
         configSource.setContentEncryptionAlgorithm("A128CBC-HS256");
@@ -383,7 +384,7 @@ public class JwtEncryptTest {
     }
 
     @Test
-    public void testEncryptWithSecretKey() throws Exception {
+    void encryptWithSecretKey() throws Exception {
         String jweCompact = Jwt.claims()
                 .claim("customClaim", "custom-value")
                 .jwe()
@@ -399,7 +400,7 @@ public class JwtEncryptTest {
     }
 
     @Test
-    public void testEncryptWithSecretKeyAndGsmKeyWrap() throws Exception {
+    void encryptWithSecretKeyAndGsmKeyWrap() throws Exception {
         String jweCompact = Jwt.claims()
                 .claim("customClaim", "custom-value")
                 .jwe()
@@ -416,7 +417,7 @@ public class JwtEncryptTest {
     }
 
     @Test
-    public void testEncryptWithSecret() throws Exception {
+    void encryptWithSecret() throws Exception {
         String secret = "AyM1SysPpbyDfgZld3umj1qzKObwVMko";
 
         String jweCompact = Jwt.claims()
@@ -434,7 +435,7 @@ public class JwtEncryptTest {
     }
 
     @Test
-    public void testEncryptWithSecretPassword() throws Exception {
+    void encryptWithSecretPassword() throws Exception {
         String secret = "AyM1SysPpbyDfgZld3umj1qzKObwVMko";
 
         String jweCompact = Jwt.claims()
@@ -453,11 +454,11 @@ public class JwtEncryptTest {
     }
 
     @Test
-    public void testEncryptWithInvalidKeyLocation() throws Exception {
+    void encryptWithInvalidKeyLocation() {
         JwtClaimsBuilder builder = Jwt.claims();
 
-        JwtEncryptionException thrown = assertThrows("JwtEncryptionException is expected",
-                JwtEncryptionException.class, () -> builder.jwe().encrypt("/invalid-key-location.pem"));
+        JwtEncryptionException thrown = assertThrows(JwtEncryptionException.class,
+                () -> builder.jwe().encrypt("/invalid-key-location.pem"), "JwtEncryptionException is expected");
         assertTrue(thrown.getCause()
                 .getMessage().contains("Key encryption key can not be loaded from: /invalid-key-location.pem"));
     }
@@ -471,11 +472,11 @@ public class JwtEncryptTest {
     }
 
     private static void checkJwtClaims(JwtClaims claims) throws Exception {
-        Assert.assertEquals(4, claims.getClaimsMap().size());
-        Assert.assertNotNull(claims.getIssuedAt());
-        Assert.assertNotNull(claims.getExpirationTime());
-        Assert.assertNotNull(claims.getJwtId());
-        Assert.assertEquals("custom-value", claims.getClaimValue("customClaim"));
+        assertEquals(4, claims.getClaimsMap().size());
+        assertNotNull(claims.getIssuedAt());
+        assertNotNull(claims.getExpirationTime());
+        assertNotNull(claims.getJwtId());
+        assertEquals("custom-value", claims.getClaimValue("customClaim"));
     }
 
     private static void checkJweHeaders(String jweCompact) throws Exception {
@@ -489,24 +490,24 @@ public class JwtEncryptTest {
     private static void checkJweHeaders(String jweCompact, String keyEncKeyAlg, String contentEncAlg, int size)
             throws Exception {
         Map<String, Object> jweHeaders = getJweHeaders(jweCompact);
-        Assert.assertEquals(size, jweHeaders.size());
-        Assert.assertEquals(keyEncKeyAlg, jweHeaders.get("alg"));
-        Assert.assertEquals(contentEncAlg, jweHeaders.get("enc"));
-        Assert.assertEquals("key-enc-key-id", jweHeaders.get("kid"));
+        assertEquals(size, jweHeaders.size());
+        assertEquals(keyEncKeyAlg, jweHeaders.get("alg"));
+        assertEquals(contentEncAlg, jweHeaders.get("enc"));
+        assertEquals("key-enc-key-id", jweHeaders.get("kid"));
         if ("ECDH-ES+A256KW".equals(keyEncKeyAlg)) {
-            Assert.assertNotNull(jweHeaders.get("epk"));
+            assertNotNull(jweHeaders.get("epk"));
         }
         if ("A256GCMKW".equals(keyEncKeyAlg)) {
-            Assert.assertNotNull(jweHeaders.get("iv"));
-            Assert.assertNotNull(jweHeaders.get("tag"));
+            assertNotNull(jweHeaders.get("iv"));
+            assertNotNull(jweHeaders.get("tag"));
         }
     }
 
     private static void checkRsaEncJweHeaders(String jweCompact) throws Exception {
         Map<String, Object> jweHeaders = getJweHeaders(jweCompact);
-        Assert.assertEquals(2, jweHeaders.size());
-        Assert.assertEquals("RSA-OAEP", jweHeaders.get("alg"));
-        Assert.assertEquals("A256GCM", jweHeaders.get("enc"));
+        assertEquals(2, jweHeaders.size());
+        assertEquals("RSA-OAEP", jweHeaders.get("alg"));
+        assertEquals("A256GCM", jweHeaders.get("enc"));
     }
 
     private static JsonWebEncryption getJsonWebEncryption(String compactJwe) throws Exception {

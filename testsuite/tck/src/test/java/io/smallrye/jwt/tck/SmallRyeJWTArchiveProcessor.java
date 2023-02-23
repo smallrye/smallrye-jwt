@@ -1,6 +1,5 @@
 package io.smallrye.jwt.tck;
 
-import java.io.File;
 import java.util.Map;
 
 import jakarta.enterprise.inject.spi.Extension;
@@ -11,7 +10,6 @@ import org.jboss.shrinkwrap.api.Archive;
 import org.jboss.shrinkwrap.api.ArchivePath;
 import org.jboss.shrinkwrap.api.Node;
 import org.jboss.shrinkwrap.api.spec.WebArchive;
-import org.jboss.shrinkwrap.resolver.api.maven.Maven;
 
 public class SmallRyeJWTArchiveProcessor implements ApplicationArchiveProcessor {
     @Override
@@ -38,24 +36,6 @@ public class SmallRyeJWTArchiveProcessor implements ApplicationArchiveProcessor 
             // Both tests set the public key location url to be in root.
             war.addAsWebInfResource("jboss-web.xml");
             war.addAsWebInfResource("jetty-web.xml");
-
-            String[] deps = {
-                    "org.jboss.resteasy:resteasy-servlet-initializer",
-                    "org.jboss.resteasy:resteasy-cdi",
-                    "org.jboss.resteasy:resteasy-json-binding-provider",
-                    "org.jboss.weld.servlet:weld-servlet-core",
-                    "commons-io:commons-io:2.11.0",
-                    "io.smallrye:smallrye-jwt",
-                    "io.smallrye:smallrye-jwt-jaxrs",
-                    "io.smallrye:smallrye-jwt-cdi-extension"
-            };
-            File[] dependencies = Maven.resolver()
-                    .loadPomFromFile(new File("pom.xml"), "jetty", "wildfly")
-                    .resolve(deps)
-                    .withTransitivity()
-                    .asFile();
-
-            war.addAsLibraries(dependencies);
         }
     }
 }

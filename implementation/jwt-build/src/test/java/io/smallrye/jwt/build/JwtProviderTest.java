@@ -16,18 +16,17 @@
  */
 package io.smallrye.jwt.build;
 
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import io.smallrye.jwt.build.impl.JwtProviderImpl;
 import io.smallrye.jwt.build.spi.JwtProvider;
 
-public class JwtProviderTest {
-
+class JwtProviderTest {
     @Test
-    public void testProvider() {
+    void provider() {
         JwtProvider provider = JwtProvider.provider();
         assertTrue(provider instanceof JwtProviderImpl);
         assertSame(provider, JwtProvider.provider());

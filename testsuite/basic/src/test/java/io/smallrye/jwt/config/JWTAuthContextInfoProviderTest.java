@@ -1,9 +1,10 @@
 package io.smallrye.jwt.config;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.InputStream;
 import java.util.Base64;
@@ -13,20 +14,20 @@ import java.util.Scanner;
 
 import jakarta.enterprise.inject.spi.DeploymentException;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
 import io.smallrye.jwt.util.ResourceUtils;
 
-public class JWTAuthContextInfoProviderTest {
+class JWTAuthContextInfoProviderTest {
 
     private static final String TEST_ISS = "http://www.example.com/issuer";
     String signerKeyJwk;
     String signerKeyPem;
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach
+    void setUp() throws Exception {
         try (InputStream keyStream = getClass().getResourceAsStream("/signer-key4k.jwk");
                 Scanner scanner = new Scanner(keyStream)) {
             scanner.useDelimiter("\\A");
@@ -41,7 +42,7 @@ public class JWTAuthContextInfoProviderTest {
     }
 
     @Test
-    public void testDefaultGetOptionalContextInfo() {
+    void defaultGetOptionalContextInfo() {
         JWTAuthContextInfoProvider provider = JWTAuthContextInfoProvider.createWithKeyLocation("NONE", TEST_ISS);
         Optional<JWTAuthContextInfo> info = provider.getOptionalContextInfo();
         assertNotNull(info);
@@ -49,13 +50,13 @@ public class JWTAuthContextInfoProviderTest {
     }
 
     @Test
-    public void testDefaultGetContextInfo() {
+    void defaultGetContextInfo() {
         JWTAuthContextInfoProvider provider = JWTAuthContextInfoProvider.createWithKeyLocation("NONE", TEST_ISS);
         assertNotNull(provider.getContextInfo());
     }
 
     @Test
-    public void testGetContextInfoWithHttpsKeyLocation() {
+    void getContextInfoWithHttpsKeyLocation() {
         JWTAuthContextInfoProvider provider = JWTAuthContextInfoProvider.createWithKeyLocation("https://publicKey.pem",
                 TEST_ISS);
         JWTAuthContextInfo info = provider.getContextInfo();
@@ -64,7 +65,7 @@ public class JWTAuthContextInfoProviderTest {
     }
 
     @Test
-    public void testGetContextInfoWithClasspathKeyLocation() throws Exception {
+    void getContextInfoWithClasspathKeyLocation() throws Exception {
         JWTAuthContextInfoProvider provider = JWTAuthContextInfoProvider.createWithKeyLocation("classpath:publicKey.pem",
                 TEST_ISS);
         JWTAuthContextInfo info = provider.getContextInfo();
@@ -72,13 +73,14 @@ public class JWTAuthContextInfoProviderTest {
         assertEquals(ResourceUtils.readResource("classpath:publicKey.pem"), info.getPublicKeyContent());
     }
 
-    @Test(expected = DeploymentException.class)
-    public void testGetContextInfoWithInvalidClasspathKeyLocation() throws Exception {
-        JWTAuthContextInfoProvider.createWithKeyLocation("classpath:publicKeys.pem", TEST_ISS).getContextInfo();
+    @Test
+    void getContextInfoWithInvalidClasspathKeyLocation() {
+        assertThrows(DeploymentException.class,
+                () -> JWTAuthContextInfoProvider.createWithKeyLocation("classpath:publicKeys.pem", TEST_ISS).getContextInfo());
     }
 
     @Test
-    public void testGetOptionalContextInfoWithJwkKey() throws Exception {
+    void getOptionalContextInfoWithJwkKey() {
         JWTAuthContextInfoProvider provider = JWTAuthContextInfoProvider.createWithKey(signerKeyJwk, TEST_ISS);
         Optional<JWTAuthContextInfo> info = provider.getOptionalContextInfo();
         assertNotNull(info);
@@ -88,7 +90,7 @@ public class JWTAuthContextInfoProviderTest {
     }
 
     @Test
-    public void testGetOptionalContextInfoWithPemKey() throws Exception {
+    void getOptionalContextInfoWithPemKey() {
         JWTAuthContextInfoProvider provider = JWTAuthContextInfoProvider.createWithKey(signerKeyPem, TEST_ISS);
         Optional<JWTAuthContextInfo> info = provider.getOptionalContextInfo();
         assertNotNull(info);
@@ -97,7 +99,7 @@ public class JWTAuthContextInfoProviderTest {
     }
 
     @Test
-    public void testGetOptionalContextInfoWithExpectedAud() throws Exception {
+    void getOptionalContextInfoWithExpectedAud() {
         JWTAuthContextInfoProvider provider = JWTAuthContextInfoProvider.createWithKey(signerKeyPem, TEST_ISS);
         provider.expectedAudience = Optional.of(Collections.singleton("expected.aud"));
         Optional<JWTAuthContextInfo> info = provider.getOptionalContextInfo();
@@ -109,7 +111,7 @@ public class JWTAuthContextInfoProviderTest {
     }
 
     @Test
-    public void testGetOptionalContextInfoWithMaxTimeToLive() throws Exception {
+    void getOptionalContextInfoWithMaxTimeToLive() {
         JWTAuthContextInfoProvider provider = JWTAuthContextInfoProvider.createWithKey(signerKeyPem, TEST_ISS);
         provider.maxTimeToLiveSecs = Optional.of(60L); // 60 seconds
         Optional<JWTAuthContextInfo> info = provider.getOptionalContextInfo();

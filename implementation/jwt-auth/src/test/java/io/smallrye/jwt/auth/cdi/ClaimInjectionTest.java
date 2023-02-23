@@ -1,8 +1,8 @@
 package io.smallrye.jwt.auth.cdi;
 
 import static org.hamcrest.core.IsCollectionContaining.hasItems;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Optional;
 import java.util.Set;
@@ -22,11 +22,13 @@ import org.eclipse.microprofile.jwt.Claim;
 import org.eclipse.microprofile.jwt.ClaimValue;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.hamcrest.MatcherAssert;
-import org.jboss.weld.junit4.WeldInitiator;
+import org.jboss.weld.junit5.WeldInitiator;
+import org.jboss.weld.junit5.WeldJunit5Extension;
+import org.jboss.weld.junit5.WeldSetup;
 import org.jose4j.jws.JsonWebSignature;
 import org.jose4j.jwt.JwtClaims;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import io.smallrye.jwt.auth.principal.DefaultJWTCallerPrincipal;
 import io.smallrye.jwt.build.Jwt;
@@ -36,9 +38,10 @@ import io.smallrye.jwt.util.KeyUtils;
         "CdiUnproxyableBeanTypesInspection",
         "OptionalGetWithoutIsPresent"
 })
-public class ClaimInjectionTest {
-    @Rule
-    public WeldInitiator weld = WeldInitiator.from(
+@ExtendWith(WeldJunit5Extension.class)
+class ClaimInjectionTest {
+    @WeldSetup
+    WeldInitiator weld = WeldInitiator.from(
             ClaimInjectionTest.class,
             ClaimsBean.class,
             ClaimBeanInstance.class,
@@ -53,12 +56,12 @@ public class ClaimInjectionTest {
             .build();
 
     @Inject
-    private ClaimsBean claimsBean;
+    ClaimsBean claimsBean;
     @Inject
-    private ClaimBeanInstance claimBeanInstance;
+    ClaimBeanInstance claimBeanInstance;
 
     @Test
-    public void injectBoolean() {
+    void injectBoolean() {
         assertTrue(claimsBean.isBooleanClaim());
         assertTrue(claimsBean.getBooleanClaimWrapper());
         assertTrue(claimsBean.getBooleanClaimValue().getValue());
@@ -75,7 +78,7 @@ public class ClaimInjectionTest {
     }
 
     @Test
-    public void injectLong() {
+    void injectLong() {
         assertEquals(999, claimsBean.getLongClaim());
         assertEquals(999, claimsBean.getLongClaimWrapper().longValue());
         assertEquals(999, claimsBean.getLongClaimValue().getValue().longValue());
@@ -93,7 +96,7 @@ public class ClaimInjectionTest {
     }
 
     @Test
-    public void injectString() {
+    void injectString() {
         assertEquals("string", claimsBean.getStringClaim());
         assertEquals("string", claimsBean.getStringClaimValue().getValue());
         assertEquals("string", claimsBean.getStringOptional().get());
@@ -110,7 +113,7 @@ public class ClaimInjectionTest {
     }
 
     @Test
-    public void injectSet() {
+    void injectSet() {
         MatcherAssert.assertThat(claimsBean.getSetClaim(), hasItems("value0", "value1", "value2"));
         MatcherAssert.assertThat(claimsBean.getSetClaimValue().getValue(), hasItems("value0", "value1", "value2"));
         MatcherAssert.assertThat(claimsBean.getSetOptional().get(), hasItems("value0", "value1", "value2"));
@@ -137,7 +140,7 @@ public class ClaimInjectionTest {
     }
 
     @Test
-    public void injectObject() {
+    void injectObject() {
         //assertEquals("street", claimsBean.getAddressClaim().getCode()); // No inject of Claim type directly supported, since we don't have a producer for it.
         //assertEquals("street", claimsBean.getAddressClaimValue().getValue().getCode()); // We just let retrieve the type, but no conversion for custom type, so ClassCastException
         //assertEquals("street", claimsBean.getAddressOptional().get().getCode()); // No inject of Optional type directly supported, since we don't have a producer for it.

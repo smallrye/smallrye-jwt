@@ -16,8 +16,12 @@
  */
 package io.smallrye.jwt.build;
 
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -61,21 +65,19 @@ import org.jose4j.jwt.consumer.InvalidJwtSignatureException;
 import org.jose4j.jwt.consumer.JwtConsumerBuilder;
 import org.jose4j.keys.EdDsaKeyUtil;
 import org.jose4j.keys.EllipticCurves;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 import io.smallrye.jwt.util.KeyUtils;
 
-public class JwtSignTest {
-
+class JwtSignTest {
     @Test
-    public void testSignClaims() throws Exception {
+    void signClaims() throws Exception {
         signAndVerifyClaims();
     }
 
     @Test
-    public void testSignClaimsCustomExpAndIssuerAndAud() throws Exception {
+    void signClaimsCustomExpAndIssuerAndAud() throws Exception {
         JwtBuildConfigSource configSource = getConfigSource();
         try {
             configSource.setLifespanPropertyRequired(true);
@@ -90,7 +92,7 @@ public class JwtSignTest {
     }
 
     @Test
-    public void testEnhanceAndResignToken() throws Exception {
+    void enhanceAndResignToken() throws Exception {
         JsonWebToken token = new TestJsonWebToken(signAndVerifyClaims());
 
         String jwt = Jwt.claims(token).claim("newClaim", "new-value").sign();
@@ -98,23 +100,23 @@ public class JwtSignTest {
         // verify
         JsonWebSignature jws = getVerifiedJws(jwt);
         JwtClaims claims = JwtClaims.parse(jws.getPayload());
-        Assert.assertEquals(7, claims.getClaimsMap().size());
+        assertEquals(7, claims.getClaimsMap().size());
         checkDefaultClaimsAndHeaders(getJwsHeaders(jwt, 2), claims);
-        Assert.assertEquals("custom-value", claims.getClaimValue("customClaim"));
+        assertEquals("custom-value", claims.getClaimValue("customClaim"));
 
-        Assert.assertEquals("new-value", claims.getClaimValue("newClaim"));
-        Assert.assertEquals("https://default-issuer", claims.getIssuer());
-        Assert.assertEquals(1, claims.getAudience().size());
-        Assert.assertEquals("https://localhost:8081", claims.getAudience().get(0));
+        assertEquals("new-value", claims.getClaimValue("newClaim"));
+        assertEquals("https://default-issuer", claims.getIssuer());
+        assertEquals(1, claims.getAudience().size());
+        assertEquals("https://localhost:8081", claims.getAudience().get(0));
     }
 
     @Test
-    public void testEnhanceAndResignTokenWithConfiguredIssuerAndAudUsed() throws Exception {
+    void enhanceAndResignTokenWithConfiguredIssuerAndAudUsed() throws Exception {
         JsonWebToken token = new TestJsonWebToken(signAndVerifyClaims());
 
-        Assert.assertEquals("https://default-issuer", token.getIssuer());
-        Assert.assertEquals(1, token.getAudience().size());
-        Assert.assertEquals("https://localhost:8081", token.getAudience().iterator().next());
+        assertEquals("https://default-issuer", token.getIssuer());
+        assertEquals(1, token.getAudience().size());
+        assertEquals("https://localhost:8081", token.getAudience().iterator().next());
 
         JwtBuildConfigSource configSource = getConfigSource();
         configSource.setIssuerPropertyRequired(true);
@@ -127,14 +129,14 @@ public class JwtSignTest {
             // verify
             JsonWebSignature jws = getVerifiedJws(jwt);
             JwtClaims claims = JwtClaims.parse(jws.getPayload());
-            Assert.assertEquals(7, claims.getClaimsMap().size());
+            assertEquals(7, claims.getClaimsMap().size());
             checkDefaultClaimsAndHeaders(getJwsHeaders(jwt, 2), claims);
-            Assert.assertEquals("custom-value", claims.getClaimValue("customClaim"));
+            assertEquals("custom-value", claims.getClaimValue("customClaim"));
 
-            Assert.assertEquals("new-value", claims.getClaimValue("newClaim"));
-            Assert.assertEquals("https://custom-issuer", claims.getIssuer());
-            Assert.assertEquals(1, claims.getAudience().size());
-            Assert.assertEquals("https://custom-audience", claims.getAudience().get(0));
+            assertEquals("new-value", claims.getClaimValue("newClaim"));
+            assertEquals("https://custom-issuer", claims.getIssuer());
+            assertEquals(1, claims.getAudience().size());
+            assertEquals("https://custom-audience", claims.getAudience().get(0));
         } finally {
             configSource.setIssuerPropertyRequired(false);
             configSource.setAudiencePropertyRequired(false);
@@ -157,40 +159,40 @@ public class JwtSignTest {
         String jwt = builder.sign(getPrivateKey());
         JsonWebSignature jws = getVerifiedJws(jwt);
         JwtClaims claims = JwtClaims.parse(jws.getPayload());
-        Assert.assertEquals(6, claims.getClaimsMap().size());
+        assertEquals(6, claims.getClaimsMap().size());
         checkDefaultClaimsAndHeaders(getJwsHeaders(jwt, 2), claims, "RS256", customLifespan != null ? customLifespan : 300);
 
-        Assert.assertEquals("custom-value", claims.getClaimValue("customClaim"));
-        Assert.assertEquals((issuer == null ? "https://default-issuer" : issuer), claims.getIssuer());
+        assertEquals("custom-value", claims.getClaimValue("customClaim"));
+        assertEquals((issuer == null ? "https://default-issuer" : issuer), claims.getIssuer());
         List<String> audiences = claims.getAudience();
-        Assert.assertEquals(1, audiences.size());
-        Assert.assertEquals((aud == null ? "https://localhost:8081" : aud), audiences.get(0));
+        assertEquals(1, audiences.size());
+        assertEquals((aud == null ? "https://localhost:8081" : aud), audiences.get(0));
         return claims;
     }
 
     @Test
-    public void testCustomIssuedAtExpiresAtLong() throws Exception {
+    void customIssuedAtExpiresAtLong() throws Exception {
         Instant now = Instant.now();
         String jwt = Jwt.claims().issuedAt(now).expiresAt(now.getEpochSecond() + 3000).sign();
         verifyJwtCustomIssuedAtExpiresAt(now, jwt);
     }
 
     @Test
-    public void testCustomIssuedAtExpiresAtInstant() throws Exception {
+    void customIssuedAtExpiresAtInstant() throws Exception {
         Instant now = Instant.now();
         String jwt = Jwt.claims().issuedAt(now).expiresAt(now.plusSeconds(3000)).sign();
         verifyJwtCustomIssuedAtExpiresAt(now, jwt);
     }
 
     @Test
-    public void testCustomIssuedAtExpiresInLong() throws Exception {
+    void customIssuedAtExpiresInLong() throws Exception {
         Instant now = Instant.now();
         String jwt = Jwt.claims().issuedAt(now).expiresIn(3000).sign();
         verifyJwtCustomIssuedAtExpiresAt(now, jwt);
     }
 
     @Test
-    public void testCustomIssuedAtExpiresInDuration() throws Exception {
+    void customIssuedAtExpiresInDuration() throws Exception {
         Instant now = Instant.now();
         String jwt = Jwt.claims().issuedAt(now).expiresIn(Duration.ofSeconds(3000)).sign();
         verifyJwtCustomIssuedAtExpiresAt(now, jwt);
@@ -200,57 +202,57 @@ public class JwtSignTest {
         JsonWebSignature jws = new JsonWebSignature();
         jws.setKey(KeyUtils.readPublicKey("/publicKey.pem"));
         jws.setCompactSerialization(jwt);
-        Assert.assertTrue(jws.verifySignature());
+        assertTrue(jws.verifySignature());
         JwtClaims claims = JwtClaims.parse(jws.getPayload());
-        Assert.assertEquals(3, claims.getClaimsMap().size());
-        Assert.assertEquals(now.getEpochSecond(), claims.getIssuedAt().getValue());
-        Assert.assertEquals(now.getEpochSecond() + 3000, claims.getExpirationTime().getValue());
-        Assert.assertNotNull(claims.getJwtId());
+        assertEquals(3, claims.getClaimsMap().size());
+        assertEquals(now.getEpochSecond(), claims.getIssuedAt().getValue());
+        assertEquals(now.getEpochSecond() + 3000, claims.getExpirationTime().getValue());
+        assertNotNull(claims.getJwtId());
     }
 
     @Test
-    public void testSignMapOfClaims() throws Exception {
+    void signMapOfClaims() throws Exception {
         String jwt = Jwt.claims(Collections.singletonMap("customClaim", "custom-value"))
                 .sign(getPrivateKey());
 
         JsonWebSignature jws = getVerifiedJws(jwt);
         JwtClaims claims = JwtClaims.parse(jws.getPayload());
 
-        Assert.assertEquals(4, claims.getClaimsMap().size());
+        assertEquals(4, claims.getClaimsMap().size());
         checkDefaultClaimsAndHeaders(getJwsHeaders(jwt, 2), claims);
 
-        Assert.assertEquals("custom-value", claims.getClaimValue("customClaim"));
+        assertEquals("custom-value", claims.getClaimValue("customClaim"));
     }
 
     @Test
-    public void testSignMapOfClaimsShortcut() throws Exception {
+    void signMapOfClaimsShortcut() throws Exception {
         String jwt = Jwt.sign(Collections.singletonMap("customClaim", "custom-value"));
 
         JsonWebSignature jws = getVerifiedJws(jwt);
         JwtClaims claims = JwtClaims.parse(jws.getPayload());
 
-        Assert.assertEquals(4, claims.getClaimsMap().size());
+        assertEquals(4, claims.getClaimsMap().size());
         checkDefaultClaimsAndHeaders(getJwsHeaders(jwt, 2), claims);
 
-        Assert.assertEquals("custom-value", claims.getClaimValue("customClaim"));
+        assertEquals("custom-value", claims.getClaimValue("customClaim"));
     }
 
     @Test
-    public void testSignMapOfClaimsWithKeyLocation() throws Exception {
+    void signMapOfClaimsWithKeyLocation() throws Exception {
         String jwt = Jwt.claims(Collections.singletonMap("customClaim", "custom-value"))
                 .sign("/privateKey.pem");
 
         JsonWebSignature jws = getVerifiedJws(jwt);
         JwtClaims claims = JwtClaims.parse(jws.getPayload());
 
-        Assert.assertEquals(4, claims.getClaimsMap().size());
+        assertEquals(4, claims.getClaimsMap().size());
         checkDefaultClaimsAndHeaders(getJwsHeaders(jwt, 2), claims);
 
-        Assert.assertEquals("custom-value", claims.getClaimValue("customClaim"));
+        assertEquals("custom-value", claims.getClaimValue("customClaim"));
     }
 
     @Test
-    public void testSignJsonObject() throws Exception {
+    void signJsonObject() throws Exception {
         JsonObject userName = Json.createObjectBuilder().add("username", "Alice").build();
         JsonObject userAddress = Json.createObjectBuilder().add("city", "someCity").add("street", "someStreet").build();
         JsonObject json = Json.createObjectBuilder(userName).add("address", userAddress).build();
@@ -261,7 +263,7 @@ public class JwtSignTest {
     }
 
     @Test
-    public void testSignJsonObjectShortcut() throws Exception {
+    void signJsonObjectShortcut() throws Exception {
         JsonObject userName = Json.createObjectBuilder().add("username", "Alice").build();
         JsonObject userAddress = Json.createObjectBuilder().add("city", "someCity").add("street", "someStreet").build();
         JsonObject json = Json.createObjectBuilder(userName).add("address", userAddress).build();
@@ -275,32 +277,32 @@ public class JwtSignTest {
         JsonWebSignature jws = getVerifiedJws(jwt);
         JwtClaims claims = JwtClaims.parse(jws.getPayload());
 
-        Assert.assertEquals(5, claims.getClaimsMap().size());
+        assertEquals(5, claims.getClaimsMap().size());
         checkDefaultClaimsAndHeaders(getJwsHeaders(jwt, 2), claims);
 
-        Assert.assertEquals("Alice", claims.getClaimValue("username"));
+        assertEquals("Alice", claims.getClaimValue("username"));
         @SuppressWarnings("unchecked")
         Map<String, String> address = (Map<String, String>) claims.getClaimValue("address");
-        Assert.assertEquals(2, address.size());
-        Assert.assertEquals("someCity", address.get("city"));
-        Assert.assertEquals("someStreet", address.get("street"));
+        assertEquals(2, address.size());
+        assertEquals("someCity", address.get("city"));
+        assertEquals("someStreet", address.get("street"));
     }
 
     @Test
-    public void testSignWithShortRSAKey() throws Exception {
+    void signWithShortRSAKey() throws Exception {
         KeyPair keyPair = KeyUtils.generateKeyPair(1024);
         try {
             Jwt.claims().sign(keyPair.getPrivate());
-            Assert.fail("JwtSignatureException is expected due to the invalid key size");
+            fail("JwtSignatureException is expected due to the invalid key size");
         } catch (JwtSignatureException ex) {
-            Assert.assertEquals(
+            assertEquals(
                     "SRJWT05012: Failure to create a signed JWT token: An RSA key of size 2048 bits or larger MUST be used with the all JOSE RSA algorithms (given key was only 1024 bits).",
                     ex.getMessage());
         }
     }
 
     @Test
-    public void testSignWithShortRSAKeyAndRelaxedValidation() throws Exception {
+    void signWithShortRSAKeyAndRelaxedValidation() throws Exception {
         KeyPair keyPair = KeyUtils.generateKeyPair(1024);
 
         JwtBuildConfigSource configSource = getConfigSource();
@@ -312,45 +314,45 @@ public class JwtSignTest {
             JsonWebSignature jws = getVerifiedJws(jwt, keyPair.getPublic(), true);
             JwtClaims claims = JwtClaims.parse(jws.getPayload());
 
-            Assert.assertEquals(4, claims.getClaimsMap().size());
+            assertEquals(4, claims.getClaimsMap().size());
             checkDefaultClaimsAndHeaders(getJwsHeaders(jwt, 2), claims);
 
-            Assert.assertEquals("custom-value", claims.getClaimValue("customClaim"));
+            assertEquals("custom-value", claims.getClaimValue("customClaim"));
         } finally {
             configSource.setRelaxSignatureKeyValidation(false);
         }
     }
 
     @Test
-    public void testSignClaimsConfiguredKeyLocation() throws Exception {
+    void signClaimsConfiguredKeyLocation() throws Exception {
         JwtBuildConfigSource configSource = getConfigSource();
         try {
             configSource.resetSigningKeyCallCount();
             JwtClaimsBuilder builder = Jwt.claims().claim("customClaim", "custom-value");
             String jti1 = doTestSignClaimsConfiguredKey(builder);
-            Assert.assertNotNull(jti1);
+            assertNotNull(jti1);
             String jti2 = doTestSignClaimsConfiguredKey(builder);
-            Assert.assertNotNull(jti2);
-            Assert.assertNotEquals(jti1, jti2);
-            Assert.assertEquals(1, configSource.getSigningKeyCallCount());
+            assertNotNull(jti2);
+            assertNotEquals(jti1, jti2);
+            assertEquals(1, configSource.getSigningKeyCallCount());
         } finally {
             configSource.resetSigningKeyCallCount();
         }
     }
 
     @Test
-    public void testSignClaimsConfiguredKeyContent() throws Exception {
+    void signClaimsConfiguredKeyContent() throws Exception {
         JwtBuildConfigSource configSource = getConfigSource();
         try {
             configSource.resetSigningKeyCallCount();
             configSource.setUseSignKeyProperty(true);
             JwtClaimsBuilder builder = Jwt.claims().claim("customClaim", "custom-value");
             String jti1 = doTestSignClaimsConfiguredKey(builder);
-            Assert.assertNotNull(jti1);
+            assertNotNull(jti1);
             String jti2 = doTestSignClaimsConfiguredKey(builder);
-            Assert.assertNotNull(jti2);
-            Assert.assertNotEquals(jti1, jti2);
-            Assert.assertEquals(1, configSource.getSigningKeyCallCount());
+            assertNotNull(jti2);
+            assertNotEquals(jti1, jti2);
+            assertEquals(1, configSource.getSigningKeyCallCount());
         } finally {
             configSource.resetSigningKeyCallCount();
             configSource.setUseSignKeyProperty(false);
@@ -363,25 +365,25 @@ public class JwtSignTest {
         JsonWebSignature jws = getVerifiedJws(jwt);
         JwtClaims claims = JwtClaims.parse(jws.getPayload());
 
-        Assert.assertEquals(4, claims.getClaimsMap().size());
+        assertEquals(4, claims.getClaimsMap().size());
         checkDefaultClaimsAndHeaders(getJwsHeaders(jwt, 2), claims);
 
-        Assert.assertEquals("custom-value", claims.getClaimValue("customClaim"));
+        assertEquals("custom-value", claims.getClaimValue("customClaim"));
         return claims.getJwtId();
     }
 
     @Test
-    public void testSignWithInvalidKeyLocation() throws Exception {
+    void signWithInvalidKeyLocation() throws Exception {
         JwtClaimsBuilder builder = Jwt.claims();
 
-        JwtSignatureException thrown = assertThrows("JwtSignatureException is expected",
-                JwtSignatureException.class, () -> builder.sign("/invalid-key-location.pem"));
+        JwtSignatureException thrown = assertThrows(JwtSignatureException.class,
+                () -> builder.sign("/invalid-key-location.pem"), "JwtSignatureException is expected");
         assertTrue(thrown.getCause()
                 .getMessage().contains("Signing key can not be loaded from: /invalid-key-location.pem"));
     }
 
     @Test
-    public void testSignClaimsAndHeaders() throws Exception {
+    void signClaimsAndHeaders() throws Exception {
         String jwt = Jwt.claims()
                 .issuer("https://issuer.com")
                 .jws()
@@ -392,12 +394,12 @@ public class JwtSignTest {
         JsonWebSignature jws = getVerifiedJws(jwt);
         JwtClaims claims = JwtClaims.parse(jws.getPayload());
 
-        Assert.assertEquals(4, claims.getClaimsMap().size());
+        assertEquals(4, claims.getClaimsMap().size());
         checkDefaultClaimsAndHeaders(getJwsHeaders(jwt, 4), claims);
 
-        Assert.assertEquals("https://issuer.com", claims.getIssuer());
-        Assert.assertEquals("key-id", jws.getKeyIdHeaderValue());
-        Assert.assertEquals("custom-header-value", jws.getHeader("customHeader"));
+        assertEquals("https://issuer.com", claims.getIssuer());
+        assertEquals("key-id", jws.getKeyIdHeaderValue());
+        assertEquals("custom-header-value", jws.getHeader("customHeader"));
     }
 
     private static PrivateKey getPrivateKey() throws Exception {
@@ -436,7 +438,7 @@ public class JwtSignTest {
         if (relaxKeyValidation) {
             jws.setDoKeyValidation(false);
         }
-        Assert.assertTrue(jws.verifySignature());
+        assertTrue(jws.verifySignature());
         return jws;
     }
 
@@ -448,18 +450,18 @@ public class JwtSignTest {
             long expectedLifespan)
             throws Exception {
         NumericDate iat = claims.getIssuedAt();
-        Assert.assertNotNull(iat);
+        assertNotNull(iat);
         NumericDate exp = claims.getExpirationTime();
-        Assert.assertNotNull(exp);
+        assertNotNull(exp);
         long tokenLifespan = exp.getValue() - iat.getValue();
-        Assert.assertTrue(tokenLifespan >= expectedLifespan && tokenLifespan <= expectedLifespan + 2);
-        Assert.assertNotNull(claims.getJwtId());
-        Assert.assertEquals(algo, headers.get("alg"));
-        Assert.assertEquals("JWT", headers.get("typ"));
+        assertTrue(tokenLifespan >= expectedLifespan && tokenLifespan <= expectedLifespan + 2);
+        assertNotNull(claims.getJwtId());
+        assertEquals(algo, headers.get("alg"));
+        assertEquals("JWT", headers.get("typ"));
     }
 
     @Test
-    public void testSignClaimsAllTypes() throws Exception {
+    void signClaimsAllTypes() throws Exception {
         String jwt = Jwt.claims()
                 .claim("stringClaim", "string")
                 .claim("booleanClaim", true)
@@ -474,62 +476,62 @@ public class JwtSignTest {
         JsonWebSignature jws = getVerifiedJws(jwt);
         JwtClaims claims = JwtClaims.parse(jws.getPayload());
 
-        Assert.assertEquals(11, claims.getClaimsMap().size());
+        assertEquals(11, claims.getClaimsMap().size());
         checkDefaultClaimsAndHeaders(getJwsHeaders(jwt, 2), claims);
 
-        Assert.assertEquals("string", claims.getClaimValue("stringClaim"));
-        Assert.assertTrue((Boolean) claims.getClaimValue("booleanClaim"));
-        Assert.assertEquals(3L, claims.getClaimValue("numberClaim"));
+        assertEquals("string", claims.getClaimValue("stringClaim"));
+        assertTrue((Boolean) claims.getClaimValue("booleanClaim"));
+        assertEquals(3L, claims.getClaimValue("numberClaim"));
 
         List<String> stringList = claims.getStringListClaimValue("stringListClaim");
-        Assert.assertEquals(2, stringList.size());
-        Assert.assertEquals("1", stringList.get(0));
-        Assert.assertEquals("2", stringList.get(1));
+        assertEquals(2, stringList.size());
+        assertEquals("1", stringList.get(0));
+        assertEquals("2", stringList.get(1));
 
         @SuppressWarnings("unchecked")
         List<Long> numberList = (List<Long>) claims.getClaimValue("numberListClaim");
-        Assert.assertEquals(2, numberList.size());
-        Assert.assertEquals(Long.valueOf(1), numberList.get(0));
-        Assert.assertEquals(Long.valueOf(2), numberList.get(1));
+        assertEquals(2, numberList.size());
+        assertEquals(Long.valueOf(1), numberList.get(0));
+        assertEquals(Long.valueOf(2), numberList.get(1));
 
         @SuppressWarnings("unchecked")
         Map<String, Object> mapClaim = (Map<String, Object>) claims.getClaimValue("mapClaim");
-        Assert.assertEquals(1, mapClaim.size());
-        Assert.assertEquals("value", mapClaim.get("key"));
+        assertEquals(1, mapClaim.size());
+        assertEquals("value", mapClaim.get("key"));
 
         @SuppressWarnings("unchecked")
         Map<String, Object> mapJsonClaim = (Map<String, Object>) claims.getClaimValue("jsonObjectClaim");
-        Assert.assertEquals(1, mapJsonClaim.size());
-        Assert.assertEquals("jsonValue", mapJsonClaim.get("jsonKey"));
+        assertEquals(1, mapJsonClaim.size());
+        assertEquals("jsonValue", mapJsonClaim.get("jsonKey"));
 
         @SuppressWarnings("unchecked")
         List<Long> numberJsonList = (List<Long>) claims.getClaimValue("jsonArrayClaim");
-        Assert.assertEquals(2, numberJsonList.size());
-        Assert.assertEquals(Long.valueOf(3), numberJsonList.get(0));
-        Assert.assertEquals(Long.valueOf(4), numberJsonList.get(1));
+        assertEquals(2, numberJsonList.size());
+        assertEquals(Long.valueOf(3), numberJsonList.get(0));
+        assertEquals(Long.valueOf(4), numberJsonList.get(1));
     }
 
     @Test
-    public void testSignExistingClaimsFromClassPath() throws Exception {
+    void signExistingClaimsFromClassPath() throws Exception {
         doTestSignedExistingClaims(Jwt.claims("/token.json").sign());
     }
 
     @Test
-    public void testSignExistingClaimsFromClassPathShortcut() throws Exception {
+    void signExistingClaimsFromClassPathShortcut() throws Exception {
         doTestSignedExistingClaims(Jwt.sign("/token.json"));
     }
 
     @Test
-    public void testSignExistingClaimsFromFileSystemWithFileScheme() throws Exception {
+    void signExistingClaimsFromFileSystemWithFileScheme() throws Exception {
         URL resourceUrl = JwtSignTest.class.getResource("/token.json");
-        Assert.assertEquals("file", resourceUrl.getProtocol());
+        assertEquals("file", resourceUrl.getProtocol());
         doTestSignedExistingClaims(Jwt.claims(resourceUrl.toString()).sign());
     }
 
     @Test
-    public void testSignExistingClaimsFromFileSystemWithoutFileScheme() throws Exception {
+    void signExistingClaimsFromFileSystemWithoutFileScheme() throws Exception {
         URL resourceUrl = JwtSignTest.class.getResource("/token.json");
-        Assert.assertEquals("file", resourceUrl.getProtocol());
+        assertEquals("file", resourceUrl.getProtocol());
         doTestSignedExistingClaims(Jwt.claims(resourceUrl.toString().substring(5)).sign());
     }
 
@@ -538,22 +540,22 @@ public class JwtSignTest {
         JsonWebSignature jws = getVerifiedJws(jwt);
         JwtClaims claims = JwtClaims.parse(jws.getPayload());
 
-        Assert.assertEquals(9, claims.getClaimsMap().size());
+        assertEquals(9, claims.getClaimsMap().size());
         checkDefaultClaimsAndHeaders(getJwsHeaders(jwt, 2), claims, "RS256", 1000);
 
-        Assert.assertEquals("https://server.example.com", claims.getIssuer());
-        Assert.assertEquals("a-123", claims.getClaimValue("jti"));
-        Assert.assertEquals("24400320", claims.getSubject());
-        Assert.assertEquals("jdoe@example.com", claims.getClaimValue("upn"));
-        Assert.assertEquals("jdoe", claims.getClaimValue("preferred_username"));
-        Assert.assertEquals("s6BhdRkqt3", claims.getAudience().get(0));
-        Assert.assertEquals(1311281970L, claims.getExpirationTime().getValue());
-        Assert.assertEquals(1311280970L, claims.getIssuedAt().getValue());
-        Assert.assertEquals(1311280969, claims.getClaimValue("auth_time", Long.class).longValue());
+        assertEquals("https://server.example.com", claims.getIssuer());
+        assertEquals("a-123", claims.getClaimValue("jti"));
+        assertEquals("24400320", claims.getSubject());
+        assertEquals("jdoe@example.com", claims.getClaimValue("upn"));
+        assertEquals("jdoe", claims.getClaimValue("preferred_username"));
+        assertEquals("s6BhdRkqt3", claims.getAudience().get(0));
+        assertEquals(1311281970L, claims.getExpirationTime().getValue());
+        assertEquals(1311280970L, claims.getIssuedAt().getValue());
+        assertEquals(1311280969, claims.getClaimValue("auth_time", Long.class).longValue());
     }
 
     @Test
-    public void testSignClaimsEllipticCurve() throws Exception {
+    void signClaimsEllipticCurve() throws Exception {
         EllipticCurveJsonWebKey jwk = createECJwk();
 
         String jwt = Jwt.claims()
@@ -563,14 +565,14 @@ public class JwtSignTest {
         JsonWebSignature jws = getVerifiedJws(jwt, jwk.getECPublicKey());
         JwtClaims claims = JwtClaims.parse(jws.getPayload());
 
-        Assert.assertEquals(4, claims.getClaimsMap().size());
+        assertEquals(4, claims.getClaimsMap().size());
         checkDefaultClaimsAndHeaders(getJwsHeaders(jwt, 2), claims, "ES256", 300);
 
-        Assert.assertEquals("custom-value", claims.getClaimValue("customClaim"));
+        assertEquals("custom-value", claims.getClaimValue("customClaim"));
     }
 
     @Test
-    public void testSignClaimsEd25519() throws Exception {
+    void signClaimsEd25519() throws Exception {
         if (Runtime.version().version().get(0) >= 17) {
             EdDsaKeyUtil keyUtil = new EdDsaKeyUtil();
             KeyPair keyPairEd25519 = keyUtil.generateKeyPair(EdDsaKeyUtil.ED25519);
@@ -583,11 +585,11 @@ public class JwtSignTest {
             JsonWebSignature jws = getVerifiedJws(jwt, keyPairEd25519.getPublic());
             JwtClaims claims = JwtClaims.parse(jws.getPayload());
 
-            Assert.assertEquals(4, claims.getClaimsMap().size());
+            assertEquals(4, claims.getClaimsMap().size());
             Map<String, Object> headers = getJwsHeaders(jwt, 2);
             checkDefaultClaimsAndHeaders(headers, claims, "EdDSA", 300);
 
-            Assert.assertEquals("custom-value", claims.getClaimValue("customClaim"));
+            assertEquals("custom-value", claims.getClaimValue("customClaim"));
 
             JwtConsumerBuilder builder = new JwtConsumerBuilder();
             builder.setVerificationKey(keyPairEd448.getPublic());
@@ -595,7 +597,7 @@ public class JwtSignTest {
                     new AlgorithmConstraints(AlgorithmConstraints.ConstraintType.PERMIT, "EdDSA"));
             try {
                 builder.build().process(jwt);
-                Assert.fail("ED25519 curve was used to sign the token, must not be verified with ED448");
+                fail("ED25519 curve was used to sign the token, must not be verified with ED448");
             } catch (InvalidJwtSignatureException ex) {
 
             }
@@ -603,7 +605,7 @@ public class JwtSignTest {
     }
 
     @Test
-    public void testSignClaimsEd25519WithJwk() throws Exception {
+    void signClaimsEd25519WithJwk() throws Exception {
         if (Runtime.version().version().get(0) >= 17) {
             EdDsaKeyUtil keyUtil = new EdDsaKeyUtil();
             KeyPair keyPairEd448 = keyUtil.generateKeyPair(EdDsaKeyUtil.ED448);
@@ -615,11 +617,11 @@ public class JwtSignTest {
             JsonWebSignature jws = getVerifiedJws(jwt, getEdEcPublicKey());
             JwtClaims claims = JwtClaims.parse(jws.getPayload());
 
-            Assert.assertEquals(4, claims.getClaimsMap().size());
+            assertEquals(4, claims.getClaimsMap().size());
             Map<String, Object> headers = getJwsHeaders(jwt, 2);
             checkDefaultClaimsAndHeaders(headers, claims, "EdDSA", 300);
 
-            Assert.assertEquals("custom-value", claims.getClaimValue("customClaim"));
+            assertEquals("custom-value", claims.getClaimValue("customClaim"));
 
             JwtConsumerBuilder builder = new JwtConsumerBuilder();
             builder.setVerificationKey(keyPairEd448.getPublic());
@@ -627,7 +629,7 @@ public class JwtSignTest {
                     new AlgorithmConstraints(AlgorithmConstraints.ConstraintType.PERMIT, "EdDSA"));
             try {
                 builder.build().process(jwt);
-                Assert.fail("ED25519 curve was used to sign the token, must not be verified with ED448");
+                fail("ED25519 curve was used to sign the token, must not be verified with ED448");
             } catch (InvalidJwtSignatureException ex) {
 
             }
@@ -635,7 +637,7 @@ public class JwtSignTest {
     }
 
     @Test
-    public void testSignClaimsEd448() throws Exception {
+    void signClaimsEd448() throws Exception {
         if (Runtime.version().version().get(0) >= 17) {
             EdDsaKeyUtil keyUtil = new EdDsaKeyUtil();
             KeyPair keyPairEd25519 = keyUtil.generateKeyPair(EdDsaKeyUtil.ED25519);
@@ -648,11 +650,11 @@ public class JwtSignTest {
             JsonWebSignature jws = getVerifiedJws(jwt, keyPairEd448.getPublic());
             JwtClaims claims = JwtClaims.parse(jws.getPayload());
 
-            Assert.assertEquals(4, claims.getClaimsMap().size());
+            assertEquals(4, claims.getClaimsMap().size());
             Map<String, Object> headers = getJwsHeaders(jwt, 2);
             checkDefaultClaimsAndHeaders(headers, claims, "EdDSA", 300);
 
-            Assert.assertEquals("custom-value", claims.getClaimValue("customClaim"));
+            assertEquals("custom-value", claims.getClaimValue("customClaim"));
 
             JwtConsumerBuilder builder = new JwtConsumerBuilder();
             builder.setVerificationKey(keyPairEd25519.getPublic());
@@ -660,7 +662,7 @@ public class JwtSignTest {
                     new AlgorithmConstraints(AlgorithmConstraints.ConstraintType.PERMIT, "EdDSA"));
             try {
                 builder.build().process(jwt);
-                Assert.fail("ED448 curve was used to sign the token, must not be verified with ED25519");
+                fail("ED448 curve was used to sign the token, must not be verified with ED25519");
             } catch (InvalidJwtSignatureException ex) {
 
             }
@@ -672,7 +674,7 @@ public class JwtSignTest {
     }
 
     @Test
-    public void testSignClaimsSymmetricKey() throws Exception {
+    void signClaimsSymmetricKey() throws Exception {
         SecretKey secretKey = createSecretKey();
 
         String jwt = Jwt.claims()
@@ -682,14 +684,14 @@ public class JwtSignTest {
         JsonWebSignature jws = getVerifiedJws(jwt, secretKey);
         JwtClaims claims = JwtClaims.parse(jws.getPayload());
 
-        Assert.assertEquals(4, claims.getClaimsMap().size());
+        assertEquals(4, claims.getClaimsMap().size());
         checkDefaultClaimsAndHeaders(getJwsHeaders(jwt, 2), claims, "HS256", 300);
 
-        Assert.assertEquals("custom-value", claims.getClaimValue("customClaim"));
+        assertEquals("custom-value", claims.getClaimValue("customClaim"));
     }
 
     @Test
-    public void testSignWithKeyStore() throws Exception {
+    void signWithKeyStore() throws Exception {
         JwtBuildConfigSource configSource = getConfigSource();
         configSource.setUseKeyStore(true);
         configSource.setSigningKeyLocation("/keystore.p12");
@@ -704,9 +706,9 @@ public class JwtSignTest {
             JsonWebSignature jws = getVerifiedJws(jwt, verificationKey);
             JwtClaims claims = JwtClaims.parse(jws.getPayload());
 
-            Assert.assertEquals(4, claims.getClaimsMap().size());
+            assertEquals(4, claims.getClaimsMap().size());
             checkDefaultClaimsAndHeaders(getJwsHeaders(jwt, 2), claims, "RS256", 300);
-            Assert.assertEquals("custom-value", claims.getClaimValue("customClaim"));
+            assertEquals("custom-value", claims.getClaimValue("customClaim"));
         } finally {
             configSource.setUseKeyStore(false);
             configSource.setSigningKeyLocation("/privateKey.pem");
@@ -714,7 +716,7 @@ public class JwtSignTest {
     }
 
     @Test
-    public void testSignClaimsWithSecret() throws Exception {
+    void signClaimsWithSecret() throws Exception {
         String secret = "AyM1SysPpbyDfgZld3umj1qzKObwVMko";
 
         String jwt = Jwt.claims()
@@ -725,26 +727,27 @@ public class JwtSignTest {
         JsonWebSignature jws = getVerifiedJws(jwt, secretKey);
         JwtClaims claims = JwtClaims.parse(jws.getPayload());
 
-        Assert.assertEquals(4, claims.getClaimsMap().size());
+        assertEquals(4, claims.getClaimsMap().size());
         checkDefaultClaimsAndHeaders(getJwsHeaders(jwt, 2), claims, "HS256", 300);
 
-        Assert.assertEquals("custom-value", claims.getClaimValue("customClaim"));
+        assertEquals("custom-value", claims.getClaimValue("customClaim"));
     }
 
     @Test
-    public void testSignClaimsWithShortSecret() throws Exception {
+    void signClaimsWithShortSecret() throws Exception {
         String secret = "AyM1SysPpbyDfgZld3umj1qzKObw";
 
-        JwtSignatureException thrown = assertThrows("JwtSignatureException is expected",
-                JwtSignatureException.class, () -> Jwt.claims().claim("customClaim", "custom-value").signWithSecret(secret));
-        Assert.assertEquals(
+        JwtSignatureException thrown = assertThrows(JwtSignatureException.class,
+                () -> Jwt.claims().claim("customClaim", "custom-value").signWithSecret(secret),
+                "JwtSignatureException is expected");
+        assertEquals(
                 "A key of the same size as the hash output (i.e. 256 bits for HS256) or larger MUST be used with the HMAC SHA"
                         + " algorithms but this key is only 224 bits",
                 thrown.getCause().getMessage());
     }
 
     @Test
-    public void testSignClaimsWithShortSecretAndRelaxedValidation() throws Exception {
+    void signClaimsWithShortSecretAndRelaxedValidation() throws Exception {
         String secret = "AyM1SysPpbyDfgZld3umj1qzKObw";
 
         JwtBuildConfigSource configSource = getConfigSource();
@@ -758,17 +761,17 @@ public class JwtSignTest {
             JsonWebSignature jws = getVerifiedJws(jwt, secretKey, true);
             JwtClaims claims = JwtClaims.parse(jws.getPayload());
 
-            Assert.assertEquals(4, claims.getClaimsMap().size());
+            assertEquals(4, claims.getClaimsMap().size());
             checkDefaultClaimsAndHeaders(getJwsHeaders(jwt, 2), claims, "HS256", 300);
 
-            Assert.assertEquals("custom-value", claims.getClaimValue("customClaim"));
+            assertEquals("custom-value", claims.getClaimValue("customClaim"));
         } finally {
             configSource.setRelaxSignatureKeyValidation(false);
         }
     }
 
     @Test
-    public void testSignClaimsJwkSymmetricKey() throws Exception {
+    void signClaimsJwkSymmetricKey() throws Exception {
         JwtBuildConfigSource configSource = getConfigSource();
         configSource.setSigningKeyLocation("/privateKey.jwk");
         String jwt = null;
@@ -786,15 +789,15 @@ public class JwtSignTest {
         JsonWebSignature jws = getVerifiedJws(jwt, secretKey);
         JwtClaims claims = JwtClaims.parse(jws.getPayload());
 
-        Assert.assertEquals(4, claims.getClaimsMap().size());
+        assertEquals(4, claims.getClaimsMap().size());
         Map<String, Object> headers = getJwsHeaders(jwt, 3);
         checkDefaultClaimsAndHeaders(headers, claims, "HS256", 300);
-        Assert.assertEquals("secretkey1", headers.get("kid"));
-        Assert.assertEquals("custom-value", claims.getClaimValue("customClaim"));
+        assertEquals("secretkey1", headers.get("kid"));
+        assertEquals("custom-value", claims.getClaimValue("customClaim"));
     }
 
     @Test
-    public void testSignClaimsEcKey() throws Exception {
+    void signClaimsEcKey() throws Exception {
         JwtBuildConfigSource configSource = getConfigSource();
         configSource.setSigningKeyLocation("/ecPrivateKey.pem");
         String jwt = null;
@@ -813,11 +816,11 @@ public class JwtSignTest {
         JsonWebSignature jws = getVerifiedJws(jwt, ecKey);
         JwtClaims claims = JwtClaims.parse(jws.getPayload());
 
-        Assert.assertEquals(4, claims.getClaimsMap().size());
+        assertEquals(4, claims.getClaimsMap().size());
         Map<String, Object> headers = getJwsHeaders(jwt, 3);
         checkDefaultClaimsAndHeaders(headers, claims, "ES256", 300);
-        Assert.assertEquals("eckey1", headers.get("kid"));
-        Assert.assertEquals("custom-value", claims.getClaimValue("customClaim"));
+        assertEquals("eckey1", headers.get("kid"));
+        assertEquals("custom-value", claims.getClaimValue("customClaim"));
     }
 
     private static SecretKey createSecretKey() throws Exception {
@@ -827,7 +830,7 @@ public class JwtSignTest {
     }
 
     @Test
-    public void testWrongKeyForRSAAlgorithm() throws Exception {
+    void wrongKeyForRSAAlgorithm() throws Exception {
         // EC
         try {
             Jwt.claims()
@@ -835,7 +838,7 @@ public class JwtSignTest {
                     .jws()
                     .header("alg", "RS256")
                     .sign(createECJwk().getEcPrivateKey());
-            Assert.fail("EC key can not be used with RS256");
+            fail("EC key can not be used with RS256");
         } catch (JwtException ex) {
             // expected
         }
@@ -846,7 +849,7 @@ public class JwtSignTest {
                     .jws()
                     .header("alg", "RS256")
                     .sign(createSecretKey());
-            Assert.fail("HS key can not be used with RS256");
+            fail("HS key can not be used with RS256");
         } catch (JwtException ex) {
             // expected
         }
@@ -856,7 +859,7 @@ public class JwtSignTest {
         int firstDot = compactJws.indexOf(".");
         String headersJson = new Base64Url().base64UrlDecodeToUtf8String(compactJws.substring(0, firstDot));
         Map<String, Object> headers = JsonUtil.parseJson(headersJson);
-        Assert.assertEquals(expectedSize, headers.size());
+        assertEquals(expectedSize, headers.size());
         return headers;
     }
 
@@ -901,5 +904,4 @@ public class JwtSignTest {
         }
 
     }
-
 }

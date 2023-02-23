@@ -2,8 +2,8 @@ package io.smallrye.jwt;
 
 import static java.util.stream.Collectors.toSet;
 import static org.eclipse.microprofile.jwt.tck.TCKConstants.TEST_ISSUER;
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.security.interfaces.RSAPublicKey;
 import java.util.Collections;
@@ -11,15 +11,15 @@ import java.util.stream.Stream;
 
 import org.eclipse.microprofile.jwt.tck.util.TokenUtils;
 import org.jose4j.jwt.consumer.InvalidJwtException;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
 import io.smallrye.jwt.auth.principal.JWTCallerPrincipalFactory;
 import io.smallrye.jwt.auth.principal.ParseException;
 
-public class TestTokenRequiredClaims {
+class TestTokenRequiredClaims {
     @Test
-    public void base() throws Exception {
+    void base() throws Exception {
         String token = TokenUtils.signClaims("/Token1.json");
         RSAPublicKey publicKey = TokenUtils.readPublicKey("/publicKey.pem");
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo(publicKey, TEST_ISSUER);
@@ -28,7 +28,7 @@ public class TestTokenRequiredClaims {
     }
 
     @Test
-    public void missingRequiredClaim() throws Exception {
+    void missingRequiredClaim() throws Exception {
         String token = TokenUtils.signClaims("/Token1.json");
         RSAPublicKey publicKey = TokenUtils.readPublicKey("/publicKey.pem");
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo(publicKey, TEST_ISSUER);
@@ -40,7 +40,7 @@ public class TestTokenRequiredClaims {
     }
 
     @Test
-    public void missingRequiredClaims() throws Exception {
+    void missingRequiredClaims() throws Exception {
         String token = TokenUtils.signClaims("/Token1.json");
         RSAPublicKey publicKey = TokenUtils.readPublicKey("/publicKey.pem");
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo(publicKey, TEST_ISSUER);
@@ -52,7 +52,7 @@ public class TestTokenRequiredClaims {
     }
 
     @Test
-    public void requiredClaims() throws Exception {
+    void requiredClaims() throws Exception {
         String token = TokenUtils.signClaims("/Token1.json");
         RSAPublicKey publicKey = TokenUtils.readPublicKey("/publicKey.pem");
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo(publicKey, TEST_ISSUER);
@@ -62,7 +62,7 @@ public class TestTokenRequiredClaims {
     }
 
     @Test
-    public void requiredAndMissingClaims() throws Exception {
+    void requiredAndMissingClaims() throws Exception {
         String token = TokenUtils.signClaims("/Token1.json");
         RSAPublicKey publicKey = TokenUtils.readPublicKey("/publicKey.pem");
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo(publicKey, TEST_ISSUER);

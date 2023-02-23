@@ -16,50 +16,52 @@
  */
 package io.smallrye.jwt.build;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.util.List;
 
 import org.jose4j.jws.JsonWebSignature;
 import org.jose4j.jwt.JwtClaims;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import io.smallrye.jwt.util.KeyUtils;
 
-public class JwtClaimShortcutsTest {
-
+class JwtClaimShortcutsTest {
     @Test
-    public void testCustomClaim() throws Exception {
+    void customClaim() throws Exception {
         verifyJwt(
                 Jwt.claim("customClaim", "custom-value").sign(), "customClaim", "custom-value");
     }
 
     @Test
-    public void testUpn() throws Exception {
+    void upn() throws Exception {
         verifyJwt(Jwt.upn("upn").sign(), "upn", "upn");
     }
 
     @Test
-    public void testSubject() throws Exception {
+    void subject() throws Exception {
         verifyJwt(Jwt.subject("sub").sign(), "sub", "sub");
     }
 
     @Test
-    public void testPreferredUserName() throws Exception {
+    void preferredUserName() throws Exception {
         verifyJwt(Jwt.preferredUserName("alice").sign(), "preferred_username", "alice");
     }
 
     @Test
-    public void testGroups() throws Exception {
+    void groups() throws Exception {
         verifyJwtWithArray(Jwt.groups("user").sign(), "groups", "user");
     }
 
     @Test
-    public void testAudience() throws Exception {
+    void audience() throws Exception {
         verifyJwt(Jwt.audience("aud").sign(), "aud", "aud");
     }
 
     @Test
-    public void testIssuer() throws Exception {
+    void issuer() throws Exception {
         verifyJwtWithIssuer(Jwt.issuer("iss").sign());
     }
 
@@ -67,42 +69,41 @@ public class JwtClaimShortcutsTest {
         JsonWebSignature jws = new JsonWebSignature();
         jws.setKey(KeyUtils.readPublicKey("/publicKey.pem"));
         jws.setCompactSerialization(jwt);
-        Assert.assertTrue(jws.verifySignature());
+        assertTrue(jws.verifySignature());
         JwtClaims claims = JwtClaims.parse(jws.getPayload());
-        Assert.assertEquals(4, claims.getClaimsMap().size());
-        Assert.assertEquals(customValue, claims.getClaimValue(customClaim));
-        Assert.assertNotNull(claims.getIssuedAt());
-        Assert.assertNotNull(claims.getExpirationTime());
-        Assert.assertNotNull(claims.getJwtId());
+        assertEquals(4, claims.getClaimsMap().size());
+        assertEquals(customValue, claims.getClaimValue(customClaim));
+        assertNotNull(claims.getIssuedAt());
+        assertNotNull(claims.getExpirationTime());
+        assertNotNull(claims.getJwtId());
     }
 
     private static void verifyJwtWithIssuer(String jwt) throws Exception {
         JsonWebSignature jws = new JsonWebSignature();
         jws.setKey(KeyUtils.readPublicKey("/publicKey.pem"));
         jws.setCompactSerialization(jwt);
-        Assert.assertTrue(jws.verifySignature());
+        assertTrue(jws.verifySignature());
         JwtClaims claims = JwtClaims.parse(jws.getPayload());
-        Assert.assertEquals(4, claims.getClaimsMap().size());
-        Assert.assertEquals("iss", claims.getIssuer());
-        Assert.assertNotNull(claims.getIssuedAt());
-        Assert.assertNotNull(claims.getExpirationTime());
-        Assert.assertNotNull(claims.getJwtId());
+        assertEquals(4, claims.getClaimsMap().size());
+        assertEquals("iss", claims.getIssuer());
+        assertNotNull(claims.getIssuedAt());
+        assertNotNull(claims.getExpirationTime());
+        assertNotNull(claims.getJwtId());
     }
 
     private static void verifyJwtWithArray(String jwt, String customClaim, String customValue) throws Exception {
         JsonWebSignature jws = new JsonWebSignature();
         jws.setKey(KeyUtils.readPublicKey("/publicKey.pem"));
         jws.setCompactSerialization(jwt);
-        Assert.assertTrue(jws.verifySignature());
+        assertTrue(jws.verifySignature());
         JwtClaims claims = JwtClaims.parse(jws.getPayload());
-        Assert.assertEquals(4, claims.getClaimsMap().size());
+        assertEquals(4, claims.getClaimsMap().size());
         @SuppressWarnings("unchecked")
         List<String> list = (List<String>) claims.getClaimValue(customClaim);
-        Assert.assertEquals(1, list.size());
-        Assert.assertEquals(customValue, list.get(0));
-        Assert.assertNotNull(claims.getIssuedAt());
-        Assert.assertNotNull(claims.getExpirationTime());
-        Assert.assertNotNull(claims.getJwtId());
+        assertEquals(1, list.size());
+        assertEquals(customValue, list.get(0));
+        assertNotNull(claims.getIssuedAt());
+        assertNotNull(claims.getExpirationTime());
+        assertNotNull(claims.getJwtId());
     }
-
 }
