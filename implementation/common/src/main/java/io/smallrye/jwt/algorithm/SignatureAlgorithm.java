@@ -2,7 +2,7 @@ package io.smallrye.jwt.algorithm;
 
 /**
  * JWT JSON Web Signature Algorithms.
- * 
+ *
  * @see <a href="https://tools.ietf.org/html/rfc7518#section-3">https://tools.ietf.org/html/rfc7518#section-3</a>
  */
 public enum SignatureAlgorithm {

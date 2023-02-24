@@ -28,6 +28,61 @@
   <artifactId>smallrye-jwt-testsuite-parent</artifactId>
   <name>SmallRye: MicroProfile JWT - Testsuite Parent</name>
 
+  <properties>
+    <version.smallrye.testing>2.3.0</version.smallrye.testing>
+    <version.smallrye.config>3.1.1</version.smallrye.config>
+    <version.resteasy>6.2.2.Final</version.resteasy>
+    <version.resteasy.client>2.0.0.Final</version.resteasy.client>
+
+    <version.galleon>5.0.7.Final</version.galleon>
+    <version.wildfly>25.0.1.Final</version.wildfly>
+    <version.wildfly.plugin>4.0.0.Final</version.wildfly.plugin>
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <!-- Test Dependencies -->
+      <dependency>
+        <groupId>org.eclipse.microprofile.jwt</groupId>
+        <artifactId>microprofile-jwt-auth-tck</artifactId>
+        <version>${version.eclipse.microprofile.jwt}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.microprofile.jwt</groupId>
+        <artifactId>microprofile-jwt-auth-tck</artifactId>
+        <type>test-jar</type>
+        <version>${version.eclipse.microprofile.jwt}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.smallrye.testing</groupId>
+        <artifactId>smallrye-testing-bom-tck</artifactId>
+        <version>${version.smallrye.testing}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>io.smallrye.config</groupId>
+        <artifactId>smallrye-config</artifactId>
+        <version>${version.smallrye.config}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.jboss.resteasy</groupId>
+        <artifactId>resteasy-bom</artifactId>
+        <version>${version.resteasy}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.jboss.resteasy.microprofile</groupId>
+        <artifactId>microprofile-rest-client</artifactId>
+        <version>${version.resteasy.client}</version>
+        <scope>test</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+
   <modules>
     <module>basic</module>
     <module>tck</module>

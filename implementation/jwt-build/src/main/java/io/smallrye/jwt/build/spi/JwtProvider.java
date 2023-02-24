@@ -73,7 +73,7 @@ public abstract class JwtProvider {
 
     /**
      * Creates a new instance of {@link JwtClaimsBuilder} from a map of claims.
-     * 
+     *
      * @param claims the map with the claim name and value pairs. Claim value is converted to String unless it is
      *        an instance of {@link Boolean}, {@link Number}, {@link Collection}, {@link Map},
      *        {@link JsonObject} or {@link JsonArray}.

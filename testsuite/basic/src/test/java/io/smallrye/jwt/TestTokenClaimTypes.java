@@ -16,8 +16,10 @@
  */
 package io.smallrye.jwt;
 
-import static org.eclipse.microprofile.jwt.tck.TCKConstants.TEST_GROUP_JWT;
 import static org.eclipse.microprofile.jwt.tck.TCKConstants.TEST_ISSUER;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.security.PublicKey;
 import java.security.interfaces.RSAPublicKey;
@@ -36,10 +38,8 @@ import org.eclipse.microprofile.jwt.Claims;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.eclipse.microprofile.jwt.tck.util.SignatureAlgorithm;
 import org.eclipse.microprofile.jwt.tck.util.TokenUtils;
-import org.jboss.arquillian.testng.Arquillian;
-import org.testng.Assert;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
 import io.smallrye.jwt.auth.principal.JWTCallerPrincipalFactory;
@@ -48,7 +48,7 @@ import io.smallrye.jwt.auth.principal.JWTCallerPrincipalFactory;
  * A more extensive test of the how the token JSON content types are mapped
  * to values via the JsonWebToken implementation.
  */
-public class TestTokenClaimTypes extends Arquillian {
+class TestTokenClaimTypes {
     /** The test generated JWT token string */
     private static String token;
     /** The corresponding JsonWebToken */
@@ -61,8 +61,8 @@ public class TestTokenClaimTypes extends Arquillian {
     private static Long authTimeClaim;
     private static Long expClaim;
 
-    @BeforeClass(alwaysRun = true)
-    public static void generateToken() throws Exception {
+    @BeforeAll
+    static void generateToken() throws Exception {
         Map<String, Long> timeClaims = new HashMap<>();
         token = TokenUtils.signClaims("/Token1.json", SignatureAlgorithm.RS256, null, timeClaims);
         iatClaim = timeClaims.get(Claims.iat.name());
@@ -79,47 +79,47 @@ public class TestTokenClaimTypes extends Arquillian {
         jwt = factory.parse(token, contextInfo);
     }
 
-    @Test(groups = TEST_GROUP_JWT, description = "validate the rawToken accessor")
-    public void validateRawToken() {
-        Assert.assertEquals(token, jwt.getRawToken());
+    @Test
+    void validateRawToken() {
+        assertEquals(token, jwt.getRawToken());
     }
 
-    @Test(groups = TEST_GROUP_JWT, description = "validate the iss claim")
-    public void validateIssuer() {
-        Assert.assertEquals(TEST_ISSUER, jwt.getIssuer());
-        Assert.assertEquals(TEST_ISSUER, jwt.getClaim(Claims.iss.name()));
+    @Test
+    void validateIssuer() {
+        assertEquals(TEST_ISSUER, jwt.getIssuer());
+        assertEquals(TEST_ISSUER, jwt.getClaim(Claims.iss.name()));
     }
 
-    @Test(groups = TEST_GROUP_JWT, description = "validate the sub")
-    public void validateSubject() {
-        Assert.assertEquals("24400320", jwt.getSubject());
-        Assert.assertEquals("24400320", jwt.getClaim(Claims.sub.name()));
+    @Test
+    void validateSubject() {
+        assertEquals("24400320", jwt.getSubject());
+        assertEquals("24400320", jwt.getClaim(Claims.sub.name()));
     }
 
-    @Test(groups = TEST_GROUP_JWT, description = "validate the jti claim")
-    public void validateTokenID() {
-        Assert.assertEquals("a-123", jwt.getTokenID());
-        Assert.assertEquals("a-123", jwt.getClaim(Claims.jti.name()));
+    @Test
+    void validateTokenID() {
+        assertEquals("a-123", jwt.getTokenID());
+        assertEquals("a-123", jwt.getClaim(Claims.jti.name()));
     }
 
-    @Test(groups = TEST_GROUP_JWT, description = "validate the aud claim")
-    public void validateAudience() {
+    @Test
+    void validateAudience() {
         Set<String> audience = jwt.getAudience();
         HashSet<String> actual = new HashSet<>();
         actual.add("s6BhdRkqt3");
-        Assert.assertEquals(actual, audience);
-        Assert.assertEquals(actual, jwt.getClaim(Claims.aud.name()));
+        assertEquals(actual, audience);
+        assertEquals(actual, jwt.getClaim(Claims.aud.name()));
     }
 
-    @Test(groups = TEST_GROUP_JWT, description = "validate the exp claim")
-    public void validateExpirationTime() {
-        Assert.assertEquals(expClaim.longValue(), jwt.getExpirationTime());
+    @Test
+    void validateExpirationTime() {
+        assertEquals(expClaim.longValue(), jwt.getExpirationTime());
         long exp = jwt.getClaim(Claims.exp.name());
-        Assert.assertEquals(expClaim.longValue(), exp);
+        assertEquals(expClaim.longValue(), exp);
     }
 
-    @Test(groups = TEST_GROUP_JWT, description = "validate the groups claim")
-    public void validateGroups() {
+    @Test
+    void validateGroups() {
         Set<String> groups = jwt.getGroups();
         SortedSet<String> sortedGroups = new TreeSet<>(groups);
         SortedSet<String> actual = new TreeSet<>();
@@ -127,27 +127,27 @@ public class TestTokenClaimTypes extends Arquillian {
         actual.add("Tester");
         actual.add("group1");
         actual.add("group2");
-        Assert.assertEquals(actual, sortedGroups);
+        assertEquals(actual, sortedGroups);
         Set<String> groups2 = jwt.getClaim(Claims.groups.name());
         SortedSet<String> sortedGroups2 = new TreeSet<>(groups2);
-        Assert.assertEquals(actual, sortedGroups2);
+        assertEquals(actual, sortedGroups2);
     }
 
-    @Test(groups = TEST_GROUP_JWT, description = "validate the iat claim")
-    public void validateIssuedAtTime() {
-        Assert.assertEquals(iatClaim.longValue(), jwt.getIssuedAtTime());
+    @Test
+    void validateIssuedAtTime() {
+        assertEquals(iatClaim.longValue(), jwt.getIssuedAtTime());
         long iat = jwt.getClaim(Claims.iat.name());
-        Assert.assertEquals(iatClaim.longValue(), iat);
+        assertEquals(iatClaim.longValue(), iat);
     }
 
-    @Test(groups = TEST_GROUP_JWT, description = "validate the auth_time claim")
-    public void validateAuthTime() {
+    @Test
+    void validateAuthTime() {
         long authTime = jwt.getClaim(Claims.auth_time.name());
-        Assert.assertEquals(authTimeClaim.longValue(), authTime);
+        assertEquals(authTimeClaim.longValue(), authTime);
     }
 
-    @Test(groups = TEST_GROUP_JWT, description = "validate the claim names")
-    public void validateClaimNames() {
+    @Test
+    void validateClaimNames() {
         String[] expected = { "iss", "jti", "sub", "upn", "preferred_username",
                 "aud", "exp", "iat", "roles", "groups", "customString", "customInteger",
                 "customStringArray", "customIntegerArray", "customDoubleArray",
@@ -159,101 +159,101 @@ public class TestTokenClaimTypes extends Arquillian {
                 missingNames.add(name);
             }
         }
-        Assert.assertTrue(missingNames.size() == 0, "There should be no missing claim names");
+        assertTrue(missingNames.size() == 0, "There should be no missing claim names");
     }
 
-    @Test(groups = TEST_GROUP_JWT, description = "validate a customString claim as String")
-    public void validateCustomString() {
+    @Test
+    void validateCustomString() {
         String value = jwt.getClaim("customString");
-        Assert.assertEquals("customStringValue", value);
+        assertEquals("customStringValue", value);
     }
 
-    @Test(groups = TEST_GROUP_JWT, description = "validate a customInteger claim as JsonNumber")
-    public void validateCustomInteger() {
+    @Test
+    void validateCustomInteger() {
         JsonNumber value = jwt.getClaim("customInteger");
-        Assert.assertEquals(123456789L, value.longValue());
+        assertEquals(123456789L, value.longValue());
     }
 
-    @Test(groups = TEST_GROUP_JWT, description = "validate a customDouble claim as JsonNumber")
-    public void validateCustomDouble() {
+    @Test
+    void validateCustomDouble() {
         JsonNumber value = jwt.getClaim("customDouble");
-        Assert.assertEquals(3.141592653589793, value.doubleValue(), 0.000000001);
+        assertEquals(3.141592653589793, value.doubleValue(), 0.000000001);
     }
 
-    @Test(groups = TEST_GROUP_JWT, description = "validate a customStringArray claim as JsonArray")
-    public void validateCustomStringArray() {
+    @Test
+    void validateCustomStringArray() {
         JsonArray value = jwt.getClaim("customStringArray");
-        Assert.assertEquals("value0", value.getString(0));
-        Assert.assertEquals("value1", value.getString(1));
-        Assert.assertEquals("value2", value.getString(2));
+        assertEquals("value0", value.getString(0));
+        assertEquals("value1", value.getString(1));
+        assertEquals("value2", value.getString(2));
     }
 
-    @Test(groups = TEST_GROUP_JWT, description = "validate a customIntegerArray claim as JsonArray")
-    public void validateCustomIntegerArray() {
+    @Test
+    void validateCustomIntegerArray() {
         JsonArray value = jwt.getClaim("customIntegerArray");
-        Assert.assertEquals(0, value.getInt(0));
-        Assert.assertEquals(1, value.getInt(1));
-        Assert.assertEquals(2, value.getInt(2));
-        Assert.assertEquals(3, value.getInt(3));
+        assertEquals(0, value.getInt(0));
+        assertEquals(1, value.getInt(1));
+        assertEquals(2, value.getInt(2));
+        assertEquals(3, value.getInt(3));
     }
 
-    @Test(groups = TEST_GROUP_JWT, description = "validate a customDoubleArray claim as JsonArray")
-    public void validateCustomDoubleArray() {
+    @Test
+    void validateCustomDoubleArray() {
         JsonArray value = jwt.getClaim("customDoubleArray");
-        Assert.assertEquals(0.1, value.getJsonNumber(0).doubleValue(), 0.000001);
-        Assert.assertEquals(1.1, value.getJsonNumber(1).doubleValue(), 0.000001);
-        Assert.assertEquals(2.2, value.getJsonNumber(2).doubleValue(), 0.000001);
-        Assert.assertEquals(3.3, value.getJsonNumber(3).doubleValue(), 0.000001);
-        Assert.assertEquals(4.4, value.getJsonNumber(4).doubleValue(), 0.000001);
+        assertEquals(0.1, value.getJsonNumber(0).doubleValue(), 0.000001);
+        assertEquals(1.1, value.getJsonNumber(1).doubleValue(), 0.000001);
+        assertEquals(2.2, value.getJsonNumber(2).doubleValue(), 0.000001);
+        assertEquals(3.3, value.getJsonNumber(3).doubleValue(), 0.000001);
+        assertEquals(4.4, value.getJsonNumber(4).doubleValue(), 0.000001);
     }
 
-    @Test(groups = TEST_GROUP_JWT, description = "validate a customObject claim as JsonObject")
-    public void validateCustomObject() {
+    @Test
+    void validateCustomObject() {
         JsonObject value = jwt.getClaim("customObject");
         JsonObject myService = value.getJsonObject("my-service");
-        Assert.assertNotNull(myService);
+        assertNotNull(myService);
         JsonArray groups = myService.getJsonArray("groups");
-        Assert.assertNotNull(groups);
-        Assert.assertEquals("group1", groups.getString(0));
-        Assert.assertEquals("group2", groups.getString(1));
+        assertNotNull(groups);
+        assertEquals("group1", groups.getString(0));
+        assertEquals("group2", groups.getString(1));
         JsonArray roles = myService.getJsonArray("roles");
-        Assert.assertNotNull(roles);
-        Assert.assertEquals("role-in-my-service", roles.getString(0));
+        assertNotNull(roles);
+        assertEquals("role-in-my-service", roles.getString(0));
 
         JsonObject serviceB = value.getJsonObject("service-B");
-        Assert.assertNotNull(serviceB);
+        assertNotNull(serviceB);
         JsonArray rolesB = serviceB.getJsonArray("roles");
-        Assert.assertNotNull(roles);
-        Assert.assertEquals("role-in-B", rolesB.getString(0));
+        assertNotNull(roles);
+        assertEquals("role-in-B", rolesB.getString(0));
 
         JsonObject serviceC = value.getJsonObject("service-C");
-        Assert.assertNotNull(serviceC);
+        assertNotNull(serviceC);
         JsonArray groupsC = serviceC.getJsonArray("groups");
-        Assert.assertNotNull(groups);
-        Assert.assertEquals("groupC", groupsC.getString(0));
-        Assert.assertEquals("web-tier", groupsC.getString(1));
+        assertNotNull(groups);
+        assertEquals("groupC", groupsC.getString(0));
+        assertEquals("web-tier", groupsC.getString(1));
     }
 
-    @Test(groups = TEST_GROUP_JWT, description = "validate the name comes from the upn claim")
-    public void validateNameIsUPN() {
-        Assert.assertEquals("jdoe@example.com", jwt.getName());
+    @Test
+    void validateNameIsUPN() {
+        assertEquals("jdoe@example.com", jwt.getName());
     }
 
-    @Test(groups = TEST_GROUP_JWT, description = "validate the name comes from the upn claim")
-    public void validateNameIsPreferredName() throws Exception {
+    @Test
+    void validateNameIsPreferredName() throws Exception {
         String token2 = TokenUtils.signClaims("/usePreferredName.json");
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo((RSAPublicKey) publicKey, TEST_ISSUER);
         JWTCallerPrincipalFactory factory = JWTCallerPrincipalFactory.instance();
         JsonWebToken jwt2 = factory.parse(token2, contextInfo);
-        Assert.assertEquals("jdoe", jwt2.getName());
+        assertEquals("jdoe", jwt2.getName());
     }
 
-    @Test(groups = TEST_GROUP_JWT, description = "validate the name comes from the sub claim")
-    public void validateNameIsSubject() throws Exception {
+    @Test
+    void validateNameIsSubject() throws Exception {
         String token2 = TokenUtils.signClaims("/useSubject.json");
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo((RSAPublicKey) publicKey, TEST_ISSUER);
         JWTCallerPrincipalFactory factory = JWTCallerPrincipalFactory.instance();
         JsonWebToken jwt2 = factory.parse(token2, contextInfo);
-        Assert.assertEquals("24400320", jwt2.getName());
+        assertEquals("24400320", jwt2.getName());
     }
 }

@@ -20,7 +20,7 @@ import io.smallrye.jwt.build.spi.JwtProvider;
  * <p>
  * The following example shows how to initialize a {@link JwtClaimsBuilder} from an existing resource
  * containing the claims in a JSON format and produce a signed JWT token with a configured signing key:
- * 
+ *
  * <pre>
  * <code>
  * String = Jwt.claims("/tokenClaims.json").sign();
@@ -29,7 +29,7 @@ import io.smallrye.jwt.build.spi.JwtProvider;
  * <p>
  * The next example shows how to use {@link JwtClaimsBuilder} to add the claims and encrypt a JSON
  * representation of these claims with a configured encrypting key:
- * 
+ *
  * <pre>
  * <code>
  * String = Jwt.claims().issuer("https://issuer.org").claim("custom-claim", "custom-value").encrypt();
@@ -39,7 +39,7 @@ import io.smallrye.jwt.build.spi.JwtProvider;
  * The final example shows how to initialize a {@link JwtClaimsBuilder} from an existing resource
  * containing the claims in a JSON format, produce an inner signed JWT token with a configured signing key
  * and encrypt it with a configured encrypting key.
- * 
+ *
  * <pre>
  * <code>
  * String = Jwt.claims("/tokenClaims.json").innerSign().encrypt();

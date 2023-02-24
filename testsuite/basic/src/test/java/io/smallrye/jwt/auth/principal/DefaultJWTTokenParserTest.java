@@ -1,10 +1,10 @@
 package io.smallrye.jwt.auth.principal;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.security.KeyPair;
 import java.security.cert.X509Certificate;
@@ -17,9 +17,8 @@ import org.eclipse.microprofile.jwt.tck.util.TokenUtils;
 import org.jose4j.jwt.JwtClaims;
 import org.jose4j.jwt.consumer.InvalidJwtException;
 import org.jose4j.jwt.consumer.JwtContext;
-import org.junit.Before;
-import org.junit.Test;
-import org.testng.Assert;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 import io.smallrye.jwt.build.Jwt;
@@ -27,7 +26,7 @@ import io.smallrye.jwt.config.JWTAuthContextInfoProvider;
 import io.smallrye.jwt.util.KeyUtils;
 import io.smallrye.jwt.util.ResourceUtils;
 
-public class DefaultJWTTokenParserTest {
+class DefaultJWTTokenParserTest {
 
     private static final String TOKEN_NO_ISSUED_AT = "eyJ0eXAiOiJKV1QiLA0KICJhbGciOiJIUzI1NiJ9"
             + ".eyJpc3MiOiJqb2UiLA0KICJleHAiOjEzMDA4MTkzODAsDQogImh0dHA6Ly9leGFtcGxlLmNvbS9pc19yb290Ijp0cnVlfQ"
@@ -39,74 +38,74 @@ public class DefaultJWTTokenParserTest {
     DefaultJWTTokenParser parser;
     JWTAuthContextInfo config;
 
-    @Before
-    public void setUp() throws Exception {
-        publicKey = (RSAPublicKey) TokenUtils.readPublicKey("/publicKey.pem");
+    @BeforeEach
+    void setUp() throws Exception {
+        publicKey = TokenUtils.readPublicKey("/publicKey.pem");
         parser = new DefaultJWTTokenParser();
         config = new JWTAuthContextInfo(publicKey, "https://server.example.com");
     }
 
     @Test
-    public void testParse() throws Exception {
+    void parse() throws Exception {
         JwtContext context = parser.parse(TokenUtils.signClaims("/Token1.json"), config);
         assertNotNull(context);
     }
 
     @Test
-    public void testParseJwtSignedWith1024RsaKeyLengthAllowed() throws Exception {
+    void parseJwtSignedWith1024RsaKeyLengthAllowed() throws Exception {
         KeyPair pair = KeyUtils.generateKeyPair(1024);
         String jwt = TokenUtils.generateTokenString(pair.getPrivate(), "kid", "/Token1.json", null, null);
-        JWTAuthContextInfo context = new JWTAuthContextInfo((RSAPublicKey) pair.getPublic(), "https://server.example.com");
+        JWTAuthContextInfo context = new JWTAuthContextInfo(pair.getPublic(), "https://server.example.com");
         assertNotNull(parser.parse(jwt, context).getJwtClaims());
     }
 
     @Test
-    public void testParseJwtSignedWith1024RsaKeyLengthDisallowed() throws Throwable {
+    void parseJwtSignedWith1024RsaKeyLengthDisallowed() throws Throwable {
         KeyPair pair = KeyUtils.generateKeyPair(1024);
         String jwt = TokenUtils.generateTokenString(pair.getPrivate(), "kid", "/Token1.json", null, null);
-        JWTAuthContextInfo context = new JWTAuthContextInfo((RSAPublicKey) pair.getPublic(), "https://server.example.com");
+        JWTAuthContextInfo context = new JWTAuthContextInfo(pair.getPublic(), "https://server.example.com");
         context.setRelaxVerificationKeyValidation(false);
-        ParseException thrown = assertThrows("InvalidJwtException is expected",
-                ParseException.class, () -> parser.parse(jwt, context));
+        ParseException thrown = assertThrows(ParseException.class, () -> parser.parse(jwt, context),
+                "InvalidJwtException is expected");
         assertTrue(thrown.getCause() instanceof InvalidJwtException);
     }
 
     @Test
-    public void testParseExpectedAudiencePresent() throws Exception {
+    void parseExpectedAudiencePresent() throws Exception {
         config.setExpectedAudience(Collections.singleton(TCK_TOKEN1_AUD));
         JwtContext context = parser.parse(TokenUtils.signClaims("/Token1.json"), config);
         assertNotNull(context);
     }
 
-    @Test(expected = ParseException.class)
-    public void testParseExpectedAudienceMissing() throws Exception {
+    @Test
+    void parseExpectedAudienceMissing() throws Exception {
         config.setExpectedAudience(Collections.singleton("MISSING"));
-        parser.parse(TokenUtils.signClaims("/Token1.json"), config);
+        assertThrows(ParseException.class, () -> parser.parse(TokenUtils.signClaims("/Token1.json"), config));
     }
 
     @Test
-    public void testParseMultipleExpectedAudienceValues() throws Exception {
+    void parseMultipleExpectedAudienceValues() throws Exception {
         config.setExpectedAudience(new HashSet<>(Arrays.asList("MISSING", TCK_TOKEN1_AUD)));
         JwtContext context = parser.parse(TokenUtils.signClaims("/Token1.json"), config);
         assertNotNull(context);
         assertEquals(TCK_TOKEN1_AUD, context.getJwtClaims().getAudience().get(0));
     }
 
-    @Test(expected = ParseException.class)
-    public void testParseMultipleMissingExpectedAudienceValues() throws Exception {
+    @Test
+    void parseMultipleMissingExpectedAudienceValues() throws Exception {
         config.setExpectedAudience(new HashSet<>(Arrays.asList("MISSING1", "MISSING2")));
-        parser.parse(TokenUtils.signClaims("/Token1.json"), config);
+        assertThrows(ParseException.class, () -> parser.parse(TokenUtils.signClaims("/Token1.json"), config));
     }
 
     @Test
-    public void testParseMaxTimeToLiveNull() throws Exception {
+    void parseMaxTimeToLiveNull() throws Exception {
         assertNull(config.getMaxTimeToLiveSecs());
         JwtContext context = parser.parse(TokenUtils.signClaims("/Token1.json"), config);
         assertNotNull(context);
     }
 
     @Test
-    public void testTokenNoIssuedAtFailed() throws Throwable {
+    void tokenNoIssuedAtFailed() throws Throwable {
         JWTAuthContextInfo context = new JWTAuthContextInfo();
         context.setIssuedBy("joe");
         context.setSignatureAlgorithm(SignatureAlgorithm.HS256);
@@ -114,13 +113,13 @@ public class DefaultJWTTokenParserTest {
         context.setExpGracePeriodSecs(Integer.MAX_VALUE);
         context.setDefaultSubjectClaim("iss");
 
-        ParseException thrown = assertThrows("InvalidJwtException is expected",
-                ParseException.class, () -> parser.parse(TOKEN_NO_ISSUED_AT, context));
+        ParseException thrown = assertThrows(ParseException.class, () -> parser.parse(TOKEN_NO_ISSUED_AT, context),
+                "InvalidJwtException is expected");
         assertTrue(thrown.getCause() instanceof InvalidJwtException);
     }
 
     @Test
-    public void testTokenNoIssuedAtAllowed() throws Throwable {
+    void tokenNoIssuedAtAllowed() throws Throwable {
         JWTAuthContextInfo context = new JWTAuthContextInfo();
         context.setIssuedBy("joe");
         context.setSignatureAlgorithm(SignatureAlgorithm.HS256);
@@ -137,27 +136,27 @@ public class DefaultJWTTokenParserTest {
     }
 
     @Test
-    public void testParseMaxTimeToLiveGreaterThanExpAge() throws Exception {
-        config.setMaxTimeToLiveSecs(Long.valueOf(301));
+    void parseMaxTimeToLiveGreaterThanExpAge() throws Exception {
+        config.setMaxTimeToLiveSecs(301L);
         JwtContext context = parser.parse(TokenUtils.signClaims("/Token1.json"), config);
         assertNotNull(context);
     }
 
     @Test
-    public void testParseMaxTimeToLiveEqualToExpAge() throws Exception {
-        config.setMaxTimeToLiveSecs(Long.valueOf(300));
+    void parseMaxTimeToLiveEqualToExpAge() throws Exception {
+        config.setMaxTimeToLiveSecs(300L);
         JwtContext context = parser.parse(TokenUtils.signClaims("/Token1.json"), config);
         assertNotNull(context);
     }
 
-    @Test(expected = ParseException.class)
-    public void testParseMaxTimeToLiveLessThanExpAge() throws Exception {
-        config.setMaxTimeToLiveSecs(Long.valueOf(299));
-        parser.parse(TokenUtils.signClaims("/Token1.json"), config);
+    @Test
+    void parseMaxTimeToLiveLessThanExpAge() {
+        config.setMaxTimeToLiveSecs(299L);
+        assertThrows(ParseException.class, () -> parser.parse(TokenUtils.signClaims("/Token1.json"), config));
     }
 
     @Test
-    public void testVerifyTokenWithThumbprint() throws Exception {
+    void verifyTokenWithThumbprint() throws Exception {
         X509Certificate cert = KeyUtils.getCertificate(ResourceUtils.readResource("/certificate.pem"));
         String jwtString = Jwt.upn("Alice").issuer("https://server.example.com")
                 .jws().thumbprint(cert)
@@ -165,11 +164,11 @@ public class DefaultJWTTokenParserTest {
         JWTAuthContextInfoProvider provider = JWTAuthContextInfoProvider.createWithCertificate("/certificate.pem",
                 "https://server.example.com");
         JwtClaims jwt = new DefaultJWTTokenParser().parse(jwtString, provider.getContextInfo()).getJwtClaims();
-        Assert.assertEquals("Alice", jwt.getClaimValueAsString("upn"));
+        assertEquals("Alice", jwt.getClaimValueAsString("upn"));
     }
 
     @Test
-    public void testVerifyTokenWithoutThumbprint() throws Exception {
+    void verifyTokenWithoutThumbprint() throws Exception {
         String jwtString = Jwt.upn("Alice").issuer("https://server.example.com")
                 .sign(KeyUtils.readPrivateKey("/privateKey2.pem"));
         JWTAuthContextInfoProvider provider = JWTAuthContextInfoProvider.createWithCertificate("/certificate.pem",

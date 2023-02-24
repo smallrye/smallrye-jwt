@@ -149,7 +149,7 @@ public final class KeyUtils {
 
     /**
      * Decode a PEM RSA private key
-     * 
+     *
      * @param pemEncoded - pem string for key
      * @return RSA private key instance
      * @throws GeneralSecurityException - on failure to decode and create key
@@ -160,7 +160,7 @@ public final class KeyUtils {
 
     /**
      * Decode a PEM private key
-     * 
+     *
      * @param pemEncoded - pem string for key
      * @param algo - signature algorithm
      * @return Private key instance
@@ -207,7 +207,7 @@ public final class KeyUtils {
 
     /**
      * Decode a PEM encoded public key string to an RSA PublicKey
-     * 
+     *
      * @param pemEncoded - PEM string for public key
      * @return PublicKey
      * @throws GeneralSecurityException on decode failure
@@ -266,7 +266,7 @@ public final class KeyUtils {
 
     /**
      * Decode a PEM encoded public key string to an RSA or EllipticCurve PublicKey
-     * 
+     *
      * @param pemEncoded - PEM string for public key
      * @param algo signature algorithm
      * @return PublicKey
@@ -350,7 +350,7 @@ public final class KeyUtils {
 
     /**
      * Decode a PEM encoded certificate string to an RSA PublicKey
-     * 
+     *
      * @param pemEncoded - PEM string for certificate
      * @return PublicKey
      * @throws GeneralSecurityException on decode failure
@@ -375,7 +375,7 @@ public final class KeyUtils {
 
     /**
      * Strip any -----BEGIN*KEY... header and -----END*KEY... footer and newlines
-     * 
+     *
      * @param pem encoded string with option header/footer
      * @return a single base64 encoded pem string
      */
@@ -390,7 +390,7 @@ public final class KeyUtils {
 
     /**
      * Strip any -----BEGIN*CERTIFICATE... header and -----END*CERTIFICATE... footer and newlines
-     * 
+     *
      * @param pem encoded string with option header/footer
      * @return a single base64 encoded pem string
      */

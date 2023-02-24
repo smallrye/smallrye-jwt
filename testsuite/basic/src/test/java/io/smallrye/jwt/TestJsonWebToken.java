@@ -16,6 +16,9 @@
  */
 package io.smallrye.jwt;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import java.security.interfaces.RSAPublicKey;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -26,8 +29,7 @@ import org.eclipse.microprofile.jwt.Claims;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.eclipse.microprofile.jwt.tck.util.SignatureAlgorithm;
 import org.eclipse.microprofile.jwt.tck.util.TokenUtils;
-import org.testng.Assert;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
 import io.smallrye.jwt.auth.principal.JWTCallerPrincipalFactory;
@@ -36,40 +38,40 @@ import io.smallrye.jwt.auth.principal.ParseException;
 /**
  * Test various parsing expectations of a JWT string into a JsonWebToken
  */
-public class TestJsonWebToken {
+class TestJsonWebToken {
     @Test
-    public void testValidation() throws Exception {
+    void validation() throws Exception {
         String token = TokenUtils.signClaims("/Token1.json");
         RSAPublicKey publicKey = TokenUtils.readPublicKey("/publicKey.pem");
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo(publicKey, "https://server.example.com");
         contextInfo.setExpGracePeriodSecs(60);
-        Assert.assertNotNull(validateToken(token, contextInfo));
+        assertNotNull(validateToken(token, contextInfo));
     }
 
-    @Test(expectedExceptions = { ParseException.class }, description = "Illustrate validation of issuer")
-    public void testFailIssuer() throws Exception {
+    @Test
+    void failIssuer() throws Exception {
         Set<TokenUtils.InvalidClaims> invalidFields = new HashSet<>();
         invalidFields.add(TokenUtils.InvalidClaims.ISSUER);
         String token = TokenUtils.signClaims("/Token1.json", SignatureAlgorithm.RS256, invalidFields);
         RSAPublicKey publicKey = TokenUtils.readPublicKey("/publicKey.pem");
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo(publicKey, "https://server.example.com");
         contextInfo.setExpGracePeriodSecs(60);
-        validateToken(token, contextInfo);
+        assertThrows(ParseException.class, () -> validateToken(token, contextInfo));
     }
 
-    @Test(expectedExceptions = { ParseException.class }, description = "Illustrate validation of signer")
-    public void testFailSignature() throws Exception {
+    @Test
+    void failSignature() throws Exception {
         Set<TokenUtils.InvalidClaims> invalidFields = new HashSet<>();
         invalidFields.add(TokenUtils.InvalidClaims.SIGNER);
         String token = TokenUtils.signClaims("/Token1.json", SignatureAlgorithm.RS256, invalidFields);
         RSAPublicKey publicKey = TokenUtils.readPublicKey("/publicKey.pem");
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo(publicKey, "https://server.example.com");
         contextInfo.setExpGracePeriodSecs(60);
-        validateToken(token, contextInfo);
+        assertThrows(ParseException.class, () -> validateToken(token, contextInfo));
     }
 
-    @Test(expectedExceptions = { ParseException.class }, description = "Illustrate validation of exp")
-    public void testFailExpired() throws Exception {
+    @Test
+    void failExpired() throws Exception {
         Map<String, Long> timeClaims = new HashMap<>();
         Set<TokenUtils.InvalidClaims> invalidFields = new HashSet<>();
         invalidFields.add(TokenUtils.InvalidClaims.EXP);
@@ -77,11 +79,11 @@ public class TestJsonWebToken {
         RSAPublicKey publicKey = TokenUtils.readPublicKey("/publicKey.pem");
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo(publicKey, "https://server.example.com");
         contextInfo.setExpGracePeriodSecs(60);
-        validateToken(token, contextInfo);
+        assertThrows(ParseException.class, () -> validateToken(token, contextInfo));
     }
 
-    @Test(expectedExceptions = { ParseException.class }, description = "Illustrate validation of exp that has just expired")
-    public void testFailJustExpired() throws Exception {
+    @Test
+    void failJustExpired() throws Exception {
         Map<String, Long> timeClaims = new HashMap<>();
         // Set exp to 61 seconds in past
         long exp = TokenUtils.currentTimeInSecs() - 61;
@@ -90,11 +92,11 @@ public class TestJsonWebToken {
         RSAPublicKey publicKey = TokenUtils.readPublicKey("/publicKey.pem");
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo(publicKey, "https://server.example.com");
         contextInfo.setExpGracePeriodSecs(60);
-        validateToken(token, contextInfo);
+        assertThrows(ParseException.class, () -> validateToken(token, contextInfo));
     }
 
-    @Test(description = "Illustrate validation of exp that is in grace period")
-    public void testExpGrace() throws Exception {
+    @Test
+    void expGrace() throws Exception {
         Map<String, Long> timeClaims = new HashMap<>();
         // Set exp to 45 seconds in past
         long exp = TokenUtils.currentTimeInSecs() - 45;

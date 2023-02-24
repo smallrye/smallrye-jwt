@@ -14,8 +14,10 @@
  *   limitations under the License.
  *
  */
-
 package io.smallrye.jwt.auth.principal;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.security.KeyStore;
 import java.security.PrivateKey;
@@ -24,16 +26,14 @@ import java.util.Optional;
 
 import org.eclipse.microprofile.jwt.tck.util.TokenUtils;
 import org.jose4j.jwt.JwtClaims;
-import org.testng.Assert;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 import io.smallrye.jwt.config.JWTAuthContextInfoProvider;
 import io.smallrye.jwt.util.KeyUtils;
 
-public class KeyStoreLocationTest {
-
+class KeyStoreLocationTest {
     @Test
-    public void testVerifyToken() throws Exception {
+    void verifyToken() throws Exception {
         KeyStore keyStore = KeyUtils.loadKeyStore("server-keystore.jks", "password", Optional.empty(), Optional.empty());
         PrivateKey signingKey = (PrivateKey) keyStore.getKey("server", "password".toCharArray());
         String jwt = TokenUtils.signClaims(signingKey, null, "/Token1.json");
@@ -42,12 +42,12 @@ public class KeyStoreLocationTest {
                 Optional.of("password"), Optional.of("server"), Optional.empty(),
                 "https://server.example.com");
         JwtClaims claims = new DefaultJWTTokenParser().parse(jwt, provider.getContextInfo()).getJwtClaims();
-        Assert.assertNotNull(claims);
-        Assert.assertEquals("https://server.example.com", claims.getIssuer());
+        assertNotNull(claims);
+        assertEquals("https://server.example.com", claims.getIssuer());
     }
 
     @Test
-    public void testDecryptToken() throws Exception {
+    void decryptToken() throws Exception {
         KeyStore keyStore = KeyUtils.loadKeyStore("server-keystore.jks", "password", Optional.empty(), Optional.empty());
         PublicKey encryptionKey = keyStore.getCertificate("server").getPublicKey();
         String jwt = TokenUtils.encryptClaims(encryptionKey, null, "/Token1.json");
@@ -56,7 +56,7 @@ public class KeyStoreLocationTest {
                 Optional.of("password"), Optional.empty(), Optional.of("server"),
                 "https://server.example.com");
         JwtClaims claims = new DefaultJWTTokenParser().parse(jwt, provider.getContextInfo()).getJwtClaims();
-        Assert.assertNotNull(claims);
-        Assert.assertEquals("https://server.example.com", claims.getIssuer());
+        assertNotNull(claims);
+        assertEquals("https://server.example.com", claims.getIssuer());
     }
 }

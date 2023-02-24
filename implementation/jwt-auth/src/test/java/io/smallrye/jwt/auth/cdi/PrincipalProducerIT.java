@@ -1,51 +1,53 @@
 package io.smallrye.jwt.auth.cdi;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.util.Collections;
 import java.util.HashMap;
 
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.jboss.weld.context.bound.BoundRequestContext;
-import org.jboss.weld.junit4.WeldInitiator;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.jboss.weld.junit5.WeldInitiator;
+import org.jboss.weld.junit5.WeldJunit5Extension;
+import org.jboss.weld.junit5.WeldSetup;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
-public class PrincipalProducerIT {
+@ExtendWith(WeldJunit5Extension.class)
+class PrincipalProducerIT {
 
-    @Rule
-    public WeldInitiator weld = WeldInitiator.of(PrincipalProducer.class);
+    @WeldSetup
+    WeldInitiator weld = WeldInitiator.of(PrincipalProducer.class);
 
     @Mock
     JsonWebToken jwt;
 
     BoundRequestContext context;
-    PrincipalProducer jwtProducer;
 
-    @Before
-    public void setUp() {
+    @BeforeEach
+    void setUp() {
         MockitoAnnotations.initMocks(this);
         context = weld.select(BoundRequestContext.class).get();
-        context.associate(new HashMap<String, Object>());
+        context.associate(new HashMap<>());
         // Start Request Scope
         context.activate();
     }
 
-    @After
-    public void tearDown() {
+    @AfterEach
+    void tearDown() {
         // End Request Scope
         context.deactivate();
     }
 
     @Test
-    public void testNullPrincipal() {
+    void nullPrincipal() {
         JsonWebToken jwt = weld.select(JsonWebToken.class).get();
         assertNotNull(jwt);
         assertNull(jwt.getName());
@@ -53,7 +55,7 @@ public class PrincipalProducerIT {
     }
 
     @Test
-    public void testPrincipalInjected() {
+    void principalInjected() {
         PrincipalProducer jwtProducer = weld.select(PrincipalProducer.class).get();
         Mockito.when(jwt.getName()).thenReturn("User1");
         Mockito.when(jwt.getClaimNames()).thenReturn(Collections.singleton("upn"));

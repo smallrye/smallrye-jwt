@@ -17,8 +17,8 @@
 package io.smallrye.jwt;
 
 import static jakarta.json.JsonValue.NULL;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -29,12 +29,11 @@ import jakarta.json.JsonArray;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonValue;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-public class JsonUtilsTests {
-
+class JsonUtilsTests {
     @Test
-    public void testWrapClaimValueJsonValue() {
+    void wrapClaimValueJsonValue() {
         JsonValue expResult = JsonValue.TRUE;
         JsonValue result = JsonUtils.wrapValue(expResult);
 
@@ -42,7 +41,7 @@ public class JsonUtilsTests {
     }
 
     @Test
-    public void testWrapClaimValueString() {
+    void wrapClaimValueString() {
         JsonValue expResult = Json.createValue("string");
         JsonValue result = JsonUtils.wrapValue("string");
 
@@ -50,7 +49,7 @@ public class JsonUtilsTests {
     }
 
     @Test
-    public void testWrapClaimValueNumber() {
+    void wrapClaimValueNumber() {
         JsonValue expResult = Json.createValue(1);
         JsonValue result = JsonUtils.wrapValue(1);
 
@@ -58,7 +57,7 @@ public class JsonUtilsTests {
     }
 
     @Test
-    public void testWrapClaimValueNumberDecimal() {
+    void wrapClaimValueNumberDecimal() {
         JsonValue expResult = Json.createValue(1.1d);
         JsonValue result = JsonUtils.wrapValue(1.1d);
 
@@ -66,7 +65,7 @@ public class JsonUtilsTests {
     }
 
     @Test
-    public void testWrapClaimValueBoolean() {
+    void wrapClaimValueBoolean() {
         JsonValue expResult = JsonValue.FALSE;
         JsonValue result = JsonUtils.wrapValue(false);
 
@@ -74,7 +73,7 @@ public class JsonUtilsTests {
     }
 
     @Test
-    public void testWrapClaimValueCollection() {
+    void wrapClaimValueCollection() {
         JsonArray expResult = Json.createArrayBuilder()
                 .add("a")
                 .add("b")
@@ -91,7 +90,7 @@ public class JsonUtilsTests {
     }
 
     @Test
-    public void testWrapClaimValueMap() {
+    void wrapClaimValueMap() {
         JsonObject expResult = Json.createObjectBuilder()
                 .add("a", "a")
                 .add("b", "b")
@@ -110,7 +109,7 @@ public class JsonUtilsTests {
     }
 
     @Test
-    public void testWrapClaimValueNull() {
+    void wrapClaimValueNull() {
         JsonValue expResult = null;
         JsonValue result = JsonUtils.wrapValue(null);
 
@@ -118,7 +117,7 @@ public class JsonUtilsTests {
     }
 
     @Test
-    public void testWrapClaimValueCollectionWithNull() {
+    void wrapClaimValueCollectionWithNull() {
         JsonArray expResult = Json.createArrayBuilder()
                 .add(NULL)
                 .build();
@@ -131,7 +130,7 @@ public class JsonUtilsTests {
     }
 
     @Test
-    public void testWrapClaimValueMapWithNull() {
+    void wrapClaimValueMapWithNull() {
         JsonObject expResult = Json.createObjectBuilder()
                 .build();
 
@@ -143,5 +142,4 @@ public class JsonUtilsTests {
         JsonObject resultObject = result.asJsonObject();
         assertEquals(expResult, resultObject);
     }
-
 }

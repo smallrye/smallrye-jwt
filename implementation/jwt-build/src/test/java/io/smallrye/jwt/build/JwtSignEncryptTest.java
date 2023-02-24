@@ -16,6 +16,12 @@
  */
 package io.smallrye.jwt.build;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.security.PrivateKey;
@@ -36,26 +42,24 @@ import org.jose4j.json.JsonUtil;
 import org.jose4j.jwe.JsonWebEncryption;
 import org.jose4j.jws.JsonWebSignature;
 import org.jose4j.jwt.JwtClaims;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
 import io.smallrye.jwt.util.KeyUtils;
 
-public class JwtSignEncryptTest {
-
+class JwtSignEncryptTest {
     @Test
-    public void testSimpleInnerSignAndEncryptWithPemRsaPublicKey() throws Exception {
+    void simpleInnerSignAndEncryptWithPemRsaPublicKey() throws Exception {
         JwtBuildConfigSource configSource = getConfigSource();
         try {
             configSource.resetSigningKeyCallCount();
             JwtClaimsBuilder builder = Jwt.claims().claim("customClaim", "custom-value");
             String jti1 = checkRsaInnerSignedEncryptedClaims(builder.innerSign().encrypt());
-            Assert.assertNotNull(jti1);
+            assertNotNull(jti1);
             String jti2 = checkRsaInnerSignedEncryptedClaims(builder.innerSign().encrypt());
-            Assert.assertNotNull(jti2);
-            Assert.assertNotEquals(jti1, jti2);
-            Assert.assertEquals(1, configSource.getSigningKeyCallCount());
+            assertNotNull(jti2);
+            assertNotEquals(jti1, jti2);
+            assertEquals(1, configSource.getSigningKeyCallCount());
         } finally {
             configSource.resetSigningKeyCallCount();
         }
@@ -75,29 +79,29 @@ public class JwtSignEncryptTest {
         JsonWebSignature jws = getVerifiedJws(jwtCompact);
         JwtClaims claims = JwtClaims.parse(jws.getPayload());
 
-        Assert.assertEquals(4, claims.getClaimsMap().size());
+        assertEquals(4, claims.getClaimsMap().size());
         checkClaimsAndJwsHeaders(jwtCompact, claims, "RS256", null);
 
-        Assert.assertEquals("custom-value", claims.getClaimValue("customClaim"));
+        assertEquals("custom-value", claims.getClaimValue("customClaim"));
         return claims.getJwtId();
     }
 
     @Test
-    public void testInnerSignAndEncryptMapOfClaimsRsaOaep() throws Exception {
+    void innerSignAndEncryptMapOfClaimsRsaOaep() throws Exception {
         String jweCompact = Jwt.claims(Collections.singletonMap("customClaim", "custom-value"))
                 .innerSign().keyAlgorithm(KeyEncryptionAlgorithm.RSA_OAEP).encrypt();
         checkRsaInnerSignedEncryptedClaims(jweCompact, KeyEncryptionAlgorithm.RSA_OAEP.getAlgorithm());
     }
 
     @Test
-    public void testInnerSignAndEncryptMapOfClaimsShortcut() throws Exception {
+    void innerSignAndEncryptMapOfClaimsShortcut() throws Exception {
         String jweCompact = Jwt.innerSignAndEncrypt(Collections.singletonMap("customClaim", "custom-value"));
 
         checkRsaInnerSignedEncryptedClaims(jweCompact);
     }
 
     @Test
-    public void testInnerSignAndEncryptJsonObject() throws Exception {
+    void innerSignAndEncryptJsonObject() throws Exception {
         JsonObject json = Json.createObjectBuilder().add("customClaim", "custom-value").build();
         String jweCompact = Jwt.claims(json).innerSign().encrypt();
 
@@ -105,7 +109,7 @@ public class JwtSignEncryptTest {
     }
 
     @Test
-    public void testInnerSignAndEncryptJsonObjectShortcut() throws Exception {
+    void innerSignAndEncryptJsonObjectShortcut() throws Exception {
         JsonObject json = Json.createObjectBuilder().add("customClaim", "custom-value").build();
         String jweCompact = Jwt.innerSignAndEncrypt(json);
 
@@ -113,19 +117,19 @@ public class JwtSignEncryptTest {
     }
 
     @Test
-    public void testInnerSignAndEncryptExistingClaims() throws Exception {
+    void innerSignAndEncryptExistingClaims() throws Exception {
         String jweCompact = Jwt.claims("/customClaim.json").innerSign().encrypt();
         checkRsaInnerSignedEncryptedClaims(jweCompact);
     }
 
     @Test
-    public void testInnerSignAndEncryptExistingClaimsShortcut() throws Exception {
+    void innerSignAndEncryptExistingClaimsShortcut() throws Exception {
         String jweCompact = Jwt.innerSignAndEncrypt("/customClaim.json");
         checkRsaInnerSignedEncryptedClaims(jweCompact);
     }
 
     @Test
-    public void testInnerSignAndEncryptWithPemRsaPublicKeyWithHeaders() throws Exception {
+    void innerSignAndEncryptWithPemRsaPublicKeyWithHeaders() throws Exception {
         String jweCompact = Jwt.claims()
                 .claim("customClaim", "custom-value")
                 .jws()
@@ -143,14 +147,14 @@ public class JwtSignEncryptTest {
         JsonWebSignature jws = getVerifiedJws(jwtCompact);
         JwtClaims claims = JwtClaims.parse(jws.getPayload());
 
-        Assert.assertEquals(4, claims.getClaimsMap().size());
+        assertEquals(4, claims.getClaimsMap().size());
         checkClaimsAndJwsHeaders(jwtCompact, claims, "RS256", "sign-key-id");
 
-        Assert.assertEquals("custom-value", claims.getClaimValue("customClaim"));
+        assertEquals("custom-value", claims.getClaimValue("customClaim"));
     }
 
     @Test
-    public void testInnerSignAndEncryptWithJwkRsaPublicKey() throws Exception {
+    void innerSignAndEncryptWithJwkRsaPublicKey() throws Exception {
         JwtBuildConfigSource configSource = getConfigSource();
         configSource.setEncryptionKeyLocation("/publicKey.jwk");
         String jweCompact = null;
@@ -175,14 +179,14 @@ public class JwtSignEncryptTest {
         JsonWebSignature jws = getVerifiedJws(jwtCompact);
         JwtClaims claims = JwtClaims.parse(jws.getPayload());
 
-        Assert.assertEquals(4, claims.getClaimsMap().size());
+        assertEquals(4, claims.getClaimsMap().size());
         checkClaimsAndJwsHeaders(jwtCompact, claims, "RS256", "sign-key-id");
 
-        Assert.assertEquals("custom-value", claims.getClaimValue("customClaim"));
+        assertEquals("custom-value", claims.getClaimValue("customClaim"));
     }
 
     @Test
-    public void testInnerSignWithSecretAndEncryptWithSecret() throws Exception {
+    void innerSignWithSecretAndEncryptWithSecret() throws Exception {
         String secret = "AyM1SysPpbyDfgZld3umj1qzKObwVMko";
 
         String jweCompact = Jwt.claims()
@@ -200,10 +204,10 @@ public class JwtSignEncryptTest {
         JsonWebSignature jws = getVerifiedJws(jwtCompact, secretKey);
         JwtClaims claims = JwtClaims.parse(jws.getPayload());
 
-        Assert.assertEquals(4, claims.getClaimsMap().size());
+        assertEquals(4, claims.getClaimsMap().size());
         checkClaimsAndJwsHeaders(jwtCompact, claims, "HS256", null);
 
-        Assert.assertEquals("custom-value", claims.getClaimValue("customClaim"));
+        assertEquals("custom-value", claims.getClaimValue("customClaim"));
     }
 
     private static JwtBuildConfigSource getConfigSource() {
@@ -231,36 +235,36 @@ public class JwtSignEncryptTest {
         JsonWebSignature jws = new JsonWebSignature();
         jws.setCompactSerialization(jwt);
         jws.setKey(key);
-        Assert.assertTrue(jws.verifySignature());
+        assertTrue(jws.verifySignature());
         return jws;
     }
 
     private static void checkClaimsAndJwsHeaders(String jwsCompact, JwtClaims claims, String algo, String keyId)
             throws Exception {
-        Assert.assertNotNull(claims.getIssuedAt());
-        Assert.assertNotNull(claims.getExpirationTime());
-        Assert.assertNotNull(claims.getJwtId());
+        assertNotNull(claims.getIssuedAt());
+        assertNotNull(claims.getExpirationTime());
+        assertNotNull(claims.getJwtId());
 
         Map<String, Object> headers = getJwsHeaders(jwsCompact);
-        Assert.assertEquals(keyId != null ? 3 : 2, headers.size());
-        Assert.assertEquals(algo, headers.get("alg"));
-        Assert.assertEquals("JWT", headers.get("typ"));
+        assertEquals(keyId != null ? 3 : 2, headers.size());
+        assertEquals(algo, headers.get("alg"));
+        assertEquals("JWT", headers.get("typ"));
         if (keyId != null) {
-            Assert.assertEquals(keyId, headers.get("kid"));
+            assertEquals(keyId, headers.get("kid"));
         } else {
-            Assert.assertNull(headers.get("kid"));
+            assertNull(headers.get("kid"));
         }
     }
 
     private static void checkJweHeaders(String jweCompact, String keyEncKeyAlg, String keyId) throws Exception {
         Map<String, Object> jweHeaders = getJweHeaders(jweCompact);
-        Assert.assertEquals(keyId != null ? 4 : 3, jweHeaders.size());
-        Assert.assertEquals(keyEncKeyAlg, jweHeaders.get("alg"));
-        Assert.assertEquals("A256GCM", jweHeaders.get("enc"));
+        assertEquals(keyId != null ? 4 : 3, jweHeaders.size());
+        assertEquals(keyEncKeyAlg, jweHeaders.get("alg"));
+        assertEquals("A256GCM", jweHeaders.get("enc"));
         if (keyId != null) {
-            Assert.assertEquals(keyId, jweHeaders.get("kid"));
+            assertEquals(keyId, jweHeaders.get("kid"));
         }
-        Assert.assertEquals("JWT", jweHeaders.get("cty"));
+        assertEquals("JWT", jweHeaders.get("cty"));
     }
 
     private static JsonWebEncryption getJsonWebEncryption(String compactJwe) throws Exception {

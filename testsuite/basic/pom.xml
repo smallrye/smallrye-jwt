@@ -31,28 +31,19 @@
 
   <dependencies>
     <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+    </dependency>
+    <dependency>
       <groupId>io.smallrye</groupId>
       <artifactId>smallrye-jwt</artifactId>
+      <scope>test</scope>
     </dependency>
-
     <dependency>
       <groupId>io.smallrye</groupId>
       <artifactId>smallrye-jwt-build</artifactId>
       <scope>test</scope>
     </dependency>
-
-    <dependency>
-      <groupId>io.smallrye.config</groupId>
-      <artifactId>smallrye-config</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <scope>test</scope>
-    </dependency>
-
     <dependency>
       <groupId>jakarta.enterprise</groupId>
       <artifactId>jakarta.enterprise.cdi-api</artifactId>
@@ -78,9 +69,12 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.glassfish</groupId>
-      <artifactId>jakarta.json</artifactId>
-      <scope>test</scope>
+      <groupId>io.smallrye.config</groupId>
+      <artifactId>smallrye-config</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.parsson</groupId>
+      <artifactId>parsson</artifactId>
     </dependency>
   </dependencies>
 

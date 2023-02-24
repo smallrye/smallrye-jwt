@@ -51,10 +51,11 @@
       <groupId>org.jboss.logging</groupId>
       <artifactId>jboss-logging-processor</artifactId>
     </dependency>
+
+    <!-- Testing Dependencies -->
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
-      <scope>test</scope>
     </dependency>
   </dependencies>
 

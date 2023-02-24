@@ -16,8 +16,8 @@
  */
 package io.smallrye.jwt.auth;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.when;
 
 import java.util.Arrays;
@@ -25,14 +25,14 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
 
-public class AbstractBearerTokenExtractorTest {
+class AbstractBearerTokenExtractorTest {
 
     private static final String AUTHORIZATION = "Authorization";
     private static final String COOKIE = "Cookie";
@@ -41,10 +41,8 @@ public class AbstractBearerTokenExtractorTest {
     @Mock
     JWTAuthContextInfo authContextInfo;
 
-    AbstractBearerTokenExtractor target;
-
-    @Before
-    public void setUp() {
+    @BeforeEach
+    void setUp() {
         MockitoAnnotations.initMocks(this);
     }
 
@@ -64,7 +62,7 @@ public class AbstractBearerTokenExtractorTest {
     }
 
     @Test
-    public void testGetBearerTokenAuthorizationHeader() {
+    void getBearerTokenAuthorizationHeader() {
         when(authContextInfo.getTokenHeader()).thenReturn(AUTHORIZATION);
         when(authContextInfo.getTokenSchemes()).thenReturn(BEARER_SCHEME);
         AbstractBearerTokenExtractor target = newTarget(h -> "Bearer THE_TOKEN", c -> null);
@@ -73,7 +71,7 @@ public class AbstractBearerTokenExtractorTest {
     }
 
     @Test
-    public void testGetBearerTokenAuthorizationHeaderMixedCase() {
+    void getBearerTokenAuthorizationHeaderMixedCase() {
         when(authContextInfo.getTokenHeader()).thenReturn(AUTHORIZATION);
         when(authContextInfo.getTokenSchemes()).thenReturn(BEARER_SCHEME);
         AbstractBearerTokenExtractor target = newTarget(h -> "bEaReR THE_TOKEN", c -> null);
@@ -82,7 +80,7 @@ public class AbstractBearerTokenExtractorTest {
     }
 
     @Test
-    public void testGetBearerTokenAuthorizationHeaderBlank() {
+    void getBearerTokenAuthorizationHeaderBlank() {
         when(authContextInfo.getTokenHeader()).thenReturn(AUTHORIZATION);
         when(authContextInfo.getTokenSchemes()).thenReturn(BEARER_SCHEME);
         AbstractBearerTokenExtractor target = newTarget(h -> "BEARER ", c -> null);
@@ -91,7 +89,7 @@ public class AbstractBearerTokenExtractorTest {
     }
 
     @Test
-    public void testGetBearerTokenAuthorizationHeaderInvalidSchemePrefix() {
+    void getBearerTokenAuthorizationHeaderInvalidSchemePrefix() {
         when(authContextInfo.getTokenHeader()).thenReturn(AUTHORIZATION);
         when(authContextInfo.getTokenSchemes()).thenReturn(BEARER_SCHEME);
         AbstractBearerTokenExtractor target = newTarget(h -> "BEARER", c -> null);
@@ -100,7 +98,7 @@ public class AbstractBearerTokenExtractorTest {
     }
 
     @Test
-    public void testGetBearerTokenMissingAuthorizationHeader() {
+    void getBearerTokenMissingAuthorizationHeader() {
         when(authContextInfo.getTokenHeader()).thenReturn(AUTHORIZATION);
         when(authContextInfo.getTokenSchemes()).thenReturn(BEARER_SCHEME);
         AbstractBearerTokenExtractor target = newTarget(h -> null, c -> null);
@@ -109,7 +107,7 @@ public class AbstractBearerTokenExtractorTest {
     }
 
     @Test
-    public void testGetBearerTokenOtherSchemeAuthorizationHeader() {
+    void getBearerTokenOtherSchemeAuthorizationHeader() {
         when(authContextInfo.getTokenHeader()).thenReturn(AUTHORIZATION);
         when(authContextInfo.getTokenSchemes()).thenReturn(BEARER_SCHEME);
         AbstractBearerTokenExtractor target = newTarget(h -> "Basic Not_a_JWT", c -> null);
@@ -118,7 +116,7 @@ public class AbstractBearerTokenExtractorTest {
     }
 
     @Test
-    public void testGetBearerTokenCustomSchemeAuthorizationHeader() {
+    void getBearerTokenCustomSchemeAuthorizationHeader() {
         when(authContextInfo.getTokenHeader()).thenReturn(AUTHORIZATION);
         when(authContextInfo.getTokenSchemes()).thenReturn(Arrays.asList("Bearer", "DPoP"));
         AbstractBearerTokenExtractor target = newTarget(h -> "DPoP THE_TOKEN", c -> null);
@@ -127,7 +125,7 @@ public class AbstractBearerTokenExtractorTest {
     }
 
     @Test
-    public void testGetBearerTokenCustomHeader() {
+    void getBearerTokenCustomHeader() {
         when(authContextInfo.getTokenHeader()).thenReturn("MyHeader");
         AbstractBearerTokenExtractor target = newTarget(h -> {
             if ("MyHeader".equals(h)) {
@@ -140,7 +138,7 @@ public class AbstractBearerTokenExtractorTest {
     }
 
     @Test
-    public void testGetBearerTokenCustomHeaderAndScheme() {
+    void getBearerTokenCustomHeaderAndScheme() {
         when(authContextInfo.getTokenHeader()).thenReturn("MyHeader");
         when(authContextInfo.getTokenSchemes()).thenReturn(Arrays.asList("DPoP"));
         AbstractBearerTokenExtractor target = newTarget(h -> {
@@ -154,7 +152,7 @@ public class AbstractBearerTokenExtractorTest {
     }
 
     @Test
-    public void testGetBearerTokenDefaultCookieHeader() {
+    void getBearerTokenDefaultCookieHeader() {
         when(authContextInfo.getTokenHeader()).thenReturn(COOKIE);
         AbstractBearerTokenExtractor target = newTarget(h -> null, c -> "THE_TOKEN");
         String bearerToken = target.getBearerToken();
@@ -162,7 +160,7 @@ public class AbstractBearerTokenExtractorTest {
     }
 
     @Test
-    public void testGetBearerTokenCustomCookieHeader() {
+    void getBearerTokenCustomCookieHeader() {
         when(authContextInfo.getTokenHeader()).thenReturn(COOKIE);
         when(authContextInfo.getTokenCookie()).thenReturn("CustomCookie");
         AbstractBearerTokenExtractor target = newTarget(h -> null, c -> {
@@ -176,7 +174,7 @@ public class AbstractBearerTokenExtractorTest {
     }
 
     @Test
-    public void testGetBearerTokenMissingCookieHeader() {
+    void getBearerTokenMissingCookieHeader() {
         when(authContextInfo.getTokenHeader()).thenReturn(COOKIE);
         AbstractBearerTokenExtractor target = newTarget(h -> null, c -> null);
         String bearerToken = target.getBearerToken();
@@ -184,7 +182,7 @@ public class AbstractBearerTokenExtractorTest {
     }
 
     @Test
-    public void testGetBearerTokenFallbackToHeaderWithCookieHeader() {
+    void getBearerTokenFallbackToHeaderWithCookieHeader() {
         when(authContextInfo.getTokenHeader()).thenReturn(COOKIE);
         when(authContextInfo.isAlwaysCheckAuthorization()).thenReturn(true);
         AbstractBearerTokenExtractor target = newTarget(h -> "Bearer THE_HEADER_TOKEN", c -> "THE_COOKIE_TOKEN");
@@ -193,7 +191,7 @@ public class AbstractBearerTokenExtractorTest {
     }
 
     @Test
-    public void testGetBearerTokenFallbackToHeaderWithEmptyCookie() {
+    void getBearerTokenFallbackToHeaderWithEmptyCookie() {
         when(authContextInfo.getTokenHeader()).thenReturn(COOKIE);
         when(authContextInfo.getTokenSchemes()).thenReturn(BEARER_SCHEME);
         when(authContextInfo.isAlwaysCheckAuthorization()).thenReturn(true);

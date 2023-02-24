@@ -14,8 +14,12 @@
  *   limitations under the License.
  *
  */
-
 package io.smallrye.jwt.auth.principal;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.security.PrivateKey;
 import java.time.Instant;
@@ -24,8 +28,7 @@ import org.eclipse.microprofile.jwt.tck.util.TokenUtils;
 import org.jose4j.jwt.JwtClaims;
 import org.jose4j.lang.InvalidAlgorithmException;
 import org.jose4j.lang.UnresolvableKeyException;
-import org.testng.Assert;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 import io.smallrye.jwt.build.Jwt;
@@ -33,89 +36,88 @@ import io.smallrye.jwt.build.JwtClaimsBuilder;
 import io.smallrye.jwt.config.JWTAuthContextInfoProvider;
 import io.smallrye.jwt.util.KeyUtils;
 
-public class KeyLocationResolverTest {
-
+class KeyLocationResolverTest {
     @Test
-    public void testVerifyWithJwkKeyWithMatchingKid() throws Exception {
+    void verifyWithJwkKeyWithMatchingKid() throws Exception {
         verifyToken("key1", null, "publicKey.jwk");
     }
 
     @Test
-    public void testVerifyWithJwkKeyWithNonMatchingKid() throws Exception {
+    void verifyWithJwkKeyWithNonMatchingKid() throws Exception {
         try {
             verifyToken("key2", null, "publicKey.jwk");
-            Assert.fail("ParseException is expected");
+            fail("ParseException is expected");
         } catch (ParseException ex) {
-            Assert.assertTrue(ex.getCause() instanceof UnresolvableKeyException);
+            assertTrue(ex.getCause() instanceof UnresolvableKeyException);
         }
     }
 
     @Test
-    public void testVerifyWithJwkKeyWithMatchingKidFromSet() throws Exception {
+    void verifyWithJwkKeyWithMatchingKidFromSet() throws Exception {
         verifyToken("key1", null, "publicKeySet.jwk");
     }
 
     @Test
-    public void testVerifyWithJwkKeyWithKidFromSingleKeySetWithoutKid() throws Exception {
+    void verifyWithJwkKeyWithKidFromSingleKeySetWithoutKid() throws Exception {
         verifyToken("key1", null, "publicSingleKeySetWithoutKid.jwk");
     }
 
     @Test
-    public void testVerifyWithJwkFromSetWithKidAndRequiredKid() throws Exception {
+    void verifyWithJwkFromSetWithKidAndRequiredKid() throws Exception {
         verifyToken("key1", "key1", "publicKeySet.jwk");
     }
 
     @Test
-    public void testVerifyWithJwkFromSetWithWrongKidAndRequiredKid() throws Exception {
+    void verifyWithJwkFromSetWithWrongKidAndRequiredKid() throws Exception {
         try {
             verifyToken("key2", "key1", "publicKeySet.jwk");
-            Assert.fail("ParseException is expected");
+            fail("ParseException is expected");
         } catch (ParseException ex) {
-            Assert.assertTrue(ex.getCause() instanceof UnresolvableKeyException);
+            assertTrue(ex.getCause() instanceof UnresolvableKeyException);
         }
     }
 
     @Test
-    public void testVerifyWithJwkKeyWithNonMatchingKidFromSet() throws Exception {
+    void verifyWithJwkKeyWithNonMatchingKidFromSet() throws Exception {
         try {
             verifyToken("key3", null, "publicKeySet.jwk");
-            Assert.fail("ParseException is expected");
+            fail("ParseException is expected");
         } catch (ParseException ex) {
-            Assert.assertTrue(ex.getCause() instanceof UnresolvableKeyException);
+            assertTrue(ex.getCause() instanceof UnresolvableKeyException);
         }
     }
 
     @Test
-    public void testVerifyWithClassPathPemKey() throws Exception {
+    void verifyWithClassPathPemKey() throws Exception {
         verifyToken("key3", null, "publicKey.pem");
     }
 
     @Test
-    public void testVerifyWithClassPathPemKey2() throws Exception {
+    void verifyWithClassPathPemKey2() throws Exception {
         verifyToken("key3", null, "classpath:publicKey.pem");
     }
 
     @Test
-    public void testVerifyWithFileSystemPemKey() throws Exception {
+    void verifyWithFileSystemPemKey() throws Exception {
         verifyToken("key3", null, "target/test-classes/publicKey.pem");
     }
 
     @Test
-    public void testVerifyWithoutPrivateKey() throws Exception {
+    void verifyWithoutPrivateKey() throws Exception {
         PrivateKey privateKey = TokenUtils.readPrivateKey("/privateKey.pem");
         String token = TokenUtils.signClaims(privateKey, "1", "/Token1.json", null, null);
         JWTAuthContextInfoProvider provider = JWTAuthContextInfoProvider.createWithKeyLocation("NONE",
                 "https://server.example.com");
         try {
-            Assert.assertNotNull(new DefaultJWTTokenParser().parse(token, provider.getContextInfo()));
-            Assert.fail("UnresolvableKeyException is expected");
+            assertNotNull(new DefaultJWTTokenParser().parse(token, provider.getContextInfo()));
+            fail("UnresolvableKeyException is expected");
         } catch (ParseException ex) {
-            Assert.assertTrue(ex.getCause() instanceof UnresolvableKeyException);
+            assertTrue(ex.getCause() instanceof UnresolvableKeyException);
         }
     }
 
     @Test
-    public void testVerifyWithFileSystemPemKey2() throws Exception {
+    void verifyWithFileSystemPemKey2() throws Exception {
         verifyToken("key3", null, "file:target/test-classes/publicKey.pem");
     }
 
@@ -126,11 +128,11 @@ public class KeyLocationResolverTest {
                 "https://server.example.com");
         JWTAuthContextInfo contextInfo = provider.getContextInfo();
         contextInfo.setTokenKeyId(requiredKeyId);
-        Assert.assertNotNull(new DefaultJWTTokenParser().parse(token, contextInfo));
+        assertNotNull(new DefaultJWTTokenParser().parse(token, contextInfo));
     }
 
     @Test
-    public void testVerifyEcSignedTokenWithEcKey() throws Exception {
+    void verifyEcSignedTokenWithEcKey() throws Exception {
         JwtClaimsBuilder builder = Jwt.claims("/Token1.json");
         builder.issuedAt(Instant.now().getEpochSecond());
         builder.expiresAt(Instant.now().getEpochSecond() + 300);
@@ -139,11 +141,11 @@ public class KeyLocationResolverTest {
                 "https://server.example.com");
         JWTAuthContextInfo contextInfo = provider.getContextInfo();
         contextInfo.setSignatureAlgorithm(SignatureAlgorithm.ES256);
-        Assert.assertNotNull(new DefaultJWTTokenParser().parse(jwt, contextInfo));
+        assertNotNull(new DefaultJWTTokenParser().parse(jwt, contextInfo));
     }
 
     @Test
-    public void testVerifyEcSignedTokenWithWrongKey() throws Exception {
+    void verifyEcSignedTokenWithWrongKey() throws Exception {
         JwtClaimsBuilder builder = Jwt.claims("/Token1.json");
         builder.issuedAt(Instant.now().getEpochSecond());
         builder.expiresAt(Instant.now().getEpochSecond() + 300);
@@ -154,14 +156,14 @@ public class KeyLocationResolverTest {
         contextInfo.setSignatureAlgorithm(SignatureAlgorithm.ES256);
         try {
             new DefaultJWTTokenParser().parse(jwt, contextInfo);
-            Assert.fail("ParseException is expected due to the wrong key type");
+            fail("ParseException is expected due to the wrong key type");
         } catch (ParseException ex) {
-            Assert.assertTrue(ex.getCause() instanceof UnresolvableKeyException);
+            assertTrue(ex.getCause() instanceof UnresolvableKeyException);
         }
     }
 
     @Test
-    public void testVerifyEcSignedTokenWithWrongAlgo() throws Exception {
+    void verifyEcSignedTokenWithWrongAlgo() throws Exception {
         JwtClaimsBuilder builder = Jwt.claims("/Token1.json");
         builder.issuedAt(Instant.now().getEpochSecond());
         builder.expiresAt(Instant.now().getEpochSecond() + 300);
@@ -171,31 +173,31 @@ public class KeyLocationResolverTest {
         // default is RS256
         try {
             new DefaultJWTTokenParser().parse(jwt, provider.getContextInfo());
-            Assert.fail("ParseException is expected due to the wrong expected algorithm");
+            fail("ParseException is expected due to the wrong expected algorithm");
         } catch (ParseException ex) {
-            Assert.assertTrue(ex.getCause().getCause() instanceof InvalidAlgorithmException);
+            assertTrue(ex.getCause().getCause() instanceof InvalidAlgorithmException);
         }
     }
 
     @Test
-    public void testVerifyTokenSignedWithSecretKey() throws Exception {
+    void verifyTokenSignedWithSecretKey() throws Exception {
         String jwtString = Jwt.issuer("https://server.example.com").upn("Alice").sign("secretKey.jwk");
         JWTAuthContextInfoProvider provider = JWTAuthContextInfoProvider.createWithSecretKeyLocation("secretKey.jwk",
                 "https://server.example.com");
         JWTAuthContextInfo contextInfo = provider.getContextInfo();
         contextInfo.setSignatureAlgorithm(SignatureAlgorithm.HS256);
         JwtClaims jwt = new DefaultJWTTokenParser().parse(jwtString, contextInfo).getJwtClaims();
-        Assert.assertEquals("Alice", jwt.getClaimValueAsString("upn"));
+        assertEquals("Alice", jwt.getClaimValueAsString("upn"));
     }
 
     @Test
-    public void testDecryptToken() throws Exception {
+    void decryptToken() throws Exception {
         String jwtString = Jwt.issuer("https://server.example.com").upn("Alice").jwe().encrypt("publicKey.pem");
         String decryptionKey = KeyUtils.readKeyContent("privateKey.pem");
         JWTAuthContextInfoProvider provider = JWTAuthContextInfoProvider.createWithDecryptionKey(decryptionKey,
                 "https://server.example.com");
         JWTAuthContextInfo contextInfo = provider.getContextInfo();
         JwtClaims jwt = new DefaultJWTTokenParser().parse(jwtString, contextInfo).getJwtClaims();
-        Assert.assertEquals("Alice", jwt.getClaimValueAsString("upn"));
+        assertEquals("Alice", jwt.getClaimValueAsString("upn"));
     }
 }

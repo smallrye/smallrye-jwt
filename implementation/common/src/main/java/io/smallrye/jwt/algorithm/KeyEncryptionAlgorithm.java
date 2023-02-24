@@ -2,7 +2,7 @@ package io.smallrye.jwt.algorithm;
 
 /**
  * JWT JSON Web Key Encryption (Management) Algorithms.
- * 
+ *
  * @see <a href="https://tools.ietf.org/html/rfc7518#section-4">https://tools.ietf.org/html/rfc7518#section-4</a>
  */
 public enum KeyEncryptionAlgorithm {

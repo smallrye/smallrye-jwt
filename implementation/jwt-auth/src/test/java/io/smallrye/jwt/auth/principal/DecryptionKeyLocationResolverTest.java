@@ -17,9 +17,10 @@
 package io.smallrye.jwt.auth.principal;
 
 import static java.util.Collections.emptyList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.when;
 
@@ -39,19 +40,17 @@ import org.jose4j.jwk.RsaJwkGenerator;
 import org.jose4j.jwx.Headers;
 import org.jose4j.lang.JoseException;
 import org.jose4j.lang.UnresolvableKeyException;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import io.smallrye.jwt.util.ResourceUtils;
 import io.smallrye.jwt.util.ResourceUtils.UrlStreamResolver;
 
-@RunWith(MockitoJUnitRunner.class)
-public class DecryptionKeyLocationResolverTest {
+@ExtendWith(MockitoExtension.class)
+class DecryptionKeyLocationResolverTest {
 
     @Mock
     JsonWebEncryption encryption;
@@ -62,21 +61,16 @@ public class DecryptionKeyLocationResolverTest {
     @Mock
     UrlStreamResolver urlResolver;
 
-    @Rule
-    public ExpectedException expectedEx = ExpectedException.none();
-
     @Test
-    public void testLoadPemKeyWithWrongLocation() throws Exception {
-
-        expectedEx.expect(UnresolvableKeyException.class);
-
+    void loadPemKeyWithWrongLocation() {
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo();
         contextInfo.setDecryptionKeyLocation("wrong_location.pem");
-        new DecryptionKeyLocationResolver(contextInfo).resolveKey(encryption, emptyList());
+        assertThrows(UnresolvableKeyException.class,
+                () -> new DecryptionKeyLocationResolver(contextInfo).resolveKey(encryption, emptyList()));
     }
 
     @Test
-    public void testLoadRsaKeyFromHttpsJwks() throws Exception {
+    void loadRsaKeyFromHttpsJwks() throws Exception {
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo();
         contextInfo.setDecryptionKeyLocation("https://github.com/my_key.jwks");
         contextInfo.setJwksRefreshInterval(10);
@@ -98,7 +92,7 @@ public class DecryptionKeyLocationResolverTest {
     }
 
     @Test
-    public void testLoadSecretKeyFromHttpsJwks() throws Exception {
+    void loadSecretKeyFromHttpsJwks() throws Exception {
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo();
         contextInfo.setDecryptionKeyLocation("https://github.com/my_key.jwks");
         contextInfo.setJwksRefreshInterval(10);
@@ -121,7 +115,7 @@ public class DecryptionKeyLocationResolverTest {
     }
 
     @Test
-    public void testLoadHttpsJwksNonMathchingKidAndRefresh() throws Exception {
+    void loadHttpsJwksNonMathchingKidAndRefresh() throws Exception {
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo();
         contextInfo.setDecryptionKeyLocation("https://github.com/my_key.jwks");
         contextInfo.setJwksRefreshInterval(10);
@@ -137,7 +131,7 @@ public class DecryptionKeyLocationResolverTest {
 
         RsaJsonWebKey jwk = RsaJwkGenerator.generateJwk(2048);
 
-        // Return JWK Set with a non-matching JWK with 'kid' set to '2' 
+        // Return JWK Set with a non-matching JWK with 'kid' set to '2'
         jwk.setKeyId("2");
         when(mockedHttpsJwks.getJsonWebKeys()).thenReturn(Collections.singletonList(jwk));
 
@@ -152,25 +146,25 @@ public class DecryptionKeyLocationResolverTest {
         assertNull(keyLocationResolver.key);
     }
 
-    @Test(expected = UnresolvableKeyException.class)
-    public void testLoadHttpsJwksNonMathchingKidAndRefreshDeclined() throws Exception {
+    @Test
+    void loadHttpsJwksNonMathchingKidAndRefreshDeclined() throws Exception {
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo();
         contextInfo.setDecryptionKeyLocation("https://github.com/my_key.jwks");
         contextInfo.setJwksRefreshInterval(10);
         contextInfo.setForcedJwksRefreshInterval(10);
 
-        DecryptionKeyLocationResolver keyLocationResolver = new DecryptionKeyLocationResolver(contextInfo) {
+        DecryptionKeyLocationResolver keyLocationResolver = Mockito.spy(new DecryptionKeyLocationResolver(contextInfo) {
             protected HttpsJwks initializeHttpsJwks(String loc) {
                 return mockedHttpsJwks;
             }
-        };
+        });
         // token 'kid' is '1'
         when(encryption.getHeaders()).thenReturn(headers);
         when(headers.getStringHeaderValue(JsonWebKey.KEY_ID_PARAMETER)).thenReturn("1");
 
         RsaJsonWebKey jwk = RsaJwkGenerator.generateJwk(2048);
 
-        // Return JWK Set with a non-matching JWK with 'kid' set to '2' 
+        // Return JWK Set with a non-matching JWK with 'kid' set to '2'
         jwk.setKeyId("2");
         when(mockedHttpsJwks.getJsonWebKeys()).thenReturn(Collections.singletonList(jwk));
 
@@ -180,17 +174,16 @@ public class DecryptionKeyLocationResolverTest {
             return null;
         }).when(mockedHttpsJwks).refresh();
 
-        keyLocationResolver = Mockito.spy(keyLocationResolver);
         assertEquals(jwk.getPrivateKey(), keyLocationResolver.resolveKey(encryption, emptyList()));
         assertNull(keyLocationResolver.key);
 
         // Return JWK Set with a non-matching JWK with 'kid' set to '2'
         jwk.setKeyId("2");
-        keyLocationResolver.resolveKey(encryption, emptyList());
+        assertThrows(UnresolvableKeyException.class, () -> keyLocationResolver.resolveKey(encryption, emptyList()));
     }
 
     @Test
-    public void testLoadHttpsPem() throws Exception {
+    void loadHttpsPem() throws Exception {
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo();
         contextInfo.setDecryptionKeyLocation("https://github.com/my_key.pem");
         contextInfo.setJwksRefreshInterval(10);
@@ -214,7 +207,7 @@ public class DecryptionKeyLocationResolverTest {
     }
 
     @Test
-    public void testLoadPemOnClassPath() throws Exception {
+    void loadPemOnClassPath() throws Exception {
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo();
         contextInfo.setDecryptionKeyLocation("privateKey.pem");
         DecryptionKeyLocationResolver keyLocationResolver = new DecryptionKeyLocationResolver(contextInfo);
@@ -225,7 +218,7 @@ public class DecryptionKeyLocationResolverTest {
     }
 
     @Test
-    public void testLoadJWKOnClassPath() throws Exception {
+    void loadJWKOnClassPath() throws Exception {
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo();
         contextInfo.setDecryptionKeyLocation("decryptPrivateKey.jwk");
         contextInfo.setTokenDecryptionKeyId("key1");
