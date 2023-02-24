@@ -39,7 +39,7 @@
     <version.eclipse.microprofile.jwt>2.1</version.eclipse.microprofile.jwt>
     <version.microprofile.config>3.0</version.microprofile.config>
     <version.jose4j>0.9.2</version.jose4j>
-    <version.mokito>5.0.0</version.mokito>
+    <version.mokito>5.1.1</version.mokito>
 
     <!-- Test -->
     <artifactId.arquillian.jetty>arquillian-jetty-embedded-11</artifactId.arquillian.jetty>
