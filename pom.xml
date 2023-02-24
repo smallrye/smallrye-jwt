@@ -50,7 +50,7 @@
     <!-- RESTEasy REST Client relocated to another GAV, so these props are for jakarta auto migration -->
     <groupId.resteasy.client>org.jboss.resteasy.microprofile</groupId.resteasy.client>
     <artifactId.resteasy.client>microprofile-rest-client</artifactId.resteasy.client>
-    <version.resteasy.client>2.0.0.Beta1</version.resteasy.client>
+    <version.resteasy.client>2.0.0.Final</version.resteasy.client>
     <!-- Wildfly -->
     <version.galleon>5.0.7.Final</version.galleon>
     <version.wildfly>25.0.1.Final</version.wildfly>
