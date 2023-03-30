@@ -177,8 +177,9 @@ public class JWTAuthContextInfoProvider {
         provider.subPath = Optional.empty();
         provider.defaultGroupsClaim = Optional.empty();
         provider.groupsPath = Optional.empty();
-        provider.expGracePeriodSecs = 60;
+        provider.expGracePeriodSecs = 0;
         provider.maxTimeToLiveSecs = Optional.empty();
+        provider.mpJwtVerifyClockSkew = 60;
         provider.mpJwtVerifyTokenAge = Optional.empty();
         provider.jwksRefreshInterval = 60;
         provider.forcedJwksRefreshInterval = 30;
@@ -303,6 +304,13 @@ public class JWTAuthContextInfoProvider {
      * @since 2.1
      */
     @Inject
+    @ConfigProperty(name = "mp.jwt.verify.clock.skew", defaultValue = "60")
+    private int mpJwtVerifyClockSkew;
+
+    /**
+     * @since 2.1
+     */
+    @Inject
     @ConfigProperty(name = "mp.jwt.verify.token.age")
     Optional<Long> mpJwtVerifyTokenAge;
 
@@ -411,8 +419,12 @@ public class JWTAuthContextInfoProvider {
     @ConfigProperty(name = "smallrye.jwt.groups-separator", defaultValue = DEFAULT_GROUPS_SEPARATOR)
     private String groupsSeparator;
 
+    /**
+     * @deprecated Use {@link JWTAuthContextInfoProvider#mpJwtVerifyClockSkew} instead
+     */
     @Inject
-    @ConfigProperty(name = "smallrye.jwt.expiration.grace", defaultValue = "60")
+    @ConfigProperty(name = "smallrye.jwt.expiration.grace", defaultValue = "0")
+    @Deprecated
     private int expGracePeriodSecs;
 
     /**
@@ -694,6 +706,13 @@ public class JWTAuthContextInfoProvider {
             SmallryeJwtUtils.setContextTokenCookie(contextInfo, Optional.of(BEARER_SCHEME));
         }
 
+        if (expGracePeriodSecs > 0) {
+            ConfigLogging.log.replacedConfig("smallrye.jwt.expiration.grace", "mp.jwt.verify.clock.skew");
+            contextInfo.setClockSkew(expGracePeriodSecs);
+        } else if (mpJwtVerifyClockSkew > 0) {
+            contextInfo.setClockSkew(mpJwtVerifyClockSkew);
+        }
+
         contextInfo.setAlwaysCheckAuthorization(alwaysCheckAuthorization);
         contextInfo.setTokenKeyId(tokenKeyId.orElse(null));
         contextInfo.setTokenDecryptionKeyId(tokenDecryptionKeyId.orElse(null));
@@ -709,7 +728,6 @@ public class JWTAuthContextInfoProvider {
         contextInfo.setHttpProxyHost(httpProxyHost.orElse(null));
         contextInfo.setHttpProxyPort(httpProxyPort);
         SmallryeJwtUtils.setContextGroupsPath(contextInfo, groupsPath);
-        contextInfo.setExpGracePeriodSecs(expGracePeriodSecs);
         contextInfo.setMaxTimeToLiveSecs(maxTimeToLiveSecs.orElse(null));
         contextInfo.setTokenAge(mpJwtVerifyTokenAge.orElse(null));
         contextInfo.setJwksRefreshInterval(jwksRefreshInterval);

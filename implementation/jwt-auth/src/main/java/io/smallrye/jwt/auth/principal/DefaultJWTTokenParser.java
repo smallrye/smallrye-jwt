@@ -141,6 +141,8 @@ public class DefaultJWTTokenParser {
 
             if (authContextInfo.getExpGracePeriodSecs() > 0) {
                 builder.setAllowedClockSkewInSeconds(authContextInfo.getExpGracePeriodSecs());
+            } else if (authContextInfo.getClockSkew() > 0) {
+                builder.setAllowedClockSkewInSeconds(authContextInfo.getClockSkew());
             }
 
             setExpectedAudience(builder, authContextInfo);

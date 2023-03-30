@@ -39,9 +39,10 @@ public class JWTAuthContextInfo {
     private PrivateKey privateDecryptionKey;
     private SecretKey secretDecryptionKey;
     private String issuedBy;
-    private int expGracePeriodSecs = 60;
+    private int expGracePeriodSecs = 0;
     private Long maxTimeToLiveSecs;
     private Long tokenAge;
+    private int clockSkew = 60;
     private String publicKeyLocation;
     private String publicKeyContent;
     private String decryptionKeyLocation;
@@ -107,6 +108,7 @@ public class JWTAuthContextInfo {
         this.expGracePeriodSecs = orig.getExpGracePeriodSecs();
         this.maxTimeToLiveSecs = orig.getMaxTimeToLiveSecs();
         this.tokenAge = orig.getTokenAge();
+        this.clockSkew = orig.getClockSkew();
         this.publicKeyLocation = orig.getPublicKeyLocation();
         this.publicKeyContent = orig.getPublicKeyContent();
         this.decryptionKeyLocation = orig.getDecryptionKeyLocation();
@@ -190,10 +192,12 @@ public class JWTAuthContextInfo {
         this.issuedBy = issuedBy;
     }
 
+    @Deprecated
     public int getExpGracePeriodSecs() {
         return expGracePeriodSecs;
     }
 
+    @Deprecated
     public void setExpGracePeriodSecs(int expGracePeriodSecs) {
         this.expGracePeriodSecs = expGracePeriodSecs;
     }
@@ -502,5 +506,13 @@ public class JWTAuthContextInfo {
 
     public void setTokenAge(Long tokenAge) {
         this.tokenAge = tokenAge;
+    }
+
+    public int getClockSkew() {
+        return clockSkew;
+    }
+
+    public void setClockSkew(int clockSkew) {
+        this.clockSkew = clockSkew;
     }
 }
