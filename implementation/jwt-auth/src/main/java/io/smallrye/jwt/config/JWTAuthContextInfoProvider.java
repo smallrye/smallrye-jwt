@@ -35,6 +35,7 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.jwt.config.Names;
 
 import io.smallrye.jwt.KeyFormat;
+import io.smallrye.jwt.KeyProvider;
 import io.smallrye.jwt.SmallryeJwtUtils;
 import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
@@ -188,6 +189,7 @@ public class JWTAuthContextInfoProvider {
         provider.mpJwtDecryptKeyAlgorithm = new HashSet<>(Arrays.asList(KeyEncryptionAlgorithm.RSA_OAEP,
                 KeyEncryptionAlgorithm.RSA_OAEP_256));
         provider.keyFormat = KeyFormat.ANY;
+        provider.keyProvider = KeyProvider.DEFAULT;
         provider.mpJwtVerifyAudiences = Optional.empty();
         provider.expectedAudience = Optional.empty();
         provider.groupsSeparator = DEFAULT_GROUPS_SEPARATOR;
@@ -489,6 +491,13 @@ public class JWTAuthContextInfoProvider {
     private KeyFormat keyFormat;
 
     /**
+     * Supported key provider.
+     */
+    @Inject
+    @ConfigProperty(name = "smallrye.jwt.verify.key-provider", defaultValue = "DEFAULT")
+    private KeyProvider keyProvider;
+
+    /**
      * Relax the validation of the verification keys.
      * Public RSA keys with the 1024 bit length will be allowed if this property is set to 'true'.
      */
@@ -762,6 +771,7 @@ public class JWTAuthContextInfoProvider {
         }
         contextInfo.setKeyEncryptionAlgorithm(theDecryptionKeyAlgorithm);
         contextInfo.setKeyFormat(keyFormat);
+        contextInfo.setKeyProvider(keyProvider);
         if (mpJwtVerifyAudiences.isPresent()) {
             contextInfo.setExpectedAudience(mpJwtVerifyAudiences.get());
         } else if (expectedAudience.isPresent()) {

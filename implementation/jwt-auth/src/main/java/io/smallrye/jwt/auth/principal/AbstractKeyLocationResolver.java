@@ -314,7 +314,7 @@ public class AbstractKeyLocationResolver {
         return null;
     }
 
-    protected X509Certificate loadPEMCertificate(String content) {
+    protected static X509Certificate loadPEMCertificate(String content) {
         PrincipalLogging.log.checkKeyContentIsBase64EncodedPEMCertificate();
         X509Certificate cert = null;
         try {

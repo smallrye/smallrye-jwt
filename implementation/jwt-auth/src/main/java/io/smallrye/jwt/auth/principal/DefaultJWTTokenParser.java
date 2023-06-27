@@ -36,6 +36,7 @@ import org.jose4j.keys.resolvers.VerificationKeyResolver;
 import org.jose4j.lang.JoseException;
 import org.jose4j.lang.UnresolvableKeyException;
 
+import io.smallrye.jwt.KeyProvider;
 import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
 
 /**
@@ -257,9 +258,13 @@ public class DefaultJWTTokenParser {
         if (keyResolver == null) {
             synchronized (this) {
                 if (keyResolver == null)
-                    keyResolver = authContextInfo.isVerifyCertificateThumbprint()
-                            ? new X509KeyLocationResolver(authContextInfo)
-                            : new KeyLocationResolver(authContextInfo);
+                    if (KeyProvider.AWS_ALB == authContextInfo.getKeyProvider()) {
+                        keyResolver = new AwsAlbKeyResolver(authContextInfo);
+                    } else {
+                        keyResolver = authContextInfo.isVerifyCertificateThumbprint()
+                                ? new X509KeyLocationResolver(authContextInfo)
+                                : new KeyLocationResolver(authContextInfo);
+                    }
             }
         }
         return keyResolver;
