@@ -64,21 +64,23 @@ class AwsAlbKeyResolverTest {
                 "https://cognito-idp.eu-central-1.amazonaws.com");
         contextInfo.setSignatureAlgorithm(SignatureAlgorithm.ES256);
 
+        AwsAlbKeyResolver keyLocationResolver = new AwsAlbKeyResolver(contextInfo);
+        keyLocationResolver = Mockito.spy(keyLocationResolver);
+
+        when(keyLocationResolver.getHttpGet()).thenReturn(simpleGet);
+
         when(simpleGet.get("https://localhost:8080/c2f80c8b-c05c-4068-af14-17299f7896b1"))
                 .thenReturn(simpleResponse);
-        when(simpleResponse.getBody()).thenReturn(AWS_ALB_KEY);
 
-        AwsAlbKeyResolver keyLocationResolver = new AwsAlbKeyResolver(contextInfo) {
-            protected SimpleGet getHttpGet() {
-                return simpleGet;
-            }
-        };
-        keyLocationResolver = Mockito.spy(keyLocationResolver);
+        when(simpleResponse.getBody()).thenReturn(AWS_ALB_KEY);
 
         when(signature.getHeaders()).thenReturn(headers);
         when(headers.getStringHeaderValue(JsonWebKey.KEY_ID_PARAMETER)).thenReturn("c2f80c8b-c05c-4068-af14-17299f7896b1");
 
         Key key = keyLocationResolver.resolveKey(signature, List.of());
         assertTrue(key instanceof ECPublicKey);
+        // Confirm the cached key is returned
+        Key key2 = keyLocationResolver.resolveKey(signature, List.of());
+        assertTrue(key2 == key);
     }
 }
