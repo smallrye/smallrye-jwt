@@ -24,10 +24,8 @@ import io.smallrye.jwt.util.KeyUtils;
 import io.smallrye.jwt.util.ResourceUtils;
 
 public class AwsAlbKeyResolver implements VerificationKeyResolver {
-    private static final int DEFAULT_CACHE_SIZE = 100;
-    private static final Duration DEFAULT_TIME_TO_LIVE = Duration.ofMinutes(60);
-
     private JWTAuthContextInfo authContextInfo;
+    private long cacheTimeToLive;
     private Map<String, CacheEntry> keys = new HashMap<>();
     private AtomicInteger size = new AtomicInteger();
 
@@ -36,6 +34,7 @@ public class AwsAlbKeyResolver implements VerificationKeyResolver {
             throw PrincipalMessages.msg.nullKeyLocation();
         }
         this.authContextInfo = authContextInfo;
+        this.cacheTimeToLive = Duration.ofMinutes(authContextInfo.getKeyCacheTimeToLive()).toMillis();
     }
 
     @Override
@@ -129,9 +128,9 @@ public class AwsAlbKeyResolver implements VerificationKeyResolver {
         int currentSize;
         do {
             currentSize = size.get();
-            if (currentSize == DEFAULT_CACHE_SIZE) {
+            if (currentSize == authContextInfo.getKeyCacheSize()) {
                 removeInvalidEntries();
-                if (currentSize == DEFAULT_CACHE_SIZE) {
+                if (currentSize == authContextInfo.getKeyCacheSize()) {
                     return false;
                 }
             }
@@ -154,7 +153,7 @@ public class AwsAlbKeyResolver implements VerificationKeyResolver {
     }
 
     private boolean isEntryExpired(CacheEntry entry, long now) {
-        return entry.createdTime + DEFAULT_TIME_TO_LIVE.toMillis() < now;
+        return entry.createdTime + cacheTimeToLive < now;
     }
 
     private static long now() {

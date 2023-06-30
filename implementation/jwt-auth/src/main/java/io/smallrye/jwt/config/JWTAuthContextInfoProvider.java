@@ -491,11 +491,49 @@ public class JWTAuthContextInfoProvider {
     private KeyFormat keyFormat;
 
     /**
-     * Supported key provider.
+     * Supported verification key provider.
      */
     @Inject
     @ConfigProperty(name = "smallrye.jwt.verify.key-provider", defaultValue = "DEFAULT")
     private KeyProvider keyProvider;
+
+    /**
+     * Key cache size.
+     * If the verification key resolver acquires keys dynamically on every request then it may
+     * use this property, as well as {@link #keyCacheTimeToLive}, to control the key cache.
+     * <p/>
+     * For example, setting `smallrye.jwt.verify.key-provider=AWS_ALB` will activate
+     * AWS ALB verification key resolver which will use the current token `kid` header value
+     * to fetch the key from the AWS ALB key endpoint. This resolve will need to cache the acquired
+     * keys and control the cache size.
+     * <p/>
+     * If the maximum key cache size has been reached then the cache entries which have been in the cache
+     * for longer than the configured {@link #keyCacheTimeToLive} duration, should be removed and a new
+     * key added instead. If the cache size can not be reduced then the key resolver should
+     * return this key without caching it.
+     */
+    @Inject
+    @ConfigProperty(name = "smallrye.jwt.key-cache-size", defaultValue = "100")
+    private int keyCacheSize;
+
+    /**
+     * Key cache entry time-to-live duration in minutes.
+     * If the verification key resolver acquires keys dynamically on every request then it may
+     * use this property, as well as {@link #keyCacheSize}, to control the key cache.
+     * <p/>
+     * For example, setting `smallrye.jwt.verify.key-provider=AWS_ALB` will activate
+     * AWS ALB verification key resolver which will use the current token `kid` header value
+     * to fetch the key from the AWS ALB key endpoint. This resolve will need to cache the acquired
+     * keys.
+     * <p/>
+     * If the maximum key cache size {@link #keyCacheSize} has been reached then the cache entries which have been in the cache
+     * for longer than the configured time-to-live duration, should be removed and a new
+     * key added instead. If the cache size can not be reduced then the key resolver should
+     * return this key without caching it.
+     */
+    @Inject
+    @ConfigProperty(name = "smallrye.jwt.key-cache-time-to-live", defaultValue = "10")
+    private int keyCacheTimeToLive;
 
     /**
      * Relax the validation of the verification keys.
@@ -772,6 +810,8 @@ public class JWTAuthContextInfoProvider {
         contextInfo.setKeyEncryptionAlgorithm(theDecryptionKeyAlgorithm);
         contextInfo.setKeyFormat(keyFormat);
         contextInfo.setKeyProvider(keyProvider);
+        contextInfo.setKeyCacheSize(keyCacheSize);
+        contextInfo.setKeyCacheTimeToLive(keyCacheTimeToLive);
         if (mpJwtVerifyAudiences.isPresent()) {
             contextInfo.setExpectedAudience(mpJwtVerifyAudiences.get());
         } else if (expectedAudience.isPresent()) {

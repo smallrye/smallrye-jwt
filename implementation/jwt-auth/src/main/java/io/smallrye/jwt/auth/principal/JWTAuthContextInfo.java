@@ -77,6 +77,8 @@ public class JWTAuthContextInfo {
     private boolean tlsTrustAll;
     private String httpProxyHost;
     private int httpProxyPort;
+    private int keyCacheSize = 100;
+    private int keyCacheTimeToLive = 10;
 
     public JWTAuthContextInfo() {
     }
@@ -132,6 +134,8 @@ public class JWTAuthContextInfo {
         this.keyEncryptionAlgorithm = orig.getKeyEncryptionAlgorithm();
         this.keyFormat = orig.getKeyFormat();
         this.keyProvider = orig.getKeyProvider();
+        this.keyCacheSize = orig.getKeyCacheSize();
+        this.keyCacheTimeToLive = orig.getKeyCacheTimeToLive();
         this.expectedAudience = orig.getExpectedAudience();
         this.groupsSeparator = orig.getGroupsSeparator();
         this.requiredClaims = orig.getRequiredClaims();
@@ -436,6 +440,8 @@ public class JWTAuthContextInfo {
                 ", keyEncryptionAlgorithm=" + keyEncryptionAlgorithm +
                 ", keyFormat=" + keyFormat +
                 ", keyProvider=" + keyProvider +
+                ", keyCacheSize=" + keyCacheSize +
+                ", keyCacheTimeToLive=" + keyCacheTimeToLive +
                 ", expectedAudience=" + expectedAudience +
                 ", groupsSeparator='" + groupsSeparator + '\'' +
                 ", relaxVerificationKeyValidation=" + relaxVerificationKeyValidation +
@@ -526,5 +532,21 @@ public class JWTAuthContextInfo {
 
     public void setClockSkew(int clockSkew) {
         this.clockSkew = clockSkew;
+    }
+
+    public int getKeyCacheTimeToLive() {
+        return keyCacheTimeToLive;
+    }
+
+    public void setKeyCacheTimeToLive(int keyCacheTimeToLive) {
+        this.keyCacheTimeToLive = keyCacheTimeToLive;
+    }
+
+    public int getKeyCacheSize() {
+        return keyCacheSize;
+    }
+
+    public void setKeyCacheSize(int keyCacheSize) {
+        this.keyCacheSize = keyCacheSize;
     }
 }
