@@ -19,6 +19,7 @@ package io.smallrye.jwt.build;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -39,6 +40,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
@@ -103,6 +105,30 @@ class JwtSignTest {
         assertEquals(7, claims.getClaimsMap().size());
         checkDefaultClaimsAndHeaders(getJwsHeaders(jwt, 2), claims);
         assertEquals("custom-value", claims.getClaimValue("customClaim"));
+
+        assertEquals("new-value", claims.getClaimValue("newClaim"));
+        assertEquals("https://default-issuer", claims.getIssuer());
+        assertEquals(1, claims.getAudience().size());
+        assertEquals("https://localhost:8081", claims.getAudience().get(0));
+    }
+
+    @Test
+    void enhanceAndResignTokenWithCustomClaimRemoved() throws Exception {
+        JwtClaims tokenClaims = signAndVerifyClaims();
+        assertEquals("custom-value", tokenClaims.getClaimValue("customClaim"));
+        JsonWebToken token = new TestJsonWebToken(tokenClaims);
+
+        String jwt = Jwt.claims(token).remove("customClaim")
+                // this just checks trying to remove non-existent claims does not cause some NPE
+                .remove(UUID.randomUUID().toString())
+                .claim("newClaim", "new-value").sign();
+
+        // verify
+        JsonWebSignature jws = getVerifiedJws(jwt);
+        JwtClaims claims = JwtClaims.parse(jws.getPayload());
+        assertEquals(6, claims.getClaimsMap().size());
+        checkDefaultClaimsAndHeaders(getJwsHeaders(jwt, 2), claims);
+        assertNull(claims.getClaimValue("customClaim"));
 
         assertEquals("new-value", claims.getClaimValue("newClaim"));
         assertEquals("https://default-issuer", claims.getIssuer());
