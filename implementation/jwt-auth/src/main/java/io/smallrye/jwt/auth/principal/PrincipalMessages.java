@@ -74,4 +74,10 @@ interface PrincipalMessages {
 
     @Message(id = 7018, value = "The token age has exceeded %d seconds")
     ParseException tokenAgeExceeded(long tokenAge);
+
+    @Message(id = 7019, value = "Required key location is null")
+    UnresolvableKeyException nullKeyLocation();
+
+    @Message(id = 7020, value = "Required key identifier is null")
+    UnresolvableKeyException nullKeyIdentifier();
 }
