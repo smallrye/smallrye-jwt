@@ -378,4 +378,10 @@ class JwtClaimsBuilderImpl extends JwtSignatureImpl implements JwtClaimsBuilder,
         }
     }
 
+    @Override
+    public JwtClaimsBuilder remove(String name) {
+        claims.unsetClaim(name);
+        return this;
+    }
+
 }

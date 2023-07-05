@@ -205,6 +205,14 @@ public interface JwtClaimsBuilder extends JwtSignature {
     JwtClaimsBuilder claim(String name, Object value);
 
     /**
+     * Remove a claim.
+     *
+     * @param name the claim name
+     * @return JwtClaimsBuilder
+     */
+    JwtClaimsBuilder remove(String name);
+
+    /**
      * Set JsonWebSignature headers and sign the claims by moving to {@link JwtSignatureBuilder}
      *
      * @return JwtSignatureBuilder
