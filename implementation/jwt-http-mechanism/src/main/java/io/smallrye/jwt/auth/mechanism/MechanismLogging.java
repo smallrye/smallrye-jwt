@@ -26,4 +26,8 @@ interface MechanismLogging extends BasicLogger {
     @LogMessage(level = Logger.Level.DEBUG)
     @Message(id = 11003, value = "Failed to resolve the key. Either corrupt or unavailable.")
     void noUsableKey();
+
+    @LogMessage(level = Logger.Level.DEBUG)
+    @Message(id = 11004, value = "JWK set does not contain provided token 'kid'")
+    void kidNotInJWkSet();
 }

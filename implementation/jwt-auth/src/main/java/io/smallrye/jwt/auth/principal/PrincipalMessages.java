@@ -80,4 +80,8 @@ interface PrincipalMessages {
 
     @Message(id = 7020, value = "Required key identifier is null")
     UnresolvableKeyException nullKeyIdentifier();
+
+    @Message(id = 7021, value = "JWK set does not contain provided token 'kid'")
+    UnmatchedTokenKidException unmatchedTokenKidException();
+
 }
