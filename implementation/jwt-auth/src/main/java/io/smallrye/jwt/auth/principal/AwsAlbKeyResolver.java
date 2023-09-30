@@ -42,8 +42,17 @@ public class AwsAlbKeyResolver implements VerificationKeyResolver {
         this.cacheTimeToLive = Duration.ofMinutes(authContextInfo.getKeyCacheTimeToLive()).toMillis();
     }
 
+    static String removeEndingSlash(String uri){
+        if(!uri.endsWith("/") || uri.length() == 1){
+            return uri;
+        }
+        var length = uri.length();
+        return uri.substring(0, length - 1);
+    }
+
     static boolean containsSubPath(String publicKeyLocation) {
-        var uri = URI.create(publicKeyLocation);
+        var locationWithoutSlash = removeEndingSlash(publicKeyLocation);
+        var uri = URI.create(locationWithoutSlash);
         return uri.getPath().contains("/");
     }
 
