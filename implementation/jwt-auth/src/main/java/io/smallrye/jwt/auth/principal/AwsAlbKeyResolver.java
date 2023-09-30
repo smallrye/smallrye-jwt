@@ -1,6 +1,7 @@
 package io.smallrye.jwt.auth.principal;
 
 import java.io.IOException;
+import java.net.URI;
 import java.security.Key;
 import java.time.Duration;
 import java.util.HashMap;
@@ -30,11 +31,20 @@ public class AwsAlbKeyResolver implements VerificationKeyResolver {
     private AtomicInteger size = new AtomicInteger();
 
     public AwsAlbKeyResolver(JWTAuthContextInfo authContextInfo) throws UnresolvableKeyException {
-        if (authContextInfo.getPublicKeyLocation() == null) {
+        var publicKeyLocation = authContextInfo.getPublicKeyLocation();
+        if (publicKeyLocation == null) {
             throw PrincipalMessages.msg.nullKeyLocation();
+        }
+        if (containsSubPath(publicKeyLocation)) {
+            throw PrincipalMessages.msg.subPathNotAllowed();
         }
         this.authContextInfo = authContextInfo;
         this.cacheTimeToLive = Duration.ofMinutes(authContextInfo.getKeyCacheTimeToLive()).toMillis();
+    }
+
+    static boolean containsSubPath(String publicKeyLocation) {
+        var uri = URI.create(publicKeyLocation);
+        return uri.getPath().contains("/");
     }
 
     @Override
