@@ -192,4 +192,8 @@ interface PrincipalLogging extends BasicLogger {
     @LogMessage(level = Logger.Level.DEBUG)
     @Message(id = 8044, value = "Encrypted token headers must contain a content type header")
     void encryptedTokenMissingContentType();
+
+    @LogMessage(level = Logger.Level.DEBUG)
+    @Message(id = 8045, value = "public key path: %s")
+    void publicKeyPath(String path);
 }

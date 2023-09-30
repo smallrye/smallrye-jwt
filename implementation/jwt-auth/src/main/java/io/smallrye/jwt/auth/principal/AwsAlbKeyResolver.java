@@ -31,6 +31,13 @@ public class AwsAlbKeyResolver implements VerificationKeyResolver {
     private AtomicInteger size = new AtomicInteger();
 
     public AwsAlbKeyResolver(JWTAuthContextInfo authContextInfo) throws UnresolvableKeyException {
+        validateConfiguration(authContextInfo);
+        this.authContextInfo = authContextInfo;
+        this.cacheTimeToLive = Duration.ofMinutes(authContextInfo.getKeyCacheTimeToLive()).toMillis();
+    }
+
+    static void validateConfiguration(JWTAuthContextInfo authContextInfo) throws UnresolvableKeyException {
+        //public key location check
         var publicKeyLocation = authContextInfo.getPublicKeyLocation();
         if (publicKeyLocation == null) {
             throw PrincipalMessages.msg.nullKeyLocation();
@@ -38,18 +45,30 @@ public class AwsAlbKeyResolver implements VerificationKeyResolver {
         if (containsSubPath(publicKeyLocation)) {
             throw PrincipalMessages.msg.subPathNotAllowed();
         }
-        this.authContextInfo = authContextInfo;
-        this.cacheTimeToLive = Duration.ofMinutes(authContextInfo.getKeyCacheTimeToLive()).toMillis();
+
     }
 
-    static String removeEndingSlash(String uri){
-        if(!uri.endsWith("/") || uri.length() == 1){
+    /**
+     * Remove ending slash from uri e.g. https://localhost:8080/ -> https://localhost:8080
+     *
+     * @param uri public key location
+     * @return uri without ending slash
+     */
+    static String removeEndingSlash(String uri) {
+        if (!uri.endsWith("/") || uri.length() == 1) {
             return uri;
         }
         var length = uri.length();
         return uri.substring(0, length - 1);
     }
 
+    /**
+     * Check if public key location contains sub path e.g. https://localhost:8080/subpath
+     * Fails fast to prevent runtime errors
+     *
+     * @param publicKeyLocation to check
+     * @return true if public key location contains sub path which is invalid
+     */
     static boolean containsSubPath(String publicKeyLocation) {
         var locationWithoutSlash = removeEndingSlash(publicKeyLocation);
         var uri = URI.create(locationWithoutSlash);
@@ -76,6 +95,7 @@ public class AwsAlbKeyResolver implements VerificationKeyResolver {
 
     protected Key retrieveKey(String kid) throws UnresolvableKeyException {
         String keyLocation = authContextInfo.getPublicKeyLocation() + "/" + kid;
+        PrincipalLogging.log.publicKeyPath(keyLocation);
         SimpleResponse simpleResponse = null;
         try {
             simpleResponse = getHttpGet().get(keyLocation);
