@@ -1,7 +1,6 @@
 package io.smallrye.jwt.auth.principal;
 
 import java.io.IOException;
-import java.net.URI;
 import java.security.Key;
 import java.time.Duration;
 import java.util.HashMap;
@@ -31,48 +30,11 @@ public class AwsAlbKeyResolver implements VerificationKeyResolver {
     private AtomicInteger size = new AtomicInteger();
 
     public AwsAlbKeyResolver(JWTAuthContextInfo authContextInfo) throws UnresolvableKeyException {
-        validateConfiguration(authContextInfo);
+        AwsAlbKeyConfigurationValidator.validateKeyConfiguration(authContextInfo);
+        AwsAlbKeyConfigurationValidator.validatePublicKeyAlgorithmConfiguration(authContextInfo);
+        AwsAlbKeyConfigurationValidator.validateTokenHeaderConfiguration(authContextInfo);
         this.authContextInfo = authContextInfo;
         this.cacheTimeToLive = Duration.ofMinutes(authContextInfo.getKeyCacheTimeToLive()).toMillis();
-    }
-
-    static void validateConfiguration(JWTAuthContextInfo authContextInfo) throws UnresolvableKeyException {
-        //public key location check
-        var publicKeyLocation = authContextInfo.getPublicKeyLocation();
-        if (publicKeyLocation == null) {
-            throw PrincipalMessages.msg.nullKeyLocation();
-        }
-        if (containsSubPath(publicKeyLocation)) {
-            throw AwsAlbKeyResolverMessages.msg.subPathNotAllowed();
-        }
-
-    }
-
-    /**
-     * Remove ending slash from uri e.g. https://localhost:8080/ -> https://localhost:8080
-     *
-     * @param uri public key location
-     * @return uri without ending slash
-     */
-    static String removeEndingSlash(String uri) {
-        if (!uri.endsWith("/") || uri.length() == 1) {
-            return uri;
-        }
-        var length = uri.length();
-        return uri.substring(0, length - 1);
-    }
-
-    /**
-     * Check if public key location contains sub path e.g. https://localhost:8080/subpath
-     * Fails fast to prevent runtime errors
-     *
-     * @param publicKeyLocation to check
-     * @return true if public key location contains sub path which is invalid
-     */
-    static boolean containsSubPath(String publicKeyLocation) {
-        var locationWithoutSlash = removeEndingSlash(publicKeyLocation);
-        var uri = URI.create(locationWithoutSlash);
-        return uri.getPath().contains("/");
     }
 
     @Override

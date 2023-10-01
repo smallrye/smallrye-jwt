@@ -9,7 +9,7 @@ import org.jose4j.lang.UnresolvableKeyException;
 interface AwsAlbKeyResolverMessages {
     AwsAlbKeyResolverMessages msg = Messages.getBundle(AwsAlbKeyResolverMessages.class);
 
-    @Message(id = 14001, value = "Key is resolved from kid. Key location is not allowed. Provide only the path like: https://public-keys.auth.elb.[REGION].amazonaws.com")
+    @Message(id = 15000, value = "Key is resolved from kid. Key location is not allowed. Provide only the path like: https://public-keys.auth.elb.[REGION].amazonaws.com")
     UnresolvableKeyException subPathNotAllowed();
 
 }

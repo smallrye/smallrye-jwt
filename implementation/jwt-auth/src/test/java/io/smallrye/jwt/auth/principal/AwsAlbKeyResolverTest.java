@@ -16,7 +16,6 @@
  */
 package io.smallrye.jwt.auth.principal;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
@@ -83,29 +82,6 @@ class AwsAlbKeyResolverTest {
         // Confirm the cached key is returned
         Key key2 = keyLocationResolver.resolveKey(signature, List.of());
         assertTrue(key2 == key);
-    }
-
-    @Test
-    void containsSubPath() {
-        assertTrue(AwsAlbKeyResolver.containsSubPath("https://public-keys.auth.elb.eu-central-1.amazonaws.com/keyid"));
-        assertTrue(AwsAlbKeyResolver.containsSubPath("https://public-keys.auth.elb.eu-central-1.amazonaws.com/index/keyid"));
-        assertTrue(AwsAlbKeyResolver.containsSubPath("https://public-keys.auth.elb.eu-central-1.amazonaws.com/index.html"));
-        assertFalse(AwsAlbKeyResolver.containsSubPath("https://public-keys.auth.elb.eu-central-1.amazonaws.com/"));
-        assertFalse(AwsAlbKeyResolver.containsSubPath("https://public-keys.auth.elb.eu-central-1.amazonaws.com"));
-    }
-
-    @Test
-    void removeEndingSlash() {
-        assertTrue(AwsAlbKeyResolver.removeEndingSlash("key-location/keyid")
-                .equals("key-location/keyid"));
-        assertTrue(AwsAlbKeyResolver.removeEndingSlash("key-location/index/keyid/")
-                .equals("key-location/index/keyid"));
-        assertTrue(AwsAlbKeyResolver.removeEndingSlash("key-location/index.html/")
-                .equals("key-location/index.html"));
-        assertTrue(AwsAlbKeyResolver.removeEndingSlash("key-location/")
-                .equals("key-location"));
-        assertTrue(AwsAlbKeyResolver.removeEndingSlash("key-location")
-                .equals("key-location"));
     }
 
 }
