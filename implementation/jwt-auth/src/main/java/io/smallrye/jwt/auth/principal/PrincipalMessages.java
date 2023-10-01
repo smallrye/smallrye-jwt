@@ -84,7 +84,4 @@ interface PrincipalMessages {
     @Message(id = 7021, value = "JWK set does not contain provided token 'kid'")
     UnmatchedTokenKidException unmatchedTokenKidException();
 
-    @Message(id = 7022, value = "Key is resolved from kid. Key location is not allowed. Provide only the path like: https://public-keys.auth.elb.[REGION].amazonaws.com")
-    UnresolvableKeyException subPathNotAllowed();
-
 }

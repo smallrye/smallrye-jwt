@@ -43,7 +43,7 @@ public class AwsAlbKeyResolver implements VerificationKeyResolver {
             throw PrincipalMessages.msg.nullKeyLocation();
         }
         if (containsSubPath(publicKeyLocation)) {
-            throw PrincipalMessages.msg.subPathNotAllowed();
+            throw AwsAlbKeyResolverMessages.msg.subPathNotAllowed();
         }
 
     }
@@ -95,7 +95,7 @@ public class AwsAlbKeyResolver implements VerificationKeyResolver {
 
     protected Key retrieveKey(String kid) throws UnresolvableKeyException {
         String keyLocation = authContextInfo.getPublicKeyLocation() + "/" + kid;
-        PrincipalLogging.log.publicKeyPath(keyLocation);
+        AwsAlbKeyResolverLogging.log.publicKeyPath(keyLocation);
         SimpleResponse simpleResponse = null;
         try {
             simpleResponse = getHttpGet().get(keyLocation);
