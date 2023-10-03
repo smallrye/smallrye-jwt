@@ -83,4 +83,5 @@ class AwsAlbKeyResolverTest {
         Key key2 = keyLocationResolver.resolveKey(signature, List.of());
         assertTrue(key2 == key);
     }
+
 }

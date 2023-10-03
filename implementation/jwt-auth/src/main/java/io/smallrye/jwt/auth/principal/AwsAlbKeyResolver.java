@@ -30,9 +30,9 @@ public class AwsAlbKeyResolver implements VerificationKeyResolver {
     private AtomicInteger size = new AtomicInteger();
 
     public AwsAlbKeyResolver(JWTAuthContextInfo authContextInfo) throws UnresolvableKeyException {
-        if (authContextInfo.getPublicKeyLocation() == null) {
-            throw PrincipalMessages.msg.nullKeyLocation();
-        }
+        AwsAlbKeyConfigurationValidator.validateKeyConfiguration(authContextInfo);
+        AwsAlbKeyConfigurationValidator.validatePublicKeyAlgorithmConfiguration(authContextInfo);
+        AwsAlbKeyConfigurationValidator.validateTokenHeaderConfiguration(authContextInfo);
         this.authContextInfo = authContextInfo;
         this.cacheTimeToLive = Duration.ofMinutes(authContextInfo.getKeyCacheTimeToLive()).toMillis();
     }
@@ -57,6 +57,7 @@ public class AwsAlbKeyResolver implements VerificationKeyResolver {
 
     protected Key retrieveKey(String kid) throws UnresolvableKeyException {
         String keyLocation = authContextInfo.getPublicKeyLocation() + "/" + kid;
+        AwsAlbKeyResolverLogging.log.publicKeyPath(keyLocation);
         SimpleResponse simpleResponse = null;
         try {
             simpleResponse = getHttpGet().get(keyLocation);
