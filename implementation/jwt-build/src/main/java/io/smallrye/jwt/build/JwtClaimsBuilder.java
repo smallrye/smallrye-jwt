@@ -132,7 +132,9 @@ public interface JwtClaimsBuilder extends JwtSignature {
      * @param group the groups
      * @return JwtClaimsBuilder
      */
-    JwtClaimsBuilder groups(String group);
+    default JwtClaimsBuilder groups(String group) {
+        return groups(Set.of(group));
+    }
 
     /**
      * Set a multiple value 'groups' claim
@@ -143,6 +145,25 @@ public interface JwtClaimsBuilder extends JwtSignature {
     JwtClaimsBuilder groups(Set<String> groups);
 
     /**
+     * Set a 'scope' claim value
+     *
+     * @param scope the scope
+     * @return JwtClaimsBuilder
+     */
+    default JwtClaimsBuilder scope(String scope) {
+        return scope(Set.of(scope));
+    }
+
+    /**
+     * Set a multiple value 'scope' claim whose value will be represented as a String
+     * where each scope value is separated by the " " space character.
+     *
+     * @param scopes the scopes
+     * @return JwtClaimsBuilder
+     */
+    JwtClaimsBuilder scope(Set<String> scopes);
+
+    /**
      * Set a single value audience 'aud' claim
      *
      * @param audience the audience
@@ -151,7 +172,7 @@ public interface JwtClaimsBuilder extends JwtSignature {
     JwtClaimsBuilder audience(String audience);
 
     /**
-     * Set a multiple value audience 'aud' claim
+     * Set a multiple value audience 'aud' claim whose value will be represented as a JSON array
      *
      * @param audiences the audiences
      * @return JwtClaimsBuilder

@@ -489,6 +489,7 @@ class JwtSignTest {
     @Test
     void signClaimsAllTypes() throws Exception {
         String jwt = Jwt.claims()
+                .scope(Set.of("read:data", "write:data"))
                 .claim("stringClaim", "string")
                 .claim("booleanClaim", true)
                 .claim("numberClaim", 3)
@@ -502,8 +503,11 @@ class JwtSignTest {
         JsonWebSignature jws = getVerifiedJws(jwt);
         JwtClaims claims = JwtClaims.parse(jws.getPayload());
 
-        assertEquals(11, claims.getClaimsMap().size());
+        assertEquals(12, claims.getClaimsMap().size());
         checkDefaultClaimsAndHeaders(getJwsHeaders(jwt, 2), claims);
+
+        String scope = claims.getStringClaimValue("scope");
+        assertTrue("read:data write:data".equals(scope) || "write:data read:data".equals(scope));
 
         assertEquals("string", claims.getClaimValue("stringClaim"));
         assertTrue((Boolean) claims.getClaimValue("booleanClaim"));
