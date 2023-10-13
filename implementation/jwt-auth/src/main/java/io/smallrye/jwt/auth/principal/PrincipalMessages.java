@@ -84,4 +84,6 @@ interface PrincipalMessages {
     @Message(id = 7021, value = "JWK set does not contain provided token 'kid'")
     UnmatchedTokenKidException unmatchedTokenKidException();
 
+    @Message(id = 7022, value = "Failed to parse a token")
+    ParseException failedToParseToken(@Cause Throwable throwable);
 }
