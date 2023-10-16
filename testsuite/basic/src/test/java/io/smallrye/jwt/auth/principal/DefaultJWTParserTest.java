@@ -29,6 +29,13 @@ import io.smallrye.jwt.util.ResourceUtils;
 
 class DefaultJWTParserTest {
     @Test
+    void parseOnly() throws Exception {
+        String jwtString = Jwt.upn("jdoe@example.com").sign(KeyUtils.readPrivateKey("/privateKey.pem"));
+        JsonWebToken jwt = new DefaultJWTParser().parseOnly(jwtString);
+        assertEquals("jdoe@example.com", jwt.getName());
+    }
+
+    @Test
     void parseWithConfiguredPublicKey() throws Exception {
         String jwtString = Jwt.upn("jdoe@example.com").issuer("https://server.example.com")
                 .sign(KeyUtils.readPrivateKey("/privateKey.pem"));

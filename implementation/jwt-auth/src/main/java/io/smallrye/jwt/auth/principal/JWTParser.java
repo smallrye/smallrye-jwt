@@ -120,4 +120,9 @@ public interface JWTParser {
      */
     public JsonWebToken decrypt(final String token, String secret) throws ParseException;
 
+    /**
+     * Parse an already verified signed JWT token.
+     * Use this method only if the token has been verified by the secure gateway or other systems.
+     */
+    public JsonWebToken parseOnly(final String token) throws ParseException;
 }

@@ -29,7 +29,11 @@ import javax.crypto.SecretKey;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
+import org.eclipse.microprofile.jwt.Claims;
 import org.eclipse.microprofile.jwt.JsonWebToken;
+import org.jose4j.jwt.JwtClaims;
+import org.jose4j.jwt.consumer.InvalidJwtException;
+import org.jose4j.jwt.consumer.JwtConsumerBuilder;
 
 import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
@@ -174,5 +178,20 @@ public class DefaultJWTParser implements JWTParser {
 
     private static boolean isXecPrivateKey(Key encKey) {
         return KeyUtils.isSupportedKey(encKey, XEC_PRIVATE_KEY_INTERFACE);
+    }
+
+    @Override
+    public JsonWebToken parseOnly(String token) throws ParseException {
+        try {
+            JwtClaims claims = new JwtConsumerBuilder()
+                    .setSkipSignatureVerification()
+                    .setSkipAllValidators()
+                    .build().processToClaims(token);
+            claims.setClaim(Claims.raw_token.name(), token);
+            return new DefaultJWTCallerPrincipal(claims);
+        } catch (InvalidJwtException e) {
+            PrincipalMessages.msg.failedToVerifyToken(e);
+        }
+        return null;
     }
 }
