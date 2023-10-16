@@ -35,6 +35,7 @@ import io.smallrye.jwt.build.JwtSignatureException;
  */
 class JwtClaimsBuilderImpl extends JwtSignatureImpl implements JwtClaimsBuilder, JwtSignatureBuilder {
 
+    private static final String SCOPE_CLAIM = "scope";
     private static final StringVerifier STRING_VERIFIER = new StringVerifier();
     private static final InstantVerifier INSTANT_VERIFIER = new InstantVerifier();
     private static final StringCollectionVerifier STRING_COLLECTION_VERIFIER = new StringCollectionVerifier();
@@ -167,16 +168,14 @@ class JwtClaimsBuilderImpl extends JwtSignatureImpl implements JwtClaimsBuilder,
      * {@inheritDoc}
      */
     @Override
-    public JwtClaimsBuilder groups(String group) {
-        return groups(Collections.singleton(group));
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public JwtClaimsBuilder groups(Set<String> groups) {
         claims.setClaim(Claims.groups.name(), groups.stream().collect(Collectors.toList()));
+        return this;
+    }
+
+    @Override
+    public JwtClaimsBuilder scope(Set<String> scopes) {
+        claims.setClaim(SCOPE_CLAIM, scopes.stream().collect(Collectors.joining(" ")));
         return this;
     }
 
@@ -383,5 +382,4 @@ class JwtClaimsBuilderImpl extends JwtSignatureImpl implements JwtClaimsBuilder,
         claims.unsetClaim(name);
         return this;
     }
-
 }

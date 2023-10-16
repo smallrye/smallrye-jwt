@@ -188,6 +188,26 @@ public final class Jwt {
     }
 
     /**
+     * Creates a new instance of {@link JwtClaimsBuilder} with a specified 'scope' claim.
+     *
+     * @param scope the scope
+     * @return {@link JwtClaimsBuilder}
+     */
+    public static JwtClaimsBuilder scope(String scope) {
+        return claims().scope(scope);
+    }
+
+    /**
+     * Creates a new instance of {@link JwtClaimsBuilder} with a specified 'scope' claim.
+     *
+     * @param scopes the scopes
+     * @return {@link JwtClaimsBuilder}
+     */
+    public static JwtClaimsBuilder scope(Set<String> scopes) {
+        return claims().scope(scopes);
+    }
+
+    /**
      * Creates a new instance of {@link JwtClaimsBuilder} with a specified 'audience' claim.
      *
      * @param audience the audience
