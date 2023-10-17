@@ -49,6 +49,17 @@ public abstract class JWTCallerPrincipal implements JsonWebToken {
         this.tokenType = tokenType;
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * Note that this method is not guaranteed to return the unique principal name
+     * as documented in the {@link JsonWebToken#getName()} if the "upn" claim is not available
+     * but the next fallback claim, the "preferred_username" claim is.
+     * This is due to the fact that a standard OpenId Connect "preferred_username" claim value
+     * is not guaranteed to be unique.
+     * Use {@link JsonWebToken#getSubject()} or {@link JsonWebToken#getClaim("upn")} to get a unique
+     * identifier.
+     */
     @Override
     public String getName() {
         String principalName = getClaim(Claims.upn.name());
@@ -62,6 +73,9 @@ public abstract class JWTCallerPrincipal implements JsonWebToken {
     }
 
     @Override
+    /**
+     * {@inheritDoc}
+     */
     public Set<String> getClaimNames() {
         Set<String> names = new HashSet<>(doGetClaimNames());
         names.add(Claims.raw_token.name());
@@ -70,6 +84,9 @@ public abstract class JWTCallerPrincipal implements JsonWebToken {
 
     protected abstract Collection<String> doGetClaimNames();
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public <T> T getClaim(String claimName) {
         @SuppressWarnings("unchecked")
