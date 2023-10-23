@@ -200,9 +200,6 @@ class JwtEncryptionImpl implements JwtEncryptionBuilder {
                 throw ImplMessages.msg.unsupportedKeyEncryptionAlgorithm(alg);
             }
         }
-        if ("dir".equals(alg)) {
-            throw ImplMessages.msg.directContentEncryptionUnsupported();
-        }
 
         if (keyEncryptionKey instanceof RSAPublicKey) {
             if (alg == null) {
@@ -219,7 +216,7 @@ class JwtEncryptionImpl implements JwtEncryptionBuilder {
         } else if (keyEncryptionKey instanceof SecretKey) {
             if (alg == null) {
                 return KeyEncryptionAlgorithm.A256KW.getAlgorithm();
-            } else if (alg.startsWith("A") || alg.startsWith("PBE")) {
+            } else if (alg.startsWith("A") || alg.startsWith("PBE") || KeyEncryptionAlgorithm.DIR.getAlgorithm().equals(alg)) {
                 return alg;
             }
         }

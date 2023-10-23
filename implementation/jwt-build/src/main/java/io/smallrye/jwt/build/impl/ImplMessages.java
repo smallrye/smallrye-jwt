@@ -22,9 +22,6 @@ interface ImplMessages {
     @Message(id = 5003, value = "%s")
     JwtEncryptionException joseSerializationError(String errorMessage, @Cause Throwable t);
 
-    @Message(id = 5004, value = "Direct content encryption is currently not supported")
-    JwtEncryptionException directContentEncryptionUnsupported();
-
     @Message(id = 5005, value = "Unsupported key encryption algorithm: %s")
     JwtEncryptionException unsupportedKeyEncryptionAlgorithm(String algorithmName);
 
