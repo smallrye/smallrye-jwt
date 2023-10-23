@@ -435,6 +435,26 @@ public class JwtEncryptTest {
     }
 
     @Test
+    void encryptWithSecretKeyAndUseDirAlgo() throws Exception {
+        String secret = "AyM1SysPpbyDfgZld3umj1qzKObwVMko";
+
+        String jweCompact = Jwt.claims()
+                .claim("customClaim", "custom-value")
+                .jwe()
+                .keyId("key-enc-key-id")
+                .keyAlgorithm(KeyEncryptionAlgorithm.DIR)
+                .encryptWithSecret(secret);
+
+        checkJweHeaders(jweCompact, "dir", 3);
+
+        SecretKey secretKey = new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "AES");
+        JsonWebEncryption jwe = getJsonWebEncryption(jweCompact, secretKey);
+
+        JwtClaims claims = JwtClaims.parse(jwe.getPlaintextString());
+        checkJwtClaims(claims);
+    }
+
+    @Test
     void encryptWithSecretPassword() throws Exception {
         String secret = "AyM1SysPpbyDfgZld3umj1qzKObwVMko";
 

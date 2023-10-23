@@ -20,7 +20,8 @@ public enum KeyEncryptionAlgorithm {
     A256GCMKW("A256GCMKW"),
     PBES2_HS256_A128KW("PBES2-HS256+A128KW"),
     PBES2_HS384_A192KW("PBES2-HS384+A192KW"),
-    PBES2_HS512_A256KW("PBES2-HS512+A256KW");
+    PBES2_HS512_A256KW("PBES2-HS512+A256KW"),
+    DIR("dir");
 
     private String algorithmName;
 
