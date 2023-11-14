@@ -57,8 +57,8 @@ public abstract class JWTCallerPrincipal implements JsonWebToken {
      * but the next fallback claim, the "preferred_username" claim is.
      * This is due to the fact that a standard OpenId Connect "preferred_username" claim value
      * is not guaranteed to be unique.
-     * Use {@link JsonWebToken#getSubject()} or {@link JsonWebToken#getClaim("upn")} to get a unique
-     * identifier.
+     * Use {@link JsonWebToken#getSubject()} to get a unique subject value
+     * or {@link JsonWebToken#getClaim(String)} to get a 'upn' claim whose value is a unique identifier.
      */
     @Override
     public String getName() {
