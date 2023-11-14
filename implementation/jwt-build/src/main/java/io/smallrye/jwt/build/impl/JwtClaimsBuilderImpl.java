@@ -1,13 +1,16 @@
 package io.smallrye.jwt.build.impl;
 
 import java.security.PrivateKey;
+import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -19,8 +22,10 @@ import jakarta.json.JsonString;
 import jakarta.json.JsonValue;
 
 import org.eclipse.microprofile.jwt.Claims;
+import org.jose4j.base64url.Base64;
 import org.jose4j.jwt.JwtClaims;
 import org.jose4j.jwt.NumericDate;
+import org.jose4j.jwx.HeaderParameterNames;
 import org.jose4j.keys.X509Util;
 
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
@@ -205,7 +210,7 @@ class JwtClaimsBuilderImpl extends JwtSignatureImpl implements JwtClaimsBuilder,
      */
     @Override
     public JwtSignatureBuilder algorithm(SignatureAlgorithm algorithm) {
-        headers.put("alg", algorithm.name());
+        headers.put(HeaderParameterNames.ALGORITHM, algorithm.name());
         return this;
     }
 
@@ -214,7 +219,7 @@ class JwtClaimsBuilderImpl extends JwtSignatureImpl implements JwtClaimsBuilder,
      */
     @Override
     public JwtSignatureBuilder keyId(String keyId) {
-        headers.put("kid", keyId);
+        headers.put(HeaderParameterNames.KEY_ID, keyId);
         return this;
     }
 
@@ -223,7 +228,7 @@ class JwtClaimsBuilderImpl extends JwtSignatureImpl implements JwtClaimsBuilder,
      */
     @Override
     public JwtSignatureBuilder thumbprint(X509Certificate cert) {
-        headers.put("x5t", X509Util.x5t(cert));
+        headers.put(HeaderParameterNames.X509_CERTIFICATE_THUMBPRINT, X509Util.x5t(cert));
         return this;
     }
 
@@ -232,7 +237,24 @@ class JwtClaimsBuilderImpl extends JwtSignatureImpl implements JwtClaimsBuilder,
      */
     @Override
     public JwtSignatureBuilder thumbprintS256(X509Certificate cert) {
-        headers.put("x5t#S256", X509Util.x5tS256(cert));
+        headers.put(HeaderParameterNames.X509_CERTIFICATE_SHA256_THUMBPRINT, X509Util.x5tS256(cert));
+        return this;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public JwtSignatureBuilder chain(List<X509Certificate> chain) {
+        List<String> base64EncodedCerts = new ArrayList<>(chain.size());
+        try {
+            for (X509Certificate cert : chain) {
+                base64EncodedCerts.add(Base64.encode(cert.getEncoded()));
+            }
+            headers.put(HeaderParameterNames.X509_CERTIFICATE_CHAIN, base64EncodedCerts);
+        } catch (CertificateEncodingException ex) {
+            throw ImplMessages.msg.signatureException(ex);
+        }
         return this;
     }
 

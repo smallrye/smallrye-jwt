@@ -31,6 +31,7 @@ import java.security.KeyPair;
 import java.security.KeyStore;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.security.cert.X509Certificate;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
@@ -64,13 +65,19 @@ import org.jose4j.jwt.JwtClaims;
 import org.jose4j.jwt.MalformedClaimException;
 import org.jose4j.jwt.NumericDate;
 import org.jose4j.jwt.consumer.InvalidJwtSignatureException;
+import org.jose4j.jwt.consumer.JwtConsumer;
 import org.jose4j.jwt.consumer.JwtConsumerBuilder;
+import org.jose4j.jwx.JsonWebStructure;
 import org.jose4j.keys.EdDsaKeyUtil;
 import org.jose4j.keys.EllipticCurves;
+import org.jose4j.keys.resolvers.VerificationKeyResolver;
+import org.jose4j.lang.JoseException;
+import org.jose4j.lang.UnresolvableKeyException;
 import org.junit.jupiter.api.Test;
 
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 import io.smallrye.jwt.util.KeyUtils;
+import io.smallrye.jwt.util.ResourceUtils;
 
 class JwtSignTest {
     @Test
@@ -883,6 +890,58 @@ class JwtSignTest {
         } catch (JwtException ex) {
             // expected
         }
+    }
+
+    @Test
+    void testCertificateChainHeader() throws Exception {
+        X509Certificate cert = KeyUtils.getCertificate(ResourceUtils.readResource("/certificate.pem"));
+        String jwtString = Jwt.upn("Alice")
+                .jws().chain(cert)
+                .sign("/privateKey2.pem");
+
+        JwtConsumerBuilder builder = new JwtConsumerBuilder();
+        builder.setVerificationKeyResolver(new VerificationKeyResolver() {
+
+            @Override
+            public Key resolveKey(JsonWebSignature jws, List<JsonWebStructure> nestingContext)
+                    throws UnresolvableKeyException {
+                try {
+                    return jws.getCertificateChainHeaderValue().get(0).getPublicKey();
+                } catch (JoseException ex) {
+                    throw new UnresolvableKeyException("Invalid chain", ex);
+                }
+            }
+        });
+        builder.setJwsAlgorithmConstraints(AlgorithmConstraints.ConstraintType.PERMIT, "RS256");
+        JwtClaims jwt = builder.build().process(jwtString).getJwtClaims();
+
+        assertEquals("Alice", jwt.getClaimValueAsString("upn"));
+    }
+
+    @Test
+    void testInvalidCertificateChainHeader() throws Exception {
+        X509Certificate cert = KeyUtils.getCertificate(ResourceUtils.readResource("/certificate.pem"));
+        String jwtString = Jwt.upn("Alice")
+                .jws().chain(cert)
+                // this key does not correspond to the public key in the loaded certificate
+                .sign("/privateKey.pem");
+
+        JwtConsumerBuilder builder = new JwtConsumerBuilder();
+        builder.setVerificationKeyResolver(new VerificationKeyResolver() {
+
+            @Override
+            public Key resolveKey(JsonWebSignature jws, List<JsonWebStructure> nestingContext)
+                    throws UnresolvableKeyException {
+                try {
+                    return jws.getCertificateChainHeaderValue().get(0).getPublicKey();
+                } catch (JoseException ex) {
+                    throw new UnresolvableKeyException("Invalid chain", ex);
+                }
+            }
+        });
+        builder.setJwsAlgorithmConstraints(AlgorithmConstraints.ConstraintType.PERMIT, "RS256");
+        JwtConsumer consumer = builder.build();
+        assertThrows(InvalidJwtSignatureException.class, () -> consumer.process(jwtString));
     }
 
     static Map<String, Object> getJwsHeaders(String compactJws, int expectedSize) throws Exception {

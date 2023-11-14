@@ -1,6 +1,7 @@
 package io.smallrye.jwt.build;
 
 import java.security.cert.X509Certificate;
+import java.util.List;
 
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 
@@ -80,6 +81,24 @@ public interface JwtSignatureBuilder extends JwtSignature {
      * @return JwtSignatureBuilder
      */
     JwtSignatureBuilder thumbprintS256(X509Certificate cert);
+
+    /**
+     * Set X.509 Certificate 'x5c' chain.
+     *
+     * @param cert the certificate
+     * @return JwtSignatureBuilder
+     */
+    default JwtSignatureBuilder chain(X509Certificate cert) {
+        return chain(List.of(cert));
+    }
+
+    /**
+     * Set X.509 Certificate 'x5c' chain.
+     *
+     * @param chain the certificate chain
+     * @return JwtSignatureBuilder
+     */
+    JwtSignatureBuilder chain(List<X509Certificate> chain);
 
     /**
      * Custom JWT signature header.
