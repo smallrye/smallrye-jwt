@@ -38,4 +38,8 @@ interface JWTUtilLogging extends BasicLogger {
     @LogMessage(level = Logger.Level.DEBUG)
     @Message(id = 1009, value = "Failed to parse the JWK JSON representation")
     void parsingJwksFailed();
+
+    @LogMessage(level = Logger.Level.DEBUG)
+    @Message(id = 1010, value = "File %s is not found")
+    void fileIsNotFound(String fileLocation);
 }

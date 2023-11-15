@@ -104,6 +104,7 @@ public final class ResourceUtils {
         try {
             return new FileInputStream(publicKeyLocation);
         } catch (FileNotFoundException e) {
+            JWTUtilLogging.log.fileIsNotFound(publicKeyLocation);
             return null;
         }
     }

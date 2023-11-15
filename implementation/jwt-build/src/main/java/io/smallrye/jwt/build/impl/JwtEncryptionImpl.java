@@ -81,8 +81,11 @@ class JwtEncryptionImpl implements JwtEncryptionBuilder {
             if (keyLocation != null) {
                 key = JwtBuildUtils.readPublicKeyFromKeystore(keyLocation.trim());
                 if (key == null) {
-                    try (InputStream keyStream = ResourceUtils.getResourceStream(keyLocation.trim())) {
-                        key = getEncryptionKeyFromKeyContent(new String(ResourceUtils.readBytes(keyStream)));
+                    InputStream is = ResourceUtils.getResourceStream(keyLocation.trim());
+                    if (is != null) {
+                        try (InputStream keyStream = is) {
+                            key = getEncryptionKeyFromKeyContent(new String(ResourceUtils.readBytes(keyStream)));
+                        }
                     }
                 }
             } else {

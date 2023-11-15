@@ -18,6 +18,7 @@ package io.smallrye.jwt.build;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.io.File;
 import java.security.Security;
 
 import org.jose4j.jws.JsonWebSignature;
@@ -56,10 +57,12 @@ class JwtSignPS256Test {
 
     @Test
     void signClaimsPS256() throws Exception {
+        String path = "src/test/resources/privateKey.pem";
+        File file = new File(path);
         String jwt = Jwt.claims()
                 .claim("customClaim", "custom-value")
                 .jws().algorithm(SignatureAlgorithm.PS256)
-                .sign("/privateKey.pem");
+                .sign("file:" + file.getAbsolutePath());
 
         JsonWebSignature jws = JwtSignTest.getVerifiedJws(jwt, KeyUtils.readPublicKey("/publicKey.pem"));
         JwtClaims claims = JwtClaims.parse(jws.getPayload());
