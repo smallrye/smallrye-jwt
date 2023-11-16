@@ -78,8 +78,11 @@ class JwtSignatureImpl implements JwtSignature {
                 if (keyLocation != null) {
                     key = JwtBuildUtils.readPrivateKeyFromKeystore(keyLocation.trim());
                     if (key == null) {
-                        try (InputStream keyStream = ResourceUtils.getResourceStream(keyLocation.trim())) {
-                            key = getSigningKeyFromKeyContent(new String(ResourceUtils.readBytes(keyStream)));
+                        InputStream is = ResourceUtils.getResourceStream(keyLocation.trim());
+                        if (is != null) {
+                            try (InputStream keyStream = is) {
+                                key = getSigningKeyFromKeyContent(new String(ResourceUtils.readBytes(keyStream)));
+                            }
                         }
                     }
                 } else {
