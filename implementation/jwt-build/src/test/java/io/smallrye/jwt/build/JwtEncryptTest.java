@@ -41,6 +41,7 @@ import jakarta.json.JsonObject;
 
 import org.jose4j.base64url.Base64Url;
 import org.jose4j.json.JsonUtil;
+import org.jose4j.jwa.AlgorithmConstraints;
 import org.jose4j.jwe.JsonWebEncryption;
 import org.jose4j.jwk.EcJwkGenerator;
 import org.jose4j.jwk.EllipticCurveJsonWebKey;
@@ -546,6 +547,8 @@ public class JwtEncryptTest {
         if (relaxKeyValidation) {
             jwe.setDoKeyValidation(false);
         }
+        jwe.setAlgorithmConstraints(new AlgorithmConstraints(AlgorithmConstraints.ConstraintType.PERMIT,
+                jwe.getAlgorithmNoConstraintCheck().getAlgorithmIdentifier()));
         return jwe;
     }
 
