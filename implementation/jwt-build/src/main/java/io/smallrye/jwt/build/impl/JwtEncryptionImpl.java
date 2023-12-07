@@ -10,6 +10,7 @@ import java.util.Map;
 
 import javax.crypto.SecretKey;
 
+import org.jose4j.jwa.AlgorithmConstraints;
 import org.jose4j.jwe.JsonWebEncryption;
 import org.jose4j.jwk.JsonWebKey;
 
@@ -174,6 +175,7 @@ class JwtEncryptionImpl implements JwtEncryptionBuilder {
             jwe.getHeaders().setObjectHeaderValue("cty", "JWT");
         }
         String keyAlgorithm = getKeyEncryptionAlgorithm(key);
+        jwe.setAlgorithmConstraints(new AlgorithmConstraints(AlgorithmConstraints.ConstraintType.PERMIT, keyAlgorithm));
         jwe.setAlgorithmHeaderValue(keyAlgorithm);
         jwe.setEncryptionMethodHeaderParameter(getContentEncryptionAlgorithm());
         jwe.setKey(key);
