@@ -62,13 +62,24 @@ class JwtClaimTypeVerifierTest {
     void iat() {
         Jwt.claim(Claims.iat, Instant.now().getEpochSecond());
         Jwt.claim(Claims.iat, Instant.now());
+        Jwt.claim(Claims.iat, 1705105035.125D);
         assertThrows(IllegalArgumentException.class, () -> Jwt.claim(Claims.iat, "1"), "IllegalArgumentException is expected");
+    }
+
+    @Test
+    void auth_time() {
+        Jwt.claim(Claims.auth_time, Instant.now().getEpochSecond());
+        Jwt.claim(Claims.auth_time, Instant.now());
+        Jwt.claim(Claims.auth_time, 1704986861.532D);
+        assertThrows(IllegalArgumentException.class, () -> Jwt.claim(Claims.auth_time, "1"),
+                "IllegalArgumentException is expected");
     }
 
     @Test
     void exp() {
         Jwt.claim(Claims.exp, Instant.now().getEpochSecond());
         Jwt.claim(Claims.exp, Instant.now());
+        Jwt.claim(Claims.exp, 1712762861.532D);
         assertThrows(IllegalArgumentException.class, () -> Jwt.claim(Claims.exp, "1"), "IllegalArgumentException is expected");
     }
 

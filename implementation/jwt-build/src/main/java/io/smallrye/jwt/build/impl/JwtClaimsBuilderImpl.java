@@ -53,6 +53,7 @@ class JwtClaimsBuilderImpl extends JwtSignatureImpl implements JwtClaimsBuilder,
         REGISTERED_CLAIM_VERIFIERS.put(Claims.upn.name(), STRING_VERIFIER);
         REGISTERED_CLAIM_VERIFIERS.put(Claims.preferred_username.name(), STRING_VERIFIER);
         REGISTERED_CLAIM_VERIFIERS.put(Claims.iat.name(), INSTANT_VERIFIER);
+        REGISTERED_CLAIM_VERIFIERS.put(Claims.auth_time.name(), INSTANT_VERIFIER);
         REGISTERED_CLAIM_VERIFIERS.put(Claims.exp.name(), INSTANT_VERIFIER);
         REGISTERED_CLAIM_VERIFIERS.put(Claims.aud.name(), STRING_COLLECTION_VERIFIER);
         REGISTERED_CLAIM_VERIFIERS.put(Claims.groups.name(), STRING_COLLECTION_VERIFIER);
@@ -380,6 +381,10 @@ class JwtClaimsBuilderImpl extends JwtSignatureImpl implements JwtClaimsBuilder,
         public Object verify(String name, Object value) {
             if (value instanceof Long) {
                 return value;
+            }
+            // If a Number is passed, it must be converted to long
+            if (value instanceof Number) {
+                return ((Number) value).longValue();
             }
             throw new IllegalArgumentException(String.format("'%s' claim value must be long", name));
         }
