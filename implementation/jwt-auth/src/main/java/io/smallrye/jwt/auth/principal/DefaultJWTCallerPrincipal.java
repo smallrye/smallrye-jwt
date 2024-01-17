@@ -107,7 +107,10 @@ public class DefaultJWTCallerPrincipal extends JWTCallerPrincipal {
             case nbf:
             case updated_at:
                 try {
-                    claim = claimsSet.getClaimValue(claimType.name(), Long.class);
+                    Number numberClaim = claimsSet.getClaimValue(claimType.name(), Number.class);
+                    if (numberClaim != null) {
+                        claim = numberClaim.longValue();
+                    }
                     if (claim == null) {
                         claim = 0L;
                     }

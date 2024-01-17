@@ -9,6 +9,7 @@ import java.util.Set;
 
 import org.eclipse.microprofile.jwt.Claims;
 import org.eclipse.microprofile.jwt.tck.util.TokenUtils;
+import org.jose4j.jwt.JwtClaims;
 import org.jose4j.jwt.consumer.JwtContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -56,5 +57,25 @@ class DefaultJWTCallerPrincipalTest {
         assertNotNull(audience);
         assertEquals(1, audience.size());
         assertArrayEquals(new String[] { TCK_TOKEN1_AUD }, audience.toArray(new String[0]));
+    }
+
+    @Test
+    void claimsWithDecimalValues() {
+        Double exp = 1311281970.5;
+        Double iat = 1311280970.5;
+
+        final JwtClaims claims = context.getJwtClaims();
+        claims.setClaim(Claims.exp.name(), exp);
+        claims.setClaim(Claims.iat.name(), iat);
+        DefaultJWTCallerPrincipal principal = new DefaultJWTCallerPrincipal(claims);
+
+        Long expClaim = principal.getExpirationTime();
+        Long iatClaim = principal.getIssuedAtTime();
+
+        assertNotNull(expClaim);
+        assertNotNull(iatClaim);
+
+        assertEquals(exp.longValue(), expClaim);
+        assertEquals(iat.longValue(), iatClaim);
     }
 }
