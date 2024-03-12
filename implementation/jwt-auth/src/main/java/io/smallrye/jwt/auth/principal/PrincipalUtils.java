@@ -46,13 +46,24 @@ public class PrincipalUtils {
             String sub = findSubject(authContextInfo, claimsSet);
             claimsSet.setClaim(Claims.sub.name(), sub);
         }
-        Object groupsClaim = claimsSet.getClaimValue(Claims.groups.name());
-        if (groupsClaim == null || groupsClaim instanceof Map) {
-            List<String> groups = findGroups(authContextInfo, claimsSet);
-            claimsSet.setClaim(Claims.groups.name(), groups);
-        } else if (groupsClaim instanceof String) {
-            claimsSet.setClaim(Claims.groups.name(),
-                    splitStringClaimValue(groupsClaim.toString(), authContextInfo));
+
+        List<String> roles;
+        if (authContextInfo.getGroupsPath() == null) {
+            Object groupsClaim = claimsSet.getClaimValue(Claims.groups.name());
+            if (groupsClaim instanceof String) {
+                roles = splitStringClaimValue(groupsClaim.toString(), authContextInfo);
+            } else {
+                roles = List.class.cast(groupsClaim);
+            }
+        } else {
+            roles = findGroups(authContextInfo, claimsSet);
+        }
+
+        if (roles == null && authContextInfo.getDefaultGroupsClaim() != null) {
+            roles = Collections.singletonList(authContextInfo.getDefaultGroupsClaim());
+        }
+        if (roles != null) {
+            claimsSet.setClaim(Claims.groups.name(), roles);
         }
 
         // Process the rolesMapping claim
@@ -78,27 +89,22 @@ public class PrincipalUtils {
     }
 
     private static List<String> findGroups(JWTAuthContextInfo authContextInfo, JwtClaims claimsSet) {
-        if (authContextInfo.getGroupsPath() != null) {
-            final String[] pathSegments = splitClaimPath(authContextInfo.getGroupsPath());
-            Object claimValue = findClaimValue(authContextInfo.getGroupsPath(), claimsSet.getClaimsMap(), pathSegments, 0);
+        final String[] pathSegments = splitClaimPath(authContextInfo.getGroupsPath());
+        Object claimValue = findClaimValue(authContextInfo.getGroupsPath(), claimsSet.getClaimsMap(), pathSegments, 0);
 
-            if (claimValue instanceof List) {
-                @SuppressWarnings("unchecked")
-                List<String> groups = List.class.cast(claimValue);
-                // Force a check that a list contains the string values only
-                try {
-                    return Arrays.asList(groups.toArray(new String[] {}));
-                } catch (ArrayStoreException ex) {
-                    PrincipalLogging.log.claimAtPathIsNotAnArrayOfStrings(authContextInfo.getGroupsPath());
-                }
-            } else if (claimValue instanceof String) {
-                return splitStringClaimValue(claimValue.toString(), authContextInfo);
-            } else {
-                PrincipalLogging.log.claimAtPathIsNeitherAnArrayOfStringsNorString(authContextInfo.getGroupsPath());
+        if (claimValue instanceof List) {
+            @SuppressWarnings("unchecked")
+            List<String> groups = List.class.cast(claimValue);
+            // Force a check that a list contains the string values only
+            try {
+                return Arrays.asList(groups.toArray(new String[] {}));
+            } catch (ArrayStoreException ex) {
+                PrincipalLogging.log.claimAtPathIsNotAnArrayOfStrings(authContextInfo.getGroupsPath());
             }
-        }
-        if (authContextInfo.getDefaultGroupsClaim() != null) {
-            return Collections.singletonList(authContextInfo.getDefaultGroupsClaim());
+        } else if (claimValue instanceof String) {
+            return splitStringClaimValue(claimValue.toString(), authContextInfo);
+        } else {
+            PrincipalLogging.log.claimAtPathIsNeitherAnArrayOfStringsNorString(authContextInfo.getGroupsPath());
         }
 
         return null;
