@@ -1,5 +1,6 @@
 package io.smallrye.jwt.build;
 
+import java.security.PublicKey;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.Map;
@@ -102,12 +103,16 @@ public final class Jwt {
     /**
      * Creates a new instance of {@link JwtClaimsBuilder} with a specified claim.
      *
-     * Simple claim value are converted to {@link String} unless it is an instance of {@link Boolean}, {@link Number} or
-     * {@link Instant}. {@link Instant} values have their number of seconds from the epoch converted to long.
-     *
+     * Simple claim value are converted to {@link String} unless it is an instance of {@link Boolean}, {@link Number},
+     * {@link Instant} or {@link PublicKey}.
+     * <p/>
+     * {@link Instant} values have their number of seconds from the epoch converted to long.
+     * <p/>
+     * {@link PublicKey} values are converted to JSON Web Key (JWK) representations.
+     * <p/>
      * Array claims can be set as {@link Collection} or {@link JsonArray}, complex claims can be set as {@link Map} or
      * {@link JsonObject}. The members of the array claims can be complex claims.
-     *
+     * <p/>
      * Types of the claims directly supported by this builder are enforced.
      * The 'iss' (issuer), 'sub' (subject), 'upn', 'preferred_username' and 'jti' (token identifier) claims must be of
      * {@link String} type.
@@ -126,12 +131,16 @@ public final class Jwt {
     /**
      * Creates a new instance of {@link JwtClaimsBuilder} with a specified claim.
      *
-     * Simple claim value are converted to {@link String} unless it is an instance of {@link Boolean}, {@link Number} or
-     * {@link Instant}. {@link Instant} values have their number of seconds from the epoch converted to long.
-     *
+     * Simple claim value are converted to {@link String} unless it is an instance of {@link Boolean}, {@link Number},
+     * {@link Instant} or {@linkplain PublicKey}.
+     * <p/>
+     * {@link Instant} values have their number of seconds from the epoch converted to long.
+     * <p/>
+     * {@link PublicKey} values are converted to JSON Web Key (JWK) representations.
+     * <p/>
      * Array claims can be set as {@link Collection} or {@link JsonArray}, complex claims can be set as {@link Map} or
      * {@link JsonObject}. The members of the array claims can be complex claims.
-     *
+     * <p/>
      * Types of the claims directly supported by this builder are enforced.
      * The 'iss' (issuer), 'sub' (subject), 'upn', 'preferred_username' and 'jti' (token identifier) claims must be of
      * {@link String} type.

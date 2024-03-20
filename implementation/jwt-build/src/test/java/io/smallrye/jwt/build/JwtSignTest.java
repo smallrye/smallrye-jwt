@@ -593,19 +593,34 @@ class JwtSignTest {
 
     @Test
     void signClaimsEllipticCurve() throws Exception {
-        EllipticCurveJsonWebKey jwk = createECJwk();
+        EllipticCurveJsonWebKey ecJwk = createECJwk();
 
         String jwt = Jwt.claims()
                 .claim("customClaim", "custom-value")
-                .sign(jwk.getEcPrivateKey());
+                .claim("evidence", ecJwk.getECPublicKey())
+                .jws().jwk(ecJwk.getECPublicKey())
+                .sign(ecJwk.getEcPrivateKey());
 
-        JsonWebSignature jws = getVerifiedJws(jwt, jwk.getECPublicKey());
+        JsonWebSignature jws = getVerifiedJws(jwt, ecJwk.getECPublicKey());
         JwtClaims claims = JwtClaims.parse(jws.getPayload());
+        assertEquals(5, claims.getClaimsMap().size());
 
-        assertEquals(4, claims.getClaimsMap().size());
-        checkDefaultClaimsAndHeaders(getJwsHeaders(jwt, 2), claims, "ES256", 300);
+        Map<String, Object> headers = getJwsHeaders(jwt, 3);
+        checkDefaultClaimsAndHeaders(headers, claims, "ES256", 300);
 
         assertEquals("custom-value", claims.getClaimValue("customClaim"));
+
+        @SuppressWarnings("unchecked")
+        Map<String, Object> jwk = (Map<String, Object>) headers.get("jwk");
+        assertEquals(4, jwk.size());
+        assertEquals("EC", jwk.get("kty"));
+        assertEquals("P-256", jwk.get("crv"));
+        assertNotNull(jwk.get("x"));
+        assertNotNull(jwk.get("y"));
+
+        @SuppressWarnings("unchecked")
+        Map<String, Object> evidence = (Map<String, Object>) claims.getClaimValue("evidence");
+        assertEquals(evidence, jwk);
     }
 
     @Test
@@ -617,16 +632,24 @@ class JwtSignTest {
 
             String jwt = Jwt.claims()
                     .claim("customClaim", "custom-value")
+                    .jws().jwk(keyPairEd25519.getPublic())
                     .sign(keyPairEd25519.getPrivate());
 
             JsonWebSignature jws = getVerifiedJws(jwt, keyPairEd25519.getPublic());
             JwtClaims claims = JwtClaims.parse(jws.getPayload());
 
             assertEquals(4, claims.getClaimsMap().size());
-            Map<String, Object> headers = getJwsHeaders(jwt, 2);
+            Map<String, Object> headers = getJwsHeaders(jwt, 3);
             checkDefaultClaimsAndHeaders(headers, claims, "EdDSA", 300);
 
             assertEquals("custom-value", claims.getClaimValue("customClaim"));
+
+            @SuppressWarnings("unchecked")
+            Map<String, Object> jwk = (Map<String, Object>) headers.get("jwk");
+            assertEquals(3, jwk.size());
+            assertEquals("OKP", jwk.get("kty"));
+            assertEquals("Ed25519", jwk.get("crv"));
+            assertNotNull(jwk.get("x"));
 
             JwtConsumerBuilder builder = new JwtConsumerBuilder();
             builder.setVerificationKey(keyPairEd448.getPublic());
@@ -733,19 +756,28 @@ class JwtSignTest {
         configSource.setUseKeyStore(true);
         configSource.setSigningKeyLocation("/keystore.p12");
         try {
-            String jwt = Jwt.claims()
-                    .claim("customClaim", "custom-value")
-                    .sign();
-
             KeyStore keyStore = KeyUtils.loadKeyStore("keystore.p12", "password", Optional.of("PKCS12"), Optional.empty());
             PublicKey verificationKey = keyStore.getCertificate("server").getPublicKey();
+
+            String jwt = Jwt.claims()
+                    .claim("customClaim", "custom-value")
+                    .jws().jwk(verificationKey)
+                    .sign();
 
             JsonWebSignature jws = getVerifiedJws(jwt, verificationKey);
             JwtClaims claims = JwtClaims.parse(jws.getPayload());
 
             assertEquals(4, claims.getClaimsMap().size());
-            checkDefaultClaimsAndHeaders(getJwsHeaders(jwt, 2), claims, "RS256", 300);
+            Map<String, Object> headers = getJwsHeaders(jwt, 3);
+            checkDefaultClaimsAndHeaders(headers, claims, "RS256", 300);
             assertEquals("custom-value", claims.getClaimValue("customClaim"));
+
+            @SuppressWarnings("unchecked")
+            Map<String, Object> jwk = (Map<String, Object>) headers.get("jwk");
+            assertEquals(3, jwk.size());
+            assertEquals("RSA", jwk.get("kty"));
+            assertNotNull(jwk.get("n"));
+            assertNotNull(jwk.get("e"));
         } finally {
             configSource.setUseKeyStore(false);
             configSource.setSigningKeyLocation("/privateKey.pem");

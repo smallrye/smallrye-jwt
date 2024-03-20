@@ -1,6 +1,7 @@
 package io.smallrye.jwt.build.impl;
 
 import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
 import java.time.Instant;
@@ -23,10 +24,13 @@ import jakarta.json.JsonValue;
 
 import org.eclipse.microprofile.jwt.Claims;
 import org.jose4j.base64url.Base64;
+import org.jose4j.jwk.JsonWebKey.OutputControlLevel;
+import org.jose4j.jwk.PublicJsonWebKey;
 import org.jose4j.jwt.JwtClaims;
 import org.jose4j.jwt.NumericDate;
 import org.jose4j.jwx.HeaderParameterNames;
 import org.jose4j.keys.X509Util;
+import org.jose4j.lang.JoseException;
 
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 import io.smallrye.jwt.build.JwtClaimsBuilder;
@@ -263,6 +267,15 @@ class JwtClaimsBuilderImpl extends JwtSignatureImpl implements JwtClaimsBuilder,
      * {@inheritDoc}
      */
     @Override
+    public JwtSignatureBuilder jwk(PublicKey key) {
+        headers.put(HeaderParameterNames.JWK, convertPublicKeyToJwk(key));
+        return this;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public JwtEncryptionBuilder innerSign(PrivateKey signingKey) throws JwtSignatureException {
         return super.innerSign(signingKey);
     }
@@ -321,6 +334,10 @@ class JwtClaimsBuilderImpl extends JwtSignatureImpl implements JwtClaimsBuilder,
 
         if (value instanceof Instant) {
             return ((Instant) value).getEpochSecond();
+        }
+
+        if (value instanceof PublicKey) {
+            return convertPublicKeyToJwk((PublicKey) value);
         }
 
         return value.toString();
@@ -401,6 +418,14 @@ class JwtClaimsBuilderImpl extends JwtSignatureImpl implements JwtClaimsBuilder,
                 }
             }
             throw new IllegalArgumentException(String.format("'%s' claim value must be String or Collection of Strings", name));
+        }
+    }
+
+    static Map<String, Object> convertPublicKeyToJwk(PublicKey key) {
+        try {
+            return PublicJsonWebKey.Factory.newPublicJwk(key).toParams(OutputControlLevel.PUBLIC_ONLY);
+        } catch (JoseException ex) {
+            throw ImplMessages.msg.signatureException(ex);
         }
     }
 
