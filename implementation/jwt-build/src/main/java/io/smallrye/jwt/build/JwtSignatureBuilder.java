@@ -1,5 +1,6 @@
 package io.smallrye.jwt.build;
 
+import java.security.PublicKey;
 import java.security.cert.X509Certificate;
 import java.util.List;
 
@@ -99,6 +100,14 @@ public interface JwtSignatureBuilder extends JwtSignature {
      * @return JwtSignatureBuilder
      */
     JwtSignatureBuilder chain(List<X509Certificate> chain);
+
+    /**
+     * Set JSON Web Key 'jwk' key.
+     *
+     * @param key the public key
+     * @return JwtSignatureBuilder
+     */
+    JwtSignatureBuilder jwk(PublicKey key);
 
     /**
      * Custom JWT signature header.
