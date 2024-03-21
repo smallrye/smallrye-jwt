@@ -55,17 +55,39 @@ public class DefaultJWTParser implements JWTParser {
     @Inject
     private JWTCallerPrincipalFactory callerPrincipalFactory;
 
+    /**
+     * Default constructor which is required to support a JWTParser injection
+     */
     public DefaultJWTParser() {
     }
 
+    /**
+     * Constructor which initializes DefaultJWTParser with the provided {@link JWTAuthContextInfo} and a new instance of
+     * {@link JWTCallerPrincipalFactory}
+     *
+     * @param authContextInfo {@link JWTAuthContextInfo}
+     */
     public DefaultJWTParser(JWTAuthContextInfo authContextInfo) {
         this(authContextInfo, new JWTCallerPrincipalFactoryProducer().getFactory());
     }
 
+    /**
+     * Constructor which initializes DefaultJWTParser with the provided {@link JWTCallerPrincipalFactory} and a new instance of
+     * {@link JWTAuthContextInfo}
+     *
+     * @param factory {@link JWTCallerPrincipalFactory}
+     */
     public DefaultJWTParser(JWTCallerPrincipalFactory factory) {
-        this(null, factory);
+        this(new JWTAuthContextInfo(), factory);
     }
 
+    /**
+     * Constructor which initializes DefaultJWTParser with the provided {@link JWTAuthContextInfo} and
+     * {@link JWTCallerPrincipalFactory}
+     *
+     * @param authContextInfo {@link JWTAuthContextInfo}
+     * @param factory {@link JWTCallerPrincipalFactory}
+     */
     public DefaultJWTParser(JWTAuthContextInfo authContextInfo, JWTCallerPrincipalFactory factory) {
         this.authContextInfo = authContextInfo;
         this.callerPrincipalFactory = factory;
