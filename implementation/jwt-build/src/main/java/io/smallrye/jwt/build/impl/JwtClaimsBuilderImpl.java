@@ -202,7 +202,7 @@ class JwtClaimsBuilderImpl extends JwtSignatureImpl implements JwtClaimsBuilder,
      */
     @Override
     public JwtSignatureBuilder header(String name, Object value) {
-        if ("alg".equals(name)) {
+        if (HeaderParameterNames.ALGORITHM.equals(name)) {
             return algorithm(toSignatureAlgorithm((String) value));
         } else {
             headers.put(name, value);
