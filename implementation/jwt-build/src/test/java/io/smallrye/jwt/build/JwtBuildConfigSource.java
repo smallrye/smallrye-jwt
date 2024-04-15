@@ -22,6 +22,8 @@ public class JwtBuildConfigSource implements ConfigSource {
             JwtBuildUtils.NEW_TOKEN_AUDIENCE_PROPERTY,
             JwtBuildUtils.NEW_TOKEN_LIFESPAN_PROPERTY,
             JwtBuildUtils.NEW_TOKEN_OVERRIDE_CLAIMS_PROPERTY,
+            JwtBuildUtils.NEW_TOKEN_SIGNATURE_ALG_PROPERTY,
+            JwtBuildUtils.NEW_TOKEN_KEY_ENCRYPTION_ALG_PROPERTY,
             JwtBuildUtils.SIGN_KEYSTORE_KEY_ALIAS,
             JwtBuildUtils.ENC_KEYSTORE_KEY_ALIAS));
 

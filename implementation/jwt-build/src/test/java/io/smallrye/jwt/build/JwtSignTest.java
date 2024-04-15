@@ -892,6 +892,30 @@ class JwtSignTest {
         assertEquals("custom-value", claims.getClaimValue("customClaim"));
     }
 
+    @Test
+    void signClaimsEcKeyFileWithConfiguredAlgorithm() throws Exception {
+        JwtBuildConfigSource configSource = getConfigSource();
+        configSource.setSigningKeyLocation("/ecPrivateKey.pem");
+        configSource.setSignatureAlgorithm(SignatureAlgorithm.ES256.getAlgorithm());
+        String jwt = null;
+        try {
+            jwt = Jwt.claim("customClaim", "custom-value")
+                    .sign();
+        } finally {
+            configSource.setSigningKeyLocation("/privateKey.pem");
+            configSource.setSignatureAlgorithm(null);
+        }
+
+        PublicKey ecKey = getEcPublicKey();
+        JsonWebSignature jws = getVerifiedJws(jwt, ecKey);
+        JwtClaims claims = JwtClaims.parse(jws.getPayload());
+
+        assertEquals(4, claims.getClaimsMap().size());
+        Map<String, Object> headers = getJwsHeaders(jwt, 2);
+        checkDefaultClaimsAndHeaders(headers, claims, "ES256", 300);
+        assertEquals("custom-value", claims.getClaimValue("customClaim"));
+    }
+
     private static SecretKey createSecretKey() throws Exception {
         String jwkJson = "{\"kty\":\"oct\",\"k\":\"Fdh9u8rINxfivbrianbbVT1u232VQBZYKx1HGAGPt2I\"}";
         JsonWebKey jwk = JsonWebKey.Factory.newJwk(jwkJson);

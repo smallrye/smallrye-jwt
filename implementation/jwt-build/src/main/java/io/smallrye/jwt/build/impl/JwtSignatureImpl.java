@@ -14,6 +14,7 @@ import org.eclipse.microprofile.jwt.Claims;
 import org.jose4j.jwk.JsonWebKey;
 import org.jose4j.jws.JsonWebSignature;
 import org.jose4j.jwt.JwtClaims;
+import org.jose4j.jwx.HeaderParameterNames;
 
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 import io.smallrye.jwt.build.JwtEncryptionBuilder;
@@ -169,8 +170,8 @@ class JwtSignatureImpl implements JwtSignature {
         for (Map.Entry<String, Object> entry : headers.entrySet()) {
             jws.setHeader(entry.getKey(), entry.getValue());
         }
-        if (!headers.containsKey("typ")) {
-            jws.setHeader("typ", "JWT");
+        if (!headers.containsKey(HeaderParameterNames.TYPE)) {
+            jws.setHeader(HeaderParameterNames.TYPE, "JWT");
         }
 
         String algorithm = getSignatureAlgorithm(signingKey);
@@ -193,18 +194,24 @@ class JwtSignatureImpl implements JwtSignature {
         return JwtBuildUtils.getConfigProperty(JwtBuildUtils.SIGN_KEY_RELAX_VALIDATION_PROPERTY, Boolean.class, false);
     }
 
-    private String getSignatureAlgorithm(Key signingKey) {
-        String alg = (String) headers.get("alg");
+    private String getConfiguredSignatureAlgorithm() {
+        String alg = (String) headers.get(HeaderParameterNames.ALGORITHM);
         if (alg == null) {
             try {
                 alg = JwtBuildUtils.getConfigProperty(JwtBuildUtils.NEW_TOKEN_SIGNATURE_ALG_PROPERTY, String.class);
                 if (alg != null) {
                     alg = SignatureAlgorithm.valueOf(alg.toUpperCase()).getAlgorithm();
+                    headers.put(HeaderParameterNames.ALGORITHM, alg);
                 }
             } catch (Exception ex) {
                 throw ImplMessages.msg.unsupportedSignatureAlgorithm(alg);
             }
         }
+        return alg;
+    }
+
+    private String getSignatureAlgorithm(Key signingKey) {
+        String alg = getConfiguredSignatureAlgorithm();
         if ("none".equals(alg)) {
             throw ImplMessages.msg.noneSignatureAlgorithmUnsupported();
         }
@@ -255,17 +262,17 @@ class JwtSignatureImpl implements JwtSignature {
     }
 
     Key getSigningKeyFromKeyContent(String keyContent) {
-        String kid = (String) headers.get("kid");
-        String algHeader = (String) headers.get("alg");
+        String kid = (String) headers.get(HeaderParameterNames.KEY_ID);
+        String alg = getConfiguredSignatureAlgorithm();
 
-        // Try PEM format first - default to RS256 if no algorithm header is set
+        // Try PEM format first - default to RS256 if the algorithm is unknown
         Key key = KeyUtils.tryAsPemSigningPrivateKey(keyContent,
-                (algHeader == null ? SignatureAlgorithm.RS256 : SignatureAlgorithm.fromAlgorithm(algHeader)));
+                (alg == null ? SignatureAlgorithm.RS256 : SignatureAlgorithm.fromAlgorithm(alg)));
         if (key == null) {
             if (kid == null) {
                 kid = JwtBuildUtils.getConfigProperty(JwtBuildUtils.SIGN_KEY_ID_PROPERTY, String.class);
                 if (kid != null) {
-                    headers.put("kid", kid);
+                    headers.put(HeaderParameterNames.KEY_ID, kid);
                 }
             }
 
@@ -274,15 +281,15 @@ class JwtSignatureImpl implements JwtSignature {
             if (jwk != null) {
                 // if the user has already set the algorithm header then JWK `alg` header, if set, must match it
                 key = KeyUtils.getPrivateOrSecretSigningKey(jwk,
-                        (algHeader == null ? null : SignatureAlgorithm.fromAlgorithm(algHeader)));
+                        (alg == null ? null : SignatureAlgorithm.fromAlgorithm(alg)));
                 if (key != null) {
                     // if the algorithm header is not set then use JWK `alg`
-                    if (algHeader == null && jwk.getAlgorithm() != null) {
-                        headers.put("alg", jwk.getAlgorithm());
+                    if (alg == null && jwk.getAlgorithm() != null) {
+                        headers.put(HeaderParameterNames.ALGORITHM, jwk.getAlgorithm());
                     }
                     // if 'kid' header is not set then use JWK `kid`
                     if (kid == null && jwk.getKeyId() != null) {
-                        headers.put("kid", jwk.getKeyId());
+                        headers.put(HeaderParameterNames.KEY_ID, jwk.getKeyId());
                     }
                 }
             }
