@@ -17,6 +17,7 @@
 package io.smallrye.jwt.config;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.security.KeyStore;
 import java.security.PrivateKey;
 import java.security.PublicKey;
@@ -648,6 +649,12 @@ public class JWTAuthContextInfoProvider {
     @ConfigProperty(name = "smallrye.jwt.keystore.decrypt.key.password")
     private Optional<String> keyStoreDecryptKeyPassword = Optional.empty();
 
+    /**
+     * Obtain remote keys on startup.
+     */
+    @ConfigProperty(name = "smallrye.jwt.resolve-remote-keys-at-startup", defaultValue = "false")
+    private boolean fetchRemoteKeysOnStartup = false;
+
     @Produces
     Optional<JWTAuthContextInfo> getOptionalContextInfo() {
         String resolvedVerifyKeyLocation = !NONE.equals(verifyKeyLocation)
@@ -666,7 +673,24 @@ public class JWTAuthContextInfoProvider {
         } else if (!NONE.equals(resolvedVerifyKeyLocation)) {
             String resolvedVerifyKeyLocationTrimmed = resolvedVerifyKeyLocation.trim();
             if (resolvedVerifyKeyLocationTrimmed.startsWith("http")) {
-                contextInfo.setPublicKeyLocation(resolvedVerifyKeyLocationTrimmed);
+                if (fetchRemoteKeysOnStartup) {
+                    try {
+                        InputStream is = ResourceUtils.getResourceStream(resolvedVerifyKeyLocationTrimmed);
+                        if (is != null) {
+                            try (InputStream keyStream = is) {
+                                String KeyContent = new String(ResourceUtils.readBytes(keyStream));
+                                contextInfo.setPublicKeyContent(KeyContent);
+                            }
+                            if (contextInfo.getPublicKeyContent() == null) {
+                                throw ConfigMessages.msg.invalidPublicKeyLocation();
+                            }
+                        }
+                    } catch (Exception ex) {
+                        throw ConfigMessages.msg.readingPublicKeyLocationFailed(ex);
+                    }
+                } else {
+                    contextInfo.setPublicKeyLocation(resolvedVerifyKeyLocationTrimmed);
+                }
             } else {
                 if (isPublicKeyInKeystore()) {
                     try {
@@ -708,7 +732,24 @@ public class JWTAuthContextInfoProvider {
         } else if (!NONE.equals(theDecryptionKeyLocation)) {
             String decryptionKeyLocationTrimmed = theDecryptionKeyLocation.trim();
             if (decryptionKeyLocationTrimmed.startsWith("http")) {
-                contextInfo.setDecryptionKeyLocation(decryptionKeyLocationTrimmed);
+                if (fetchRemoteKeysOnStartup) {
+                    try {
+                        InputStream is = ResourceUtils.getResourceStream(decryptionKeyLocationTrimmed);
+                        if (is != null) {
+                            try (InputStream keyStream = is) {
+                                String KeyContent = new String(ResourceUtils.readBytes(keyStream));
+                                contextInfo.setDecryptionKeyContent(KeyContent);
+                            }
+                            if (contextInfo.getDecryptionKeyContent() == null) {
+                                throw ConfigMessages.msg.invalidDecryptKeyLocation();
+                            }
+                        }
+                    } catch (Exception ex) {
+                        throw ConfigMessages.msg.readingDecryptKeyLocationFailed(ex);
+                    }
+                } else {
+                    contextInfo.setDecryptionKeyLocation(decryptionKeyLocationTrimmed);
+                }
             } else {
                 if (isPrivateKeyInKeystore()) {
                     try {
