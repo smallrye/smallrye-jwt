@@ -215,7 +215,7 @@ class JwtClaimsBuilderImpl extends JwtSignatureImpl implements JwtClaimsBuilder,
      */
     @Override
     public JwtSignatureBuilder algorithm(SignatureAlgorithm algorithm) {
-        headers.put(HeaderParameterNames.ALGORITHM, algorithm.name());
+        headers.put(HeaderParameterNames.ALGORITHM, algorithm.getAlgorithm());
         return this;
     }
 
