@@ -338,6 +338,9 @@ public final class KeyUtils {
         if (algo.name().startsWith("ES")) {
             return EC;
         }
+        if (algo == SignatureAlgorithm.EDDSA) {
+            return algo.getAlgorithm();
+        }
         throw JWTUtilMessages.msg.unsupportedAlgorithm(algo.name());
     }
 
