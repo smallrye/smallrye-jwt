@@ -41,7 +41,7 @@
 
     <!-- Testing -->
     <version.junit4>4.13.2</version.junit4>
-    <version.mokito>5.11.0</version.mokito>
+    <version.mokito>5.12.0</version.mokito>
     <version.bouncycastle>1.70</version.bouncycastle>
     <version.smallrye.testing>2.3.0</version.smallrye.testing>
     <version.smallrye.config>3.1.2</version.smallrye.config>
