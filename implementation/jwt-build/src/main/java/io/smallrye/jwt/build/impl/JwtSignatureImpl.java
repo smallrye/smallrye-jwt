@@ -267,7 +267,7 @@ class JwtSignatureImpl implements JwtSignature {
 
         // Try PEM format first - default to RS256 if the algorithm is unknown
         Key key = KeyUtils.tryAsPemSigningPrivateKey(keyContent,
-                (alg == null ? SignatureAlgorithm.RS256 : SignatureAlgorithm.fromAlgorithm(alg)));
+                (alg == null ? SignatureAlgorithm.RS256 : SignatureAlgorithm.fromAlgorithm(alg.toUpperCase())));
         if (key == null) {
             if (kid == null) {
                 kid = JwtBuildUtils.getConfigProperty(JwtBuildUtils.SIGN_KEY_ID_PROPERTY, String.class);
@@ -281,7 +281,7 @@ class JwtSignatureImpl implements JwtSignature {
             if (jwk != null) {
                 // if the user has already set the algorithm header then JWK `alg` header, if set, must match it
                 key = KeyUtils.getPrivateOrSecretSigningKey(jwk,
-                        (alg == null ? null : SignatureAlgorithm.fromAlgorithm(alg)));
+                        (alg == null ? null : SignatureAlgorithm.fromAlgorithm(alg.toUpperCase())));
                 if (key != null) {
                     // if the algorithm header is not set then use JWK `alg`
                     if (alg == null && jwk.getAlgorithm() != null) {
