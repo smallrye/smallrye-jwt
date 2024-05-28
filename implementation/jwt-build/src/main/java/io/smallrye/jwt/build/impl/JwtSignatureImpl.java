@@ -200,7 +200,7 @@ class JwtSignatureImpl implements JwtSignature {
             try {
                 alg = JwtBuildUtils.getConfigProperty(JwtBuildUtils.NEW_TOKEN_SIGNATURE_ALG_PROPERTY, String.class);
                 if (alg != null) {
-                    alg = SignatureAlgorithm.valueOf(alg.toUpperCase()).getAlgorithm();
+                    alg = SignatureAlgorithm.fromAlgorithm(alg).getAlgorithm();
                     headers.put(HeaderParameterNames.ALGORITHM, alg);
                 }
             } catch (Exception ex) {
