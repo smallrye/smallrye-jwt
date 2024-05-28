@@ -1,5 +1,7 @@
 package io.smallrye.jwt.algorithm;
 
+import java.util.StringJoiner;
+
 /**
  * JWT JSON Web Signature Algorithms.
  *
@@ -20,9 +22,9 @@ public enum SignatureAlgorithm {
     PS384("PS384"),
     PS512("PS512");
 
-    private String algorithmName;
+    private final String algorithmName;
 
-    private SignatureAlgorithm(String algorithmName) {
+    SignatureAlgorithm(String algorithmName) {
         this.algorithmName = algorithmName;
     }
 
@@ -31,6 +33,19 @@ public enum SignatureAlgorithm {
     }
 
     public static SignatureAlgorithm fromAlgorithm(String algorithmName) {
-        return SignatureAlgorithm.valueOf(algorithmName);
+        try {
+            return SignatureAlgorithm.valueOf(algorithmName.toUpperCase());
+        } catch (Exception e) {
+            throw new IllegalArgumentException(
+                    "Invalid signature algorithm name: " + algorithmName + ", expected one of: " + getValidNames(), e);
+        }
+    }
+
+    private static String getValidNames() {
+        var names = new StringJoiner(", ");
+        for (var alg : values()) {
+            names.add(alg.getAlgorithm());
+        }
+        return names.toString();
     }
 }
