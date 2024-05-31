@@ -40,6 +40,7 @@
     <version.jose4j>0.9.6</version.jose4j>
 
     <!-- Testing -->
+    <version.jqwik>1.8.5</version.jqwik>
     <version.junit4>4.13.2</version.junit4>
     <version.mokito>5.12.0</version.mokito>
     <version.bouncycastle>1.70</version.bouncycastle>
@@ -150,6 +151,12 @@
         <groupId>junit</groupId>
         <artifactId>junit</artifactId>
         <version>${version.junit4}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>net.jqwik</groupId>
+        <artifactId>jqwik</artifactId>
+        <version>${version.jqwik}</version>
         <scope>test</scope>
       </dependency>
       <dependency>
