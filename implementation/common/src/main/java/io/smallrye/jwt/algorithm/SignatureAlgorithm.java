@@ -22,9 +22,9 @@ public enum SignatureAlgorithm {
     PS384("PS384"),
     PS512("PS512");
 
-    private String algorithmName;
+    private final String algorithmName;
 
-    private SignatureAlgorithm(String algorithmName) {
+    SignatureAlgorithm(String algorithmName) {
         this.algorithmName = algorithmName;
     }
 
