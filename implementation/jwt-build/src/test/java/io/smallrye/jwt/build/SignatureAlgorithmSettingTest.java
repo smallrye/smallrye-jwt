@@ -1,12 +1,27 @@
 package io.smallrye.jwt.build;
 
+import static io.smallrye.jwt.algorithm.SignatureAlgorithm.EDDSA;
+import static io.smallrye.jwt.algorithm.SignatureAlgorithm.ES256;
+import static io.smallrye.jwt.algorithm.SignatureAlgorithm.ES384;
+import static io.smallrye.jwt.algorithm.SignatureAlgorithm.ES512;
+import static io.smallrye.jwt.algorithm.SignatureAlgorithm.HS256;
+import static io.smallrye.jwt.algorithm.SignatureAlgorithm.HS384;
+import static io.smallrye.jwt.algorithm.SignatureAlgorithm.HS512;
+import static io.smallrye.jwt.algorithm.SignatureAlgorithm.PS256;
+import static io.smallrye.jwt.algorithm.SignatureAlgorithm.PS384;
+import static io.smallrye.jwt.algorithm.SignatureAlgorithm.PS512;
+import static io.smallrye.jwt.algorithm.SignatureAlgorithm.RS256;
+import static io.smallrye.jwt.algorithm.SignatureAlgorithm.RS384;
+import static io.smallrye.jwt.algorithm.SignatureAlgorithm.RS512;
 import static io.smallrye.jwt.build.JwtSignJwkTest.getVerifiedJws;
 import static io.smallrye.jwt.build.JwtSignTest.getConfigSource;
+import static java.util.Map.Entry;
+import static java.util.Map.entry;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.HashMap;
-import java.util.Map.Entry;
+import java.util.Map;
 
 import org.jose4j.jwk.PublicJsonWebKey;
 import org.jose4j.jws.JsonWebSignature;
@@ -27,12 +42,29 @@ import net.jqwik.api.lifecycle.BeforeContainer;
 
 public class SignatureAlgorithmSettingTest {
 
+    private static final Map<SignatureAlgorithm, Tuple2<String, String>> ALGORITHMS = Map.ofEntries(
+            entry(RS256, Tuple.of("/privateKey.pem", "/publicKey.pem")),
+            entry(RS384, Tuple.of("/privateKey.pem", "/publicKey.pem")),
+            entry(RS512, Tuple.of("/privateKey.pem", "/publicKey.pem")),
+            entry(ES256, Tuple.of("/ecPrivateP256Key.jwk", "/ecPublicP256Key.jwk")),
+            entry(ES384, Tuple.of("/ecPrivateP384Key.jwk", "/ecPublicP384Key.jwk")),
+            entry(ES512, Tuple.of("/ecPrivateP512Key.jwk", "/ecPublicP512Key.jwk")),
+            entry(EDDSA, Tuple.of("/edEcPrivateKey.jwk", "/edEcPublicKey.jwk")),
+            entry(HS256, Tuple.of("/privateKeyHS256.jwk", "/privateKeyHS256.jwk")),
+            entry(HS384, Tuple.of("/privateKeyHS384.jwk", "/privateKeyHS384.jwk")),
+            entry(HS512, Tuple.of("/privateKeyHS512.jwk", "/privateKeyHS512.jwk")),
+            entry(PS256, Tuple.of("/privateKey.pem", "/publicKey.pem")),
+            entry(PS384, Tuple.of("/privateKey.pem", "/publicKey.pem")),
+            entry(PS512, Tuple.of("/privateKey.pem", "/publicKey.pem")));
+
     // all the names that can be used without throwing an exception, and their JWKs
     private static final HashMap<String, Tuple2<String, String>> ACCEPTED_NAMES = new HashMap<>();
 
     @BeforeContainer
     static void setUp() {
-        generateAcceptedNames();
+        for (var entry : ALGORITHMS.entrySet()) {
+            generateAcceptedNamesForAlgorithm(entry.getKey().name().toCharArray(), 0, entry.getValue());
+        }
     }
 
     @AfterTry
@@ -104,41 +136,42 @@ public class SignatureAlgorithmSettingTest {
                 .sign());
     }
 
-    private static void generateAcceptedNames() {
-        for (var alg : SignatureAlgorithm.values()) {
-            var name = alg.name().toCharArray();
-            switch (alg) {
-                case RS256:
-                case RS384:
-                case RS512:
-                case PS256:
-                case PS384:
-                case PS512:
-                    generateAcceptedNamesForAlgorithm(name, 0, Tuple.of("/privateKey.pem", "/publicKey.pem"));
-                    break;
-                case ES256:
-                    generateAcceptedNamesForAlgorithm(name, 0, Tuple.of("/ecPrivateP256Key.jwk", "/ecPublicP256Key.jwk"));
-                    break;
-                case ES384:
-                    generateAcceptedNamesForAlgorithm(name, 0, Tuple.of("/ecPrivateP384Key.jwk", "/ecPublicP384Key.jwk"));
-                    break;
-                case ES512:
-                    generateAcceptedNamesForAlgorithm(name, 0, Tuple.of("/ecPrivateP512Key.jwk", "/ecPublicP512Key.jwk"));
-                    break;
-                case EDDSA:
-                    generateAcceptedNamesForAlgorithm(name, 0, Tuple.of("/edEcPrivateKey.jwk", "/edEcPublicKey.jwk"));
-                    break;
-                case HS256:
-                    generateAcceptedNamesForAlgorithm(name, 0, Tuple.of("/privateKeyHS256.jwk", "/privateKeyHS256.jwk"));
-                    break;
-                case HS384:
-                    generateAcceptedNamesForAlgorithm(name, 0, Tuple.of("/privateKeyHS384.jwk", "/privateKeyHS384.jwk"));
-                    break;
-                case HS512:
-                    generateAcceptedNamesForAlgorithm(name, 0, Tuple.of("/privateKeyHS512.jwk", "/privateKeyHS512.jwk"));
-                    break;
-            }
+    @Provide
+    static Arbitrary<Entry<SignatureAlgorithm, Tuple2<String, String>>> algorithms() {
+        return Arbitraries.of(ALGORITHMS.entrySet()).dontShrink();
+    }
+
+    @Property
+    void givenAlgorithm_shouldSignClaims(@ForAll("algorithms") Entry<SignatureAlgorithm, Tuple2<String, String>> entry)
+            throws Exception {
+        // given
+        var alg = entry.getKey();
+        getConfigSource().setSigningKeyLocation(entry.getValue().get1());
+        var publicKey = entry.getValue().get2();
+
+        // when
+        var jwt = Jwt.claims()
+                .issuer("https://issuer.com")
+                .jws()
+                .algorithm(alg)
+                .header("customHeader", "custom-header-value")
+                .sign();
+
+        JsonWebSignature jws;
+        if (alg.name().toUpperCase().startsWith("HS")) {
+            jws = getVerifiedJws(jwt, KeyUtils.readSigningKey(publicKey, null, alg));
+        } else if (publicKey.endsWith(".pem")) {
+            jws = getVerifiedJws(jwt, KeyUtils.readPublicKey(publicKey));
+        } else {
+            var keyContent = KeyUtils.readKeyContent(publicKey);
+            jws = getVerifiedJws(jwt, PublicJsonWebKey.Factory.newPublicJwk(keyContent).getPublicKey());
         }
+        var claims = JwtClaims.parse(jws.getPayload());
+
+        // then
+        assertEquals(4, claims.getClaimsMap().size());
+        assertEquals("https://issuer.com", claims.getIssuer());
+        assertEquals("custom-header-value", jws.getHeader("customHeader"));
     }
 
     private static void generateAcceptedNamesForAlgorithm(char[] name, int index, Tuple2<String, String> keys) {
