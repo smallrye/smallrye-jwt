@@ -27,6 +27,7 @@ import org.jose4j.jwk.PublicJsonWebKey;
 import org.jose4j.jws.JsonWebSignature;
 import org.jose4j.jwt.JwtClaims;
 import org.jose4j.jwx.HeaderParameterNames;
+import org.junit.platform.commons.util.StringUtils;
 
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 import io.smallrye.jwt.util.KeyUtils;
@@ -57,14 +58,12 @@ public class SignatureAlgorithmSettingTest {
             entry(PS384, Tuple.of("/privateKey.pem", "/publicKey.pem")),
             entry(PS512, Tuple.of("/privateKey.pem", "/publicKey.pem")));
 
-    // all the names that can be used without throwing an exception, and their JWKs
-    private static final HashMap<String, Tuple2<String, String>> ACCEPTED_NAMES = new HashMap<>();
+    // all the names that can be used in configuration property without throwing an exception, and their JWKs
+    private static final HashMap<String, Tuple2<String, String>> ACCEPTED_CONFIG_NAMES = new HashMap<>();
 
     @BeforeContainer
     static void setUp() {
-        for (var entry : ALGORITHMS.entrySet()) {
-            generateAcceptedNamesForAlgorithm(entry.getKey().name().toCharArray(), 0, entry.getValue());
-        }
+        generateAcceptedConfigNames();
     }
 
     @AfterTry
@@ -75,12 +74,14 @@ public class SignatureAlgorithmSettingTest {
     }
 
     @Provide
-    static Arbitrary<Entry<String, Tuple2<String, String>>> validNames() {
-        return Arbitraries.of(ACCEPTED_NAMES.entrySet()).dontShrink();
+    static Arbitrary<Entry<String, Tuple2<String, String>>> validHeaderNames() {
+        return Arbitraries.of(ACCEPTED_CONFIG_NAMES.entrySet())
+                .filter((e) -> !StringUtils.isBlank(e.getKey())) // `.header(...)` builder method doesn't allow blank Strings
+                .dontShrink();
     }
 
     @Property
-    void givenAlgorithmHeader_shouldSignClaims(@ForAll("validNames") Entry<String, Tuple2<String, String>> entry)
+    void givenAlgorithmHeader_shouldSignClaims(@ForAll("validHeaderNames") Entry<String, Tuple2<String, String>> entry)
             throws Exception {
         // given
         var alg = entry.getKey();
@@ -113,16 +114,16 @@ public class SignatureAlgorithmSettingTest {
     }
 
     @Provide
-    static Arbitrary<Tuple2<String, String>> invalidNames() {
+    static Arbitrary<Tuple2<String, String>> invalidHeaderNames() {
         return Arbitraries.strings()
                 .injectNull(0.0005)
-                .filter((s) -> !ACCEPTED_NAMES.containsKey(s))
-                .map((s) -> Tuple.of(s, ",/edEcPrivateKey.jwk"));
+                .filter((s) -> StringUtils.isBlank(s) || !ACCEPTED_CONFIG_NAMES.containsKey(s))
+                .map((s) -> Tuple.of(s, "/edEcPrivateKey.jwk"));
     }
 
     @Property
     void givenInvalidAlgorithmHeader_shouldThrowJwtSignatureExceptionOnSign(
-            @ForAll("invalidNames") Tuple2<String, String> tuple) {
+            @ForAll("invalidHeaderNames") Tuple2<String, String> tuple) {
         // given
         final var alg = tuple.get1();
         getConfigSource().setSigningKeyLocation(tuple.get2());
@@ -174,9 +175,79 @@ public class SignatureAlgorithmSettingTest {
         assertEquals("custom-header-value", jws.getHeader("customHeader"));
     }
 
+    @Provide
+    static Arbitrary<Entry<String, Tuple2<String, String>>> validConfigNames() {
+        return Arbitraries.of(ACCEPTED_CONFIG_NAMES.entrySet()).dontShrink();
+    }
+
+    @Property
+    void givenAlgorithmProperty_shouldSignClaims(@ForAll("validConfigNames") Entry<String, Tuple2<String, String>> entry)
+            throws Exception {
+        // given
+        var alg = entry.getKey();
+        var configSource = JwtSignTest.getConfigSource();
+        configSource.setSignatureAlgorithm(alg);
+        configSource.setSigningKeyLocation(entry.getValue().get1());
+        var publicKey = entry.getValue().get2();
+
+        // when
+        var jwt = Jwt.claims()
+                .issuer("https://issuer.com")
+                .jws()
+                .header("customHeader", "custom-header-value")
+                .sign();
+
+        JsonWebSignature jws;
+        // blank `alg` means `JwtBuildConfigSource` will use default name `RS256`
+        if (!StringUtils.isBlank(alg) && alg.toUpperCase().startsWith("HS")) {
+            jws = getVerifiedJws(jwt, KeyUtils.readSigningKey(publicKey, null, SignatureAlgorithm.fromAlgorithm(alg)));
+        } else if (publicKey.endsWith(".pem")) {
+            jws = getVerifiedJws(jwt, KeyUtils.readPublicKey(publicKey));
+        } else {
+            var keyContent = KeyUtils.readKeyContent(publicKey);
+            jws = getVerifiedJws(jwt, PublicJsonWebKey.Factory.newPublicJwk(keyContent).getPublicKey());
+        }
+        var claims = JwtClaims.parse(jws.getPayload());
+
+        // then
+        assertEquals(4, claims.getClaimsMap().size());
+        assertEquals("https://issuer.com", claims.getIssuer());
+    }
+
+    @Provide
+    static Arbitrary<Tuple2<String, String>> invalidConfigNames() {
+        return Arbitraries.strings()
+                .filter((s) -> !ACCEPTED_CONFIG_NAMES.containsKey(s))
+                .map((s) -> Tuple.of(s, "/edEcPrivateKey.jwk"));
+    }
+
+    @Property
+    void givenInvalidAlgorithmProperty_shouldThrowExceptionOnSign(@ForAll("invalidConfigNames") Tuple2<String, String> tuple) {
+        // given
+        var configSource = JwtSignTest.getConfigSource();
+        configSource.setSignatureAlgorithm(tuple.get1());
+        configSource.setSigningKeyLocation(tuple.get2());
+
+        // when, then
+        assertThrows(JwtSignatureException.class, () -> Jwt.claims()
+                .issuer("https://issuer.com")
+                .jws()
+                .header("customHeader", "custom-header-value")
+                .sign());
+    }
+
+    private static void generateAcceptedConfigNames() {
+        for (var entry : ALGORITHMS.entrySet()) {
+            generateAcceptedNamesForAlgorithm(entry.getKey().name().toCharArray(), 0, entry.getValue());
+        }
+        // the following will enforce default name when reading from `JwtBuildConfigSource`
+        ACCEPTED_CONFIG_NAMES.put("", Tuple.of("/privateKey.pem", "/publicKey.pem"));
+        ACCEPTED_CONFIG_NAMES.put(null, Tuple.of("/privateKey.pem", "/publicKey.pem"));
+    }
+
     private static void generateAcceptedNamesForAlgorithm(char[] name, int index, Tuple2<String, String> keys) {
         if (index == name.length) {
-            ACCEPTED_NAMES.put(new String(name), keys);
+            ACCEPTED_CONFIG_NAMES.put(new String(name), keys);
         } else if (Character.isLetter(name[index])) {
             name[index] = Character.toUpperCase(name[index]);
             generateAcceptedNamesForAlgorithm(name, index + 1, keys);
