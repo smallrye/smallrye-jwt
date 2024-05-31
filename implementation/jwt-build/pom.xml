@@ -75,6 +75,10 @@
       <artifactId>junit-jupiter</artifactId>
     </dependency>
     <dependency>
+      <groupId>net.jqwik</groupId>
+      <artifactId>jqwik</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse.parsson</groupId>
       <artifactId>parsson</artifactId>
     </dependency>
