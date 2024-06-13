@@ -33,7 +33,7 @@
   <url>http://smallrye.io</url>
 
   <properties>
-    <version.jakarta.servlet.api>5.0.0</version.jakarta.servlet.api>
+    <version.jakarta.servlet.api>6.1.0</version.jakarta.servlet.api>
     <version.jakarta.security.enterprise.api>2.0.0</version.jakarta.security.enterprise.api>
     <version.eclipse.microprofile.jwt>2.1</version.eclipse.microprofile.jwt>
     <version.microprofile.config>3.0</version.microprofile.config>
