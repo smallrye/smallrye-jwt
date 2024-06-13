@@ -67,6 +67,7 @@ import org.jose4j.jwt.NumericDate;
 import org.jose4j.jwt.consumer.InvalidJwtSignatureException;
 import org.jose4j.jwt.consumer.JwtConsumer;
 import org.jose4j.jwt.consumer.JwtConsumerBuilder;
+import org.jose4j.jwx.HeaderParameterNames;
 import org.jose4j.jwx.JsonWebStructure;
 import org.jose4j.keys.EdDsaKeyUtil;
 import org.jose4j.keys.EllipticCurves;
@@ -74,6 +75,8 @@ import org.jose4j.keys.resolvers.VerificationKeyResolver;
 import org.jose4j.lang.JoseException;
 import org.jose4j.lang.UnresolvableKeyException;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledForJreRange;
+import org.junit.jupiter.api.condition.JRE;
 
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 import io.smallrye.jwt.util.KeyUtils;
@@ -914,6 +917,85 @@ class JwtSignTest {
         Map<String, Object> headers = getJwsHeaders(jwt, 2);
         checkDefaultClaimsAndHeaders(headers, claims, "ES256", 300);
         assertEquals("custom-value", claims.getClaimValue("customClaim"));
+    }
+
+    @Test
+    @EnabledForJreRange(min = JRE.JAVA_17)
+    void signClaimsWithConfiguredEddsaAlgorithm() throws Exception {
+        var alg = "EdDSA";
+        var configSource = getConfigSource();
+        configSource.setSignatureAlgorithm(alg);
+        configSource.setSigningKeyLocation("/edEcPrivateKey.jwk");
+
+        try {
+            var jwt = Jwt.claim("customClaim", "custom-value").sign();
+
+            var keyContent = KeyUtils.readKeyContent("/edEcPublicKey.jwk");
+            var jws = getVerifiedJws(jwt, PublicJsonWebKey.Factory.newPublicJwk(keyContent).getPublicKey());
+            var claims = JwtClaims.parse(jws.getPayload());
+
+            assertEquals(4, claims.getClaimsMap().size());
+            var headers = getJwsHeaders(jwt, 2);
+            checkDefaultClaimsAndHeaders(headers, claims, "EdDSA", 300);
+            assertEquals("custom-value", claims.getClaimValue("customClaim"));
+        } finally {
+            configSource.setSignatureAlgorithm(null);
+            configSource.setSigningKeyLocation("/privateKey.pem");
+        }
+    }
+
+    @Test
+    @EnabledForJreRange(min = JRE.JAVA_17)
+    void signClaimsWithEddsaFromHeader() throws Exception {
+        var alg = "EdDSA";
+        var configSource = getConfigSource();
+        configSource.setSigningKeyLocation("/edEcPrivateKey.jwk");
+
+        try {
+            var jwt = Jwt.claims()
+                    .issuer("https://issuer.com")
+                    .jws()
+                    .header(HeaderParameterNames.ALGORITHM, alg)
+                    .header("customHeader", "custom-header-value")
+                    .sign();
+
+            var keyContent = KeyUtils.readKeyContent("/edEcPublicKey.jwk");
+            var jws = getVerifiedJws(jwt, PublicJsonWebKey.Factory.newPublicJwk(keyContent).getPublicKey());
+            var claims = JwtClaims.parse(jws.getPayload());
+
+            assertEquals(4, claims.getClaimsMap().size());
+            assertEquals("https://issuer.com", claims.getIssuer());
+            assertEquals("custom-header-value", jws.getHeader("customHeader"));
+        } finally {
+            configSource.setSigningKeyLocation("/privateKey.pem");
+        }
+    }
+
+    @Test
+    @EnabledForJreRange(min = JRE.JAVA_17)
+    void signClaimsWithEddsaFromAlgorithm() throws Exception {
+        var alg = SignatureAlgorithm.EDDSA;
+        var configSource = getConfigSource();
+        configSource.setSigningKeyLocation("/edEcPrivateKey.jwk");
+
+        try {
+            var jwt = Jwt.claims()
+                    .issuer("https://issuer.com")
+                    .jws()
+                    .algorithm(alg)
+                    .header("customHeader", "custom-header-value")
+                    .sign();
+
+            var keyContent = KeyUtils.readKeyContent("/edEcPublicKey.jwk");
+            var jws = getVerifiedJws(jwt, PublicJsonWebKey.Factory.newPublicJwk(keyContent).getPublicKey());
+            var claims = JwtClaims.parse(jws.getPayload());
+
+            assertEquals(4, claims.getClaimsMap().size());
+            assertEquals("https://issuer.com", claims.getIssuer());
+            assertEquals("custom-header-value", jws.getHeader("customHeader"));
+        } finally {
+            configSource.setSigningKeyLocation("/privateKey.pem");
+        }
     }
 
     private static SecretKey createSecretKey() throws Exception {

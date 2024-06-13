@@ -200,11 +200,11 @@ class JwtSignatureImpl implements JwtSignature {
             try {
                 alg = JwtBuildUtils.getConfigProperty(JwtBuildUtils.NEW_TOKEN_SIGNATURE_ALG_PROPERTY, String.class);
                 if (alg != null) {
-                    alg = SignatureAlgorithm.valueOf(alg.toUpperCase()).getAlgorithm();
+                    alg = SignatureAlgorithm.fromAlgorithm(alg).getAlgorithm();
                     headers.put(HeaderParameterNames.ALGORITHM, alg);
                 }
             } catch (Exception ex) {
-                throw ImplMessages.msg.unsupportedSignatureAlgorithm(alg);
+                throw ImplMessages.msg.unsupportedSignatureAlgorithm(alg, ex);
             }
         }
         return alg;
@@ -265,9 +265,15 @@ class JwtSignatureImpl implements JwtSignature {
         String kid = (String) headers.get(HeaderParameterNames.KEY_ID);
         String alg = getConfiguredSignatureAlgorithm();
 
+        SignatureAlgorithm algorithm;
+        try {
+            algorithm = (alg == null ? null : SignatureAlgorithm.fromAlgorithm(alg));
+        } catch (IllegalArgumentException ex) {
+            throw ImplMessages.msg.unsupportedSignatureAlgorithm(alg, ex);
+        }
+
         // Try PEM format first - default to RS256 if the algorithm is unknown
-        Key key = KeyUtils.tryAsPemSigningPrivateKey(keyContent,
-                (alg == null ? SignatureAlgorithm.RS256 : SignatureAlgorithm.fromAlgorithm(alg)));
+        Key key = KeyUtils.tryAsPemSigningPrivateKey(keyContent, algorithm == null ? SignatureAlgorithm.RS256 : algorithm);
         if (key == null) {
             if (kid == null) {
                 kid = JwtBuildUtils.getConfigProperty(JwtBuildUtils.SIGN_KEY_ID_PROPERTY, String.class);
@@ -279,12 +285,10 @@ class JwtSignatureImpl implements JwtSignature {
             // Try to load JWK from a single JWK resource or JWK set resource
             JsonWebKey jwk = KeyUtils.getJwkKeyFromJwkSet(kid, keyContent);
             if (jwk != null) {
-                // if the user has already set the algorithm header then JWK `alg` header, if set, must match it
-                key = KeyUtils.getPrivateOrSecretSigningKey(jwk,
-                        (alg == null ? null : SignatureAlgorithm.fromAlgorithm(alg)));
+                key = KeyUtils.getPrivateOrSecretSigningKey(jwk, algorithm);
                 if (key != null) {
                     // if the algorithm header is not set then use JWK `alg`
-                    if (alg == null && jwk.getAlgorithm() != null) {
+                    if (algorithm == null && jwk.getAlgorithm() != null) {
                         headers.put(HeaderParameterNames.ALGORITHM, jwk.getAlgorithm());
                     }
                     // if 'kid' header is not set then use JWK `kid`
