@@ -21,8 +21,11 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import java.nio.charset.StandardCharsets;
 import java.security.PrivateKey;
 import java.time.Instant;
+import java.util.Base64;
+import java.util.Optional;
 
 import org.eclipse.microprofile.jwt.tck.util.TokenUtils;
 import org.jose4j.jwt.JwtClaims;
@@ -184,6 +187,45 @@ class KeyLocationResolverTest {
         String jwtString = Jwt.issuer("https://server.example.com").upn("Alice").sign("secretKey.jwk");
         JWTAuthContextInfoProvider provider = JWTAuthContextInfoProvider.createWithSecretKeyLocation("secretKey.jwk",
                 "https://server.example.com");
+        JWTAuthContextInfo contextInfo = provider.getContextInfo();
+        contextInfo.setSignatureAlgorithm(SignatureAlgorithm.HS256);
+        JwtClaims jwt = new DefaultJWTTokenParser().parse(jwtString, contextInfo).getJwtClaims();
+        assertEquals("Alice", jwt.getClaimValueAsString("upn"));
+    }
+
+    @Test
+    void verifyTokenSignedWithInlinedSecretKey() throws Exception {
+        String jwtString = Jwt.issuer("https://server.example.com").upn("Alice").sign("secretKey.jwk");
+        JWTAuthContextInfoProvider provider = JWTAuthContextInfoProvider
+                .create("{\n"
+                        + " \"kty\":\"oct\",\n"
+                        + " \"k\":\"Fdh9u8rINxfivbrianbbVT1u232VQBZYKx1HGAGPt2I\"\n"
+                        + " }",
+                        null,
+                        true,
+                        false,
+                        "https://server.example.com",
+                        Optional.empty());
+        JWTAuthContextInfo contextInfo = provider.getContextInfo();
+        contextInfo.setSignatureAlgorithm(SignatureAlgorithm.HS256);
+        JwtClaims jwt = new DefaultJWTTokenParser().parse(jwtString, contextInfo).getJwtClaims();
+        assertEquals("Alice", jwt.getClaimValueAsString("upn"));
+    }
+
+    @Test
+    void verifyTokenSignedWithInlinedBase64UrlEncodedSecretKey() throws Exception {
+        String jwtString = Jwt.issuer("https://server.example.com").upn("Alice").sign("secretKey.jwk");
+        byte[] bytes = ("{\n"
+                + " \"kty\":\"oct\",\n"
+                + " \"k\":\"Fdh9u8rINxfivbrianbbVT1u232VQBZYKx1HGAGPt2I\"\n"
+                + " }").getBytes(StandardCharsets.UTF_8);
+        JWTAuthContextInfoProvider provider = JWTAuthContextInfoProvider
+                .create(Base64.getUrlEncoder().withoutPadding().encodeToString(bytes),
+                        null,
+                        true,
+                        false,
+                        "https://server.example.com",
+                        Optional.empty());
         JWTAuthContextInfo contextInfo = provider.getContextInfo();
         contextInfo.setSignatureAlgorithm(SignatureAlgorithm.HS256);
         JwtClaims jwt = new DefaultJWTTokenParser().parse(jwtString, contextInfo).getJwtClaims();

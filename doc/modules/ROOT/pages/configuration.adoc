@@ -39,6 +39,7 @@ SmallRye JWT supports many properties which can be used to customize the token p
 [cols="<m,<m,<2",options="header"]
 |===
 |Property Name|Default|Description
+|smallrye.jwt.verify.secretkey|none|Secret key supplied as a string.
 |smallrye.jwt.verify.key.location|NONE|Location of the verification key which can point to both public and secret keys. Secret keys can only be in the JWK format. Note that 'mp.jwt.verify.publickey.location' will be ignored if this property is set.
 |smallrye.jwt.verify.algorithm|`RS256`|Signature algorithm. Set it to `ES256` to support the Elliptic Curve signature algorithm. This property is deprecated, use `mp.jwt.verify.publickey.algorithm`.
 |smallrye.jwt.verify.key-format|`ANY`|Set this property to a specific key format such as `PEM_KEY`, `PEM_CERTIFICATE`, `JWK` or `JWK_BASE64URL` to optimize the way the verification key is loaded.

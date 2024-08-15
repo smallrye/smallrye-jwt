@@ -100,9 +100,14 @@ public class KeyLocationResolver extends AbstractKeyLocationResolver implements 
             return;
         }
 
-        String content = authContextInfo.getPublicKeyContent() != null
-                ? authContextInfo.getPublicKeyContent()
-                : readKeyContent(authContextInfo.getPublicKeyLocation());
+        String content = null;
+        if (authContextInfo.getPublicKeyContent() != null) {
+            content = authContextInfo.getPublicKeyContent();
+        } else if (authContextInfo.getSecretKeyContent() != null) {
+            content = authContextInfo.getSecretKeyContent();
+        } else {
+            content = readKeyContent(authContextInfo.getPublicKeyLocation());
+        }
 
         // Try to init the verification key from the local PEM or JWK(S) content
         if (mayBeFormat(KeyFormat.PEM_KEY)) {

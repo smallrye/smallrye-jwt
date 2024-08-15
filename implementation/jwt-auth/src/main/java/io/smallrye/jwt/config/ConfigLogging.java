@@ -39,4 +39,12 @@ public interface ConfigLogging extends BasicLogger {
     @Message(id = 3006, value = "'%s' property is deprecated and will be removed in a future version. " +
             "Use '%s ' property instead")
     void replacedConfig(String originalConfig, String newConfig);
+
+    @LogMessage(level = Logger.Level.WARN)
+    @Message(id = 3007, value = "Public key is configured but either the secret key or key location are also configured and will be ignored")
+    void publicKeyConfiguredButOtherKeyPropertiesAreAlsoUsed();
+
+    @LogMessage(level = Logger.Level.WARN)
+    @Message(id = 3008, value = "Secret key is configured but the key location is also configured and will be ignored")
+    void secretKeyConfiguredButKeyLocationIsAlsoUsed();
 }
