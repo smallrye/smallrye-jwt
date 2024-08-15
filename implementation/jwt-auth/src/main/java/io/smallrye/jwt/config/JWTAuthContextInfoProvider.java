@@ -136,17 +136,17 @@ public class JWTAuthContextInfoProvider {
                 theKeyStoreDecryptKeyAlias, false, false, issuer, Optional.empty());
     }
 
-    private static JWTAuthContextInfoProvider create(String publicKey,
+    public static JWTAuthContextInfoProvider create(String key,
             String keyLocation,
             boolean secretKey,
             boolean verifyCertificateThumbprint,
             String issuer,
             Optional<String> decryptionKey) {
-        return create(publicKey, keyLocation, Optional.empty(), Optional.empty(), Optional.empty(),
+        return create(key, keyLocation, Optional.empty(), Optional.empty(), Optional.empty(),
                 Optional.empty(), Optional.empty(), secretKey, verifyCertificateThumbprint, issuer, decryptionKey);
     }
 
-    private static JWTAuthContextInfoProvider create(String publicKey,
+    private static JWTAuthContextInfoProvider create(String key,
             String keyLocation,
             Optional<String> theKeyStoreType,
             Optional<String> theKeyStoreProvider,
@@ -158,7 +158,8 @@ public class JWTAuthContextInfoProvider {
             String issuer,
             Optional<String> decryptionKey) {
         JWTAuthContextInfoProvider provider = new JWTAuthContextInfoProvider();
-        provider.mpJwtPublicKey = publicKey;
+        provider.mpJwtPublicKey = !secretKey ? key : NONE;
+        provider.jwtSecretKey = secretKey ? key : NONE;
         provider.mpJwtPublicKeyAlgorithm = Optional.of(SignatureAlgorithm.RS256);
         provider.mpJwtLocation = !secretKey && !theKeyStoreDecryptKeyAlias.isPresent() ? keyLocation : NONE;
         provider.verifyKeyLocation = secretKey ? keyLocation : NONE;
@@ -217,6 +218,13 @@ public class JWTAuthContextInfoProvider {
     @Inject
     @ConfigProperty(name = "mp.jwt.verify.publickey", defaultValue = NONE)
     private String mpJwtPublicKey;
+
+    /**
+     * @since 4.5.4
+     */
+    @Inject
+    @ConfigProperty(name = "smallrye.jwt.verify.secretkey", defaultValue = NONE)
+    private String jwtSecretKey;
     /**
      * @since 1.2
      */
@@ -668,9 +676,20 @@ public class JWTAuthContextInfoProvider {
             contextInfo.setIssuedBy(mpJwtIssuer.trim());
         }
 
-        if (!NONE.equals(mpJwtPublicKey)) {
+        final boolean verificationPublicKeySet = !NONE.equals(mpJwtPublicKey);
+        final boolean verificationSecretKeySet = !NONE.equals(jwtSecretKey);
+        final boolean verificationKeyLocationSet = !NONE.equals(resolvedVerifyKeyLocation);
+        if (verificationPublicKeySet) {
             contextInfo.setPublicKeyContent(mpJwtPublicKey);
-        } else if (!NONE.equals(resolvedVerifyKeyLocation)) {
+            if (verificationKeyLocationSet || verificationSecretKeySet) {
+                ConfigLogging.log.publicKeyConfiguredButOtherKeyPropertiesAreAlsoUsed();
+            }
+        } else if (verificationSecretKeySet) {
+            contextInfo.setSecretKeyContent(jwtSecretKey);
+            if (verificationKeyLocationSet) {
+                ConfigLogging.log.secretKeyConfiguredButKeyLocationIsAlsoUsed();
+            }
+        } else if (verificationKeyLocationSet) {
             String resolvedVerifyKeyLocationTrimmed = resolvedVerifyKeyLocation.trim();
             if (resolvedVerifyKeyLocationTrimmed.startsWith("http")) {
                 if (fetchRemoteKeysOnStartup) {

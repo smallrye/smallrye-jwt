@@ -46,6 +46,7 @@ public class JWTAuthContextInfo {
     private int clockSkew = 60;
     private String publicKeyLocation;
     private String publicKeyContent;
+    private String secretKeyContent;
     private String decryptionKeyLocation;
     private String decryptionKeyContent;
     private Integer jwksRefreshInterval = 60;
@@ -115,6 +116,7 @@ public class JWTAuthContextInfo {
         this.clockSkew = orig.getClockSkew();
         this.publicKeyLocation = orig.getPublicKeyLocation();
         this.publicKeyContent = orig.getPublicKeyContent();
+        this.secretKeyContent = orig.getSecretKeyContent();
         this.decryptionKeyLocation = orig.getDecryptionKeyLocation();
         this.decryptionKeyContent = orig.getDecryptionKeyContent();
         this.jwksRefreshInterval = orig.getJwksRefreshInterval();
@@ -247,6 +249,14 @@ public class JWTAuthContextInfo {
 
     public void setPublicKeyContent(String publicKeyContent) {
         this.publicKeyContent = publicKeyContent;
+    }
+
+    public String getSecretKeyContent() {
+        return this.secretKeyContent;
+    }
+
+    public void setSecretKeyContent(String secretKeyContent) {
+        this.secretKeyContent = secretKeyContent;
     }
 
     public String getDecryptionKeyContent() {
@@ -422,6 +432,7 @@ public class JWTAuthContextInfo {
                 ", tokenAge=" + tokenAge +
                 ", publicKeyLocation='" + publicKeyLocation + '\'' +
                 ", publicKeyContent='" + publicKeyContent + '\'' +
+                ", secretKeyContent='" + secretKeyContent + '\'' +
                 ", decryptionKeyLocation='" + decryptionKeyLocation + '\'' +
                 ", decryptionKeyContent='" + decryptionKeyContent + '\'' +
                 ", jwksRefreshInterval=" + jwksRefreshInterval +
