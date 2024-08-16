@@ -66,7 +66,7 @@ public class AwsAlbKeyResolver implements VerificationKeyResolver {
         }
         String keyContent = simpleResponse.getBody();
         try {
-            return KeyUtils.decodePublicKey(keyContent, authContextInfo.getSignatureAlgorithm());
+            return KeyUtils.decodePublicKey(keyContent, authContextInfo.getSignatureAlgorithm().iterator().next());
         } catch (Exception e) {
             AbstractKeyLocationResolver.reportUnresolvableKeyException(keyContent, keyLocation);
         }

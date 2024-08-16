@@ -107,6 +107,7 @@ class KeyLocationResolverTest {
         keyLocationResolver = Mockito.spy(keyLocationResolver);
         when(signature.getHeaders()).thenReturn(headers);
         when(headers.getStringHeaderValue(JsonWebKey.KEY_ID_PARAMETER)).thenReturn("1");
+        when(headers.getStringHeaderValue(JsonWebKey.ALGORITHM_PARAMETER)).thenReturn("RS256");
 
         assertEquals(rsaKey, keyLocationResolver.resolveKey(signature, emptyList()));
         assertNull(keyLocationResolver.key);
@@ -138,6 +139,7 @@ class KeyLocationResolverTest {
         keyLocationResolver = Mockito.spy(keyLocationResolver);
         when(signature.getHeaders()).thenReturn(headers);
         when(headers.getStringHeaderValue(JsonWebKey.KEY_ID_PARAMETER)).thenReturn("1");
+        when(headers.getStringHeaderValue(JsonWebKey.ALGORITHM_PARAMETER)).thenReturn("RS256");
 
         assertEquals(rsaKey, keyLocationResolver.resolveKey(signature, emptyList()));
         assertNull(keyLocationResolver.key);
@@ -172,6 +174,7 @@ class KeyLocationResolverTest {
         keyLocationResolver = Mockito.spy(keyLocationResolver);
         when(signature.getHeaders()).thenReturn(headers);
         when(headers.getStringHeaderValue(JsonWebKey.KEY_ID_PARAMETER)).thenReturn("1");
+        when(headers.getStringHeaderValue(JsonWebKey.ALGORITHM_PARAMETER)).thenReturn("RS256");
 
         assertEquals(rsaKey, keyLocationResolver.resolveKey(signature, emptyList()));
         assertNull(keyLocationResolver.key);
@@ -193,6 +196,7 @@ class KeyLocationResolverTest {
         keyLocationResolver = Mockito.spy(keyLocationResolver);
         when(signature.getHeaders()).thenReturn(headers);
         when(headers.getStringHeaderValue(JsonWebKey.KEY_ID_PARAMETER)).thenReturn("1");
+        when(headers.getStringHeaderValue(JsonWebKey.ALGORITHM_PARAMETER)).thenReturn("RS256");
 
         assertEquals(rsaKey, keyLocationResolver.resolveKey(signature, emptyList()));
         assertNull(keyLocationResolver.key);
@@ -214,6 +218,7 @@ class KeyLocationResolverTest {
         keyLocationResolver = Mockito.spy(keyLocationResolver);
         when(signature.getHeaders()).thenReturn(headers);
         when(headers.getStringHeaderValue(JsonWebKey.KEY_ID_PARAMETER)).thenReturn("1");
+        when(headers.getStringHeaderValue(JsonWebKey.ALGORITHM_PARAMETER)).thenReturn("RS256");
 
         assertEquals(secretKey, keyLocationResolver.resolveKey(signature, emptyList()));
         assertNull(keyLocationResolver.key);
@@ -232,6 +237,7 @@ class KeyLocationResolverTest {
         // token 'kid' is '1'
         when(signature.getHeaders()).thenReturn(headers);
         when(headers.getStringHeaderValue(JsonWebKey.KEY_ID_PARAMETER)).thenReturn("1");
+        when(headers.getStringHeaderValue(JsonWebKey.ALGORITHM_PARAMETER)).thenReturn("RS256");
 
         final RsaJsonWebKey jwk = new RsaJsonWebKey(rsaKey);
 
@@ -263,6 +269,7 @@ class KeyLocationResolverTest {
         // token 'kid' is '1'
         when(signature.getHeaders()).thenReturn(headers);
         when(headers.getStringHeaderValue(JsonWebKey.KEY_ID_PARAMETER)).thenReturn("1");
+        when(headers.getStringHeaderValue(JsonWebKey.ALGORITHM_PARAMETER)).thenReturn("RS256");
 
         final RsaJsonWebKey jwk = new RsaJsonWebKey(rsaKey);
 
@@ -295,6 +302,7 @@ class KeyLocationResolverTest {
         // token 'kid' is '1'
         when(signature.getHeaders()).thenReturn(headers);
         when(headers.getStringHeaderValue(JsonWebKey.KEY_ID_PARAMETER)).thenReturn("1");
+        when(headers.getStringHeaderValue(JsonWebKey.ALGORITHM_PARAMETER)).thenReturn("RS256");
 
         final RsaJsonWebKey jwk = new RsaJsonWebKey(rsaKey);
 

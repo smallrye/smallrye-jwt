@@ -62,7 +62,7 @@ public class JWTAuthContextInfo {
     private String subPath;
     private String defaultGroupsClaim;
     private String groupsPath;
-    private SignatureAlgorithm signatureAlgorithm = SignatureAlgorithm.RS256;
+    private Set<SignatureAlgorithm> signatureAlgorithm = Set.of(SignatureAlgorithm.RS256);
     private Set<KeyEncryptionAlgorithm> keyEncryptionAlgorithm = new HashSet<>(Arrays.asList(KeyEncryptionAlgorithm.RSA_OAEP,
             KeyEncryptionAlgorithm.RSA_OAEP_256));
     private KeyFormat keyFormat = KeyFormat.ANY;
@@ -379,11 +379,11 @@ public class JWTAuthContextInfo {
         this.groupsSeparator = groupsSeparator;
     }
 
-    public SignatureAlgorithm getSignatureAlgorithm() {
+    public Set<SignatureAlgorithm> getSignatureAlgorithm() {
         return signatureAlgorithm;
     }
 
-    public void setSignatureAlgorithm(SignatureAlgorithm signatureAlgorithm) {
+    public void setSignatureAlgorithm(Set<SignatureAlgorithm> signatureAlgorithm) {
         this.signatureAlgorithm = signatureAlgorithm;
     }
 

@@ -2,6 +2,8 @@ package io.smallrye.jwt.auth.principal;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.util.Set;
+
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.junit.jupiter.api.Test;
 
@@ -24,7 +26,7 @@ public class AwsAlbTokenTest {
         config.setPublicKeyContent(AWS_ALB_KEY);
         config.setIssuedBy("https://cognito-idp.eu-central-1.amazonaws.com/eu-central-1_MyRrOCHQw");
         // ES256 is used to sign
-        config.setSignatureAlgorithm(SignatureAlgorithm.ES256);
+        config.setSignatureAlgorithm(Set.of(SignatureAlgorithm.ES256));
         // Token has no `iat`
         config.setMaxTimeToLiveSecs(-1L);
         // It has already expired so for the test to pass the clock skew has to be set

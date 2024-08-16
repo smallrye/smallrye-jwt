@@ -8,6 +8,7 @@ import java.security.PublicKey;
 import java.security.cert.X509Certificate;
 import java.time.Instant;
 import java.util.Collections;
+import java.util.Set;
 
 import javax.crypto.SecretKey;
 
@@ -171,7 +172,7 @@ class DefaultJWTParserTest {
         jwtString = Jwt.upn("jdoe@example.com").issuer("https://server.example.com").sign(
                 KeyUtils.readPrivateKey("/ecPrivateKey.pem", SignatureAlgorithm.ES256));
         JWTAuthContextInfo context = new JWTAuthContextInfo("/ecPublicKey.pem", "https://server.example.com");
-        context.setSignatureAlgorithm(SignatureAlgorithm.ES256);
+        context.setSignatureAlgorithm(Set.of(SignatureAlgorithm.ES256));
         jwt = parser.parse(jwtString, context);
         assertEquals("jdoe@example.com", jwt.getName());
     }
@@ -213,6 +214,22 @@ class DefaultJWTParserTest {
         JsonWebToken jwt = new DefaultJWTParser().parse(jwtString, config);
 
         assertEquals("jdoe@example.com", jwt.getName());
+    }
+
+    @Test
+    void verifyMultipleSignatureAlgorithms() throws Exception {
+
+        JWTAuthContextInfo config = new JWTAuthContextInfo();
+        config.setPublicKeyLocation("/signatureJwkSet.jwk");
+        config.setSignatureAlgorithm(Set.of(SignatureAlgorithm.RS256, SignatureAlgorithm.ES256));
+
+        String rsaJwt = Jwt.upn("jdoe@example.com").sign("/rs256PrivateKey.jwk");
+        JsonWebToken rsaJwtToken = new DefaultJWTParser().parse(rsaJwt, config);
+        assertEquals("jdoe@example.com", rsaJwtToken.getName());
+
+        String ecJwt = Jwt.upn("jdoe@example.com").sign("/ecPrivateKey.jwk");
+        JsonWebToken ecJwtToken = new DefaultJWTParser().parse(ecJwt, config);
+        assertEquals("jdoe@example.com", ecJwtToken.getName());
     }
 
     @Test
@@ -290,7 +307,7 @@ class DefaultJWTParserTest {
         config.setSecretDecryptionKey(secretKey);
         config.setKeyEncryptionAlgorithm(Collections.singleton(KeyEncryptionAlgorithm.A256KW));
         config.setSecretVerificationKey(secretKey);
-        config.setSignatureAlgorithm(SignatureAlgorithm.HS256);
+        config.setSignatureAlgorithm(Set.of(SignatureAlgorithm.HS256));
         JsonWebToken jwt = new DefaultJWTParser().parse(jwtString, config);
         assertEquals("jdoe@example.com", jwt.getName());
     }

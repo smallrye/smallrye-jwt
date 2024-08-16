@@ -26,6 +26,7 @@ import java.security.PrivateKey;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.Optional;
+import java.util.Set;
 
 import org.eclipse.microprofile.jwt.tck.util.TokenUtils;
 import org.jose4j.jwt.JwtClaims;
@@ -143,7 +144,7 @@ class KeyLocationResolverTest {
         JWTAuthContextInfoProvider provider = JWTAuthContextInfoProvider.createWithKeyLocation("ecPublicKey.pem",
                 "https://server.example.com");
         JWTAuthContextInfo contextInfo = provider.getContextInfo();
-        contextInfo.setSignatureAlgorithm(SignatureAlgorithm.ES256);
+        contextInfo.setSignatureAlgorithm(Set.of(SignatureAlgorithm.ES256));
         assertNotNull(new DefaultJWTTokenParser().parse(jwt, contextInfo));
     }
 
@@ -156,7 +157,7 @@ class KeyLocationResolverTest {
         JWTAuthContextInfoProvider provider = JWTAuthContextInfoProvider.createWithKeyLocation("publicKey.pem",
                 "https://server.example.com");
         JWTAuthContextInfo contextInfo = provider.getContextInfo();
-        contextInfo.setSignatureAlgorithm(SignatureAlgorithm.ES256);
+        contextInfo.setSignatureAlgorithm(Set.of(SignatureAlgorithm.ES256));
         try {
             new DefaultJWTTokenParser().parse(jwt, contextInfo);
             fail("ParseException is expected due to the wrong key type");
@@ -188,7 +189,7 @@ class KeyLocationResolverTest {
         JWTAuthContextInfoProvider provider = JWTAuthContextInfoProvider.createWithSecretKeyLocation("secretKey.jwk",
                 "https://server.example.com");
         JWTAuthContextInfo contextInfo = provider.getContextInfo();
-        contextInfo.setSignatureAlgorithm(SignatureAlgorithm.HS256);
+        contextInfo.setSignatureAlgorithm(Set.of(SignatureAlgorithm.HS256));
         JwtClaims jwt = new DefaultJWTTokenParser().parse(jwtString, contextInfo).getJwtClaims();
         assertEquals("Alice", jwt.getClaimValueAsString("upn"));
     }
@@ -207,7 +208,7 @@ class KeyLocationResolverTest {
                         "https://server.example.com",
                         Optional.empty());
         JWTAuthContextInfo contextInfo = provider.getContextInfo();
-        contextInfo.setSignatureAlgorithm(SignatureAlgorithm.HS256);
+        contextInfo.setSignatureAlgorithm(Set.of(SignatureAlgorithm.HS256));
         JwtClaims jwt = new DefaultJWTTokenParser().parse(jwtString, contextInfo).getJwtClaims();
         assertEquals("Alice", jwt.getClaimValueAsString("upn"));
     }
@@ -227,7 +228,7 @@ class KeyLocationResolverTest {
                         "https://server.example.com",
                         Optional.empty());
         JWTAuthContextInfo contextInfo = provider.getContextInfo();
-        contextInfo.setSignatureAlgorithm(SignatureAlgorithm.HS256);
+        contextInfo.setSignatureAlgorithm(Set.of(SignatureAlgorithm.HS256));
         JwtClaims jwt = new DefaultJWTTokenParser().parse(jwtString, contextInfo).getJwtClaims();
         assertEquals("Alice", jwt.getClaimValueAsString("upn"));
     }

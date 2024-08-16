@@ -28,4 +28,7 @@ interface ConfigMessages {
 
     @Message(id = 2005, value = "'smallrye.jwt.decrypt.key.location' is invalid")
     DeploymentException invalidDecryptKeyLocation();
+
+    @Message(id = 2006, value = "Only a single signature algorithm is supported for PEM key or certificate")
+    DeploymentException singleSignatureAlgorithmForPemOnly();
 }

@@ -19,8 +19,10 @@ package io.smallrye.jwt.auth.principal;
 import java.security.Key;
 import java.security.cert.X509Certificate;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 
 import org.jose4j.jwk.JsonWebKey;
 import org.jose4j.jwk.RsaJsonWebKey;
@@ -31,6 +33,7 @@ import org.jose4j.keys.resolvers.X509VerificationKeyResolver;
 import org.jose4j.lang.UnresolvableKeyException;
 
 import io.smallrye.jwt.KeyFormat;
+import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 import io.smallrye.jwt.util.KeyUtils;
 
 public class X509KeyLocationResolver extends AbstractKeyLocationResolver implements VerificationKeyResolver {
@@ -79,8 +82,9 @@ public class X509KeyLocationResolver extends AbstractKeyLocationResolver impleme
 
     private void initializeInternalResolverFromJwks(List<JsonWebKey> jsonWebKeys) throws Exception {
         List<X509Certificate> certs = new LinkedList<>();
+        Set<String> signatureAlgorithms = signatureAlgorithms(authContextInfo);
         for (JsonWebKey jwk : jsonWebKeys) {
-            if (jwk.getAlgorithm() == null || authContextInfo.getSignatureAlgorithm().getAlgorithm().equals(jwk.getAlgorithm())
+            if (jwk.getAlgorithm() == null || signatureAlgorithms.contains(jwk.getAlgorithm())
                     && jwk instanceof RsaJsonWebKey) {
                 // Get the certificate chain
                 List<X509Certificate> x5c = ((RsaJsonWebKey) jwk).getCertificateChain();
@@ -106,5 +110,13 @@ public class X509KeyLocationResolver extends AbstractKeyLocationResolver impleme
         if (cert != null) {
             resolver = new X509VerificationKeyResolver(cert);
         }
+    }
+
+    private Set<String> signatureAlgorithms(JWTAuthContextInfo authContextInfo) {
+        Set<String> algorithms = new HashSet<>();
+        for (SignatureAlgorithm keyEncAlgo : authContextInfo.getSignatureAlgorithm()) {
+            algorithms.add(keyEncAlgo.getAlgorithm());
+        }
+        return algorithms;
     }
 }

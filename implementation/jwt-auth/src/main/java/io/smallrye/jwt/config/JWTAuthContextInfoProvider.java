@@ -160,7 +160,7 @@ public class JWTAuthContextInfoProvider {
         JWTAuthContextInfoProvider provider = new JWTAuthContextInfoProvider();
         provider.mpJwtPublicKey = !secretKey ? key : NONE;
         provider.jwtSecretKey = secretKey ? key : NONE;
-        provider.mpJwtPublicKeyAlgorithm = Optional.of(SignatureAlgorithm.RS256);
+        provider.mpJwtPublicKeyAlgorithm = Set.of(SignatureAlgorithm.RS256);
         provider.mpJwtLocation = !secretKey && !theKeyStoreDecryptKeyAlias.isPresent() ? keyLocation : NONE;
         provider.verifyKeyLocation = secretKey ? keyLocation : NONE;
         provider.verifyCertificateThumbprint = verifyCertificateThumbprint;
@@ -226,8 +226,8 @@ public class JWTAuthContextInfoProvider {
      * @since 1.2
      */
     @Inject
-    @ConfigProperty(name = "mp.jwt.verify.publickey.algorithm")
-    private Optional<SignatureAlgorithm> mpJwtPublicKeyAlgorithm;
+    @ConfigProperty(name = "mp.jwt.verify.publickey.algorithm", defaultValue = "RS256")
+    private Set<SignatureAlgorithm> mpJwtPublicKeyAlgorithm = Set.of(SignatureAlgorithm.RS256);
     /**
      * @since 1.1
      */
@@ -836,10 +836,8 @@ public class JWTAuthContextInfoProvider {
         contextInfo.setTokenAge(mpJwtVerifyTokenAge.orElse(null));
         contextInfo.setJwksRefreshInterval(jwksRefreshInterval);
         contextInfo.setForcedJwksRefreshInterval(forcedJwksRefreshInterval);
-        final Optional<SignatureAlgorithm> resolvedAlgorithm;
-        if (mpJwtPublicKeyAlgorithm.isPresent()) {
-            resolvedAlgorithm = mpJwtPublicKeyAlgorithm;
-        } else if (signatureAlgorithm.isPresent()) {
+        Set<SignatureAlgorithm> resolvedAlgorithm = mpJwtPublicKeyAlgorithm;
+        if (signatureAlgorithm.isPresent()) {
             if (signatureAlgorithm.get().getAlgorithm().startsWith("HS")) {
                 if (!NONE.equals(resolvedVerifyKeyLocation) && resolvedVerifyKeyLocation == mpJwtLocation) {
                     throw ConfigMessages.msg.hmacNotSupported();
@@ -847,15 +845,10 @@ public class JWTAuthContextInfoProvider {
             } else {
                 ConfigLogging.log.replacedConfig("smallrye.jwt.verify.algorithm", "mp.jwt.verify.publickey.algorithm");
             }
-            resolvedAlgorithm = signatureAlgorithm;
-        } else {
-            resolvedAlgorithm = Optional.empty();
+            resolvedAlgorithm = Set.of(signatureAlgorithm.get());
         }
-        if (resolvedAlgorithm.isPresent()) {
-            contextInfo.setSignatureAlgorithm(resolvedAlgorithm.get());
-        } else {
-            contextInfo.setSignatureAlgorithm(SignatureAlgorithm.RS256);
-        }
+        checkKeyFormat(resolvedAlgorithm);
+        contextInfo.setSignatureAlgorithm(resolvedAlgorithm);
 
         final Set<KeyEncryptionAlgorithm> theDecryptionKeyAlgorithm;
         if (!keyEncryptionAlgorithm.isEmpty()) {
@@ -882,6 +875,13 @@ public class JWTAuthContextInfoProvider {
         contextInfo.setRelaxVerificationKeyValidation(relaxVerificationKeyValidation);
         contextInfo.setVerifyCertificateThumbprint(verifyCertificateThumbprint);
         return Optional.of(contextInfo);
+    }
+
+    private void checkKeyFormat(Set<SignatureAlgorithm> resolvedAlgorithm) {
+        if (resolvedAlgorithm.size() > 1 &&
+                (keyFormat.equals(KeyFormat.PEM_KEY) || keyFormat.equals(KeyFormat.PEM_CERTIFICATE))) {
+            ConfigMessages.msg.singleSignatureAlgorithmForPemOnly();
+        }
     }
 
     private PublicKey getVerificationKeyFromKeystore(String keyStorePath) throws Exception {
