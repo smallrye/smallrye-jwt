@@ -219,9 +219,6 @@ public class JWTAuthContextInfoProvider {
     @ConfigProperty(name = "mp.jwt.verify.publickey", defaultValue = NONE)
     private String mpJwtPublicKey;
 
-    /**
-     * @since 4.5.4
-     */
     @Inject
     @ConfigProperty(name = "smallrye.jwt.verify.secretkey", defaultValue = NONE)
     private String jwtSecretKey;
