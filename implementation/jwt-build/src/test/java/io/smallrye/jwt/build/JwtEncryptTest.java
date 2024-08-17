@@ -140,6 +140,21 @@ public class JwtEncryptTest {
     }
 
     @Test
+    void encryptJsonString() throws Exception {
+        String jweCompact = Jwt.claimsJson("{\"customClaim\":\"custom-value\"}")
+                .jwe().encrypt();
+
+        doTestEncryptedClaims(jweCompact);
+    }
+
+    @Test
+    void encryptJsonStringShortcut() throws Exception {
+        String jweCompact = Jwt.encryptJson("{\"customClaim\":\"custom-value\"}");
+
+        doTestEncryptedClaims(jweCompact);
+    }
+
+    @Test
     void encryptJsonObject() throws Exception {
         JsonObject json = Json.createObjectBuilder().add("customClaim", "custom-value").build();
         String jweCompact = Jwt.claims(json).jwe().encrypt();

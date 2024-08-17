@@ -91,6 +91,16 @@ public final class Jwt {
     }
 
     /**
+     * Creates a new instance of {@link JwtClaimsBuilder} from a JSON string.
+     *
+     * @param json JSON string
+     * @return {@link JwtClaimsBuilder}
+     */
+    public static JwtClaimsBuilder claimsJson(String json) {
+        return JwtProvider.provider().claimsJson(json);
+    }
+
+    /**
      * Creates a new instance of {@link JwtClaimsBuilder} from {@link JsonWebToken}.
      *
      * @param jwt JsonWebToken token.
@@ -310,6 +320,23 @@ public final class Jwt {
     }
 
     /**
+     * Sign the claims from a JSON string using 'RS256' algorithm with a private RSA key
+     * loaded from the location set with the "smallrye.jwt.sign.key-location".
+     * Private RSA key of size 2048 bits or larger MUST be used.
+     *
+     * The 'iat' (issued at time), 'exp' (expiration time) and 'jit' (unique token identifier) claims
+     * will be set and the `iss` issuer claim may be set by the implementation unless they have already been set.
+     * See {@link JwtClaimsBuilder} description for more information.
+     *
+     * @param json JSON string
+     * @return signed JWT token
+     * @throws JwtSignatureException the exception if the signing operation has failed
+     */
+    public static String signJson(String json) {
+        return claimsJson(json).sign();
+    }
+
+    /**
      * Encrypt the claims loaded from a JSON resource using 'RSA-OAEP-256' algorithm with a public RSA key
      * loaded from the location set with the "smallrye.jwt.encrypt.key-location".
      * Public RSA key of size 2048 bits or larger MUST be used.
@@ -360,6 +387,23 @@ public final class Jwt {
      */
     public static String encrypt(JsonObject jsonObject) {
         return claims(jsonObject).jwe().encrypt();
+    }
+
+    /**
+     * Encrypt the claims from a JSON string using 'RSA-OAEP-256' algorithm with a public RSA key
+     * loaded from the location set with the "smallrye.jwt.encrypt.key-location".
+     * Public RSA key of size 2048 bits or larger MUST be used.
+     *
+     * The 'iat' (issued at time), 'exp' (expiration time) and 'jit' (unique token identifier) claims
+     * will be set and the `iss` issuer claim may be set by the implementation unless they have already been set.
+     * See {@link JwtClaimsBuilder} description for more information.
+     *
+     * @param json JSON string
+     * @return encrypted JWT token
+     * @throws JwtEncryptionException the exception if the encryption operation has failed
+     */
+    public static String encryptJson(String json) {
+        return claimsJson(json).jwe().encrypt();
     }
 
     /**
@@ -416,5 +460,23 @@ public final class Jwt {
      */
     public static String innerSignAndEncrypt(JsonObject jsonObject) {
         return claims(jsonObject).innerSign().encrypt();
+    }
+
+    /**
+     * Sign the claims from a JSON string using 'RS256' algorithm with a private RSA key
+     * loaded from the location set with the "smallrye.jwt.sign.key-location" and encrypt the inner JWT using
+     * 'RSA-OAEP-256' algorithm with a public RSA key loaded from the location set with the "smallrye.jwt.encrypt.key-location".
+     * Public RSA key of size 2048 bits or larger MUST be used.
+     *
+     * The 'iat' (issued at time), 'exp' (expiration time) and 'jit' (unique token identifier) claims
+     * will be set and the `iss` issuer claim may be set by the implementation unless they have already been set.
+     * See {@link JwtClaimsBuilder} description for more information.
+     *
+     * @param json JSON string
+     * @return encrypted JWT token
+     * @throws JwtEncryptionException the exception if the encryption operation has failed
+     */
+    public static String innerSignAndEncryptJson(String json) {
+        return claimsJson(json).innerSign().encrypt();
     }
 }

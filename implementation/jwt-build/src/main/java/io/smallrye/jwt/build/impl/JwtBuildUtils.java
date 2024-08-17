@@ -139,6 +139,14 @@ public class JwtBuildUtils {
         }
     }
 
+    static JwtClaims parseJwtContent(String jwtContent) {
+        try {
+            return JwtClaims.parse(jwtContent);
+        } catch (Exception ex) {
+            throw ImplMessages.msg.failureToParseJWTClaims(ex.getMessage(), ex);
+        }
+    }
+
     static PrivateKey readPrivateKeyFromKeystore(String keyStorePath) {
         Optional<String> keyStorePassword = getOptionalConfigProperty(KEYSTORE_PASSWORD, String.class);
         if (keyStorePassword.isPresent()) {

@@ -75,6 +75,10 @@ class JwtClaimsBuilderImpl extends JwtSignatureImpl implements JwtClaimsBuilder,
         super(fromMapToJwtClaims(claimsMap));
     }
 
+    JwtClaimsBuilderImpl(JwtClaims claims) {
+        super(claims);
+    }
+
     private static JwtClaims fromMapToJwtClaims(Map<String, Object> claimsMap) {
         JwtClaims claims = new JwtClaims();
         @SuppressWarnings("unchecked")

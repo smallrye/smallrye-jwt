@@ -101,6 +101,20 @@ class JwtSignEncryptTest {
     }
 
     @Test
+    void innerSignAndEncryptJsonString() throws Exception {
+        String jweCompact = Jwt.claimsJson("{\"customClaim\":\"custom-value\"}")
+                .innerSign().encrypt();
+        checkRsaInnerSignedEncryptedClaims(jweCompact);
+    }
+
+    @Test
+    void innerSignAndEncryptJsonStringShortcut() throws Exception {
+        String jweCompact = Jwt.innerSignAndEncryptJson("{\"customClaim\":\"custom-value\"}");
+
+        checkRsaInnerSignedEncryptedClaims(jweCompact);
+    }
+
+    @Test
     void innerSignAndEncryptJsonObject() throws Exception {
         JsonObject json = Json.createObjectBuilder().add("customClaim", "custom-value").build();
         String jweCompact = Jwt.claims(json).innerSign().encrypt();
