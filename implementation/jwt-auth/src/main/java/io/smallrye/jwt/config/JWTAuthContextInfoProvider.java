@@ -841,7 +841,7 @@ public class JWTAuthContextInfoProvider {
             resolvedAlgorithm = mpJwtPublicKeyAlgorithm;
         } else if (signatureAlgorithm.isPresent()) {
             if (signatureAlgorithm.get().getAlgorithm().startsWith("HS")) {
-                if (resolvedVerifyKeyLocation == mpJwtLocation) {
+                if (!NONE.equals(resolvedVerifyKeyLocation) && resolvedVerifyKeyLocation == mpJwtLocation) {
                     throw ConfigMessages.msg.hmacNotSupported();
                 }
             } else {
