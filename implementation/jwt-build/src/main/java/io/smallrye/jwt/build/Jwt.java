@@ -272,7 +272,7 @@ public final class Jwt {
      * Private RSA key of size 2048 bits or larger MUST be used.
      *
      * The 'iat' (issued at time), 'exp' (expiration time) and 'jit' (unique token identifier) claims
-     * will be and the `iss` issuer claim may be set by the implementation unless they have already been set.
+     * will be set and the `iss` issuer claim may be set by the implementation unless they have already been set.
      * See {@link JwtClaimsBuilder} description for more information.
      *
      * @param jsonLocation JSON resource location
@@ -289,7 +289,7 @@ public final class Jwt {
      * Private RSA key of size 2048 bits or larger MUST be used.
      *
      * The 'iat' (issued at time), 'exp' (expiration time) and 'jit' (unique token identifier) claims
-     * will be and the `iss` issuer claim may be set by the implementation unless they have already been set.
+     * will be set and the `iss` issuer claim may be set by the implementation unless they have already been set.
      * See {@link JwtClaimsBuilder} description for more information.
      *
      * @param claims the map with the claim name and value pairs. Claim value is converted to String unless it is
@@ -308,7 +308,7 @@ public final class Jwt {
      * Private RSA key of size 2048 bits or larger MUST be used.
      *
      * The 'iat' (issued at time), 'exp' (expiration time) and 'jit' (unique token identifier) claims
-     * will be and the `iss` issuer claim may be set by the implementation unless they have already been set.
+     * will be set and the `iss` issuer claim may be set by the implementation unless they have already been set.
      * See {@link JwtClaimsBuilder} description for more information.
      *
      * @param jsonObject {@link JsonObject} containing the claims.
@@ -342,7 +342,7 @@ public final class Jwt {
      * Public RSA key of size 2048 bits or larger MUST be used.
      *
      * The 'iat' (issued at time), 'exp' (expiration time) and 'jit' (unique token identifier) claims
-     * will be and the `iss` issuer claim may be set by the implementation unless they have already been set.
+     * will be set and the `iss` issuer claim may be set by the implementation unless they have already been set.
      * See {@link JwtClaimsBuilder} description for more information.
      *
      * @param jsonLocation JSON resource location
@@ -359,7 +359,7 @@ public final class Jwt {
      * Public RSA key of size 2048 bits or larger MUST be used.
      *
      * The 'iat' (issued at time), 'exp' (expiration time) and 'jit' (unique token identifier) claims
-     * will be and the `iss` issuer claim may be set by the implementation unless they have already been set.
+     * will be set and the `iss` issuer claim may be set by the implementation unless they have already been set.
      * See {@link JwtClaimsBuilder} description for more information.
      *
      * @param claims the map with the claim name and value pairs. Claim value is converted to String unless it is
@@ -378,7 +378,7 @@ public final class Jwt {
      * Public RSA key of size 2048 bits or larger MUST be used.
      *
      * The 'iat' (issued at time), 'exp' (expiration time) and 'jit' (unique token identifier) claims
-     * will be and the `iss` issuer claim may be set by the implementation unless they have already been set.
+     * will be set and the `iss` issuer claim may be set by the implementation unless they have already been set.
      * See {@link JwtClaimsBuilder} description for more information.
      *
      * @param jsonObject {@link JsonObject} containing the claims.
@@ -413,7 +413,7 @@ public final class Jwt {
      * Public RSA key of size 2048 bits or larger MUST be used.
      *
      * The 'iat' (issued at time), 'exp' (expiration time) and 'jit' (unique token identifier) claims
-     * will be and the `iss` issuer claim may be set by the implementation unless they have already been set.
+     * will be set and the `iss` issuer claim may be set by the implementation unless they have already been set.
      * See {@link JwtClaimsBuilder} description for more information.
      *
      * @param jsonLocation JSON resource location
@@ -431,7 +431,7 @@ public final class Jwt {
      * Public RSA key of size 2048 bits or larger MUST be used.
      *
      * The 'iat' (issued at time), 'exp' (expiration time) and 'jit' (unique token identifier) claims
-     * will be and the `iss` issuer claim may be set by the implementation unless they have already been set.
+     * will be set and the `iss` issuer claim may be set by the implementation unless they have already been set.
      * See {@link JwtClaimsBuilder} description for more information.
      *
      * @param claims the map with the claim name and value pairs. Claim value is converted to String unless it is
@@ -451,7 +451,7 @@ public final class Jwt {
      * Public RSA key of size 2048 bits or larger MUST be used.
      *
      * The 'iat' (issued at time), 'exp' (expiration time) and 'jit' (unique token identifier) claims
-     * will be and the `iss` issuer claim may be set by the implementation unless they have already been set.
+     * will be set and the `iss` issuer claim may be set by the implementation unless they have already been set.
      * See {@link JwtClaimsBuilder} description for more information.
      *
      * @param jsonObject {@link JsonObject} containing the claims.
