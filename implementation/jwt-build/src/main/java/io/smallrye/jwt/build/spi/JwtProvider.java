@@ -98,6 +98,14 @@ public abstract class JwtProvider {
     public abstract JwtClaimsBuilder claims(String jsonLocation);
 
     /**
+     * Creates a new instance of {@link JwtClaimsBuilder} from a JSON string.
+     *
+     * @param json JSON string
+     * @return {@link JwtClaimsBuilder}
+     */
+    public abstract JwtClaimsBuilder claimsJson(String json);
+
+    /**
      * Creates a new instance of {@link JwtClaimsBuilder} from {@link JsonWebToken}.
      *
      * @param jwt JsonWebToken token.

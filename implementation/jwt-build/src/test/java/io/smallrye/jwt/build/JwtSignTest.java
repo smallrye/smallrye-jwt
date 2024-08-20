@@ -274,6 +274,33 @@ class JwtSignTest {
     }
 
     @Test
+    void signJsonString() throws Exception {
+        String jwt = Jwt.claimsJson("{\"customClaim\":\"custom-value\"}")
+                .sign(getPrivateKey());
+
+        JsonWebSignature jws = getVerifiedJws(jwt);
+        JwtClaims claims = JwtClaims.parse(jws.getPayload());
+
+        assertEquals(4, claims.getClaimsMap().size());
+        checkDefaultClaimsAndHeaders(getJwsHeaders(jwt, 2), claims);
+
+        assertEquals("custom-value", claims.getClaimValue("customClaim"));
+    }
+
+    @Test
+    void signJsonStringShortcut() throws Exception {
+        String jwt = Jwt.signJson("{\"customClaim\":\"custom-value\"}");
+
+        JsonWebSignature jws = getVerifiedJws(jwt);
+        JwtClaims claims = JwtClaims.parse(jws.getPayload());
+
+        assertEquals(4, claims.getClaimsMap().size());
+        checkDefaultClaimsAndHeaders(getJwsHeaders(jwt, 2), claims);
+
+        assertEquals("custom-value", claims.getClaimValue("customClaim"));
+    }
+
+    @Test
     void signMapOfClaimsWithKeyLocation() throws Exception {
         String jwt = Jwt.claims(Collections.singletonMap("customClaim", "custom-value"))
                 .sign("/privateKey.pem");

@@ -57,6 +57,14 @@ public class JwtProviderImpl extends JwtProvider {
      * {@inheritDoc}
      */
     @Override
+    public JwtClaimsBuilder claimsJson(String json) {
+        return new JwtClaimsBuilderImpl(JwtBuildUtils.parseJwtContent(json));
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public JwtClaimsBuilder claims(JsonWebToken jwt) {
         Map<String, Object> claims = new LinkedHashMap<>();
         for (String name : jwt.getClaimNames()) {
