@@ -79,8 +79,17 @@ public class KeyLocationResolver extends AbstractKeyLocationResolver implements 
     }
 
     private Key tryAsVerificationJwk(JsonWebSignature jws) throws UnresolvableKeyException {
-        JsonWebKey jwk = super.tryAsJwk(jws, authContextInfo.getSignatureAlgorithm().getAlgorithm());
-        return fromJwkToVerificationKey(jwk);
+        final String tokenHeader = jws.getHeaders().getStringHeaderValue(JsonWebKey.ALGORITHM_PARAMETER);
+
+        for (SignatureAlgorithm sigAlg : authContextInfo.getSignatureAlgorithm()) {
+            if (sigAlg.getAlgorithm().equals(tokenHeader)) {
+                JsonWebKey jwk = super.tryAsJwk(jws, sigAlg.getAlgorithm());
+                if (jwk != null) {
+                    return fromJwkToVerificationKey(jwk);
+                }
+            }
+        }
+        return null;
     }
 
     private Key fromJwkToVerificationKey(JsonWebKey jwk) {
@@ -111,7 +120,7 @@ public class KeyLocationResolver extends AbstractKeyLocationResolver implements 
 
         // Try to init the verification key from the local PEM or JWK(S) content
         if (mayBeFormat(KeyFormat.PEM_KEY)) {
-            key = tryAsPEMPublicKey(content, authContextInfo.getSignatureAlgorithm());
+            key = tryAsPEMPublicKey(content, authContextInfo.getSignatureAlgorithm().iterator().next());
             if (key != null || isFormat(KeyFormat.PEM_KEY)) {
                 return;
             }
@@ -122,9 +131,15 @@ public class KeyLocationResolver extends AbstractKeyLocationResolver implements 
                 return;
             }
         }
-        JsonWebKey jwk = loadFromJwk(content, authContextInfo.getTokenKeyId(),
-                authContextInfo.getSignatureAlgorithm().getAlgorithm());
-        key = fromJwkToVerificationKey(jwk);
+        if (authContextInfo.getSignatureAlgorithm().size() == 1) {
+            JsonWebKey jwk = loadFromJwk(content, authContextInfo.getTokenKeyId(),
+                    authContextInfo.getSignatureAlgorithm().iterator().next().getAlgorithm());
+            if (jwk != null) {
+                key = fromJwkToVerificationKey(jwk);
+            }
+        } else {
+            super.loadJWKContent(content);
+        }
     }
 
     static PublicKey tryAsPEMPublicKey(String content, SignatureAlgorithm algo) {

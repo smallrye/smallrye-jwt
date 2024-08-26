@@ -24,7 +24,7 @@ interface AwsAlbKeyConfigurationValidator {
         if (publicKeyAlgorithm == null) {
             AwsAlbKeyResolverLogging.log.publicKeyAlgorithmNotSet();
         }
-        if (!publicKeyAlgorithm.getAlgorithm().equals(SignatureAlgorithm.ES256.getAlgorithm())) {
+        if (publicKeyAlgorithm.size() != 1 || !publicKeyAlgorithm.contains(SignatureAlgorithm.ES256)) {
             AwsAlbKeyResolverLogging.log.publicKeyAlgorithmNotSetToES256();
         }
     }

@@ -18,7 +18,7 @@ package io.smallrye.jwt.auth.principal;
 
 import static java.util.Collections.emptyList;
 
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -38,6 +38,7 @@ import org.jose4j.lang.UnresolvableKeyException;
 
 import io.smallrye.jwt.KeyProvider;
 import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
+import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 
 /**
  * Default JWT token validator
@@ -89,8 +90,16 @@ public class DefaultJWTTokenParser {
         }
     }
 
+    private String[] signatureAlgorithms(JWTAuthContextInfo authContextInfo) {
+        Set<String> algorithms = new LinkedHashSet<>();
+        for (SignatureAlgorithm keyEncAlgo : authContextInfo.getSignatureAlgorithm()) {
+            algorithms.add(keyEncAlgo.getAlgorithm());
+        }
+        return algorithms.toArray(new String[] {});
+    }
+
     private String[] encryptionAlgorithms(JWTAuthContextInfo authContextInfo) {
-        Set<String> algorithms = new HashSet<>();
+        Set<String> algorithms = new LinkedHashSet<>();
         for (KeyEncryptionAlgorithm keyEncAlgo : authContextInfo.getKeyEncryptionAlgorithm()) {
             algorithms.add(keyEncAlgo.getAlgorithm());
         }
@@ -112,7 +121,7 @@ public class DefaultJWTTokenParser {
                 }
                 builder.setJwsAlgorithmConstraints(
                         new AlgorithmConstraints(AlgorithmConstraints.ConstraintType.PERMIT,
-                                authContextInfo.getSignatureAlgorithm().getAlgorithm()));
+                                signatureAlgorithms(authContextInfo)));
             } else {
                 builder.setEnableRequireEncryption();
                 builder.setDisableRequireSignature();

@@ -12,6 +12,7 @@ import java.security.interfaces.RSAPublicKey;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Set;
 
 import org.eclipse.microprofile.jwt.tck.util.TokenUtils;
 import org.jose4j.jwt.JwtClaims;
@@ -108,7 +109,7 @@ class DefaultJWTTokenParserTest {
     void tokenNoIssuedAtFailed() throws Throwable {
         JWTAuthContextInfo context = new JWTAuthContextInfo();
         context.setIssuedBy("joe");
-        context.setSignatureAlgorithm(SignatureAlgorithm.HS256);
+        context.setSignatureAlgorithm(Set.of(SignatureAlgorithm.HS256));
         context.setSecretVerificationKey(KeyUtils.createSecretKeyFromEncodedSecret(ENCODED_SECRET_KEY));
         context.setExpGracePeriodSecs(Integer.MAX_VALUE);
         context.setDefaultSubjectClaim("iss");
@@ -122,7 +123,7 @@ class DefaultJWTTokenParserTest {
     void tokenNoIssuedAtAllowed() throws Throwable {
         JWTAuthContextInfo context = new JWTAuthContextInfo();
         context.setIssuedBy("joe");
-        context.setSignatureAlgorithm(SignatureAlgorithm.HS256);
+        context.setSignatureAlgorithm(Set.of(SignatureAlgorithm.HS256));
         context.setSecretVerificationKey(KeyUtils.createSecretKeyFromEncodedSecret(ENCODED_SECRET_KEY));
         context.setMaxTimeToLiveSecs(0L);
         context.setExpGracePeriodSecs(Integer.MAX_VALUE);

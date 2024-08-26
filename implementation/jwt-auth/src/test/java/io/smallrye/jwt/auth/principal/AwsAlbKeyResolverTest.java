@@ -22,6 +22,7 @@ import static org.mockito.Mockito.when;
 import java.security.Key;
 import java.security.interfaces.ECPublicKey;
 import java.util.List;
+import java.util.Set;
 
 import org.jose4j.http.SimpleGet;
 import org.jose4j.http.SimpleResponse;
@@ -62,7 +63,7 @@ class AwsAlbKeyResolverTest {
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo(
                 "https://localhost:8080",
                 "https://cognito-idp.eu-central-1.amazonaws.com");
-        contextInfo.setSignatureAlgorithm(SignatureAlgorithm.ES256);
+        contextInfo.setSignatureAlgorithm(Set.of(SignatureAlgorithm.ES256));
 
         AwsAlbKeyResolver keyLocationResolver = new AwsAlbKeyResolver(contextInfo);
         keyLocationResolver = Mockito.spy(keyLocationResolver);

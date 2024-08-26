@@ -179,17 +179,16 @@ public class DefaultJWTParser implements JWTParser {
 
     private void setSignatureAlgorithmIfNeeded(JWTAuthContextInfo newAuthContextInfo, String algoStart,
             SignatureAlgorithm newAlgo) {
-        SignatureAlgorithm algo = newAuthContextInfo.getSignatureAlgorithm();
-        if (algo == null || !algo.getAlgorithm().startsWith(algoStart)) {
-            newAuthContextInfo.setSignatureAlgorithm(newAlgo);
+        Set<SignatureAlgorithm> algo = newAuthContextInfo.getSignatureAlgorithm();
+        if (!algo.stream().anyMatch(s -> s.getAlgorithm().startsWith(algoStart))) {
+            newAuthContextInfo.setSignatureAlgorithm(Set.of(newAlgo));
         }
     }
 
     private void setKeyEncryptionAlgorithmIfNeeded(JWTAuthContextInfo newAuthContextInfo, String algoStart,
             KeyEncryptionAlgorithm newAlgo) {
         Set<KeyEncryptionAlgorithm> algo = newAuthContextInfo.getKeyEncryptionAlgorithm();
-        if (algo == null ||
-                !algo.stream().anyMatch(s -> s.getAlgorithm().startsWith(algoStart))) {
+        if (!algo.stream().anyMatch(s -> s.getAlgorithm().startsWith(algoStart))) {
             newAuthContextInfo.setKeyEncryptionAlgorithm(Collections.singleton(newAlgo));
         }
     }

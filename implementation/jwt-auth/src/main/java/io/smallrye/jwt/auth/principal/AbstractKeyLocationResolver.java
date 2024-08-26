@@ -228,13 +228,14 @@ public class AbstractKeyLocationResolver {
         }
     }
 
-    protected JsonWebKey tryAsJwk(JsonWebStructure jws, String algo) throws UnresolvableKeyException {
+    protected JsonWebKey tryAsJwk(JsonWebStructure jws, String configuredAlgo) throws UnresolvableKeyException {
+
         String kid = getKid(jws);
 
         if (httpsJwks != null) {
-            return getHttpsJwk(kid, algo);
+            return getHttpsJwk(kid, configuredAlgo);
         } else if (jsonWebKeys != null) {
-            return getJsonWebKey(kid, jsonWebKeys, algo);
+            return getJsonWebKey(kid, jsonWebKeys, configuredAlgo);
         } else {
             return null;
         }
@@ -282,6 +283,10 @@ public class AbstractKeyLocationResolver {
             }
         }
         return jwk;
+    }
+
+    protected void loadJWKContent(final String content) {
+        jsonWebKeys = KeyUtils.loadJsonWebKeys(content);
     }
 
     protected JsonWebKey loadFromJwk(String content, String keyId, String algo) {
