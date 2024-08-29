@@ -26,7 +26,7 @@
   </parent>
 
   <artifactId>smallrye-jwt-parent</artifactId>
-  <version>4.5.4-SNAPSHOT</version>
+  <version>4.6.0</version>
 
   <packaging>pom</packaging>
   <name>SmallRye: MicroProfile JWT Parent</name>
@@ -64,7 +64,7 @@
     <connection>scm:git:git@github.com:smallrye/smallrye-jwt.git</connection>
     <developerConnection>scm:git:git@github.com:smallrye/smallrye-jwt.git</developerConnection>
     <url>https://github.com/smallrye/smallrye-jwt/</url>
-    <tag>HEAD</tag>
+    <tag>4.6.0</tag>
   </scm>
 
   <modules>
