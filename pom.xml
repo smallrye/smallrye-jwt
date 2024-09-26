@@ -35,7 +35,7 @@
   <properties>
     <version.jakarta.servlet.api>6.1.0</version.jakarta.servlet.api>
     <version.jakarta.security.enterprise.api>2.0.0</version.jakarta.security.enterprise.api>
-    <version.eclipse.microprofile.jwt>2.1</version.eclipse.microprofile.jwt>
+    <version.eclipse.microprofile.jwt>2.2-RC1</version.eclipse.microprofile.jwt>
     <version.microprofile.config>3.0</version.microprofile.config>
     <version.jose4j>0.9.6</version.jose4j>
 
