@@ -160,7 +160,7 @@ public class JWTAuthContextInfoProvider {
         JWTAuthContextInfoProvider provider = new JWTAuthContextInfoProvider();
         provider.mpJwtPublicKey = !secretKey ? key : NONE;
         provider.jwtSecretKey = secretKey ? key : NONE;
-        provider.mpJwtPublicKeyAlgorithm = Set.of(SignatureAlgorithm.RS256);
+        provider.mpJwtPublicKeyAlgorithm = Set.of(SignatureAlgorithm.RS256, SignatureAlgorithm.ES256);
         provider.mpJwtLocation = !secretKey && !theKeyStoreDecryptKeyAlias.isPresent() ? keyLocation : NONE;
         provider.verifyKeyLocation = secretKey ? keyLocation : NONE;
         provider.verifyCertificateThumbprint = verifyCertificateThumbprint;
@@ -227,8 +227,8 @@ public class JWTAuthContextInfoProvider {
      * @since 1.2
      */
     @Inject
-    @ConfigProperty(name = "mp.jwt.verify.publickey.algorithm", defaultValue = "RS256")
-    private Set<SignatureAlgorithm> mpJwtPublicKeyAlgorithm = Set.of(SignatureAlgorithm.RS256);
+    @ConfigProperty(name = "mp.jwt.verify.publickey.algorithm", defaultValue = "RS256,ES256")
+    private Set<SignatureAlgorithm> mpJwtPublicKeyAlgorithm = Set.of(SignatureAlgorithm.RS256, SignatureAlgorithm.ES256);
     /**
      * @since 1.1
      */
