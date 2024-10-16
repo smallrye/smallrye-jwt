@@ -1,7 +1,7 @@
 :microprofile-jwt: https://github.com/eclipse/microprofile-jwt-auth/
 :mp-jwt-name: Eclipse MicroProfile JWT RBAC
 :ci: https://github.com/smallrye/smallrye-jwt/actions?query=workflow%3A%22SmallRye+Build%22
-:sonar: https://sonarcloud.io/dashboard?id=smallrye_smallrye-jwt
+:sonar: https://sonarcloud.io/dashboard?id=io.smallrye%3Asmallrye-jwt
 
 image:https://github.com/smallrye/smallrye-jwt/workflows/SmallRye%20Build/badge.svg?branch=main[link={ci}]
 image:https://sonarcloud.io/api/project_badges/measure?project=smallrye_smallrye-jwt&metric=alert_status["Quality Gate Status", link={sonar}]

@@ -114,9 +114,10 @@
                   <artifactId>microprofile-jwt-auth-tck</artifactId>
                   <version>${version.eclipse.microprofile.jwt}</version>
                   <type>test-jar</type>
+                  <classifier>tests</classifier>
                   <overWrite>false</overWrite>
+                  <includes>**/*.xml</includes>
                   <outputDirectory>${project.build.directory}/tck-suite</outputDirectory>
-                  <includes>**/tck-base-suite.xml</includes>
                 </artifactItem>
               </artifactItems>
             </configuration>

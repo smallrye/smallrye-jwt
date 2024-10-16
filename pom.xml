@@ -212,5 +212,17 @@
         <module>release</module>
       </modules>
     </profile>
+    <profile>
+      <id>sonar</id>
+      <properties>
+        <sonar.projectName>SmallRye JWT</sonar.projectName>
+        <sonar.projectKey>io.smallrye:smallrye-jwt</sonar.projectKey>
+        <sonar.moduleKey>${project.artifactId}</sonar.moduleKey>
+        <!--suppress UnresolvedMavenProperty -->
+        <sonar.coverage.jacoco.xmlReportPaths>
+          ${maven.multiModuleProjectDirectory}/coverage/target/site/jacoco-aggregate/jacoco.xml
+        </sonar.coverage.jacoco.xmlReportPaths>
+      </properties>
+    </profile>
   </profiles>
 </project>
