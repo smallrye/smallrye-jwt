@@ -69,7 +69,6 @@
 
   <modules>
     <module>implementation</module>
-    <module>testsuite</module>
   </modules>
 
   <dependencyManagement>
@@ -180,6 +179,18 @@
   </dependencyManagement>
 
   <profiles>
+    <profile>
+      <id>unpublished</id>
+      <activation>
+        <property>
+          <name>performRelease</name>
+          <value>!true</value>
+        </property>
+      </activation>
+      <modules>
+        <module>testsuite</module>
+      </modules>
+    </profile>
     <profile>
       <id>coverage</id>
       <properties>
