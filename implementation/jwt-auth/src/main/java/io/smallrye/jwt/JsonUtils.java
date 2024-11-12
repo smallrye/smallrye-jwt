@@ -13,17 +13,14 @@ import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 import jakarta.json.JsonString;
 import jakarta.json.JsonValue;
-import jakarta.json.spi.JsonProvider;
 
 public class JsonUtils {
-
-    private static final JsonProvider JSON_PROVIDER = JsonProvider.provider();
 
     private JsonUtils() {
     }
 
     public static JsonObject replaceMap(Map<String, Object> map) {
-        JsonObjectBuilder builder = JSON_PROVIDER.createObjectBuilder();
+        JsonObjectBuilder builder = JsonProviderHolder.jsonProvider().createObjectBuilder();
         for (Map.Entry<String, Object> entry : map.entrySet()) {
             Object entryValue = entry.getValue();
             if (entryValue instanceof Map) {
@@ -50,7 +47,7 @@ public class JsonUtils {
     }
 
     private static JsonArray toJsonArray(Collection<?> collection) {
-        JsonArrayBuilder arrayBuilder = JSON_PROVIDER.createArrayBuilder();
+        JsonArrayBuilder arrayBuilder = JsonProviderHolder.jsonProvider().createArrayBuilder();
 
         for (Object element : collection) {
             if (element instanceof String) {
@@ -73,11 +70,11 @@ public class JsonUtils {
             // This may already be a JsonValue
             jsonValue = (JsonValue) value;
         } else if (value instanceof String) {
-            jsonValue = JSON_PROVIDER.createValue(value.toString());
+            jsonValue = JsonProviderHolder.jsonProvider().createValue(value.toString());
         } else if ((value instanceof Long) || (value instanceof Integer)) {
-            jsonValue = JSON_PROVIDER.createValue(((Number) value).longValue());
+            jsonValue = JsonProviderHolder.jsonProvider().createValue(((Number) value).longValue());
         } else if (value instanceof Number) {
-            jsonValue = JSON_PROVIDER.createValue(((Number) value).doubleValue());
+            jsonValue = JsonProviderHolder.jsonProvider().createValue(((Number) value).doubleValue());
         } else if (value instanceof Boolean) {
             jsonValue = (Boolean) value ? JsonValue.TRUE : JsonValue.FALSE;
         } else if (value instanceof Collection) {

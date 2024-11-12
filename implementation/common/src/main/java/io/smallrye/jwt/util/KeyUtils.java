@@ -48,7 +48,6 @@ import java.util.Optional;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
-import jakarta.json.Json;
 import jakarta.json.JsonArray;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonReader;
@@ -59,6 +58,7 @@ import org.jose4j.jwk.JsonWebKeySet;
 import org.jose4j.jwk.OctetSequenceJsonWebKey;
 import org.jose4j.jwk.PublicJsonWebKey;
 
+import io.smallrye.jwt.JsonProviderHolder;
 import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 
@@ -452,7 +452,7 @@ public final class KeyUtils {
         JWTUtilLogging.log.loadingJwks();
 
         JsonObject jwks = null;
-        try (JsonReader reader = Json.createReader(new StringReader(content))) {
+        try (JsonReader reader = JsonProviderHolder.jsonProvider().createReader(new StringReader(content))) {
             jwks = reader.readObject();
         } catch (Exception ex) {
             JWTUtilLogging.log.loadingJwksFailed(ex);
