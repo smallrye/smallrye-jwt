@@ -28,7 +28,8 @@ import org.jose4j.jwt.MalformedClaimException;
 import io.smallrye.jwt.JsonUtils;
 
 /**
- * A default implementation of JWTCallerPrincipal that wraps the jose4j JwtClaims.
+ * A default implementation of JWTCallerPrincipal that wraps the jose4j
+ * JwtClaims.
  *
  * @see JwtClaims
  */
@@ -36,7 +37,8 @@ public class DefaultJWTCallerPrincipal extends JWTCallerPrincipal {
     private final JwtClaims claimsSet;
 
     /**
-     * Create the DefaultJWTCallerPrincipal from the parsed JWT token and the extracted principal name
+     * Create the DefaultJWTCallerPrincipal from the parsed JWT token and the
+     * extracted principal name
      *
      * @param rawToken - raw token value
      * @param tokenType - token type
@@ -115,7 +117,9 @@ public class DefaultJWTCallerPrincipal extends JWTCallerPrincipal {
                         claim = 0L;
                     }
                 } catch (MalformedClaimException e) {
-                    PrincipalLogging.log.getGroupsFailure(claimName, e);
+                    Object value = claimsSet.getClaimValue(claimType.name());
+                    PrincipalLogging.log.claimTypeMismatch(claimName, claimType.getType().getSimpleName(),
+                            value.getClass().getSimpleName());
                 }
                 break;
             case groups:

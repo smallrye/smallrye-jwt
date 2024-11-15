@@ -193,4 +193,8 @@ interface PrincipalLogging extends BasicLogger {
     @Message(id = 8044, value = "Encrypted token headers must contain a content type header")
     void encryptedTokenMissingContentType();
 
+    @LogMessage(level = Logger.Level.DEBUG)
+    @Message(id = 8045, value = "Claim %s's value type is expected to be %s but it is %s")
+    void claimTypeMismatch(String claimName, String expectedType, String actualType);
+
 }
