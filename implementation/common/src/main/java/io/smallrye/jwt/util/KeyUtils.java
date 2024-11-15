@@ -312,8 +312,7 @@ public final class KeyUtils {
         if (keyStoreType.isPresent()) {
             return keyStoreType.get().toUpperCase();
         }
-        final String pathName = keyStorePath.toString();
-        if (pathName.endsWith(".p12") || pathName.endsWith(".pkcs12") || pathName.endsWith(".pfx")) {
+        if (keyStorePath.endsWith(".p12") || keyStorePath.endsWith(".pkcs12") || keyStorePath.endsWith(".pfx")) {
             return "PKCS12";
         } else {
             // assume jks
