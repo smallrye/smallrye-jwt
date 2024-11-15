@@ -186,6 +186,7 @@ public class JWTAuthContextInfoProvider {
         provider.mpJwtVerifyTokenAge = Optional.empty();
         provider.jwksRefreshInterval = 60;
         provider.forcedJwksRefreshInterval = 30;
+        provider.jwksRetainCacheOnErrorDuration = 0;
         provider.signatureAlgorithm = Optional.of(SignatureAlgorithm.RS256);
         provider.keyEncryptionAlgorithm = Optional.empty();
         provider.mpJwtDecryptKeyAlgorithm = new HashSet<>(Arrays.asList(KeyEncryptionAlgorithm.RSA_OAEP,
@@ -464,6 +465,15 @@ public class JWTAuthContextInfoProvider {
     @Inject
     @ConfigProperty(name = "smallrye.jwt.jwks.forced-refresh-interval", defaultValue = "30")
     private int forcedJwksRefreshInterval;
+
+    /**
+     * JWK cache retain on error duration in minutes which sets the length of time, before trying again, to keep using the cache
+     * when an error occurs making the request to the JWKS URI or parsing the response.
+     * It will be ignored unless the 'mp.jwt.verify.publickey.location' property points to the HTTP or HTTPS URL based JWK set.
+     */
+    @Inject
+    @ConfigProperty(name = "smallrye.jwt.jwks.retain-cache-on-error-duration", defaultValue = "0")
+    private int jwksRetainCacheOnErrorDuration;
 
     /**
      * Supported JSON Web Algorithm asymmetric or symmetric signature algorithm.
@@ -836,6 +846,7 @@ public class JWTAuthContextInfoProvider {
         contextInfo.setTokenAge(mpJwtVerifyTokenAge.orElse(null));
         contextInfo.setJwksRefreshInterval(jwksRefreshInterval);
         contextInfo.setForcedJwksRefreshInterval(forcedJwksRefreshInterval);
+        contextInfo.setJwksRetainCacheOnErrorDuration(jwksRetainCacheOnErrorDuration);
         Set<SignatureAlgorithm> resolvedAlgorithm = mpJwtPublicKeyAlgorithm;
         if (signatureAlgorithm.isPresent()) {
             if (signatureAlgorithm.get().getAlgorithm().startsWith("HS")) {

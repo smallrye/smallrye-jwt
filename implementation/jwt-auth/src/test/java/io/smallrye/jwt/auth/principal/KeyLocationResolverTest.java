@@ -21,7 +21,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.net.Proxy;
@@ -30,12 +34,18 @@ import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAPublicKey;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
+import org.jose4j.base64url.Base64Url;
 import org.jose4j.http.Get;
+import org.jose4j.http.SimpleResponse;
+import org.jose4j.json.internal.json_simple.JSONObject;
 import org.jose4j.jwk.HttpsJwks;
 import org.jose4j.jwk.JsonWebKey;
 import org.jose4j.jwk.OctetSequenceJsonWebKey;
@@ -68,6 +78,8 @@ class KeyLocationResolverTest {
     Get mockedGet;
     @Mock
     UrlStreamResolver urlResolver;
+    @Mock
+    SimpleResponse simpleResponse;
 
     RSAPublicKey rsaKey;
     SecretKey secretKey;
@@ -178,6 +190,46 @@ class KeyLocationResolverTest {
 
         assertEquals(rsaKey, keyLocationResolver.resolveKey(signature, emptyList()));
         assertNull(keyLocationResolver.key);
+    }
+
+    @Test
+    void keepsRsaKeyFromHttpsJwksWhenErrorDuringRefresh() throws Exception {
+        long cacheDuration = 1L;
+        int jwksRetainCacheOnErrorDuration = 10;
+        JWTAuthContextInfo contextInfo = new JWTAuthContextInfo("https://github.com/my_key.jwks", "issuer");
+        contextInfo.setJwksRetainCacheOnErrorDuration(jwksRetainCacheOnErrorDuration);
+
+        HttpsJwks spiedHttpsJwks = Mockito.spy(new HttpsJwks(contextInfo.getPublicKeyLocation()));
+        spiedHttpsJwks.setDefaultCacheDuration(cacheDuration);
+        when(simpleResponse.getBody()).thenReturn(generateJWK(rsaKey));
+        when(mockedGet.get(contextInfo.getPublicKeyLocation())).thenReturn(simpleResponse);
+
+        KeyLocationResolver keyLocationResolver = new KeyLocationResolver(contextInfo) {
+            protected HttpsJwks getHttpsJwks(String loc) {
+                return spiedHttpsJwks;
+            }
+
+            protected Get getHttpGet() {
+                return mockedGet;
+            }
+        };
+
+        Mockito.verify(spiedHttpsJwks).setRetainCacheOnErrorDuration(jwksRetainCacheOnErrorDuration * 60L);
+        Mockito.verify(spiedHttpsJwks).setSimpleHttpGet(mockedGet);
+
+        when(signature.getHeaders()).thenReturn(headers);
+        when(headers.getStringHeaderValue(JsonWebKey.KEY_ID_PARAMETER)).thenReturn("1");
+        when(headers.getStringHeaderValue(JsonWebKey.ALGORITHM_PARAMETER)).thenReturn("RS256");
+
+        assertEquals(rsaKey, keyLocationResolver.resolveKey(signature, emptyList()));
+
+        doThrow(RuntimeException.class).when(mockedGet).get(contextInfo.getPublicKeyLocation());
+
+        TimeUnit.SECONDS.sleep(cacheDuration);
+
+        assertEquals(rsaKey, keyLocationResolver.resolveKey(signature, emptyList()));
+
+        verify(mockedGet, atLeastOnce()).get(contextInfo.getPublicKeyLocation());
     }
 
     @Test
@@ -330,7 +382,7 @@ class KeyLocationResolverTest {
         contextInfo.setJwksRefreshInterval(10);
 
         Mockito.doThrow(new JoseException("")).when(mockedHttpsJwks).refresh();
-        Mockito.doReturn(ResourceUtils.getAsClasspathResource("publicCrt.pem"))
+        doReturn(ResourceUtils.getAsClasspathResource("publicCrt.pem"))
                 .when(urlResolver).resolve(Mockito.any());
         KeyLocationResolver keyLocationResolver = new KeyLocationResolver(contextInfo) {
             protected HttpsJwks initializeHttpsJwks(String loc) {
@@ -379,5 +431,19 @@ class KeyLocationResolverTest {
         assertEquals(keyLocationResolver.key, keyLocationResolver.resolveKey(signature, emptyList()));
         assertEquals(keyLocationResolver.key,
                 keyLocationResolver.getJsonWebKey("key1", null).getKey());
+    }
+
+    private String generateJWK(RSAPublicKey publicKey) {
+        Map<String, Object> key = new HashMap<>();
+
+        key.put("alg", "RS256");
+        key.put("use", "sig");
+        key.put("kty", publicKey.getAlgorithm());
+        key.put("kid", "1");
+        key.put("n", Base64Url.encode(publicKey.getModulus().toByteArray()));
+        key.put("e", Base64Url.encode(publicKey.getPublicExponent().toByteArray()));
+
+        return JSONObject.toJSONString(Collections.singletonMap("keys",
+                Collections.singletonList(key)));
     }
 }

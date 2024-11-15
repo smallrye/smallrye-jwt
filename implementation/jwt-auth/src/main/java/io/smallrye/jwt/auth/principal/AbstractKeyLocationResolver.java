@@ -115,6 +115,7 @@ public class AbstractKeyLocationResolver {
                     new InetSocketAddress(authContextInfo.getHttpProxyHost(), authContextInfo.getHttpProxyPort())));
         }
         theHttpsJwks.setSimpleHttpGet(httpGet);
+        theHttpsJwks.setRetainCacheOnErrorDuration(authContextInfo.getJwksRetainCacheOnErrorDuration() * 60L);
         return theHttpsJwks;
     }
 
