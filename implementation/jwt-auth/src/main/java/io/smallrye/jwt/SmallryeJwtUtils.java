@@ -67,8 +67,9 @@ public class SmallryeJwtUtils {
     }
 
     public static void setTokenSchemes(JWTAuthContextInfo contextInfo, String tokenSchemes) {
-        final List<String> schemes = new ArrayList<>();
-        for (final String s : tokenSchemes.split(",")) {
+        String[] splitTokenSchemes = tokenSchemes.split(",");
+        final List<String> schemes = new ArrayList<>(splitTokenSchemes.length);
+        for (final String s : splitTokenSchemes) {
             schemes.add(s.trim());
         }
         contextInfo.setTokenSchemes(schemes);

@@ -93,7 +93,7 @@ public class JWTAuthorizationFilterRegistrar implements DynamicFeature {
             case 0:
                 return null;
             case 1:
-                return annotations.iterator().next();
+                return annotations.get(0);
             default:
                 throw JAXRSMessages.msg.duplicateJWTAnnotationsFound(annotationPlacementDescriptor.get(), annotations);
         }

@@ -90,7 +90,7 @@ public class RawClaimTypeProducer {
                 JsonNumber jsonValue = (JsonNumber) value;
                 returnValue = jsonValue.longValue();
             } else {
-                returnValue = Long.parseLong(value.toString());
+                returnValue = Long.valueOf(value.toString());
             }
         }
         return returnValue;
@@ -113,7 +113,7 @@ public class RawClaimTypeProducer {
                 JsonNumber jsonValue = (JsonNumber) value;
                 returnValue = jsonValue.doubleValue();
             } else {
-                returnValue = Double.parseDouble(value.toString());
+                returnValue = Double.valueOf(value.toString());
             }
         }
         return returnValue;
@@ -135,9 +135,9 @@ public class RawClaimTypeProducer {
             if (value instanceof JsonValue) {
                 final JsonValue.ValueType valueType = ((JsonValue) value).getValueType();
                 if (valueType.equals(JsonValue.ValueType.TRUE)) {
-                    returnValue = true;
+                    returnValue = Boolean.TRUE;
                 } else if (valueType.equals(JsonValue.ValueType.FALSE)) {
-                    returnValue = false;
+                    returnValue = Boolean.FALSE;
                 }
             } else {
                 returnValue = Boolean.valueOf(value.toString());

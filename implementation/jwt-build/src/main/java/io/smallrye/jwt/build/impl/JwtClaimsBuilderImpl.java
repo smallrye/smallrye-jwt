@@ -350,7 +350,7 @@ class JwtClaimsBuilderImpl extends JwtSignatureImpl implements JwtClaimsBuilder,
     private static Object convertJsonValue(JsonValue jsonValue) {
         if (jsonValue instanceof JsonString) {
             String jsonString = jsonValue.toString();
-            return jsonString.toString().substring(1, jsonString.length() - 1);
+            return jsonString.substring(1, jsonString.length() - 1);
         } else if (jsonValue instanceof JsonNumber) {
             JsonNumber jsonNumber = (JsonNumber) jsonValue;
             if (jsonNumber.isIntegral()) {
@@ -359,9 +359,9 @@ class JwtClaimsBuilderImpl extends JwtSignatureImpl implements JwtClaimsBuilder,
                 return jsonNumber.doubleValue();
             }
         } else if (jsonValue == JsonValue.TRUE) {
-            return true;
+            return Boolean.TRUE;
         } else if (jsonValue == JsonValue.FALSE) {
-            return false;
+            return Boolean.FALSE;
         } else {
             return null;
         }
