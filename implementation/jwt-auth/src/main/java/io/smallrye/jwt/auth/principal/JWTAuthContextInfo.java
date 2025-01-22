@@ -51,6 +51,7 @@ public class JWTAuthContextInfo {
     private String decryptionKeyContent;
     private Integer jwksRefreshInterval = 60;
     private int forcedJwksRefreshInterval = 30;
+    private int jwksRetainCacheOnErrorDuration = 0;
     private String tokenHeader = "Authorization";
     private String tokenCookie;
     private boolean alwaysCheckAuthorization;
@@ -121,6 +122,7 @@ public class JWTAuthContextInfo {
         this.decryptionKeyContent = orig.getDecryptionKeyContent();
         this.jwksRefreshInterval = orig.getJwksRefreshInterval();
         this.forcedJwksRefreshInterval = orig.getForcedJwksRefreshInterval();
+        this.jwksRetainCacheOnErrorDuration = orig.getJwksRetainCacheOnErrorDuration();
         this.tokenHeader = orig.getTokenHeader();
         this.tokenCookie = orig.getTokenCookie();
         this.alwaysCheckAuthorization = orig.isAlwaysCheckAuthorization();
@@ -283,6 +285,14 @@ public class JWTAuthContextInfo {
         this.forcedJwksRefreshInterval = forcedJwksRefreshInterval;
     }
 
+    public int getJwksRetainCacheOnErrorDuration() {
+        return jwksRetainCacheOnErrorDuration;
+    }
+
+    public void setJwksRetainCacheOnErrorDuration(int jwksRetainCacheOnErrorDuration) {
+        this.jwksRetainCacheOnErrorDuration = jwksRetainCacheOnErrorDuration;
+    }
+
     public String getTokenHeader() {
         return tokenHeader;
     }
@@ -436,6 +446,7 @@ public class JWTAuthContextInfo {
                 ", decryptionKeyLocation='" + decryptionKeyLocation + '\'' +
                 ", decryptionKeyContent='" + decryptionKeyContent + '\'' +
                 ", jwksRefreshInterval=" + jwksRefreshInterval +
+                ", jwksRetainCacheOnErrorDuration=" + jwksRetainCacheOnErrorDuration +
                 ", tokenHeader='" + tokenHeader + '\'' +
                 ", tokenCookie='" + tokenCookie + '\'' +
                 ", alwaysCheckAuthorization=" + alwaysCheckAuthorization +

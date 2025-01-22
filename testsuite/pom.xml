@@ -21,7 +21,7 @@
   <parent>
     <groupId>io.smallrye</groupId>
     <artifactId>smallrye-jwt-parent</artifactId>
-    <version>4.6.1-SNAPSHOT</version>
+    <version>4.6.2-SNAPSHOT</version>
   </parent>
 
   <packaging>pom</packaging>
@@ -32,11 +32,11 @@
     <version.smallrye.testing>2.3.1</version.smallrye.testing>
     <version.smallrye.config>3.1.1</version.smallrye.config>
     <version.resteasy>6.2.2.Final</version.resteasy>
-    <version.resteasy.client>2.1.5.Final</version.resteasy.client>
+    <version.resteasy.client>3.0.1.Final</version.resteasy.client>
 
     <version.galleon>6.0.4.Final</version.galleon>
     <version.wildfly>25.0.1.Final</version.wildfly>
-    <version.wildfly.plugin>5.0.1.Final</version.wildfly.plugin>
+    <version.wildfly.plugin>5.1.1.Final</version.wildfly.plugin>
   </properties>
 
   <dependencyManagement>
