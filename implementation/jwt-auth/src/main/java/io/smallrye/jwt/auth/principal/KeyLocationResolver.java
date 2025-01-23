@@ -66,7 +66,7 @@ public class KeyLocationResolver extends AbstractKeyLocationResolver implements 
 
         if (theKey == null) {
             try {
-                if (httpsJwks != null && httpsJwks.getJsonWebKeys() != null && jws != null
+                if (httpsJwks != null && jws != null && httpsJwks.getJsonWebKeys() != null
                         && jws.getKeyIdHeaderValue() != null) {
                     throw PrincipalMessages.msg.unmatchedTokenKidException();
                 }

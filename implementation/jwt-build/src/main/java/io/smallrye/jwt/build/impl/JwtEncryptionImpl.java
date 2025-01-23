@@ -191,7 +191,7 @@ class JwtEncryptionImpl implements JwtEncryptionBuilder {
     }
 
     private boolean isRelaxKeyValidation() {
-        return JwtBuildUtils.getConfigProperty(JwtBuildUtils.ENC_KEY_RELAX_VALIDATION_PROPERTY, Boolean.class, false);
+        return JwtBuildUtils.getConfigProperty(JwtBuildUtils.ENC_KEY_RELAX_VALIDATION_PROPERTY, Boolean.class, Boolean.FALSE);
     }
 
     private String getConfiguredKeyEncryptionAlgorithm() {

@@ -18,7 +18,6 @@ package io.smallrye.jwt.auth.principal;
 
 import static java.util.Collections.emptyList;
 
-import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -91,19 +90,23 @@ public class DefaultJWTTokenParser {
     }
 
     private String[] signatureAlgorithms(JWTAuthContextInfo authContextInfo) {
-        Set<String> algorithms = new LinkedHashSet<>();
-        for (SignatureAlgorithm keyEncAlgo : authContextInfo.getSignatureAlgorithm()) {
-            algorithms.add(keyEncAlgo.getAlgorithm());
+        Set<SignatureAlgorithm> signatureAlgorithm = authContextInfo.getSignatureAlgorithm();
+        String[] algorithms = new String[signatureAlgorithm.size()];
+        int counter = 0;
+        for (SignatureAlgorithm keyEncAlgo : signatureAlgorithm) {
+            algorithms[counter++] = keyEncAlgo.getAlgorithm();
         }
-        return algorithms.toArray(new String[] {});
+        return algorithms;
     }
 
     private String[] encryptionAlgorithms(JWTAuthContextInfo authContextInfo) {
-        Set<String> algorithms = new LinkedHashSet<>();
-        for (KeyEncryptionAlgorithm keyEncAlgo : authContextInfo.getKeyEncryptionAlgorithm()) {
-            algorithms.add(keyEncAlgo.getAlgorithm());
+        Set<KeyEncryptionAlgorithm> keyEncryptionAlgorithm = authContextInfo.getKeyEncryptionAlgorithm();
+        String[] algorithms = new String[keyEncryptionAlgorithm.size()];
+        int counter = 0;
+        for (KeyEncryptionAlgorithm keyEncAlgo : keyEncryptionAlgorithm) {
+            algorithms[counter++] = keyEncAlgo.getAlgorithm();
         }
-        return algorithms.toArray(new String[] {});
+        return algorithms;
     }
 
     private JwtContext parseClaims(String token, JWTAuthContextInfo authContextInfo, ProtectionLevel level)
