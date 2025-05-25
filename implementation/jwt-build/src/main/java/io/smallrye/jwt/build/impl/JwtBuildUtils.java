@@ -32,6 +32,7 @@ public class JwtBuildUtils {
     public static final String NEW_TOKEN_ISSUER_PROPERTY = "smallrye.jwt.new-token.issuer";
     public static final String NEW_TOKEN_AUDIENCE_PROPERTY = "smallrye.jwt.new-token.audience";
     public static final String NEW_TOKEN_OVERRIDE_CLAIMS_PROPERTY = "smallrye.jwt.new-token.override-matching-claims";
+    public static final String NEW_TOKEN_ADD_DEFAULT_CLAIMS_PROPERTY = "smallrye.jwt.new-token.add-default-claims";
     public static final String NEW_TOKEN_LIFESPAN_PROPERTY = "smallrye.jwt.new-token.lifespan";
     public static final String NEW_TOKEN_SIGNATURE_ALG_PROPERTY = "smallrye.jwt.new-token.signature-algorithm";
     public static final String NEW_TOKEN_KEY_ENCRYPTION_ALG_PROPERTY = "smallrye.jwt.new-token.key-encryption-algorithm";
@@ -51,13 +52,18 @@ public class JwtBuildUtils {
 
     static void setDefaultJwtClaims(JwtClaims claims, Long tokenLifespan) {
 
-        if (!claims.hasClaim(Claims.iat.name())) {
-            claims.setIssuedAt(NumericDate.fromSeconds(currentTimeInSecs()));
-        }
-        setExpiryClaim(claims, tokenLifespan);
+        Boolean addDefaultClaims = getConfigProperty(JwtBuildUtils.NEW_TOKEN_ADD_DEFAULT_CLAIMS_PROPERTY, Boolean.class,
+                Boolean.TRUE);
 
-        if (!claims.hasClaim(Claims.jti.name())) {
-            claims.setClaim(Claims.jti.name(), UUID.randomUUID().toString());
+        if (addDefaultClaims) {
+            if (!claims.hasClaim(Claims.iat.name())) {
+                claims.setIssuedAt(NumericDate.fromSeconds(currentTimeInSecs()));
+            }
+            setExpiryClaim(claims, tokenLifespan);
+
+            if (!claims.hasClaim(Claims.jti.name())) {
+                claims.setClaim(Claims.jti.name(), UUID.randomUUID().toString());
+            }
         }
 
         Boolean overrideMatchingClaims = getConfigProperty(NEW_TOKEN_OVERRIDE_CLAIMS_PROPERTY, Boolean.class);
