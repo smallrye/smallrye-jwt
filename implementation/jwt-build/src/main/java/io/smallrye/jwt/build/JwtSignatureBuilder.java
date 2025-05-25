@@ -110,6 +110,14 @@ public interface JwtSignatureBuilder extends JwtSignature {
     JwtSignatureBuilder jwk(PublicKey key);
 
     /**
+     * Set a token type (`typ`) header.
+     *
+     * @param type the token type
+     * @return JwtSignatureBuilder
+     */
+    JwtSignatureBuilder type(String type);
+
+    /**
      * Custom JWT signature header.
      *
      * If the 'alg' (algorithm) header is set with this method then it

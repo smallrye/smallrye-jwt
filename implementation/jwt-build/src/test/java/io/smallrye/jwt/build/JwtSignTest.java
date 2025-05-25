@@ -510,7 +510,12 @@ class JwtSignTest {
     }
 
     static void checkDefaultClaimsAndHeaders(Map<String, Object> headers, JwtClaims claims, String algo,
-            long expectedLifespan)
+            long expectedLifespan) throws Exception {
+        checkDefaultClaimsAndHeaders(headers, claims, algo, "JWT", expectedLifespan);
+    }
+
+    static void checkDefaultClaimsAndHeaders(Map<String, Object> headers, JwtClaims claims, String algo,
+            String type, long expectedLifespan)
             throws Exception {
         NumericDate iat = claims.getIssuedAt();
         assertNotNull(iat);
@@ -520,7 +525,7 @@ class JwtSignTest {
         assertTrue(tokenLifespan >= expectedLifespan && tokenLifespan <= expectedLifespan + 2);
         assertNotNull(claims.getJwtId());
         assertEquals(algo, headers.get("alg"));
-        assertEquals("JWT", headers.get("typ"));
+        assertEquals(type, headers.get("typ"));
     }
 
     @Test
@@ -628,7 +633,8 @@ class JwtSignTest {
         String jwt = Jwt.claims()
                 .claim("customClaim", "custom-value")
                 .claim("evidence", ecJwk.getECPublicKey())
-                .jws().jwk(ecJwk.getECPublicKey())
+                .jws()
+                .jwk(ecJwk.getECPublicKey())
                 .sign(ecJwk.getEcPrivateKey());
 
         JsonWebSignature jws = getVerifiedJws(jwt, ecJwk.getECPublicKey());
@@ -904,6 +910,7 @@ class JwtSignTest {
             jwt = Jwt.claims()
                     .claim("customClaim", "custom-value")
                     .jws()
+                    .type("custom/jwt")
                     .algorithm(SignatureAlgorithm.ES256)
                     .keyId("eckey1")
                     .sign();
@@ -917,7 +924,7 @@ class JwtSignTest {
 
         assertEquals(4, claims.getClaimsMap().size());
         Map<String, Object> headers = getJwsHeaders(jwt, 3);
-        checkDefaultClaimsAndHeaders(headers, claims, "ES256", 300);
+        checkDefaultClaimsAndHeaders(headers, claims, "ES256", "custom/jwt", 300);
         assertEquals("eckey1", headers.get("kid"));
         assertEquals("custom-value", claims.getClaimValue("customClaim"));
     }
