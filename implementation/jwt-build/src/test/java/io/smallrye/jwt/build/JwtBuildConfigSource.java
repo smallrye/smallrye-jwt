@@ -22,6 +22,7 @@ public class JwtBuildConfigSource implements ConfigSource {
             JwtBuildUtils.NEW_TOKEN_AUDIENCE_PROPERTY,
             JwtBuildUtils.NEW_TOKEN_LIFESPAN_PROPERTY,
             JwtBuildUtils.NEW_TOKEN_OVERRIDE_CLAIMS_PROPERTY,
+            JwtBuildUtils.NEW_TOKEN_ADD_DEFAULT_CLAIMS_PROPERTY,
             JwtBuildUtils.NEW_TOKEN_SIGNATURE_ALG_PROPERTY,
             JwtBuildUtils.NEW_TOKEN_KEY_ENCRYPTION_ALG_PROPERTY,
             JwtBuildUtils.SIGN_KEYSTORE_KEY_ALIAS,
@@ -49,6 +50,7 @@ public class JwtBuildConfigSource implements ConfigSource {
 
     private boolean relaxSignatureKeyValidation;
     private boolean relaxEncryptionKeyValidation;
+    private boolean addDefaultClaims = true;
 
     @Override
     public Map<String, String> getProperties() {
@@ -116,6 +118,8 @@ public class JwtBuildConfigSource implements ConfigSource {
             map.put(JwtBuildUtils.ENC_KEY_RELAX_VALIDATION_PROPERTY, String.valueOf(relaxEncryptionKeyValidation));
         }
 
+        map.put(JwtBuildUtils.NEW_TOKEN_ADD_DEFAULT_CLAIMS_PROPERTY, String.valueOf(addDefaultClaims));
+
         map.put(JwtBuildUtils.NEW_TOKEN_OVERRIDE_CLAIMS_PROPERTY, String.valueOf(overrideMatchingClaims));
         return map;
     }
@@ -177,6 +181,10 @@ public class JwtBuildConfigSource implements ConfigSource {
 
     public void setOverrideMatchingClaims(boolean override) {
         overrideMatchingClaims = override;
+    }
+
+    public void setAddDefaultClaims(boolean add) {
+        addDefaultClaims = add;
     }
 
     public void resetSigningKeyCallCount() {

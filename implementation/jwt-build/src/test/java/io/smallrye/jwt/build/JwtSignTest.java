@@ -387,6 +387,31 @@ class JwtSignTest {
     }
 
     @Test
+    void signWithoutAddingDefaultClaim() throws Exception {
+        KeyPair keyPair = KeyUtils.generateKeyPair(2048);
+
+        JwtBuildConfigSource configSource = getConfigSource();
+        configSource.setAddDefaultClaims(false);
+        try {
+            String jwt = Jwt.claims(Collections.singletonMap("customClaim", "custom-value"))
+                    .sign(keyPair.getPrivate());
+
+            JsonWebSignature jws = getVerifiedJws(jwt, keyPair.getPublic(), true);
+            JwtClaims claims = JwtClaims.parse(jws.getPayload());
+
+            assertEquals(1, claims.getClaimsMap().size());
+            assertEquals("custom-value", claims.getClaimValue("customClaim"));
+
+            Map<String, Object> headers = getJwsHeaders(jwt, 2);
+            assertEquals("RS256", headers.get("alg"));
+            assertEquals("JWT", headers.get("typ"));
+
+        } finally {
+            configSource.setAddDefaultClaims(true);
+        }
+    }
+
+    @Test
     void signClaimsConfiguredKeyLocation() throws Exception {
         JwtBuildConfigSource configSource = getConfigSource();
         try {
