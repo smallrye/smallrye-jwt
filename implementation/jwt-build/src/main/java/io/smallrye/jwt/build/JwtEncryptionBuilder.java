@@ -95,6 +95,14 @@ public interface JwtEncryptionBuilder extends JwtEncryption {
     }
 
     /**
+     * Set a type (`typ`) header.
+     *
+     * @param type the type
+     * @return JwtEncryptionBuilder
+     */
+    JwtEncryptionBuilder type(String type);
+
+    /**
      * Custom JWT encryption header.
      *
      * If the 'alg' (algorithm) header is set with this method then it

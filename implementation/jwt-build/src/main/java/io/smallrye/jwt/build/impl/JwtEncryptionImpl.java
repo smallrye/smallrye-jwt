@@ -162,6 +162,15 @@ class JwtEncryptionImpl implements JwtEncryptionBuilder {
         return this;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public JwtEncryptionBuilder type(String type) {
+        headers.put(HeaderParameterNames.TYPE, type);
+        return this;
+    }
+
     private String encryptInternal(Key key) {
         if (key == null) {
             throw ImplMessages.msg.encryptionKeyIsNull();

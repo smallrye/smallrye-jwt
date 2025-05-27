@@ -18,6 +18,7 @@ package io.smallrye.jwt.build;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -338,9 +339,10 @@ public class JwtEncryptTest {
                 .jwe()
                 .keyId("key-enc-key-id")
                 .contentAlgorithm(ContentEncryptionAlgorithm.A128CBC_HS256)
+                .type("custom/jwe")
                 .encrypt(jwk.getECPublicKey());
 
-        checkJweHeaders(jweCompact, "ECDH-ES+A256KW", "A128CBC-HS256", 4);
+        checkJweHeaders(jweCompact, "ECDH-ES+A256KW", "A128CBC-HS256", "custom/jwe", 5);
 
         JsonWebEncryption jwe = getJsonWebEncryption(jweCompact, jwk.getEcPrivateKey());
 
@@ -551,11 +553,21 @@ public class JwtEncryptTest {
 
     private static void checkJweHeaders(String jweCompact, String keyEncKeyAlg, String contentEncAlg, int size)
             throws Exception {
+        checkJweHeaders(jweCompact, keyEncKeyAlg, contentEncAlg, null, size);
+    }
+
+    private static void checkJweHeaders(String jweCompact, String keyEncKeyAlg, String contentEncAlg, String type, int size)
+            throws Exception {
         Map<String, Object> jweHeaders = getJweHeaders(jweCompact);
         assertEquals(size, jweHeaders.size());
         assertEquals(keyEncKeyAlg, jweHeaders.get("alg"));
         assertEquals(contentEncAlg, jweHeaders.get("enc"));
         assertEquals("key-enc-key-id", jweHeaders.get("kid"));
+        if (type != null) {
+            assertEquals(type, jweHeaders.get("typ"));
+        } else {
+            assertNull(jweHeaders.get("typ"));
+        }
         if ("ECDH-ES+A256KW".equals(keyEncKeyAlg)) {
             assertNotNull(jweHeaders.get("epk"));
         }

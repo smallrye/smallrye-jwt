@@ -280,6 +280,15 @@ class JwtClaimsBuilderImpl extends JwtSignatureImpl implements JwtClaimsBuilder,
      * {@inheritDoc}
      */
     @Override
+    public JwtSignatureBuilder type(String type) {
+        headers.put(HeaderParameterNames.TYPE, type);
+        return this;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public JwtEncryptionBuilder innerSign(PrivateKey signingKey) throws JwtSignatureException {
         return super.innerSign(signingKey);
     }
