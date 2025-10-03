@@ -34,7 +34,7 @@
     <version.resteasy>6.2.2.Final</version.resteasy>
     <version.resteasy.client>3.0.1.Final</version.resteasy.client>
 
-    <version.galleon>6.0.6.Final</version.galleon>
+    <version.galleon>6.1.0.Final</version.galleon>
     <version.wildfly>25.0.1.Final</version.wildfly>
     <version.wildfly.plugin>5.1.4.Final</version.wildfly.plugin>
   </properties>
