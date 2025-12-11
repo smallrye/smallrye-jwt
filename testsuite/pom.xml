@@ -31,7 +31,7 @@
   <properties>
     <version.smallrye.testing>2.3.1</version.smallrye.testing>
     <version.smallrye.config>3.1.1</version.smallrye.config>
-    <version.resteasy>6.2.2.Final</version.resteasy>
+    <version.resteasy>7.0.1.Final</version.resteasy>
     <version.resteasy.client>3.0.1.Final</version.resteasy.client>
 
     <version.galleon>6.1.1.Final</version.galleon>
