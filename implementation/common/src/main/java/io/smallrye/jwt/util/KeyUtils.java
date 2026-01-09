@@ -58,9 +58,9 @@ import org.jose4j.jwk.JsonWebKeySet;
 import org.jose4j.jwk.OctetSequenceJsonWebKey;
 import org.jose4j.jwk.PublicJsonWebKey;
 
-import io.smallrye.jwt.JsonProviderHolder;
 import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
+import io.smallrye.jwt.common.JsonProviderHolder;
 
 /**
  * Utility methods for dealing with decoding public and private keys resources

@@ -1,4 +1,4 @@
-package io.smallrye.jwt;
+package io.smallrye.jwt.common;
 
 import jakarta.json.spi.JsonProvider;
 
