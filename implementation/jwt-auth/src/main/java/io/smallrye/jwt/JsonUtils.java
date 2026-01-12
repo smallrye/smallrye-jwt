@@ -14,6 +14,8 @@ import jakarta.json.JsonObjectBuilder;
 import jakarta.json.JsonString;
 import jakarta.json.JsonValue;
 
+import io.smallrye.jwt.common.JsonProviderHolder;
+
 public class JsonUtils {
 
     private JsonUtils() {
