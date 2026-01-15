@@ -21,7 +21,7 @@
   <parent>
     <groupId>io.smallrye</groupId>
     <artifactId>smallrye-jwt-testsuite-parent</artifactId>
-    <version>4.6.3-SNAPSHOT</version>
+    <version>4.6.3</version>
   </parent>
 
   <artifactId>smallrye-jwt-tck</artifactId>
@@ -273,4 +273,8 @@
     </profile>
 
   </profiles>
+
+  <scm>
+    <tag>4.6.3</tag>
+  </scm>
 </project>
