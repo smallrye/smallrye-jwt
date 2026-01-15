@@ -34,7 +34,7 @@ public enum KeyEncryptionAlgorithm {
     }
 
     public static KeyEncryptionAlgorithm fromAlgorithm(String algorithmName) {
-        return KeyEncryptionAlgorithm.valueOf(algorithmName.replaceAll("-", "_").replaceAll("\\+", "_"));
+        return KeyEncryptionAlgorithm.valueOf(algorithmName.replaceAll("-", "_").replaceAll("\\+", "_").toUpperCase());
     }
 
 }

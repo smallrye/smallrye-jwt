@@ -24,6 +24,6 @@ public enum ContentEncryptionAlgorithm {
     }
 
     public static ContentEncryptionAlgorithm fromAlgorithm(String algorithmName) {
-        return ContentEncryptionAlgorithm.valueOf(algorithmName.replaceAll("-", "_").replaceAll("\\+", "_"));
+        return ContentEncryptionAlgorithm.valueOf(algorithmName.replaceAll("-", "_").replaceAll("\\+", "_").toUpperCase());
     }
 }
