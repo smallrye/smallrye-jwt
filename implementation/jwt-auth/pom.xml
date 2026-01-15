@@ -22,7 +22,7 @@
   <parent>
     <groupId>io.smallrye</groupId>
     <artifactId>smallrye-jwt-implementation-parent</artifactId>
-    <version>4.6.3</version>
+    <version>4.6.4-SNAPSHOT</version>
   </parent>
 
   <artifactId>smallrye-jwt</artifactId>
@@ -150,9 +150,4 @@
       </plugin>
     </plugins>
   </build>
-
-
-  <scm>
-    <tag>4.6.3</tag>
-  </scm>
 </project>
