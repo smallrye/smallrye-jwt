@@ -44,7 +44,7 @@
     <version.mokito>5.21.0</version.mokito>
     <version.bouncycastle>1.70</version.bouncycastle>
     <version.smallrye.testing>2.5.0</version.smallrye.testing>
-    <version.smallrye.config>3.1.2</version.smallrye.config>
+    <version.smallrye.config>3.15.1</version.smallrye.config>
     <version.parsson>1.1.7</version.parsson>
   </properties>
 
