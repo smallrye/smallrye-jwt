@@ -29,7 +29,7 @@
   <name>SmallRye: MicroProfile JWT - Testsuite Parent</name>
 
   <properties>
-    <version.resteasy>7.0.1.Final</version.resteasy>
+    <version.resteasy>7.0.2.Final</version.resteasy>
     <version.resteasy.client>3.0.1.Final</version.resteasy.client>
 
     <version.galleon>7.0.5.Final</version.galleon>
