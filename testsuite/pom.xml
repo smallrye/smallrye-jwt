@@ -34,7 +34,7 @@
 
     <version.galleon>7.0.7.Final</version.galleon>
     <version.wildfly>25.0.1.Final</version.wildfly>
-    <version.wildfly.plugin>5.1.5.Final</version.wildfly.plugin>
+    <version.wildfly.plugin>6.0.0.Final</version.wildfly.plugin>
   </properties>
 
   <dependencyManagement>
