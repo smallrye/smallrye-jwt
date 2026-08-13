@@ -1,0 +1,219 @@
+= Migrating to SmallRye JWT 6.0
+include::_attributes.adoc[]
+:summary: What changed in SmallRye JWT 6.0 after the move from jose4j to Nimbus JOSE+JWT, and how to update custom key resolvers, principal factories and error handling.
+
+SmallRye JWT 6.0 replaces https://bitbucket.org/b_c/jose4j[jose4j] with https://connect2id.com/products/nimbus-jose-jwt[Nimbus JOSE+JWT]
+as the underlying JOSE library. The MicroProfile JWT configuration properties and the `JsonWebToken`, `JWTParser`
+and `Jwt` build APIs are unchanged. Applications which only use those APIs do not need to change anything.
+
+The changes below affect applications which extend SmallRye JWT or depend on jose4j types.
+
+== jose4j is no longer a dependency
+
+The `org.bitbucket.b_c:jose4j` dependency is gone. Applications which used jose4j classes transitively must add
+the dependency themselves. Nimbus types are not exposed by the SmallRye JWT public API, the new
+`io.smallrye.jws`, `io.smallrye.jwe` and `io.smallrye.jwk` packages wrap them instead:
+
+* `io.smallrye.jws.JsonWebSignature`, `JwsSigner`, `JwsVerifier`
+* `io.smallrye.jwe.JsonWebEncryption`, `JweEncrypter`, `JweDecrypter`
+* `io.smallrye.jwk.JsonWebKey`, `JsonWebKeySet` and the key type specific `JsonWebKey` subclasses
+* `io.smallrye.jwt.common.JwtClaims` which replaces the jose4j `JwtClaims`
+
+== Working with JWS, JWE and JWK content
+
+The examples below show how the code which used jose4j directly, for example, in a custom key resolver or in an
+integration layer, can be written with the new packages.
+
+=== Verify a signed token
+
+[source,java]
+----
+// jose4j
+JsonWebSignature jws = new JsonWebSignature();
+jws.setCompactSerialization(token);
+PublicKey publicKey = ((PublicJsonWebKey) jwks.findJsonWebKey(jws.getKeyIdHeaderValue(), null, null, null)).getPublicKey();
+jws.setKey(publicKey);
+jws.setAlgorithmConstraints(new AlgorithmConstraints(ConstraintType.PERMIT, "RS256"));
+if (!jws.verifySignature()) {
+    throw new JoseException("Invalid signature");
+}
+JwtClaims claims = JwtClaims.parse(jws.getPayload());
+
+// SmallRye JWT 6.0
+JsonWebSignature jws = JsonWebSignature.parse(token);
+PublicKey publicKey = ((AsymmetricJsonWebKey) jwks.keyWithId(jws.headers().keyId())).publicKey();
+String payload = JwsVerifier.builder(publicKey).algorithm(SignatureAlgorithm.RS256).build().verify(jws);
+JwtClaims claims = JwtClaims.parse(payload);
+----
+
+`JwsVerifier.verify` throws `JwsException` if the signature is invalid, the `alg` header is not one of the accepted
+algorithms or the key can not be used with it. `jws.headers()` also gives access to `x5t`, `x5t#S256`, the parsed
+`x5c` chain and the custom headers, and `jws.unverifiedPayload()` to the payload before the verification.
+
+=== Sign a payload
+
+The xref:generate-jwt.adoc[`Jwt` build API] remains the recommended way to create JWT tokens. 
+`JwsSigner` signs any text which jose4j `JsonWebSignature` could be used for:
+
+[source,java]
+----
+// jose4j
+JsonWebSignature jws = new JsonWebSignature();
+jws.setPayload(state);
+jws.setKey(privateKey);
+jws.setAlgorithmHeaderValue("RS256");
+jws.setKeyIdHeaderValue("key-1");
+String signedState = jws.getCompactSerialization();
+
+// SmallRye JWT 6.0
+String signedState = JwsSigner.builder(privateKey).algorithm(SignatureAlgorithm.RS256).keyId("key-1").build().sign(state);
+----
+
+=== Encrypt and decrypt
+
+Similarly, the `Jwt` build API creates the encrypted JWT tokens and `JWTParser` decrypts them, while `JweEncrypter`
+and `JweDecrypter` work with any content:
+
+[source,java]
+----
+// jose4j
+JsonWebEncryption jwe = new JsonWebEncryption();
+jwe.setAlgorithmHeaderValue("RSA-OAEP-256");
+jwe.setEncryptionMethodHeaderParameter("A256GCM");
+jwe.setKey(publicKey);
+jwe.setPayload(content);
+String encryptedContent = jwe.getCompactSerialization();
+
+jwe = new JsonWebEncryption();
+jwe.setCompactSerialization(encryptedContent);
+jwe.setAlgorithmConstraints(new AlgorithmConstraints(ConstraintType.PERMIT, "RSA-OAEP-256"));
+jwe.setKey(privateKey);
+String content = jwe.getPlaintextString();
+
+// SmallRye JWT 6.0
+String encryptedContent = JweEncrypter.builder(publicKey)
+        .keyAlgorithm(KeyEncryptionAlgorithm.RSA_OAEP_256)
+        .contentAlgorithm(ContentEncryptionAlgorithm.A256GCM)
+        .build()
+        .encrypt(content);
+
+String content = JweDecrypter.builder(privateKey)
+        .keyAlgorithm(KeyEncryptionAlgorithm.RSA_OAEP_256)
+        .build()
+        .decrypt(encryptedContent);
+----
+
+`JsonWebEncryption.parse(token).headers()` gives access to the `kid`, `alg`, `enc` and the other headers before the
+decryption, and `JweDecrypter.decrypt` accepts the parsed `JsonWebEncryption` as well.
+
+=== JSON Web Keys
+
+[source,java]
+----
+// jose4j
+JsonWebKeySet jwks = new JsonWebKeySet(json);
+JsonWebKey jwk = jwks.findJsonWebKey(kid, null, null, null);
+PublicKey publicKey = ((PublicJsonWebKey) jwk).getPublicKey();
+
+PublicJsonWebKey newJwk = PublicJsonWebKey.Factory.newPublicJwk(publicKey);
+newJwk.setKeyId("key-1");
+String jwkJson = newJwk.toJson();
+
+// SmallRye JWT 6.0
+JsonWebKeySet jwks = JsonWebKeySet.parse(json);
+JsonWebKey jwk = jwks.keyWithId(kid);
+PublicKey publicKey = ((AsymmetricJsonWebKey) jwk).publicKey();
+
+String jwkJson = RsaJsonWebKey.builder((RSAPublicKey) publicKey).keyId("key-1").build().asJsonString();
+----
+
+`JsonWebKey.jwk(publicKey)` creates the JSON Web Key of the matching type for an RSA, EC, EdDSA or XDH public key
+when the key type is not known in advance. `asJsonString()` writes the public form of an asymmetric key, pass
+`JsonWebKey.OutputLevel.INCLUDE_PRIVATE` to include the private key material. `JsonWebKeySet.parse` skips the keys
+which can not be parsed, as the jose4j `JsonWebKeySet` did.
+
+== Custom key resolvers
+
+`io.smallrye.jwt.auth.VerificationKeyResolver` and `io.smallrye.jwt.auth.DecryptionKeyResolver` no longer take the
+jose4j `JsonWebStructure` list:
+
+[source,java]
+----
+Key resolveKey(io.smallrye.jws.JsonWebSignature jws) throws UnresolvableKeyException;
+Key resolveKey(io.smallrye.jwe.JsonWebEncryption jwe) throws UnresolvableKeyException;
+----
+
+== Custom claims validators
+
+`io.smallrye.jwt.auth.ClaimsValidator` replaces the jose4j `org.jose4j.jwt.consumer.Validator` for the integrators
+which let the applications register custom validators. It deliberately follows the jose4j `Validator` design to make
+the migration easier: a validator returns `null` if the claims are valid or an error description otherwise, and it
+receives the verified `io.smallrye.jwt.common.JwtClaims`, so in most cases only the imports and the claim accessors
+need to change:
+
+[source,java]
+----
+// jose4j
+public class NonceValidator implements Validator {
+    @Override
+    public String validate(JwtContext jwtContext) throws MalformedClaimException {
+        String nonce = jwtContext.getJwtClaims().getStringClaimValue("nonce");
+        return expectedNonce.equals(nonce) ? null : "Invalid nonce";
+    }
+}
+
+// SmallRye JWT 6.0
+public class NonceValidator implements ClaimsValidator {
+    @Override
+    public String validate(VerificationContext context) {
+        Object nonce = context.claims().getClaim("nonce");
+        return expectedNonce.equals(nonce) ? null : "Invalid nonce";
+    }
+}
+----
+
+The validators are registered with `io.smallrye.jwt.auth.JwtVerifier`, which replaces the jose4j `JwtConsumer`
+and verifies the signature, the standard claims and the custom validators in one call:
+
+[source,java]
+----
+JwtContext context = JwtVerifier.builder()
+        .verificationKeyResolver(keyResolver)
+        .allowedAlgorithms(Set.of(SignatureAlgorithm.RS256))
+        .expectedIssuer(issuer)
+        .expectedAudience(audience)
+        .claimsValidator(new NonceValidator(expectedNonce))
+        .build()
+        .verify(token);
+JwtClaims claims = context.claims();
+----
+
+A validator error is reported as `InvalidJWTException` with the returned description as its message.
+
+== Custom principal factories
+
+`DefaultJWTTokenParser.parse()` returns `io.smallrye.jwt.auth.JwtContext`, a record with the `tokenType()` JOSE
+header value and the verified `claims()`. `DefaultJWTCallerPrincipal` and `PrincipalUtils.setClaims` accept
+`io.smallrye.jwt.common.JwtClaims`. A custom `JWTCallerPrincipalFactory` which extends
+`DefaultJWTCallerPrincipalFactory` has to use these types, see xref:configuration.adoc[Configuration] for the
+updated example.
+
+== Error handling
+
+`io.smallrye.jwt.auth.principal.ParseException` is still the only checked exception reported by the parser, but its
+cause is no longer a jose4j `InvalidJwtException`. The cause is one of:
+
+* `io.smallrye.jwt.auth.TokenExpiredException` when the token has expired or its age has been exceeded
+* `io.smallrye.jwt.auth.InvalidJWTException` for any other verification failure such as a wrong issuer or audience,
+  a missing required claim, a signature which can not be verified or an algorithm which is not allowed
+* `io.smallrye.jwt.auth.UnresolvableKeyException` when no verification or decryption key can be found
+
+Code which inspected the jose4j `ErrorCodes` to detect an expired token must check for `TokenExpiredException`
+instead.
+
+== Key validation
+
+The `smallrye.jwt.verify.relax-key-validation`, `smallrye.jwt.sign.relax-key-validation` and
+`smallrye.jwt.encrypt.relax-key-validation` properties only relax the RSA key size check. Nimbus requires an HMAC
+secret key to be at least as long as the HMAC output, 256 bits for `HS256`, and this can not be relaxed. Tokens
+signed with shorter secrets, which jose4j accepted when the validation was relaxed, are rejected.

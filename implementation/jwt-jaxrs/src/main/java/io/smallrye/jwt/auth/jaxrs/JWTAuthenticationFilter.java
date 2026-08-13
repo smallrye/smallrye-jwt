@@ -31,9 +31,9 @@ import jakarta.ws.rs.core.Cookie;
 import jakarta.ws.rs.core.SecurityContext;
 
 import org.eclipse.microprofile.jwt.JsonWebToken;
-import org.jose4j.lang.UnresolvableKeyException;
 
 import io.smallrye.jwt.auth.AbstractBearerTokenExtractor;
+import io.smallrye.jwt.auth.UnresolvableKeyException;
 import io.smallrye.jwt.auth.cdi.PrincipalProducer;
 import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
 import io.smallrye.jwt.auth.principal.JWTParser;

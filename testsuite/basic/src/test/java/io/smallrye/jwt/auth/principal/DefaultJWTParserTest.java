@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
 import java.security.PublicKey;
 import java.security.cert.X509Certificate;
 import java.time.Instant;
@@ -13,17 +15,26 @@ import java.util.Set;
 import javax.crypto.SecretKey;
 
 import org.eclipse.microprofile.jwt.JsonWebToken;
-import org.jose4j.jwk.JsonWebKey;
-import org.jose4j.jwk.OctetKeyPairJsonWebKey;
-import org.jose4j.jwk.OkpJwkGenerator;
-import org.jose4j.jwk.PublicJsonWebKey;
-import org.jose4j.jwt.consumer.ErrorCodes;
-import org.jose4j.jwt.consumer.InvalidJwtException;
-import org.jose4j.lang.UnresolvableKeyException;
 import org.junit.jupiter.api.Test;
 
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.JWSHeader;
+import com.nimbusds.jose.JWSObject;
+import com.nimbusds.jose.Payload;
+import com.nimbusds.jose.crypto.MACSigner;
+import com.nimbusds.jose.jwk.JWK;
+import com.nimbusds.jose.jwk.OctetKeyPair;
+import com.nimbusds.jose.jwk.OctetSequenceKey;
+import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.PlainJWT;
+
+import io.smallrye.jwk.AsymmetricJsonWebKey;
+import io.smallrye.jwt.algorithm.EdDSAVerifier;
 import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
+import io.smallrye.jwt.auth.InvalidJWTException;
+import io.smallrye.jwt.auth.TokenExpiredException;
+import io.smallrye.jwt.auth.UnresolvableKeyException;
 import io.smallrye.jwt.build.Jwt;
 import io.smallrye.jwt.util.KeyUtils;
 import io.smallrye.jwt.util.ResourceUtils;
@@ -130,7 +141,8 @@ class DefaultJWTParserTest {
 
     private static PublicKey getEdEcPublicKey() throws Exception {
         String keyContent = KeyUtils.readKeyContent("/edEcPublicKey.jwk");
-        return PublicJsonWebKey.Factory.newPublicJwk(keyContent).getPublicKey();
+        OctetKeyPair okp = (OctetKeyPair) JWK.parse(keyContent);
+        return EdDSAVerifier.toPublicKey(okp);
     }
 
     @Test
@@ -250,10 +262,10 @@ class DefaultJWTParserTest {
     @Test
     void decryptWithRsaPrivateKeyInJwkFormat() throws Exception {
         String content = ResourceUtils.readResource("/encryptPublicKey.jwk");
-        PublicJsonWebKey jwk = (PublicJsonWebKey) KeyUtils.loadJsonWebKeys(content).get(0);
+        AsymmetricJsonWebKey jwk = (AsymmetricJsonWebKey) KeyUtils.loadJsonWebKeys(content).keys().get(0);
         String jwtString = Jwt.upn("jdoe@example.com")
                 .jwe().keyAlgorithm(KeyEncryptionAlgorithm.RSA_OAEP)
-                .encrypt(jwk.getPublicKey());
+                .encrypt(jwk.publicKey());
 
         JWTAuthContextInfo config = new JWTAuthContextInfo();
         config.setDecryptionKeyLocation("/decryptPrivateKey.jwk");
@@ -274,9 +286,10 @@ class DefaultJWTParserTest {
     @Test
     void decryptWithEcPrivateKeyX25519() throws Exception {
         if (Runtime.version().version().get(0) >= 17) {
-            OctetKeyPairJsonWebKey jwk = OkpJwkGenerator.generateJwk(OctetKeyPairJsonWebKey.SUBTYPE_X25519);
-            String jwtString = Jwt.upn("jdoe@example.com").jwe().encrypt(jwk.getPublicKey());
-            JsonWebToken jwt = new DefaultJWTParser().decrypt(jwtString, jwk.getPrivateKey());
+            KeyPairGenerator kpg = java.security.KeyPairGenerator.getInstance("X25519");
+            KeyPair kp = kpg.generateKeyPair();
+            String jwtString = Jwt.upn("jdoe@example.com").jwe().encrypt(kp.getPublic());
+            JsonWebToken jwt = new DefaultJWTParser().decrypt(jwtString, kp.getPrivate());
             assertEquals("jdoe@example.com", jwt.getName());
         }
     }
@@ -314,8 +327,8 @@ class DefaultJWTParserTest {
 
     private static SecretKey createSecretKey() throws Exception {
         String jwkJson = "{\"kty\":\"oct\",\"k\":\"Fdh9u8rINxfivbrianbbVT1u232VQBZYKx1HGAGPt2I\"}";
-        JsonWebKey jwk = JsonWebKey.Factory.newJwk(jwkJson);
-        return (SecretKey) jwk.getKey();
+        OctetSequenceKey jwk = OctetSequenceKey.parse(jwkJson);
+        return jwk.toSecretKey("AES");
     }
 
     @Test
@@ -338,8 +351,8 @@ class DefaultJWTParserTest {
                 .sign(KeyUtils.readPrivateKey("/privateKey.pem"));
         JWTAuthContextInfo config = new JWTAuthContextInfo("/publicKey.pem", "https://server.example.com");
         ParseException thrown = assertThrows(ParseException.class, () -> new DefaultJWTParser().parse(jwtString, config),
-                "UnresolvableKeyException is expected");
-        assertEquals(ErrorCodes.EXPIRED, ((InvalidJwtException) thrown.getCause()).getErrorDetails().get(0).getErrorCode());
+                "ParseException is expected");
+        assertTrue(thrown.getCause() instanceof TokenExpiredException);
     }
 
     @Test
@@ -351,7 +364,106 @@ class DefaultJWTParserTest {
         JWTAuthContextInfo config = new JWTAuthContextInfo("/publicKey.pem", "https://server.example.com");
         config.setExpGracePeriodSecs(0);
         ParseException thrown = assertThrows(ParseException.class, () -> new DefaultJWTParser().parse(jwtString, config),
-                "UnresolvableKeyException is expected");
-        assertEquals(ErrorCodes.EXPIRED, ((InvalidJwtException) thrown.getCause()).getErrorDetails().get(0).getErrorCode());
+                "ParseException is expected");
+        assertTrue(thrown.getCause() instanceof TokenExpiredException);
+    }
+
+    @Test
+    void parseSignatureAlgorithmNotAllowed() throws Exception {
+        // the token is signed with RS256 but only ES256 is accepted
+        String jwtString = Jwt.upn("jdoe@example.com").issuer("https://server.example.com")
+                .sign(KeyUtils.readPrivateKey("/privateKey.pem"));
+        JWTAuthContextInfo config = new JWTAuthContextInfo("/publicKey.pem", "https://server.example.com");
+        config.setSignatureAlgorithm(Set.of(SignatureAlgorithm.ES256));
+
+        ParseException thrown = assertThrows(ParseException.class, () -> new DefaultJWTParser().parse(jwtString, config));
+        assertTrue(thrown.getCause() instanceof InvalidJWTException);
+        assertTrue(thrown.getCause().getMessage().contains("Algorithm RS256 is not allowed"),
+                thrown.getCause().getMessage());
+    }
+
+    @Test
+    void parseTokenWithNoneAlgorithm() throws Exception {
+        String jwtString = new PlainJWT(JWTClaimsSet.parse(claimsJson())).serialize();
+        JWTAuthContextInfo config = new JWTAuthContextInfo("/publicKey.pem", "https://server.example.com");
+
+        ParseException thrown = assertThrows(ParseException.class, () -> new DefaultJWTParser().parse(jwtString, config));
+        assertTrue(thrown.getCause() instanceof InvalidJWTException);
+    }
+
+    @Test
+    void parseHmacTokenSignedWithRsaPublicKey() throws Exception {
+        // algorithm confusion: an HS256 token signed with the RSA public key bytes as the HMAC secret
+        PublicKey publicKey = KeyUtils.readPublicKey("/publicKey.pem");
+        JWSObject jws = new JWSObject(new JWSHeader(JWSAlgorithm.HS256), new Payload(claimsJson()));
+        jws.sign(new MACSigner(publicKey.getEncoded()));
+        String jwtString = jws.serialize();
+        JWTAuthContextInfo config = new JWTAuthContextInfo("/publicKey.pem", "https://server.example.com");
+
+        // HS256 is not accepted by default
+        ParseException thrown = assertThrows(ParseException.class, () -> new DefaultJWTParser().parse(jwtString, config));
+        assertTrue(thrown.getCause().getMessage().contains("Algorithm HS256 is not allowed"),
+                thrown.getCause().getMessage());
+
+        // and even if it is, the RSA public key can not be used as an HMAC secret; the key is passed directly
+        // since the key location resolver does not load a public key when HS256 is accepted
+        JWTAuthContextInfo keyConfig = new JWTAuthContextInfo(publicKey, "https://server.example.com");
+        keyConfig.setSignatureAlgorithm(Set.of(SignatureAlgorithm.RS256, SignatureAlgorithm.HS256));
+        thrown = assertThrows(ParseException.class, () -> new DefaultJWTParser().parse(jwtString, keyConfig));
+        assertTrue(thrown.getCause().getMessage().contains("Algorithm HS256 can not be used with the RSA verification key"),
+                thrown.getCause().getMessage());
+    }
+
+    @Test
+    void parseEncryptedTokenKeyAlgorithmNotAllowed() throws Exception {
+        // the token is encrypted with RSA-OAEP but only RSA-OAEP-256 is accepted, it must be rejected before the
+        // inner signed token is checked
+        String jwtString = Jwt.upn("jdoe@example.com").issuer("https://server.example.com")
+                .innerSign(KeyUtils.readPrivateKey("/privateKey.pem"))
+                .encrypt(KeyUtils.readEncryptionPublicKey("/publicKey.pem"));
+        JWTAuthContextInfo config = new JWTAuthContextInfo("/publicKey.pem", "https://server.example.com");
+        config.setDecryptionKeyLocation("/privateKey.pem");
+        config.setKeyEncryptionAlgorithm(Set.of(KeyEncryptionAlgorithm.RSA_OAEP_256));
+
+        ParseException thrown = assertThrows(ParseException.class, () -> new DefaultJWTParser().parse(jwtString, config));
+        assertTrue(thrown.getMessage().contains("SRJWT07013"), thrown.getMessage());
+        assertTrue(thrown.getCause().getMessage().contains("Key encryption algorithm RSA-OAEP is not allowed"),
+                thrown.getCause().getMessage());
+    }
+
+    @Test
+    void parseEncryptedTokenInnerSignatureAlgorithmNotAllowed() throws Exception {
+        // the inner token is signed with ES256 but only RS256 is accepted by default
+        String jwtString = Jwt.upn("jdoe@example.com").issuer("https://server.example.com")
+                .jws().algorithm(SignatureAlgorithm.ES256)
+                .innerSign(KeyUtils.readPrivateKey("/ecPrivateKey.pem", SignatureAlgorithm.ES256))
+                .encrypt(KeyUtils.readEncryptionPublicKey("/publicKey.pem"));
+        JWTAuthContextInfo config = new JWTAuthContextInfo("/publicKey.pem", "https://server.example.com");
+        config.setDecryptionKeyLocation("/privateKey.pem");
+
+        ParseException thrown = assertThrows(ParseException.class, () -> new DefaultJWTParser().parse(jwtString, config));
+        assertTrue(thrown.getCause().getMessage().contains("Algorithm ES256 is not allowed"),
+                thrown.getCause().getMessage());
+    }
+
+    @Test
+    void parseEncryptedOnlyTokenKeyAlgorithmNotAllowed() throws Exception {
+        // the token is encrypted with RSA-OAEP-256 but only RSA-OAEP is accepted
+        String jwtString = Jwt.upn("jdoe@example.com")
+                .jwe().keyAlgorithm(KeyEncryptionAlgorithm.RSA_OAEP_256)
+                .encrypt(KeyUtils.readEncryptionPublicKey("/publicKey.pem"));
+        JWTAuthContextInfo config = new JWTAuthContextInfo();
+        config.setDecryptionKeyLocation("/privateKey.pem");
+        config.setKeyEncryptionAlgorithm(Set.of(KeyEncryptionAlgorithm.RSA_OAEP));
+
+        ParseException thrown = assertThrows(ParseException.class, () -> new DefaultJWTParser().parse(jwtString, config));
+        assertTrue(thrown.getCause().getMessage().contains("Key encryption algorithm RSA-OAEP-256 is not allowed"),
+                thrown.getCause().getMessage());
+    }
+
+    private static String claimsJson() {
+        long now = System.currentTimeMillis() / 1000;
+        return "{\"iss\":\"https://server.example.com\",\"sub\":\"jdoe@example.com\",\"iat\":" + now + ",\"exp\":"
+                + (now + 300) + "}";
     }
 }

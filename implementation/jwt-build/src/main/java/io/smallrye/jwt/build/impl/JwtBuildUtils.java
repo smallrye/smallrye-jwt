@@ -9,10 +9,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 import org.eclipse.microprofile.config.ConfigProvider;
-import org.eclipse.microprofile.jwt.Claims;
-import org.jose4j.jwt.JwtClaims;
-import org.jose4j.jwt.NumericDate;
 
+import io.smallrye.jwt.common.JwtClaims;
 import io.smallrye.jwt.util.KeyUtils;
 import io.smallrye.jwt.util.ResourceUtils;
 
@@ -56,24 +54,24 @@ public class JwtBuildUtils {
                 Boolean.TRUE);
 
         if (addDefaultClaims) {
-            if (!claims.hasClaim(Claims.iat.name())) {
-                claims.setIssuedAt(NumericDate.fromSeconds(currentTimeInSecs()));
+            if (claims.getIssuedAt() == null) {
+                claims.setIssuedAt(currentTimeInSecs());
             }
             setExpiryClaim(claims, tokenLifespan);
 
-            if (!claims.hasClaim(Claims.jti.name())) {
-                claims.setClaim(Claims.jti.name(), UUID.randomUUID().toString());
+            if (claims.getJwtId() == null) {
+                claims.setJwtId(UUID.randomUUID().toString());
             }
         }
 
         Boolean overrideMatchingClaims = getConfigProperty(NEW_TOKEN_OVERRIDE_CLAIMS_PROPERTY, Boolean.class);
-        if (Boolean.TRUE.equals(overrideMatchingClaims) || !claims.hasClaim(Claims.iss.name())) {
+        if (Boolean.TRUE.equals(overrideMatchingClaims) || claims.getIssuer() == null) {
             String issuer = getConfigProperty(NEW_TOKEN_ISSUER_PROPERTY, String.class);
             if (issuer != null) {
                 claims.setIssuer(issuer);
             }
         }
-        if (Boolean.TRUE.equals(overrideMatchingClaims) || !claims.hasClaim(Claims.aud.name())) {
+        if (Boolean.TRUE.equals(overrideMatchingClaims) || claims.getAudience() == null) {
             String audience = getConfigProperty(NEW_TOKEN_AUDIENCE_PROPERTY, String.class);
             if (audience != null) {
                 claims.setAudience(audience);
@@ -105,16 +103,8 @@ public class JwtBuildUtils {
         }
     }
 
-    static JwtClaims convertToClaims(Map<String, Object> claimsMap) {
-        JwtClaims claims = new JwtClaims();
-        convertToClaims(claims, claimsMap);
-        return claims;
-    }
-
     static void convertToClaims(JwtClaims claims, Map<String, Object> claimsMap) {
-        for (Map.Entry<String, Object> entry : claimsMap.entrySet()) {
-            claims.setClaim(entry.getKey(), entry.getValue());
-        }
+        claims.putAll(claimsMap);
     }
 
     /**
@@ -125,15 +115,17 @@ public class JwtBuildUtils {
     }
 
     private static void setExpiryClaim(JwtClaims claims, Long tokenLifespan) {
-        if (!claims.hasClaim(Claims.exp.name())) {
-            Object value = claims.getClaimValue(Claims.iat.name());
-            Long issuedAt = (value instanceof NumericDate) ? ((NumericDate) value).getValue() : (Long) value;
+        if (claims.getExpirationTime() == null) {
+            Long issuedAt = claims.getIssuedAt();
+            if (issuedAt == null) {
+                issuedAt = (long) currentTimeInSecs();
+            }
             Long lifespan = tokenLifespan;
             if (lifespan == null) {
                 lifespan = getConfigProperty(NEW_TOKEN_LIFESPAN_PROPERTY, Long.class, 300L);
             }
 
-            claims.setExpirationTime(NumericDate.fromSeconds(issuedAt + lifespan));
+            claims.setExpirationTime(issuedAt + lifespan);
         }
     }
 
@@ -190,4 +182,5 @@ public class JwtBuildUtils {
         }
         return null;
     }
+
 }
