@@ -29,9 +29,9 @@ import java.security.PrivateKey;
 import java.util.Base64;
 
 import org.eclipse.microprofile.jwt.tck.util.TokenUtils;
-import org.jose4j.lang.UnresolvableKeyException;
 import org.junit.jupiter.api.Test;
 
+import io.smallrye.jwt.auth.UnresolvableKeyException;
 import io.smallrye.jwt.config.JWTAuthContextInfoProvider;
 import io.smallrye.jwt.util.KeyUtils;
 

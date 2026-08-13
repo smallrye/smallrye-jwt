@@ -5,21 +5,12 @@ import java.security.Key;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.jose4j.http.Get;
-import org.jose4j.http.SimpleGet;
-import org.jose4j.http.SimpleResponse;
-import org.jose4j.jwk.JsonWebKey;
-import org.jose4j.jws.JsonWebSignature;
-import org.jose4j.jwx.JsonWebStructure;
-import org.jose4j.keys.resolvers.VerificationKeyResolver;
-import org.jose4j.lang.UnresolvableKeyException;
-
-import io.smallrye.jwt.auth.principal.AbstractKeyLocationResolver.TrustAllHostnameVerifier;
-import io.smallrye.jwt.auth.principal.AbstractKeyLocationResolver.TrustedHostsHostnameVerifier;
+import io.smallrye.jwt.auth.JsonWebSignature;
+import io.smallrye.jwt.auth.UnresolvableKeyException;
+import io.smallrye.jwt.auth.VerificationKeyResolver;
 import io.smallrye.jwt.util.KeyUtils;
 import io.smallrye.jwt.util.ResourceUtils;
 
@@ -28,6 +19,7 @@ public class AwsAlbKeyResolver implements VerificationKeyResolver {
     private long cacheTimeToLive;
     private Map<String, CacheEntry> keys = new HashMap<>();
     private AtomicInteger size = new AtomicInteger();
+    private JwksHttpFetcher httpFetcher;
 
     public AwsAlbKeyResolver(JWTAuthContextInfo authContextInfo) throws UnresolvableKeyException {
         AwsAlbKeyConfigurationValidator.validateKeyConfiguration(authContextInfo);
@@ -35,11 +27,12 @@ public class AwsAlbKeyResolver implements VerificationKeyResolver {
         AwsAlbKeyConfigurationValidator.validateTokenHeaderConfiguration(authContextInfo);
         this.authContextInfo = authContextInfo;
         this.cacheTimeToLive = Duration.ofMinutes(authContextInfo.getKeyCacheTimeToLive()).toMillis();
+        this.httpFetcher = new JwksHttpFetcher(authContextInfo);
     }
 
     @Override
-    public Key resolveKey(JsonWebSignature jws, List<JsonWebStructure> nestingContext) throws UnresolvableKeyException {
-        String kid = jws.getHeaders().getStringHeaderValue(JsonWebKey.KEY_ID_PARAMETER);
+    public Key resolveKey(JsonWebSignature jws) throws UnresolvableKeyException {
+        String kid = jws.headers().keyId();
         verifyKid(kid);
 
         CacheEntry entry = findValidCacheEntry(kid);
@@ -58,36 +51,18 @@ public class AwsAlbKeyResolver implements VerificationKeyResolver {
     protected Key retrieveKey(String kid) throws UnresolvableKeyException {
         String keyLocation = authContextInfo.getPublicKeyLocation() + "/" + kid;
         AwsAlbKeyResolverLogging.log.publicKeyPath(keyLocation);
-        SimpleResponse simpleResponse = null;
+        String keyContent = null;
         try {
-            simpleResponse = getHttpGet().get(keyLocation);
+            keyContent = httpFetcher.fetch(keyLocation);
         } catch (IOException ex) {
             AbstractKeyLocationResolver.reportLoadKeyException(null, keyLocation, ex);
         }
-        String keyContent = simpleResponse.getBody();
         try {
             return KeyUtils.decodePublicKey(keyContent, authContextInfo.getSignatureAlgorithm().iterator().next());
         } catch (Exception e) {
             AbstractKeyLocationResolver.reportUnresolvableKeyException(keyContent, keyLocation);
         }
         return null;
-    }
-
-    protected SimpleGet getHttpGet() throws UnresolvableKeyException {
-        Get httpGet = new Get();
-        if (authContextInfo.isTlsTrustAll()) {
-            httpGet.setHostnameVerifier(new TrustAllHostnameVerifier());
-        } else if (authContextInfo.getTlsTrustedHosts() != null) {
-            httpGet.setHostnameVerifier(new TrustedHostsHostnameVerifier(authContextInfo.getTlsTrustedHosts()));
-        }
-        if (authContextInfo.getTlsCertificate() != null) {
-            httpGet.setTrustedCertificates(
-                    AbstractKeyLocationResolver.loadPEMCertificate(authContextInfo.getTlsCertificate()));
-        } else if (authContextInfo.getTlsCertificatePath() != null) {
-            httpGet.setTrustedCertificates(AbstractKeyLocationResolver.loadPEMCertificate(
-                    readKeyContent(authContextInfo.getTlsCertificatePath())));
-        }
-        return httpGet;
     }
 
     protected String readKeyContent(String keyLocation) throws UnresolvableKeyException {

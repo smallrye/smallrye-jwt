@@ -21,9 +21,13 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.security.Key;
 
-import org.jose4j.jwe.JsonWebEncryption;
-import org.jose4j.jwt.JwtClaims;
+import javax.crypto.SecretKey;
+
 import org.junit.jupiter.api.Test;
+
+import com.nimbusds.jose.JWEObject;
+import com.nimbusds.jose.crypto.AESDecrypter;
+import com.nimbusds.jwt.JWTClaimsSet;
 
 import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
 import io.smallrye.jwt.util.KeyUtils;
@@ -32,24 +36,24 @@ class JwtEncryptJwkTest {
     @Test
     void encryptA256KW() throws Exception {
         String jwt = Jwt.preferredUserName("alice").jwe().encrypt("/privateKey.jwk");
-        JsonWebEncryption jwe = getJsonWebEncryption(jwt, readSecretKey("/privateKey.jwk"));
-        assertEquals("secretkey1", jwe.getHeader("kid"));
+        JWEObject jwe = getDecryptedJwe(jwt, readSecretKey("/privateKey.jwk"));
+        assertEquals("secretkey1", jwe.getHeader().getKeyID());
         // A256KW is a default value
-        assertEquals("A256KW", jwe.getHeader("alg"));
-        JwtClaims claims = JwtClaims.parse(jwe.getPayload());
-        assertEquals("alice", claims.getClaimValue("preferred_username"));
+        assertEquals("A256KW", jwe.getHeader().getAlgorithm().getName());
+        JWTClaimsSet claims = JWTClaimsSet.parse(jwe.getPayload().toString());
+        assertEquals("alice", claims.getClaim("preferred_username"));
 
     }
 
     @Test
     void encryptA128KW() throws Exception {
         String jwt = Jwt.preferredUserName("alice").jwe().encrypt("/privateKeyA128KW.jwk");
-        JsonWebEncryption jwe = getJsonWebEncryption(jwt,
+        JWEObject jwe = getDecryptedJwe(jwt,
                 readSecretKey("/privateKeyA128KW.jwk", KeyEncryptionAlgorithm.A128KW));
-        assertEquals("secretkey3", jwe.getHeader("kid"));
-        assertEquals("A128KW", jwe.getHeader("alg"));
-        JwtClaims claims = JwtClaims.parse(jwe.getPayload());
-        assertEquals("alice", claims.getClaimValue("preferred_username"));
+        assertEquals("secretkey3", jwe.getHeader().getKeyID());
+        assertEquals("A128KW", jwe.getHeader().getAlgorithm().getName());
+        JWTClaimsSet claims = JWTClaimsSet.parse(jwe.getPayload().toString());
+        assertEquals("alice", claims.getClaim("preferred_username"));
     }
 
     @Test
@@ -70,12 +74,12 @@ class JwtEncryptJwkTest {
     @Test
     void signJwkSetWithKid() throws Exception {
         String jwt = Jwt.preferredUserName("alice").jwe().keyId("secretkey1").encrypt("/privateEncryptionKeys.jwks");
-        JsonWebEncryption jwe = getJsonWebEncryption(jwt, readSecretKey("/privateKey.jwk"));
-        assertEquals("secretkey1", jwe.getHeader("kid"));
+        JWEObject jwe = getDecryptedJwe(jwt, readSecretKey("/privateKey.jwk"));
+        assertEquals("secretkey1", jwe.getHeader().getKeyID());
         // A256KW is a default value
-        assertEquals("A256KW", jwe.getHeader("alg"));
-        JwtClaims claims = JwtClaims.parse(jwe.getPayload());
-        assertEquals("alice", claims.getClaimValue("preferred_username"));
+        assertEquals("A256KW", jwe.getHeader().getAlgorithm().getName());
+        JWTClaimsSet claims = JWTClaimsSet.parse(jwe.getPayload().toString());
+        assertEquals("alice", claims.getClaim("preferred_username"));
     }
 
     @Test
@@ -84,12 +88,12 @@ class JwtEncryptJwkTest {
         try {
             configSource.setEncryptonKeyId("secretkey3");
             String jwt = Jwt.preferredUserName("alice").jwe().encrypt("/privateEncryptionKeys.jwks");
-            JsonWebEncryption jwe = getJsonWebEncryption(jwt,
+            JWEObject jwe = getDecryptedJwe(jwt,
                     readSecretKey("/privateKeyA128KW.jwk", KeyEncryptionAlgorithm.A128KW));
-            assertEquals("secretkey3", jwe.getHeader("kid"));
-            assertEquals("A128KW", jwe.getHeader("alg"));
-            JwtClaims claims = JwtClaims.parse(jwe.getPayload());
-            assertEquals("alice", claims.getClaimValue("preferred_username"));
+            assertEquals("secretkey3", jwe.getHeader().getKeyID());
+            assertEquals("A128KW", jwe.getHeader().getAlgorithm().getName());
+            JWTClaimsSet claims = JWTClaimsSet.parse(jwe.getPayload().toString());
+            assertEquals("alice", claims.getClaim("preferred_username"));
         } finally {
             configSource.setEncryptonKeyId(null);
         }
@@ -103,10 +107,9 @@ class JwtEncryptJwkTest {
         return KeyUtils.readEncryptionKey(keyLocation, null, keyAlg);
     }
 
-    private static JsonWebEncryption getJsonWebEncryption(String compactJwe, Key decryptionKey) throws Exception {
-        JsonWebEncryption jwe = new JsonWebEncryption();
-        jwe.setCompactSerialization(compactJwe);
-        jwe.setKey(decryptionKey);
+    private static JWEObject getDecryptedJwe(String compactJwe, Key decryptionKey) throws Exception {
+        JWEObject jwe = JWEObject.parse(compactJwe);
+        jwe.decrypt(new AESDecrypter((SecretKey) decryptionKey));
         return jwe;
     }
 }

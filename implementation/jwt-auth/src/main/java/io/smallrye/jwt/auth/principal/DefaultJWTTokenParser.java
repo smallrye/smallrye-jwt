@@ -16,28 +16,44 @@
  */
 package io.smallrye.jwt.auth.principal;
 
-import static java.util.Collections.emptyList;
-
+import java.nio.charset.StandardCharsets;
+import java.security.Key;
+import java.security.interfaces.ECPrivateKey;
+import java.security.interfaces.RSAPrivateKey;
+import java.security.interfaces.XECPrivateKey;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.eclipse.microprofile.jwt.Claims;
-import org.jose4j.jwa.AlgorithmConstraints;
-import org.jose4j.jwe.JsonWebEncryption;
-import org.jose4j.jwt.JwtClaims;
-import org.jose4j.jwt.NumericDate;
-import org.jose4j.jwt.consumer.InvalidJwtException;
-import org.jose4j.jwt.consumer.JwtConsumer;
-import org.jose4j.jwt.consumer.JwtConsumerBuilder;
-import org.jose4j.jwt.consumer.JwtContext;
-import org.jose4j.keys.resolvers.DecryptionKeyResolver;
-import org.jose4j.keys.resolvers.VerificationKeyResolver;
-import org.jose4j.lang.JoseException;
-import org.jose4j.lang.UnresolvableKeyException;
+import javax.crypto.SecretKey;
+
+import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.JOSEObjectType;
+import com.nimbusds.jose.JWEDecrypter;
+import com.nimbusds.jose.JWEObject;
+import com.nimbusds.jose.crypto.AESDecrypter;
+import com.nimbusds.jose.crypto.DirectDecrypter;
+import com.nimbusds.jose.crypto.ECDHDecrypter;
+import com.nimbusds.jose.crypto.PasswordBasedDecrypter;
+import com.nimbusds.jose.crypto.RSADecrypter;
+import com.nimbusds.jose.proc.BadJOSEException;
+import com.nimbusds.jwt.EncryptedJWT;
+import com.nimbusds.jwt.JWTClaimNames;
+import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.proc.ExpiredJWTException;
 
 import io.smallrye.jwt.KeyProvider;
 import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
+import io.smallrye.jwt.algorithm.XDHDecrypter;
+import io.smallrye.jwt.auth.DecryptionKeyResolver;
+import io.smallrye.jwt.auth.InvalidJWTException;
+import io.smallrye.jwt.auth.JwtContext;
+import io.smallrye.jwt.auth.JwtVerifier;
+import io.smallrye.jwt.auth.TokenExpiredException;
+import io.smallrye.jwt.auth.UnresolvableKeyException;
+import io.smallrye.jwt.auth.VerificationKeyResolver;
+import io.smallrye.jwt.common.JwtClaims;
 
 /**
  * Default JWT token validator
@@ -63,178 +79,223 @@ public class DefaultJWTTokenParser {
 
     private String decryptSignedToken(String token, JWTAuthContextInfo authContextInfo) throws ParseException {
         try {
-            JsonWebEncryption jwe = new JsonWebEncryption();
-            jwe.setAlgorithmConstraints(
-                    new AlgorithmConstraints(AlgorithmConstraints.ConstraintType.PERMIT,
-                            encryptionAlgorithms(authContextInfo)));
-            if (authContextInfo.getPrivateDecryptionKey() != null) {
-                jwe.setKey(authContextInfo.getPrivateDecryptionKey());
-            } else if (authContextInfo.getSecretDecryptionKey() != null) {
-                jwe.setKey(authContextInfo.getSecretDecryptionKey());
-            } else {
-                jwe.setKey(getDecryptionKeyResolver(authContextInfo).resolveKey(jwe, null));
-            }
-            jwe.setCompactSerialization(token);
-            if (!"JWT".equals(jwe.getContentTypeHeaderValue())) {
+            JWEObject jwe = JWEObject.parse(token);
+
+            String alg = jwe.getHeader().getAlgorithm().getName();
+            verifyEncryptionAlgorithm(alg, authContextInfo);
+
+            if (!"JWT".equals(jwe.getHeader().getContentType())) {
                 PrincipalLogging.log.encryptedTokenMissingContentType();
                 throw PrincipalMessages.msg.encryptedTokenMissingContentType();
             }
-            return jwe.getPlaintextString();
+
+            Key decryptionKey;
+            if (authContextInfo.getPrivateDecryptionKey() != null) {
+                decryptionKey = authContextInfo.getPrivateDecryptionKey();
+            } else if (authContextInfo.getSecretDecryptionKey() != null) {
+                decryptionKey = authContextInfo.getSecretDecryptionKey();
+            } else {
+                decryptionKey = resolveDecryptionKey(jwe, token, authContextInfo);
+            }
+
+            JWEDecrypter decrypter = createDecrypter(decryptionKey, alg);
+            jwe.decrypt(decrypter);
+
+            return jwe.getPayload().toString();
         } catch (UnresolvableKeyException e) {
             PrincipalLogging.log.decryptionKeyUnresolvable();
             throw PrincipalMessages.msg.decryptionKeyUnresolvable(e);
-        } catch (JoseException e) {
+        } catch (java.text.ParseException e) {
+            // Nimbus reports a malformed token via java.text.ParseException.
             PrincipalLogging.log.encryptedTokenSequenceInvalid();
-            throw PrincipalMessages.msg.encryptedTokenSequenceInvalid(e);
+            throw PrincipalMessages.msg.encryptedTokenSequenceInvalid(new InvalidJWTException(e.getMessage()));
+        } catch (JOSEException e) {
+            // Nimbus reports a cryptographic failure via JOSEException; keep it as the cause for debugging.
+            PrincipalLogging.log.encryptedTokenSequenceInvalid();
+            throw PrincipalMessages.msg.encryptedTokenSequenceInvalid(new InvalidJWTException(e.getMessage(), e));
         }
-    }
-
-    private String[] signatureAlgorithms(JWTAuthContextInfo authContextInfo) {
-        Set<SignatureAlgorithm> signatureAlgorithm = authContextInfo.getSignatureAlgorithm();
-        String[] algorithms = new String[signatureAlgorithm.size()];
-        int counter = 0;
-        for (SignatureAlgorithm keyEncAlgo : signatureAlgorithm) {
-            algorithms[counter++] = keyEncAlgo.getAlgorithm();
-        }
-        return algorithms;
-    }
-
-    private String[] encryptionAlgorithms(JWTAuthContextInfo authContextInfo) {
-        Set<KeyEncryptionAlgorithm> keyEncryptionAlgorithm = authContextInfo.getKeyEncryptionAlgorithm();
-        String[] algorithms = new String[keyEncryptionAlgorithm.size()];
-        int counter = 0;
-        for (KeyEncryptionAlgorithm keyEncAlgo : keyEncryptionAlgorithm) {
-            algorithms[counter++] = keyEncAlgo.getAlgorithm();
-        }
-        return algorithms;
     }
 
     private JwtContext parseClaims(String token, JWTAuthContextInfo authContextInfo, ProtectionLevel level)
             throws ParseException {
         try {
-            JwtConsumerBuilder builder = new JwtConsumerBuilder();
+            JwtContext context;
 
             if (level == ProtectionLevel.SIGN) {
-                if (authContextInfo.getPublicVerificationKey() != null) {
-                    builder.setVerificationKey(authContextInfo.getPublicVerificationKey());
-                } else if (authContextInfo.getSecretVerificationKey() != null) {
-                    builder.setVerificationKey(authContextInfo.getSecretVerificationKey());
-                } else {
-                    builder.setVerificationKeyResolver(getVerificationKeyResolver(authContextInfo));
-                }
-                builder.setJwsAlgorithmConstraints(
-                        new AlgorithmConstraints(AlgorithmConstraints.ConstraintType.PERMIT,
-                                signatureAlgorithms(authContextInfo)));
+                // Signature verification (algorithm check, key resolution/validation, signature
+                // and standard claims) is delegated to the shared JwtVerifier.
+                JwtVerifier verifier = buildVerifier(authContextInfo);
+                context = verifier.verify(token);
             } else {
-                builder.setEnableRequireEncryption();
-                builder.setDisableRequireSignature();
+                EncryptedJWT encryptedJWT = EncryptedJWT.parse(token);
+                JOSEObjectType type = encryptedJWT.getHeader().getType();
+                String alg = encryptedJWT.getHeader().getAlgorithm().getName();
+
+                verifyEncryptionAlgorithm(alg, authContextInfo);
+
+                Key decryptionKey;
                 if (authContextInfo.getPrivateDecryptionKey() != null) {
-                    builder.setDecryptionKey(authContextInfo.getPrivateDecryptionKey());
+                    decryptionKey = authContextInfo.getPrivateDecryptionKey();
                 } else if (authContextInfo.getSecretDecryptionKey() != null) {
-                    builder.setDecryptionKey(authContextInfo.getSecretDecryptionKey());
+                    decryptionKey = authContextInfo.getSecretDecryptionKey();
                 } else {
-                    builder.setDecryptionKeyResolver(getDecryptionKeyResolver(authContextInfo));
+                    decryptionKey = resolveDecryptionKey(encryptedJWT, token, authContextInfo);
                 }
-                builder.setJweAlgorithmConstraints(
-                        new AlgorithmConstraints(AlgorithmConstraints.ConstraintType.PERMIT,
-                                encryptionAlgorithms(authContextInfo)));
+
+                JWEDecrypter decrypter = createDecrypter(decryptionKey, alg);
+                encryptedJWT.decrypt(decrypter);
+
+                JWTClaimsSet claimsSet = encryptedJWT.getJWTClaimsSet();
+
+                // Verify standard claims for decrypted token
+                int clockSkew = Math.max(authContextInfo.getExpGracePeriodSecs(), authContextInfo.getClockSkew());
+                boolean issuedAtRequired = isIssuedAtRequired(authContextInfo);
+
+                Set<String> required = authContextInfo.getRequiredClaims() != null
+                        ? new HashSet<>(authContextInfo.getRequiredClaims())
+                        : new HashSet<>();
+                required.add(JWTClaimNames.EXPIRATION_TIME);
+                if (issuedAtRequired) {
+                    required.add(JWTClaimNames.ISSUED_AT);
+                }
+
+                StandardClaimsVerifier.builder()
+                        .audience(authContextInfo.getExpectedAudience())
+                        .issuer(authContextInfo.getIssuedBy())
+                        .requiredClaims(required)
+                        .clockSkewSeconds(clockSkew)
+                        .build()
+                        .verify(claimsSet);
+
+                context = new JwtContext(type != null ? type.toString() : null, claimsSetToMap(claimsSet));
             }
 
-            builder.setRequireExpirationTime();
+            JwtClaims claimsMap = context.claims();
 
-            final boolean issuedAtRequired = authContextInfo.getMaxTimeToLiveSecs() == null
-                    || authContextInfo.getMaxTimeToLiveSecs() > 0 || authContextInfo.getTokenAge() != null;
-            if (issuedAtRequired) {
-                builder.setRequireIssuedAt();
+            // Note: 'exp', 'iat' (if needed), and additional required claims are validated by DefaultJWTClaimsVerifier
+
+            if (isIssuedAtRequired(authContextInfo)) {
+                verifyIatAndExpAndTimeToLive(authContextInfo, claimsMap);
             }
 
-            if (authContextInfo.getIssuedBy() != null) {
-                builder.setExpectedIssuer(authContextInfo.getIssuedBy());
-            }
-
-            if (authContextInfo.getExpGracePeriodSecs() > 0) {
-                builder.setAllowedClockSkewInSeconds(authContextInfo.getExpGracePeriodSecs());
-            } else if (authContextInfo.getClockSkew() > 0) {
-                builder.setAllowedClockSkewInSeconds(authContextInfo.getClockSkew());
-            }
-
-            setExpectedAudience(builder, authContextInfo);
-
-            if (authContextInfo.isRelaxVerificationKeyValidation()) {
-                builder.setRelaxVerificationKeyValidation();
-            }
-            JwtConsumer jwtConsumer = builder.build();
-
-            //  Validate the JWT and process it to the Claims
-            JwtContext jwtContext = jwtConsumer.process(token);
-            JwtClaims claimsSet = jwtContext.getJwtClaims();
-
-            if (issuedAtRequired) {
-                verifyIatAndExpAndTimeToLive(authContextInfo, claimsSet);
-            }
-            verifyRequiredClaims(authContextInfo, jwtContext);
-
-            PrincipalUtils.setClaims(claimsSet, token, authContextInfo);
+            PrincipalUtils.setClaims(claimsMap, token, authContextInfo);
 
             if (authContextInfo.isRequireNamedPrincipal()) {
-                checkNameClaims(jwtContext);
+                checkNameClaims(claimsMap);
             }
 
-            return jwtContext;
-        } catch (InvalidJwtException e) {
-            if (e.getCause() instanceof UnresolvableKeyException) {
-                PrincipalLogging.log.verificationKeyUnresolvable();
-                throw PrincipalMessages.msg.failedToVerifyToken(e.getCause());
-            } else {
-                PrincipalLogging.log.tokenInvalid();
-                throw PrincipalMessages.msg.failedToVerifyToken(e);
-            }
+            return context;
+        } catch (ParseException e) {
+            throw e;
         } catch (UnresolvableKeyException e) {
             PrincipalLogging.log.verificationKeyUnresolvable();
             throw PrincipalMessages.msg.failedToVerifyToken(e);
+        } catch (InvalidJWTException e) {
+            // SmallRye typed cause passes straight through.
+            PrincipalLogging.log.tokenInvalid();
+            throw PrincipalMessages.msg.failedToVerifyToken(e);
+        } catch (ExpiredJWTException e) {
+            // Nimbus signals expiry with ExpiredJWTException.
+            PrincipalLogging.log.tokenInvalid();
+            throw PrincipalMessages.msg.failedToVerifyToken(new TokenExpiredException(e.getMessage()));
+        } catch (java.text.ParseException | BadJOSEException e) {
+            // Nimbus reports a malformed token via java.text.ParseException and a failed standard
+            // claims check via BadJOSEException.
+            PrincipalLogging.log.tokenInvalid();
+            throw PrincipalMessages.msg.failedToVerifyToken(new InvalidJWTException(e.getMessage()));
+        } catch (JOSEException e) {
+            // Nimbus reports a cryptographic failure via JOSEException; keep it as the cause for debugging.
+            PrincipalLogging.log.tokenInvalid();
+            throw PrincipalMessages.msg.failedToVerifyToken(new InvalidJWTException(e.getMessage(), e));
+        } catch (Exception e) {
+            PrincipalLogging.log.tokenInvalid();
+            throw PrincipalMessages.msg.failedToVerifyToken(new InvalidJWTException(e.getMessage(), e));
         }
-
     }
 
-    void setExpectedAudience(JwtConsumerBuilder builder, JWTAuthContextInfo authContextInfo) {
-        final Set<String> expectedAudience = authContextInfo.getExpectedAudience();
+    private JwtClaims claimsSetToMap(JWTClaimsSet claimsSet) {
+        return new JwtClaims(claimsSet.getClaims());
+    }
 
-        if (expectedAudience != null) {
-            builder.setExpectedAudience(expectedAudience.toArray(new String[0]));
+    private boolean isIssuedAtRequired(JWTAuthContextInfo authContextInfo) {
+        return authContextInfo.getMaxTimeToLiveSecs() == null
+                || authContextInfo.getMaxTimeToLiveSecs() > 0 || authContextInfo.getTokenAge() != null;
+    }
+
+    private JwtVerifier buildVerifier(JWTAuthContextInfo authContextInfo) throws UnresolvableKeyException {
+        Set<String> allowedAlgs = authContextInfo.getSignatureAlgorithm().stream()
+                .map(SignatureAlgorithm::getAlgorithm)
+                .collect(Collectors.toSet());
+
+        int clockSkew = Math.max(authContextInfo.getExpGracePeriodSecs(), authContextInfo.getClockSkew());
+        boolean issuedAtRequired = isIssuedAtRequired(authContextInfo);
+
+        // Direct verification keys take precedence over the configured key resolver
+        VerificationKeyResolver resolver;
+        if (authContextInfo.getPublicVerificationKey() != null) {
+            resolver = new SingleKeyVerificationKeyResolver(authContextInfo.getPublicVerificationKey());
+        } else if (authContextInfo.getSecretVerificationKey() != null) {
+            resolver = new SingleKeyVerificationKeyResolver(authContextInfo.getSecretVerificationKey());
         } else {
-            builder.setSkipDefaultAudienceValidation();
+            resolver = getVerificationKeyResolver(authContextInfo);
+        }
+
+        JwtVerifier.Builder builder = JwtVerifier.builder()
+                .verificationKeyResolver(resolver)
+                .allowedAlgorithms(allowedAlgs)
+                .clockSkewSeconds(clockSkew)
+                .requiredClaims(authContextInfo.getRequiredClaims())
+                .requireExpirationTime(true)
+                .requireIssuedAt(issuedAtRequired);
+
+        if (authContextInfo.isRelaxVerificationKeyValidation()) {
+            builder.relaxKeyValidation();
+        }
+        if (authContextInfo.getIssuedBy() != null) {
+            builder.expectedIssuer(authContextInfo.getIssuedBy());
+        }
+        if (authContextInfo.getExpectedAudience() != null) {
+            builder.expectedAudience(authContextInfo.getExpectedAudience().toArray(new String[0]));
+        }
+        return builder.build();
+    }
+
+    private void verifyEncryptionAlgorithm(String alg, JWTAuthContextInfo authContextInfo) throws ParseException {
+        Set<String> allowedAlgs = authContextInfo.getKeyEncryptionAlgorithm().stream()
+                .map(KeyEncryptionAlgorithm::getAlgorithm)
+                .collect(Collectors.toSet());
+        if (!allowedAlgs.contains(alg)) {
+            throw PrincipalMessages.msg.failedToVerifyToken(
+                    new InvalidJWTException("Key encryption algorithm " + alg + " is not allowed"));
         }
     }
 
-    private void checkNameClaims(JwtContext jwtContext) throws InvalidJwtException {
-        JwtClaims claimsSet = jwtContext.getJwtClaims();
-        final boolean hasPrincipalClaim = claimsSet.getClaimValue(Claims.sub.name()) != null ||
-                claimsSet.getClaimValue(Claims.upn.name()) != null ||
-                claimsSet.getClaimValue(Claims.preferred_username.name()) != null;
+    private void checkNameClaims(JwtClaims claims) throws InvalidJWTException {
+        final boolean hasPrincipalClaim = claims.getSubject() != null ||
+                claims.getUpn() != null ||
+                claims.getPreferredUsername() != null;
 
         if (!hasPrincipalClaim) {
-            throw PrincipalMessages.msg.claimNotFound(s -> new InvalidJwtException(s, emptyList(), jwtContext));
+            throw PrincipalMessages.msg.claimNotFound(InvalidJWTException::new);
         }
     }
 
-    private void verifyIatAndExpAndTimeToLive(JWTAuthContextInfo authContextInfo, JwtClaims claimsSet) throws ParseException {
-        NumericDate iat;
-        NumericDate exp;
+    private void verifyIatAndExpAndTimeToLive(JWTAuthContextInfo authContextInfo, JwtClaims claims)
+            throws ParseException {
+        Long iat = claims.getIssuedAt();
+        Long exp = claims.getExpirationTime();
 
-        try {
-            iat = claimsSet.getIssuedAt();
-            exp = claimsSet.getExpirationTime();
-        } catch (Exception ex) {
+        if (iat == null || exp == null) {
             throw PrincipalMessages.msg.invalidIatExp();
         }
 
-        if (iat.getValue() > exp.getValue()) {
+        if (iat > exp) {
             throw PrincipalMessages.msg.failedToVerifyIatExp(exp, iat);
         }
         final Long maxTimeToLiveSecs = authContextInfo.getMaxTimeToLiveSecs();
 
         if (maxTimeToLiveSecs != null) {
-            if (exp.getValue() - iat.getValue() > maxTimeToLiveSecs) {
+            if (exp - iat > maxTimeToLiveSecs) {
                 throw PrincipalMessages.msg.expExceeded(exp, maxTimeToLiveSecs, iat);
             }
         }
@@ -243,40 +304,53 @@ public class DefaultJWTTokenParser {
 
         if (tokenAge != null) {
             long now = System.currentTimeMillis() / 1000;
-            if (now - iat.getValue() > tokenAge) {
-                throw PrincipalMessages.msg.tokenAgeExceeded(tokenAge);
+            if (now - iat > tokenAge) {
+                // A token that is too old is stale rather than structurally invalid, so it is
+                // reported as expired to let callers trigger a token refresh.
+                throw PrincipalMessages.msg.tokenAgeExceeded(tokenAge, new TokenExpiredException("Token age exceeded"));
             }
         }
     }
 
-    private void verifyRequiredClaims(JWTAuthContextInfo authContextInfo, JwtContext jwtContext) throws InvalidJwtException {
-        final Set<String> requiredClaims = authContextInfo.getRequiredClaims();
-
-        if (requiredClaims != null) {
-            if (!jwtContext.getJwtClaims().getClaimsMap().keySet().containsAll(requiredClaims)) {
-                if (PrincipalLogging.log.isDebugEnabled()) {
-                    final String missingClaims = requiredClaims.stream()
-                            .filter(claim -> !jwtContext.getJwtClaims().getClaimsMap().containsKey(claim))
-                            .collect(Collectors.joining(","));
-                    PrincipalLogging.log.missingClaims(missingClaims);
-                }
-                throw PrincipalMessages.msg.missingClaims(s -> new InvalidJwtException(s, emptyList(), jwtContext));
+    private JWEDecrypter createDecrypter(Key key, String algorithm) throws JOSEException {
+        if (key instanceof RSAPrivateKey) {
+            return new RSADecrypter((RSAPrivateKey) key);
+        } else if (key instanceof ECPrivateKey) {
+            return new ECDHDecrypter((ECPrivateKey) key);
+        } else if (key instanceof SecretKey) {
+            SecretKey secretKey = (SecretKey) key;
+            if ("dir".equals(algorithm)) {
+                return new DirectDecrypter(secretKey);
             }
+            if (algorithm != null && algorithm.startsWith("PBES2")) {
+                String password = new String(secretKey.getEncoded(), StandardCharsets.UTF_8);
+                return new PasswordBasedDecrypter(password);
+            }
+            return new AESDecrypter(secretKey);
+        } else if (key instanceof XECPrivateKey) {
+            return XDHDecrypter.fromXECPrivateKey((XECPrivateKey) key);
         }
+        throw new JOSEException("Unsupported key type for decryption: " + key.getClass().getName());
+    }
+
+    private Key resolveDecryptionKey(JWEObject jweObject, String token, JWTAuthContextInfo authContextInfo)
+            throws UnresolvableKeyException, ParseException {
+        return getDecryptionKeyResolver(authContextInfo).resolveKey(new JsonWebEncryptionImpl(jweObject, token));
     }
 
     protected VerificationKeyResolver getVerificationKeyResolver(JWTAuthContextInfo authContextInfo)
             throws UnresolvableKeyException {
         if (keyResolver == null) {
             synchronized (this) {
-                if (keyResolver == null)
+                if (keyResolver == null) {
                     if (KeyProvider.AWS_ALB == authContextInfo.getKeyProvider()) {
                         keyResolver = new AwsAlbKeyResolver(authContextInfo);
+                    } else if (authContextInfo.isVerifyCertificateThumbprint()) {
+                        keyResolver = new X509KeyLocationResolver(authContextInfo);
                     } else {
-                        keyResolver = authContextInfo.isVerifyCertificateThumbprint()
-                                ? new X509KeyLocationResolver(authContextInfo)
-                                : new KeyLocationResolver(authContextInfo);
+                        keyResolver = new KeyLocationResolver(authContextInfo);
                     }
+                }
             }
         }
         return keyResolver;
@@ -286,8 +360,9 @@ public class DefaultJWTTokenParser {
             throws UnresolvableKeyException {
         if (decryptionKeyResolver == null) {
             synchronized (this) {
-                if (decryptionKeyResolver == null)
+                if (decryptionKeyResolver == null) {
                     decryptionKeyResolver = new DecryptionKeyLocationResolver(authContextInfo);
+                }
             }
         }
         return decryptionKeyResolver;
