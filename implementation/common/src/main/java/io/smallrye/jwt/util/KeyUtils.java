@@ -19,48 +19,48 @@ package io.smallrye.jwt.util;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
 import java.security.Key;
 import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.KeyStore;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.Provider;
 import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.security.Security;
+import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
+import java.security.interfaces.RSAKey;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
-import java.util.ArrayList;
+import java.text.ParseException;
 import java.util.Base64;
-import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
-import jakarta.json.JsonArray;
-import jakarta.json.JsonObject;
-import jakarta.json.JsonReader;
+import com.nimbusds.jose.util.JSONObjectUtils;
 
-import org.jose4j.json.JsonUtil;
-import org.jose4j.jwk.JsonWebKey;
-import org.jose4j.jwk.JsonWebKeySet;
-import org.jose4j.jwk.OctetSequenceJsonWebKey;
-import org.jose4j.jwk.PublicJsonWebKey;
-
+import io.smallrye.jwk.AsymmetricJsonWebKey;
+import io.smallrye.jwk.JsonWebKey;
+import io.smallrye.jwk.JsonWebKeyException;
+import io.smallrye.jwk.JsonWebKeySet;
+import io.smallrye.jwk.SecretJsonWebKey;
 import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
-import io.smallrye.jwt.common.JsonProviderHolder;
 
 /**
  * Utility methods for dealing with decoding public and private keys resources
@@ -87,6 +87,27 @@ public final class KeyUtils {
         SIGNATURE_ALGORITHM_BITS.put(SignatureAlgorithm.HS256, 256);
         SIGNATURE_ALGORITHM_BITS.put(SignatureAlgorithm.HS384, 384);
         SIGNATURE_ALGORITHM_BITS.put(SignatureAlgorithm.HS512, 512);
+    }
+
+    /**
+     * Minimum RSA key size in bits, as required by RFC 7518 for the RSA signature and key encryption algorithms.
+     */
+    public static final int MIN_RSA_KEY_SIZE = 2048;
+
+    /**
+     * Verify that an RSA key is at least {@link #MIN_RSA_KEY_SIZE} bits long. Keys which are not RSA keys are accepted.
+     *
+     * @param key the key
+     * @throws InvalidKeyException if the key is an RSA key shorter than {@link #MIN_RSA_KEY_SIZE} bits
+     */
+    public static void verifyRsaKeySize(Key key) throws InvalidKeyException {
+        if (key instanceof RSAKey) {
+            int keySize = ((RSAKey) key).getModulus().bitLength();
+            if (keySize < MIN_RSA_KEY_SIZE) {
+                throw new InvalidKeyException("An RSA key of size " + MIN_RSA_KEY_SIZE + " bits or larger MUST be used"
+                        + ", given key was only " + keySize + " bits");
+            }
+        }
     }
 
     public static PrivateKey readPrivateKey(String pemResName) throws IOException, GeneralSecurityException {
@@ -379,6 +400,39 @@ public final class KeyUtils {
     }
 
     /**
+     * Compute the X.509 certificate SHA-1 thumbprint, the value of the `x5t` JOSE header and JWK parameter.
+     *
+     * @param certificate the certificate
+     * @return the Base64 URL-encoded thumbprint
+     * @throws CertificateEncodingException if the certificate can not be encoded
+     */
+    public static String getCertificateThumbprint(X509Certificate certificate) throws CertificateEncodingException {
+        return getCertificateThumbprint(certificate, "SHA-1");
+    }
+
+    /**
+     * Compute the X.509 certificate SHA-256 thumbprint, the value of the `x5t#S256` JOSE header and JWK parameter.
+     *
+     * @param certificate the certificate
+     * @return the Base64 URL-encoded thumbprint
+     * @throws CertificateEncodingException if the certificate can not be encoded
+     */
+    public static String getCertificateSha256Thumbprint(X509Certificate certificate)
+            throws CertificateEncodingException {
+        return getCertificateThumbprint(certificate, "SHA-256");
+    }
+
+    private static String getCertificateThumbprint(X509Certificate certificate, String algorithm)
+            throws CertificateEncodingException {
+        try {
+            byte[] thumbprint = MessageDigest.getInstance(algorithm).digest(certificate.getEncoded());
+            return Base64.getUrlEncoder().withoutPadding().encodeToString(thumbprint);
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    /**
      * Strip any -----BEGIN*KEY... header and -----END*KEY... footer and newlines
      *
      * @param pem encoded string with option header/footer
@@ -447,40 +501,28 @@ public final class KeyUtils {
         return null;
     }
 
-    public static List<JsonWebKey> loadJsonWebKeys(String content) {
+    public static JsonWebKeySet loadJsonWebKeys(String content) {
         JWTUtilLogging.log.loadingJwks();
 
-        JsonObject jwks = null;
-        try (JsonReader reader = JsonProviderHolder.jsonProvider().createReader(new StringReader(content))) {
-            jwks = reader.readObject();
-        } catch (Exception ex) {
+        Map<String, Object> json;
+        try {
+            json = JSONObjectUtils.parse(content);
+        } catch (ParseException ex) {
             JWTUtilLogging.log.loadingJwksFailed(ex);
             return null;
         }
 
-        List<JsonWebKey> localKeys = null;
-        JsonArray keys = jwks.getJsonArray(JsonWebKeySet.JWK_SET_MEMBER_NAME);
-
         try {
-            if (keys != null) {
-                // JWK set
-                localKeys = new ArrayList<>(keys.size());
-                for (int i = 0; i < keys.size(); i++) {
-                    localKeys.add(createJsonWebKey(keys.getJsonObject(i)));
-                }
-            } else {
-                // single JWK
-                localKeys = Collections.singletonList(createJsonWebKey(jwks));
+            // As before the migration, a JWK set has a "keys" member, otherwise it is a single JWK,
+            // so that only the relevant error is logged
+            if (json.containsKey("keys")) {
+                return JsonWebKeySet.parse(content);
             }
-        } catch (Exception ex) {
-            JWTUtilLogging.log.parsingJwksFailed();
+            return JsonWebKeySet.of(JsonWebKey.jwk(json));
+        } catch (JsonWebKeyException ex) {
+            JWTUtilLogging.log.loadingJwksFailed(ex);
             return null;
         }
-        return localKeys;
-    }
-
-    static JsonWebKey createJsonWebKey(JsonObject jsonObject) throws Exception {
-        return JsonWebKey.Factory.newJwk(JsonUtil.parseJson(jsonObject.toString()));
     }
 
     public static Key readEncryptionKey(String location, String kid) throws IOException {
@@ -504,15 +546,20 @@ public final class KeyUtils {
     }
 
     public static Key getPublicOrSecretEncryptingKey(JsonWebKey currentJwk, KeyEncryptionAlgorithm alg) {
-        if (alg != null && currentJwk.getAlgorithm() != null && !currentJwk.getAlgorithm().equals(alg.getAlgorithm())) {
+        String jwkAlg = currentJwk.algorithm();
+        if (alg != null && jwkAlg != null && !jwkAlg.equals(alg.getAlgorithm())) {
             return null;
         }
-        List<String> keyOps = currentJwk.getKeyOps();
-        if (keyOps == null || keyOps.contains("encryption")) {
-            if ("oct".equals(currentJwk.getKeyType())) {
-                return OctetSequenceJsonWebKey.class.cast(currentJwk).getKey();
-            } else {
-                return PublicJsonWebKey.class.cast(currentJwk).getPublicKey();
+        Set<String> keyOps = currentJwk.keyOperations();
+        if (keyOps == null || keyOps.contains("encrypt")) {
+            if (currentJwk instanceof SecretJsonWebKey secretJwk) {
+                return secretJwk.secretKey();
+            }
+            try {
+                return ((AsymmetricJsonWebKey) currentJwk).publicKey();
+            } catch (JsonWebKeyException e) {
+                JWTUtilLogging.log.loadingJwksFailed(e);
+                return null;
             }
         }
         return null;
@@ -525,7 +572,7 @@ public final class KeyUtils {
     public static Key readSigningKey(String location, String kid, SignatureAlgorithm alg) throws IOException {
         String content = readKeyContent(location);
 
-        Key key = tryAsPemSigningPrivateKey(content, alg);
+        Key key = alg != null ? tryAsPemSigningPrivateKey(content, alg) : null;
         if (key == null) {
             JsonWebKey jwk = getJwkKeyFromJwkSet(kid, content);
             if (jwk != null) {
@@ -536,18 +583,16 @@ public final class KeyUtils {
     }
 
     public static JsonWebKey getJwkKeyFromJwkSet(String kid, String keyContent) {
-        List<JsonWebKey> jwks = loadJsonWebKeys(keyContent);
-        if (jwks != null) {
-            if (kid != null) {
-                for (JsonWebKey currentJwk : jwks) {
-                    if (kid.equals(currentJwk.getKeyId())) {
-                        return currentJwk;
-                    }
-                }
+        JsonWebKeySet jwkSet = loadJsonWebKeys(keyContent);
+        if (jwkSet != null) {
+            JsonWebKey jwk = jwkSet.keyWithId(kid);
+            if (jwk != null) {
+                return jwk;
             }
             // if JWK set contains a single JWK only then try to use it
             // but only if 'kid' is not set in both the token and this JWK
-            if (jwks.size() == 1 && (kid == null || jwks.get(0).getKeyId() == null)) {
+            List<JsonWebKey> jwks = jwkSet.keys();
+            if (jwks.size() == 1 && (kid == null || jwks.get(0).keyId() == null)) {
                 return jwks.get(0);
             }
         }
@@ -555,26 +600,22 @@ public final class KeyUtils {
     }
 
     public static Key getPrivateOrSecretSigningKey(JsonWebKey currentJwk, SignatureAlgorithm alg) {
-        if (alg != null && currentJwk.getAlgorithm() != null && !currentJwk.getAlgorithm().equals(alg.getAlgorithm())) {
+        String jwkAlg = currentJwk.algorithm();
+        if (alg != null && jwkAlg != null && !jwkAlg.equals(alg.getAlgorithm())) {
             return null;
         }
-        List<String> keyOps = currentJwk.getKeyOps();
+        Set<String> keyOps = currentJwk.keyOperations();
         if (keyOps == null || keyOps.contains("sign")) {
-            if ("oct".equals(currentJwk.getKeyType())) {
-                return OctetSequenceJsonWebKey.class.cast(currentJwk).getKey();
-            } else {
-                return PublicJsonWebKey.class.cast(currentJwk).getPrivateKey();
+            if (currentJwk instanceof SecretJsonWebKey secretJwk) {
+                return secretJwk.secretKey();
+            }
+            try {
+                return ((AsymmetricJsonWebKey) currentJwk).privateKey();
+            } catch (JsonWebKeyException e) {
+                JWTUtilLogging.log.loadingJwksFailed(e);
+                return null;
             }
         }
         return null;
-    }
-
-    public static boolean isSupportedKey(Key key, String keyInterfaceName) {
-        for (Class<?> intf : key.getClass().getInterfaces()) {
-            if (keyInterfaceName.equals(intf.getName())) {
-                return true;
-            }
-        }
-        return false;
     }
 }
