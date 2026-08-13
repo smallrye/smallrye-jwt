@@ -18,14 +18,17 @@ package io.smallrye.jwt.auth.principal;
 
 import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.eclipse.microprofile.jwt.Claims;
-import org.jose4j.jwt.JwtClaims;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.opentest4j.AssertionFailedError;
+
+import io.smallrye.jwt.common.JwtClaims;
 
 @ExtendWith(MockitoExtension.class)
 class PrincipalUtilsTest {
@@ -90,11 +93,11 @@ class PrincipalUtilsTest {
     @Test
     void testGroupsClaimSettings() throws Exception {
         for (TestData td : tests) {
-            JwtClaims claimSet = td.getClaimSet();
+            JwtClaims claimSet = new JwtClaims(td.getClaimSet());
             PrincipalUtils.setClaims(claimSet, td.getToken(), td.getAuthContextInfo());
 
             @SuppressWarnings("unchecked")
-            List<String> actualRoles = List.class.cast(claimSet.getClaimValue(Claims.groups.name()));
+            List<String> actualRoles = List.class.cast(claimSet.get(Claims.groups.name()));
             try {
                 assertIterableEquals(td.getExpectedRoles(), actualRoles);
             } catch (AssertionFailedError e) {
@@ -132,13 +135,13 @@ class PrincipalUtilsTest {
             return expectedRoles;
         }
 
-        public JwtClaims getClaimSet() {
-            JwtClaims claimSet = new JwtClaims();
+        public Map<String, Object> getClaimSet() {
+            Map<String, Object> claimSet = new HashMap<>();
             if (rolesInGroupsClaim != null) {
-                claimSet.setClaim(Claims.groups.name(), rolesInGroupsClaim);
+                claimSet.put(Claims.groups.name(), rolesInGroupsClaim);
             }
             if (rolesInCustomClaim != null) {
-                claimSet.setClaim(CUSTOM_GROUPS_PATH, rolesInCustomClaim);
+                claimSet.put(CUSTOM_GROUPS_PATH, rolesInCustomClaim);
             }
             return claimSet;
         }

@@ -17,27 +17,19 @@
 package io.smallrye.jwt.auth.principal;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.net.Proxy;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.security.cert.X509Certificate;
 import java.util.Base64;
 import java.util.List;
-import java.util.Set;
 
-import javax.net.ssl.HostnameVerifier;
-import javax.net.ssl.SSLSession;
-
-import org.jose4j.http.Get;
-import org.jose4j.jwk.HttpsJwks;
-import org.jose4j.jwk.JsonWebKey;
-import org.jose4j.jwk.OctetSequenceJsonWebKey;
-import org.jose4j.jwx.JsonWebStructure;
-import org.jose4j.lang.JoseException;
-import org.jose4j.lang.UnresolvableKeyException;
-
+import io.smallrye.jwk.AsymmetricJsonWebKey;
+import io.smallrye.jwk.JsonWebKey;
+import io.smallrye.jwk.JsonWebKeyException;
+import io.smallrye.jwk.JsonWebKeySet;
+import io.smallrye.jwk.SecretJsonWebKey;
 import io.smallrye.jwt.KeyFormat;
+import io.smallrye.jwt.auth.UnresolvableKeyException;
 import io.smallrye.jwt.util.KeyUtils;
 import io.smallrye.jwt.util.ResourceUtils;
 import io.smallrye.jwt.util.ResourceUtils.UrlStreamResolver;
@@ -52,14 +44,12 @@ public class AbstractKeyLocationResolver {
 
     protected Key key;
 
-    // The 'jsonWebKeys' and 'httpsJwks' fields represent the JWK key content and are mutually exclusive.
-    // 'httpsJwks' only deals with the HTTPS URL based JWK sets while 'jsonWebKeys' represents the JWK key(s)
+    // The 'jsonWebKeys' and 'remoteJwkSet' fields represent the JWK key content and are mutually exclusive.
+    // 'remoteJwkSet' only deals with the HTTPS URL based JWK sets while 'jsonWebKeys' represents the JWK key(s)
     // loaded from the JWK set or single JWK key from the file system or class path or HTTP URL.
     protected List<JsonWebKey> jsonWebKeys;
-    // 'httpsJwks' represents the JWK set loaded from the HTTPS URL.
-    protected HttpsJwks httpsJwks;
-    protected long lastForcedRefreshTime;
-    protected Object forcedRefreshLock = new Object();
+    // 'remoteJwkSet' represents the JWK set loaded from the HTTPS URL.
+    protected RemoteJwkSet remoteJwkSet;
 
     protected JWTAuthContextInfo authContextInfo;
 
@@ -71,7 +61,7 @@ public class AbstractKeyLocationResolver {
     protected static boolean isMatchingJwkAvailable(List<JsonWebKey> keys, String kid) {
         if (kid != null) {
             for (JsonWebKey currentJwk : keys) {
-                if (kid.equals(currentJwk.getKeyId())) {
+                if (kid.equals(currentJwk.keyId())) {
                     return true;
                 }
             }
@@ -79,93 +69,36 @@ public class AbstractKeyLocationResolver {
         return false;
     }
 
-    protected static void verifyKid(JsonWebStructure jws, String expectedKid) throws UnresolvableKeyException {
+    protected static void verifyKid(String actualKid, String expectedKid) throws UnresolvableKeyException {
         if (expectedKid != null) {
-            String kid = getKid(jws);
-            if (kid != null && !kid.equals(expectedKid)) {
-                PrincipalLogging.log.invalidTokenKidHeader(kid, expectedKid);
+            if (actualKid != null && !actualKid.equals(expectedKid)) {
+                PrincipalLogging.log.invalidTokenKidHeader(actualKid, expectedKid);
                 throw PrincipalMessages.msg.invalidTokenKid();
             }
         }
     }
 
-    protected static String getKid(JsonWebStructure jws) {
-        return jws.getHeaders().getStringHeaderValue(JsonWebKey.KEY_ID_PARAMETER);
-    }
-
-    protected HttpsJwks initializeHttpsJwks(String location)
-            throws IOException {
-        PrincipalLogging.log.tryCreateKeyFromHttpsJWKS();
-        HttpsJwks theHttpsJwks = getHttpsJwks(location);
-        Get httpGet = getHttpGet();
-        if (location.startsWith(HTTPS_SCHEME)) {
-            if (authContextInfo.isTlsTrustAll()) {
-                httpGet.setHostnameVerifier(new TrustAllHostnameVerifier());
-            } else if (authContextInfo.getTlsTrustedHosts() != null) {
-                httpGet.setHostnameVerifier(new TrustedHostsHostnameVerifier(authContextInfo.getTlsTrustedHosts()));
-            }
-            if (authContextInfo.getTlsCertificate() != null) {
-                httpGet.setTrustedCertificates(loadPEMCertificate(authContextInfo.getTlsCertificate()));
-            } else if (authContextInfo.getTlsCertificatePath() != null) {
-                httpGet.setTrustedCertificates(loadPEMCertificate(readKeyContent(authContextInfo.getTlsCertificatePath())));
-            }
-        }
-        if (authContextInfo.getHttpProxyHost() != null) {
-            httpGet.setHttpProxy(new Proxy(Proxy.Type.HTTP,
-                    new InetSocketAddress(authContextInfo.getHttpProxyHost(), authContextInfo.getHttpProxyPort())));
-        }
-        theHttpsJwks.setSimpleHttpGet(httpGet);
-        theHttpsJwks.setRetainCacheOnErrorDuration(authContextInfo.getJwksRetainCacheOnErrorDuration() * 60L);
-        return theHttpsJwks;
-    }
-
-    protected HttpsJwks getHttpsJwks(String location) {
-        HttpsJwks theHttpsJwks = new HttpsJwks(location);
-        theHttpsJwks.setDefaultCacheDuration(authContextInfo.getJwksRefreshInterval().longValue() * 60L);
-        return theHttpsJwks;
-    }
-
-    protected Get getHttpGet() {
-        return new Get();
-    }
-
-    protected boolean isHttpsJwksInitialized(String keyLocation)
-            throws IOException {
-        if (mayBeFormat(KeyFormat.JWK) && keyLocation != null
-                && (keyLocation.startsWith(HTTPS_SCHEME) || keyLocation.startsWith(HTTP_SCHEME))) {
-            httpsJwks = initializeHttpsJwks(keyLocation);
+    protected boolean initializeHttpsJwks(String location) throws IOException {
+        if (mayBeFormat(KeyFormat.JWK) && location != null
+                && (location.startsWith(HTTPS_SCHEME) || location.startsWith(HTTP_SCHEME))) {
+            PrincipalLogging.log.tryCreateKeyFromHttpsJWKS();
             try {
-                httpsJwks.refresh();
+                remoteJwkSet = createRemoteJwkSet(location);
+                remoteJwkSet.refresh();
                 return true;
-            } catch (JoseException ex) {
-                httpsJwks = null;
+            } catch (IOException ex) {
+                remoteJwkSet = null;
+                return false;
             }
         }
         return false;
     }
 
-    protected boolean forcedHttpsJwksRefresh() {
-        synchronized (forcedRefreshLock) {
-            final long now = System.currentTimeMillis();
-            if (lastForcedRefreshTime == 0
-                    || now > lastForcedRefreshTime + authContextInfo.getForcedJwksRefreshInterval() * 60 * 1000) {
-                lastForcedRefreshTime = now;
-                try {
-                    PrincipalLogging.log.kidIsNotAvailableRefreshingJWKSet();
-                    httpsJwks.refresh();
-                } catch (JoseException | IOException e) {
-                    PrincipalLogging.log.failedToRefreshJWKSet(e);
-                    return false;
-                }
-            } else {
-                PrincipalLogging.log.matchingKidIsNotAvailableButJWTSRefreshed(authContextInfo.getForcedJwksRefreshInterval());
-            }
-        }
-        return true;
+    protected RemoteJwkSet createRemoteJwkSet(String location) {
+        return new RemoteJwkSet(location, authContextInfo);
     }
 
     protected String readKeyContent(String keyLocation) throws IOException {
-
         String content = ResourceUtils.readResource(keyLocation, getUrlResolver());
         if (content == null) {
             throw PrincipalMessages.msg.resourceNotFound(keyLocation);
@@ -183,17 +116,20 @@ public class AbstractKeyLocationResolver {
         try {
             if (kid != null) {
                 for (JsonWebKey currentJwk : keys) {
-                    if (kid.equals(currentJwk.getKeyId())
-                            && (currentJwk.getAlgorithm() == null || algo.equals(currentJwk.getAlgorithm()))) {
+                    String jwkAlg = currentJwk.algorithm();
+                    if (kid.equals(currentJwk.keyId())
+                            && (jwkAlg == null || algo.equals(jwkAlg))) {
                         return currentJwk;
                     }
                 }
             }
             // if JWK set contains a single JWK only then try to use it
             // but only if 'kid' is not set in both the token and this JWK
-            if (keys.size() == 1 && (kid == null || keys.get(0).getKeyId() == null)
-                    && (keys.get(0).getAlgorithm() == null || algo.equals(keys.get(0).getAlgorithm()))) {
-                return keys.get(0);
+            if (keys.size() == 1 && (kid == null || keys.get(0).keyId() == null)) {
+                String jwkAlg = keys.get(0).algorithm();
+                if (jwkAlg == null || algo.equals(jwkAlg)) {
+                    return keys.get(0);
+                }
             }
         } catch (Exception e) {
             PrincipalLogging.log.failedToCreateKeyFromJWKS(e);
@@ -214,8 +150,7 @@ public class AbstractKeyLocationResolver {
         if (keyContent != null) {
             throw PrincipalMessages.msg.failedToLoadKey(e);
         } else {
-            throw PrincipalMessages.msg
-                    .failedToLoadKeyFromLocation(keyLocation, e);
+            throw PrincipalMessages.msg.failedToLoadKeyFromLocation(keyLocation, e);
         }
     }
 
@@ -224,16 +159,12 @@ public class AbstractKeyLocationResolver {
         if (keyContent != null) {
             throw PrincipalMessages.msg.failedToLoadKeyWhileResolving();
         } else {
-            throw PrincipalMessages.msg
-                    .failedToLoadKeyFromLocationWhileResolving(keyLocation);
+            throw PrincipalMessages.msg.failedToLoadKeyFromLocationWhileResolving(keyLocation);
         }
     }
 
-    protected JsonWebKey tryAsJwk(JsonWebStructure jws, String configuredAlgo) throws UnresolvableKeyException {
-
-        String kid = getKid(jws);
-
-        if (httpsJwks != null) {
+    protected JsonWebKey tryAsJwk(String kid, String configuredAlgo) throws UnresolvableKeyException {
+        if (remoteJwkSet != null) {
             return getHttpsJwk(kid, configuredAlgo);
         } else if (jsonWebKeys != null) {
             return getJsonWebKey(kid, jsonWebKeys, configuredAlgo);
@@ -246,7 +177,7 @@ public class AbstractKeyLocationResolver {
         PrincipalLogging.log.tryCreateKeyFromHttpsJWKS();
 
         try {
-            List<JsonWebKey> theKeys = httpsJwks.getJsonWebKeys();
+            List<JsonWebKey> theKeys = remoteJwkSet.getKeys();
             JsonWebKey theKey = getJsonWebKey(kid, theKeys, algo);
             if (theKey != null || isMatchingJwkAvailable(theKeys, kid)) {
                 return theKey;
@@ -255,11 +186,11 @@ public class AbstractKeyLocationResolver {
             PrincipalLogging.log.failedToCreateKeyFromJWKSet(e);
         }
 
-        forcedHttpsJwksRefresh();
+        remoteJwkSet.forcedRefresh();
 
         try {
             PrincipalLogging.log.tryCreateKeyFromJWKSAfterRefresh();
-            return getJsonWebKey(kid, httpsJwks.getJsonWebKeys(), algo);
+            return getJsonWebKey(kid, remoteJwkSet.getKeys(), algo);
         } catch (Exception e) {
             PrincipalLogging.log.failedToCreateKeyFromJWKSAfterRefresh(e);
         }
@@ -271,7 +202,7 @@ public class AbstractKeyLocationResolver {
     }
 
     protected JsonWebKey tryJWKContent(final String content, String keyId, String algo, boolean encoded) {
-        jsonWebKeys = KeyUtils.loadJsonWebKeys(content);
+        loadJWKContent(content);
         JsonWebKey jwk = null;
         if (jsonWebKeys != null && keyId != null) {
             jwk = getJsonWebKey(keyId, jsonWebKeys, algo);
@@ -287,7 +218,8 @@ public class AbstractKeyLocationResolver {
     }
 
     protected void loadJWKContent(final String content) {
-        jsonWebKeys = KeyUtils.loadJsonWebKeys(content);
+        JsonWebKeySet jwkSet = KeyUtils.loadJsonWebKeys(content);
+        jsonWebKeys = jwkSet != null ? jwkSet.keys() : null;
     }
 
     protected JsonWebKey loadFromJwk(String content, String keyId, String algo) {
@@ -313,11 +245,34 @@ public class AbstractKeyLocationResolver {
         return jwk;
     }
 
-    protected Key getSecretKeyFromJwk(JsonWebKey jwk) {
-        if (jwk instanceof OctetSequenceJsonWebKey) {
-            return ((OctetSequenceJsonWebKey) jwk).getKey();
+    protected static Key getVerificationKeyFromJwk(JsonWebKey jwk) {
+        if (jwk == null) {
+            return null;
         }
-        return null;
+        if (jwk instanceof SecretJsonWebKey secretJwk) {
+            return secretJwk.secretKey();
+        }
+        try {
+            return ((AsymmetricJsonWebKey) jwk).publicKey();
+        } catch (JsonWebKeyException e) {
+            PrincipalLogging.log.failedToCreateKeyFromJWKS(e);
+            return null;
+        }
+    }
+
+    protected static Key getDecryptionKeyFromJwk(JsonWebKey jwk) {
+        if (jwk == null) {
+            return null;
+        }
+        if (jwk instanceof SecretJsonWebKey secretJwk) {
+            return secretJwk.secretKey();
+        }
+        try {
+            return ((AsymmetricJsonWebKey) jwk).privateKey();
+        } catch (JsonWebKeyException e) {
+            PrincipalLogging.log.failedToCreateKeyFromJWKS(e);
+            return null;
+        }
     }
 
     protected static X509Certificate loadPEMCertificate(String content) {
@@ -330,28 +285,5 @@ public class AbstractKeyLocationResolver {
             PrincipalLogging.log.keyContentIsNotValidEncodedPEMCertificate(e);
         }
         return cert;
-    }
-
-    static class TrustAllHostnameVerifier implements HostnameVerifier {
-
-        @Override
-        public boolean verify(String hostname, SSLSession session) {
-            return true;
-        }
-    }
-
-    static class TrustedHostsHostnameVerifier implements HostnameVerifier {
-
-        Set<String> hosts;
-
-        TrustedHostsHostnameVerifier(Set<String> hosts) {
-            this.hosts = hosts;
-        }
-
-        @Override
-        public boolean verify(String hostname, SSLSession session) {
-            return hosts.contains(hostname);
-        }
-
     }
 }

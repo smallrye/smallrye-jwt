@@ -16,11 +16,12 @@
  */
 package io.smallrye.jwt.auth.principal;
 
-import java.security.Key;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.ECPublicKey;
+import java.security.interfaces.EdECPublicKey;
+import java.security.interfaces.XECPrivateKey;
 import java.util.Collections;
 import java.util.Set;
 
@@ -31,13 +32,14 @@ import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.jwt.Claims;
 import org.eclipse.microprofile.jwt.JsonWebToken;
-import org.jose4j.jwt.JwtClaims;
-import org.jose4j.jwt.consumer.InvalidJwtException;
-import org.jose4j.jwt.consumer.JwtConsumerBuilder;
+
+import com.nimbusds.jwt.SignedJWT;
 
 import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
+import io.smallrye.jwt.auth.InvalidJWTException;
 import io.smallrye.jwt.auth.cdi.JWTCallerPrincipalFactoryProducer;
+import io.smallrye.jwt.common.JwtClaims;
 import io.smallrye.jwt.util.KeyUtils;
 
 /**
@@ -45,9 +47,6 @@ import io.smallrye.jwt.util.KeyUtils;
  */
 @ApplicationScoped
 public class DefaultJWTParser implements JWTParser {
-
-    private static final String ED_EC_PUBLIC_KEY_INTERFACE = "java.security.interfaces.EdECPublicKey";
-    private static final String XEC_PRIVATE_KEY_INTERFACE = "java.security.interfaces.XECPrivateKey";
 
     @Inject
     private JWTAuthContextInfo authContextInfo;
@@ -120,7 +119,7 @@ public class DefaultJWTParser implements JWTParser {
         newAuthContextInfo.setPublicVerificationKey(key);
         if (key instanceof ECPublicKey) {
             setSignatureAlgorithmIfNeeded(newAuthContextInfo, "ES", SignatureAlgorithm.ES256);
-        } else if (isEdECPublicKey(key)) {
+        } else if (key instanceof EdECPublicKey) {
             setSignatureAlgorithmIfNeeded(newAuthContextInfo, "EdDSA", SignatureAlgorithm.EDDSA);
         } else {
             setSignatureAlgorithmIfNeeded(newAuthContextInfo, "RS", SignatureAlgorithm.RS256);
@@ -145,7 +144,7 @@ public class DefaultJWTParser implements JWTParser {
     public JsonWebToken decrypt(String bearerToken, PrivateKey key) throws ParseException {
         JWTAuthContextInfo newAuthContextInfo = copyAuthContextInfo();
         newAuthContextInfo.setPrivateDecryptionKey(key);
-        if (key instanceof ECPrivateKey || isXecPrivateKey(key)) {
+        if (key instanceof ECPrivateKey || key instanceof XECPrivateKey) {
             setKeyEncryptionAlgorithmIfNeeded(newAuthContextInfo, "EC", KeyEncryptionAlgorithm.ECDH_ES_A256KW);
         } else {
             setKeyEncryptionAlgorithmIfNeeded(newAuthContextInfo, "RS", KeyEncryptionAlgorithm.RSA_OAEP);
@@ -193,26 +192,16 @@ public class DefaultJWTParser implements JWTParser {
         }
     }
 
-    private static boolean isEdECPublicKey(Key verificationKey) {
-        return KeyUtils.isSupportedKey(verificationKey, ED_EC_PUBLIC_KEY_INTERFACE);
-    }
-
-    private static boolean isXecPrivateKey(Key encKey) {
-        return KeyUtils.isSupportedKey(encKey, XEC_PRIVATE_KEY_INTERFACE);
-    }
-
     @Override
     public JsonWebToken parseOnly(String token) throws ParseException {
         try {
-            JwtClaims claims = new JwtConsumerBuilder()
-                    .setSkipSignatureVerification()
-                    .setSkipAllValidators()
-                    .build().processToClaims(token);
+            SignedJWT signedJWT = SignedJWT.parse(token);
+            JwtClaims claims = new JwtClaims(signedJWT.getJWTClaimsSet().getClaims());
             claims.setClaim(Claims.raw_token.name(), token);
             return new DefaultJWTCallerPrincipal(claims);
-        } catch (InvalidJwtException e) {
-            PrincipalMessages.msg.failedToVerifyToken(e);
+        } catch (java.text.ParseException e) {
+            // Nimbus reports a malformed token via java.text.ParseException.
+            throw PrincipalMessages.msg.failedToVerifyToken(new InvalidJWTException(e.getMessage()));
         }
-        return null;
     }
 }

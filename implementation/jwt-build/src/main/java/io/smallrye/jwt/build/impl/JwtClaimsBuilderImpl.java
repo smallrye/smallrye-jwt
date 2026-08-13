@@ -6,6 +6,7 @@ import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -23,20 +24,16 @@ import jakarta.json.JsonString;
 import jakarta.json.JsonValue;
 
 import org.eclipse.microprofile.jwt.Claims;
-import org.jose4j.base64url.Base64;
-import org.jose4j.jwk.JsonWebKey.OutputControlLevel;
-import org.jose4j.jwk.PublicJsonWebKey;
-import org.jose4j.jwt.JwtClaims;
-import org.jose4j.jwt.NumericDate;
-import org.jose4j.jwx.HeaderParameterNames;
-import org.jose4j.keys.X509Util;
-import org.jose4j.lang.JoseException;
 
+import com.nimbusds.jose.HeaderParameterNames;
+
+import io.smallrye.jwk.JsonWebKey;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 import io.smallrye.jwt.build.JwtClaimsBuilder;
 import io.smallrye.jwt.build.JwtEncryptionBuilder;
 import io.smallrye.jwt.build.JwtSignatureBuilder;
 import io.smallrye.jwt.build.JwtSignatureException;
+import io.smallrye.jwt.common.JwtClaims;
 
 /**
  * Default JWT Claims Builder
@@ -67,26 +64,22 @@ class JwtClaimsBuilderImpl extends JwtSignatureImpl implements JwtClaimsBuilder,
 
     }
 
-    JwtClaimsBuilderImpl(String jsonLocation) {
-        super(parseJsonToClaims(jsonLocation));
-    }
-
-    JwtClaimsBuilderImpl(Map<String, Object> claimsMap) {
-        super(fromMapToJwtClaims(claimsMap));
-    }
-
     JwtClaimsBuilderImpl(JwtClaims claims) {
         super(claims);
     }
 
-    private static JwtClaims fromMapToJwtClaims(Map<String, Object> claimsMap) {
-        JwtClaims claims = new JwtClaims();
-        @SuppressWarnings("unchecked")
-        Map<String, Object> newMap = (Map<String, Object>) prepareValue(claimsMap);
-        for (Map.Entry<String, Object> entry : newMap.entrySet()) {
-            claims.setClaim(entry.getKey(), entry.getValue());
-        }
-        return claims;
+    JwtClaimsBuilderImpl(String jsonLocation) {
+        super(JwtBuildUtils.parseJwtClaims(jsonLocation));
+    }
+
+    JwtClaimsBuilderImpl(Map<String, Object> claimsMap) {
+        super(fromMapToClaims(claimsMap));
+    }
+
+    @SuppressWarnings("unchecked")
+    private static JwtClaims fromMapToClaims(Map<String, Object> claimsMap) {
+        Map<String, Object> prepared = (Map<String, Object>) prepareValue(claimsMap);
+        return new JwtClaims(prepared);
     }
 
     /**
@@ -156,7 +149,7 @@ class JwtClaimsBuilderImpl extends JwtSignatureImpl implements JwtClaimsBuilder,
      */
     @Override
     public JwtClaimsBuilder issuedAt(long issuedAt) {
-        claims.setIssuedAt(NumericDate.fromSeconds(issuedAt));
+        claims.setIssuedAt(issuedAt);
         return this;
     }
 
@@ -165,7 +158,7 @@ class JwtClaimsBuilderImpl extends JwtSignatureImpl implements JwtClaimsBuilder,
      */
     @Override
     public JwtClaimsBuilder expiresAt(long expiresAt) {
-        claims.setExpirationTime(NumericDate.fromSeconds(expiresAt));
+        claims.setExpirationTime(expiresAt);
         return this;
     }
 
@@ -183,7 +176,7 @@ class JwtClaimsBuilderImpl extends JwtSignatureImpl implements JwtClaimsBuilder,
      */
     @Override
     public JwtClaimsBuilder groups(Set<String> groups) {
-        claims.setClaim(Claims.groups.name(), groups.stream().collect(Collectors.toList()));
+        claims.setGroups(groups.stream().collect(Collectors.toList()));
         return this;
     }
 
@@ -237,7 +230,11 @@ class JwtClaimsBuilderImpl extends JwtSignatureImpl implements JwtClaimsBuilder,
      */
     @Override
     public JwtSignatureBuilder thumbprint(X509Certificate cert) {
-        headers.put(HeaderParameterNames.X509_CERTIFICATE_THUMBPRINT, X509Util.x5t(cert));
+        try {
+            headers.put(HeaderParameterNames.X_509_CERT_SHA_1_THUMBPRINT, JwtBuildUtils.computeThumbprint(cert));
+        } catch (Exception e) {
+            throw ImplMessages.msg.signatureException(e);
+        }
         return this;
     }
 
@@ -246,7 +243,11 @@ class JwtClaimsBuilderImpl extends JwtSignatureImpl implements JwtClaimsBuilder,
      */
     @Override
     public JwtSignatureBuilder thumbprintS256(X509Certificate cert) {
-        headers.put(HeaderParameterNames.X509_CERTIFICATE_SHA256_THUMBPRINT, X509Util.x5tS256(cert));
+        try {
+            headers.put(HeaderParameterNames.X_509_CERT_SHA_256_THUMBPRINT, JwtBuildUtils.computeThumbprintS256(cert));
+        } catch (Exception e) {
+            throw ImplMessages.msg.signatureException(e);
+        }
         return this;
     }
 
@@ -258,9 +259,9 @@ class JwtClaimsBuilderImpl extends JwtSignatureImpl implements JwtClaimsBuilder,
         List<String> base64EncodedCerts = new ArrayList<>(chain.size());
         try {
             for (X509Certificate cert : chain) {
-                base64EncodedCerts.add(Base64.encode(cert.getEncoded()));
+                base64EncodedCerts.add(Base64.getEncoder().encodeToString(cert.getEncoded()));
             }
-            headers.put(HeaderParameterNames.X509_CERTIFICATE_CHAIN, base64EncodedCerts);
+            headers.put(HeaderParameterNames.X_509_CERT_CHAIN, base64EncodedCerts);
         } catch (CertificateEncodingException ex) {
             throw ImplMessages.msg.signatureException(ex);
         }
@@ -316,7 +317,7 @@ class JwtClaimsBuilderImpl extends JwtSignatureImpl implements JwtClaimsBuilder,
     public JwtEncryptionBuilder jwe() {
         JwtBuildUtils.setDefaultJwtClaims(claims, tokenLifespan);
         try {
-            return new JwtEncryptionImpl(claims.toJson());
+            return new JwtEncryptionImpl(claims.toJsonString());
         } finally {
             removeJti();
         }
@@ -376,10 +377,6 @@ class JwtClaimsBuilderImpl extends JwtSignatureImpl implements JwtClaimsBuilder,
         }
     }
 
-    private static JwtClaims parseJsonToClaims(String jsonLocation) {
-        return JwtBuildUtils.parseJwtClaims(jsonLocation);
-    }
-
     private static SignatureAlgorithm toSignatureAlgorithm(String value) {
         try {
             return SignatureAlgorithm.fromAlgorithm(value);
@@ -436,15 +433,15 @@ class JwtClaimsBuilderImpl extends JwtSignatureImpl implements JwtClaimsBuilder,
 
     static Map<String, Object> convertPublicKeyToJwk(PublicKey key) {
         try {
-            return PublicJsonWebKey.Factory.newPublicJwk(key).toParams(OutputControlLevel.PUBLIC_ONLY);
-        } catch (JoseException ex) {
+            return JsonWebKey.jwk(key).asMap();
+        } catch (Exception ex) {
             throw ImplMessages.msg.signatureException(ex);
         }
     }
 
     @Override
     public JwtClaimsBuilder remove(String name) {
-        claims.unsetClaim(name);
+        claims.remove(name);
         return this;
     }
 }
