@@ -3,7 +3,8 @@ package io.smallrye.jwt.auth.principal;
 import org.jboss.logging.Messages;
 import org.jboss.logging.annotations.Message;
 import org.jboss.logging.annotations.MessageBundle;
-import org.jose4j.lang.UnresolvableKeyException;
+
+import io.smallrye.jwt.auth.UnresolvableKeyException;
 
 @MessageBundle(projectCode = "SRJWT", length = 5)
 interface AwsAlbKeyResolverMessages {

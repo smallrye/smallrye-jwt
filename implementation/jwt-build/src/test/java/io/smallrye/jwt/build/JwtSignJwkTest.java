@@ -22,9 +22,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.security.Key;
 
-import org.jose4j.jws.JsonWebSignature;
-import org.jose4j.jwt.JwtClaims;
+import javax.crypto.SecretKey;
+
 import org.junit.jupiter.api.Test;
+
+import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.JWSVerifier;
+import com.nimbusds.jose.crypto.MACVerifier;
+import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
 
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 import io.smallrye.jwt.util.KeyUtils;
@@ -33,23 +39,23 @@ class JwtSignJwkTest {
     @Test
     void signHS256() throws Exception {
         String jwt = Jwt.preferredUserName("alice").sign("/privateKey.jwk");
-        JsonWebSignature jws = getVerifiedJws(jwt, readSecretKey("/privateKey.jwk"));
-        assertEquals("secretkey1", jws.getHeader("kid"));
+        SignedJWT signedJWT = getVerifiedJws(jwt, readSecretKey("/privateKey.jwk"));
+        assertEquals("secretkey1", signedJWT.getHeader().getKeyID());
         // HS256 is a default value
-        assertEquals("HS256", jws.getHeader("alg"));
-        JwtClaims claims = JwtClaims.parse(jws.getPayload());
-        assertEquals("alice", claims.getClaimValue("preferred_username"));
+        assertEquals("HS256", signedJWT.getHeader().getAlgorithm().getName());
+        JWTClaimsSet claims = signedJWT.getJWTClaimsSet();
+        assertEquals("alice", claims.getClaim("preferred_username"));
 
     }
 
     @Test
     void signHS512() throws Exception {
         String jwt = Jwt.preferredUserName("alice").sign("/privateKeyHS512.jwk");
-        JsonWebSignature jws = getVerifiedJws(jwt, readSecretKey("/privateKeyHS512.jwk", SignatureAlgorithm.HS512));
-        assertEquals("secretkey2", jws.getHeader("kid"));
-        assertEquals("HS512", jws.getHeader("alg"));
-        JwtClaims claims = JwtClaims.parse(jws.getPayload());
-        assertEquals("alice", claims.getClaimValue("preferred_username"));
+        SignedJWT signedJWT = getVerifiedJws(jwt, readSecretKey("/privateKeyHS512.jwk", SignatureAlgorithm.HS512));
+        assertEquals("secretkey2", signedJWT.getHeader().getKeyID());
+        assertEquals("HS512", signedJWT.getHeader().getAlgorithm().getName());
+        JWTClaimsSet claims = signedJWT.getJWTClaimsSet();
+        assertEquals("alice", claims.getClaim("preferred_username"));
     }
 
     @Test
@@ -61,11 +67,11 @@ class JwtSignJwkTest {
     @Test
     void signJwkSetWithKid() throws Exception {
         String jwt = Jwt.preferredUserName("alice").jws().keyId("secretkey1").sign("/privateSigningKeys.jwks");
-        JsonWebSignature jws = getVerifiedJws(jwt, readSecretKey("/privateKey.jwk"));
-        assertEquals("secretkey1", jws.getHeader("kid"));
-        assertEquals("HS256", jws.getHeader("alg"));
-        JwtClaims claims = JwtClaims.parse(jws.getPayload());
-        assertEquals("alice", claims.getClaimValue("preferred_username"));
+        SignedJWT signedJWT = getVerifiedJws(jwt, readSecretKey("/privateKey.jwk"));
+        assertEquals("secretkey1", signedJWT.getHeader().getKeyID());
+        assertEquals("HS256", signedJWT.getHeader().getAlgorithm().getName());
+        JWTClaimsSet claims = signedJWT.getJWTClaimsSet();
+        assertEquals("alice", claims.getClaim("preferred_username"));
     }
 
     @Test
@@ -74,11 +80,11 @@ class JwtSignJwkTest {
         try {
             configSource.setSigningKeyId("secretkey2");
             String jwt = Jwt.preferredUserName("alice").sign("/privateSigningKeys.jwks");
-            JsonWebSignature jws = getVerifiedJws(jwt, readSecretKey("/privateKeyHS512.jwk", SignatureAlgorithm.HS512));
-            assertEquals("secretkey2", jws.getHeader("kid"));
-            assertEquals("HS512", jws.getHeader("alg"));
-            JwtClaims claims = JwtClaims.parse(jws.getPayload());
-            assertEquals("alice", claims.getClaimValue("preferred_username"));
+            SignedJWT signedJWT = getVerifiedJws(jwt, readSecretKey("/privateKeyHS512.jwk", SignatureAlgorithm.HS512));
+            assertEquals("secretkey2", signedJWT.getHeader().getKeyID());
+            assertEquals("HS512", signedJWT.getHeader().getAlgorithm().getName());
+            JWTClaimsSet claims = signedJWT.getJWTClaimsSet();
+            assertEquals("alice", claims.getClaim("preferred_username"));
         } finally {
             configSource.setSigningKeyId(null);
         }
@@ -100,11 +106,17 @@ class JwtSignJwkTest {
         return KeyUtils.readSigningKey(keyLocation, null, sigAlg);
     }
 
-    static JsonWebSignature getVerifiedJws(String jwt, Key key) throws Exception {
-        JsonWebSignature jws = new JsonWebSignature();
-        jws.setKey(key);
-        jws.setCompactSerialization(jwt);
-        assertTrue(jws.verifySignature());
-        return jws;
+    static SignedJWT getVerifiedJws(String jwt, Key key) throws Exception {
+        SignedJWT signedJWT = SignedJWT.parse(jwt);
+        JWSVerifier verifier = createVerifier(key);
+        assertTrue(signedJWT.verify(verifier));
+        return signedJWT;
+    }
+
+    private static JWSVerifier createVerifier(Key key) throws JOSEException {
+        if (key instanceof SecretKey) {
+            return new MACVerifier((SecretKey) key);
+        }
+        throw new JOSEException("Unsupported key type for verification: " + key.getClass().getName());
     }
 }
