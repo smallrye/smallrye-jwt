@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
 import java.security.PublicKey;
 import java.security.cert.X509Certificate;
 import java.time.Instant;
@@ -13,17 +15,18 @@ import java.util.Set;
 import javax.crypto.SecretKey;
 
 import org.eclipse.microprofile.jwt.JsonWebToken;
-import org.jose4j.jwk.JsonWebKey;
-import org.jose4j.jwk.OctetKeyPairJsonWebKey;
-import org.jose4j.jwk.OkpJwkGenerator;
-import org.jose4j.jwk.PublicJsonWebKey;
-import org.jose4j.jwt.consumer.ErrorCodes;
-import org.jose4j.jwt.consumer.InvalidJwtException;
-import org.jose4j.lang.UnresolvableKeyException;
 import org.junit.jupiter.api.Test;
 
+import com.nimbusds.jose.jwk.AsymmetricJWK;
+import com.nimbusds.jose.jwk.JWK;
+import com.nimbusds.jose.jwk.OctetKeyPair;
+import com.nimbusds.jose.jwk.OctetSequenceKey;
+
+import io.smallrye.jwt.algorithm.EdDSAVerifier;
 import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
+import io.smallrye.jwt.auth.TokenExpiredException;
+import io.smallrye.jwt.auth.UnresolvableKeyException;
 import io.smallrye.jwt.build.Jwt;
 import io.smallrye.jwt.util.KeyUtils;
 import io.smallrye.jwt.util.ResourceUtils;
@@ -130,7 +133,8 @@ class DefaultJWTParserTest {
 
     private static PublicKey getEdEcPublicKey() throws Exception {
         String keyContent = KeyUtils.readKeyContent("/edEcPublicKey.jwk");
-        return PublicJsonWebKey.Factory.newPublicJwk(keyContent).getPublicKey();
+        OctetKeyPair okp = (OctetKeyPair) JWK.parse(keyContent);
+        return EdDSAVerifier.toPublicKey(okp);
     }
 
     @Test
@@ -250,10 +254,10 @@ class DefaultJWTParserTest {
     @Test
     void decryptWithRsaPrivateKeyInJwkFormat() throws Exception {
         String content = ResourceUtils.readResource("/encryptPublicKey.jwk");
-        PublicJsonWebKey jwk = (PublicJsonWebKey) KeyUtils.loadJsonWebKeys(content).get(0);
+        JWK jwk = KeyUtils.loadJsonWebKeys(content).get(0);
         String jwtString = Jwt.upn("jdoe@example.com")
                 .jwe().keyAlgorithm(KeyEncryptionAlgorithm.RSA_OAEP)
-                .encrypt(jwk.getPublicKey());
+                .encrypt(((AsymmetricJWK) jwk).toPublicKey());
 
         JWTAuthContextInfo config = new JWTAuthContextInfo();
         config.setDecryptionKeyLocation("/decryptPrivateKey.jwk");
@@ -274,9 +278,10 @@ class DefaultJWTParserTest {
     @Test
     void decryptWithEcPrivateKeyX25519() throws Exception {
         if (Runtime.version().version().get(0) >= 17) {
-            OctetKeyPairJsonWebKey jwk = OkpJwkGenerator.generateJwk(OctetKeyPairJsonWebKey.SUBTYPE_X25519);
-            String jwtString = Jwt.upn("jdoe@example.com").jwe().encrypt(jwk.getPublicKey());
-            JsonWebToken jwt = new DefaultJWTParser().decrypt(jwtString, jwk.getPrivateKey());
+            KeyPairGenerator kpg = java.security.KeyPairGenerator.getInstance("X25519");
+            KeyPair kp = kpg.generateKeyPair();
+            String jwtString = Jwt.upn("jdoe@example.com").jwe().encrypt(kp.getPublic());
+            JsonWebToken jwt = new DefaultJWTParser().decrypt(jwtString, kp.getPrivate());
             assertEquals("jdoe@example.com", jwt.getName());
         }
     }
@@ -314,8 +319,8 @@ class DefaultJWTParserTest {
 
     private static SecretKey createSecretKey() throws Exception {
         String jwkJson = "{\"kty\":\"oct\",\"k\":\"Fdh9u8rINxfivbrianbbVT1u232VQBZYKx1HGAGPt2I\"}";
-        JsonWebKey jwk = JsonWebKey.Factory.newJwk(jwkJson);
-        return (SecretKey) jwk.getKey();
+        OctetSequenceKey jwk = OctetSequenceKey.parse(jwkJson);
+        return jwk.toSecretKey("AES");
     }
 
     @Test
@@ -338,8 +343,8 @@ class DefaultJWTParserTest {
                 .sign(KeyUtils.readPrivateKey("/privateKey.pem"));
         JWTAuthContextInfo config = new JWTAuthContextInfo("/publicKey.pem", "https://server.example.com");
         ParseException thrown = assertThrows(ParseException.class, () -> new DefaultJWTParser().parse(jwtString, config),
-                "UnresolvableKeyException is expected");
-        assertEquals(ErrorCodes.EXPIRED, ((InvalidJwtException) thrown.getCause()).getErrorDetails().get(0).getErrorCode());
+                "ParseException is expected");
+        assertTrue(thrown.getCause() instanceof TokenExpiredException);
     }
 
     @Test
@@ -351,7 +356,7 @@ class DefaultJWTParserTest {
         JWTAuthContextInfo config = new JWTAuthContextInfo("/publicKey.pem", "https://server.example.com");
         config.setExpGracePeriodSecs(0);
         ParseException thrown = assertThrows(ParseException.class, () -> new DefaultJWTParser().parse(jwtString, config),
-                "UnresolvableKeyException is expected");
-        assertEquals(ErrorCodes.EXPIRED, ((InvalidJwtException) thrown.getCause()).getErrorDetails().get(0).getErrorCode());
+                "ParseException is expected");
+        assertTrue(thrown.getCause() instanceof TokenExpiredException);
     }
 }

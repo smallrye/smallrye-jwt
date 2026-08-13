@@ -25,14 +25,14 @@ import org.hamcrest.MatcherAssert;
 import org.jboss.weld.junit5.WeldInitiator;
 import org.jboss.weld.junit5.WeldJunit5Extension;
 import org.jboss.weld.junit5.WeldSetup;
-import org.jose4j.jws.JsonWebSignature;
-import org.jose4j.jwt.JwtClaims;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import com.nimbusds.jwt.SignedJWT;
+
 import io.smallrye.jwt.auth.principal.DefaultJWTCallerPrincipal;
 import io.smallrye.jwt.build.Jwt;
-import io.smallrye.jwt.util.KeyUtils;
+import io.smallrye.jwt.common.JwtClaims;
 
 @SuppressWarnings({
         "CdiUnproxyableBeanTypesInspection",
@@ -156,11 +156,9 @@ class ClaimInjectionTest {
     @RequestScoped
     private static JsonWebToken jwt() throws Exception {
         String jwt = Jwt.claims("/token-claims.json").sign("/privateKey.pem");
-        JsonWebSignature jws = new JsonWebSignature();
-        jws.setKey(KeyUtils.readPublicKey("/publicKey.pem"));
-        jws.setCompactSerialization(jwt);
-        JwtClaims claims = JwtClaims.parse(jws.getPayload());
-        return new DefaultJWTCallerPrincipal(jwt, claims);
+        SignedJWT signedJWT = SignedJWT.parse(jwt);
+        JwtClaims claims = new JwtClaims(signedJWT.getJWTClaimsSet().getClaims());
+        return new DefaultJWTCallerPrincipal(jwt, "JWT", claims);
     }
 
     @SuppressWarnings({

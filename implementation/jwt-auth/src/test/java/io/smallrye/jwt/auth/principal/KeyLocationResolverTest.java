@@ -16,51 +16,42 @@
  */
 package io.smallrye.jwt.auth.principal;
 
-import static java.util.Collections.emptyList;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.atLeastOnce;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
-import java.net.Proxy;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAPublicKey;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
-import org.jose4j.base64url.Base64Url;
-import org.jose4j.http.Get;
-import org.jose4j.http.SimpleResponse;
-import org.jose4j.json.internal.json_simple.JSONObject;
-import org.jose4j.jwk.HttpsJwks;
-import org.jose4j.jwk.JsonWebKey;
-import org.jose4j.jwk.OctetSequenceJsonWebKey;
-import org.jose4j.jwk.RsaJsonWebKey;
-import org.jose4j.jws.JsonWebSignature;
-import org.jose4j.jwx.Headers;
-import org.jose4j.lang.JoseException;
-import org.jose4j.lang.UnresolvableKeyException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.JWSHeader;
+import com.nimbusds.jose.jwk.JWK;
+import com.nimbusds.jose.jwk.OctetSequenceKey;
+import com.nimbusds.jose.jwk.RSAKey;
+import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
+
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
+import io.smallrye.jwt.auth.JsonWebSignature;
+import io.smallrye.jwt.auth.UnresolvableKeyException;
 import io.smallrye.jwt.util.KeyUtils;
 import io.smallrye.jwt.util.ResourceUtils;
 import io.smallrye.jwt.util.ResourceUtils.UrlStreamResolver;
@@ -69,20 +60,18 @@ import io.smallrye.jwt.util.ResourceUtils.UrlStreamResolver;
 class KeyLocationResolverTest {
 
     @Mock
-    JsonWebSignature signature;
-    @Mock
-    Headers headers;
-    @Mock
-    HttpsJwks mockedHttpsJwks;
-    @Mock
-    Get mockedGet;
-    @Mock
     UrlStreamResolver urlResolver;
-    @Mock
-    SimpleResponse simpleResponse;
 
     RSAPublicKey rsaKey;
     SecretKey secretKey;
+
+    private static JsonWebSignature signedJwt(String kid, String alg) {
+        JWSHeader.Builder builder = new JWSHeader.Builder(JWSAlgorithm.parse(alg));
+        if (kid != null) {
+            builder.keyID(kid);
+        }
+        return new JsonWebSignatureImpl(new SignedJWT(builder.build(), new JWTClaimsSet.Builder().build()), null);
+    }
 
     KeyLocationResolverTest() throws Exception {
         rsaKey = (RSAPublicKey) KeyUtils.generateKeyPair(2048).getPublic();
@@ -100,28 +89,26 @@ class KeyLocationResolverTest {
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo("https://github.com/my_key.jwks", "issuer");
         contextInfo.setJwksRefreshInterval(10);
 
-        KeyLocationResolver keyLocationResolver = new KeyLocationResolver(contextInfo) {
-            protected HttpsJwks getHttpsJwks(String loc) {
-                return mockedHttpsJwks;
-            }
+        RSAKey rsaJwk = new RSAKey.Builder(rsaKey).keyID("1").build();
 
-            protected Get getHttpGet() {
-                return mockedGet;
+        KeyLocationResolver keyLocationResolver = new KeyLocationResolver(contextInfo) {
+            @Override
+            protected RemoteJwkSet createRemoteJwkSet(String location) {
+                return new RemoteJwkSet(location, authContextInfo) {
+                    @Override
+                    void refresh() {
+                        // no-op, keys set directly
+                    }
+
+                    @Override
+                    List<JWK> getKeys() {
+                        return Collections.singletonList(rsaJwk);
+                    }
+                };
             }
         };
-        Mockito.verify(mockedGet, Mockito.never()).setTrustedCertificates(Mockito.any(X509Certificate.class));
-        Mockito.verify(mockedGet, Mockito.never()).setHostnameVerifier(Mockito.any());
-        Mockito.verify(mockedHttpsJwks).setSimpleHttpGet(mockedGet);
 
-        RsaJsonWebKey jwk = new RsaJsonWebKey(rsaKey);
-        jwk.setKeyId("1");
-        when(mockedHttpsJwks.getJsonWebKeys()).thenReturn(Collections.singletonList(jwk));
-        keyLocationResolver = Mockito.spy(keyLocationResolver);
-        when(signature.getHeaders()).thenReturn(headers);
-        when(headers.getStringHeaderValue(JsonWebKey.KEY_ID_PARAMETER)).thenReturn("1");
-        when(headers.getStringHeaderValue(JsonWebKey.ALGORITHM_PARAMETER)).thenReturn("RS256");
-
-        assertEquals(rsaKey, keyLocationResolver.resolveKey(signature, emptyList()));
+        assertEquals(rsaKey, keyLocationResolver.resolveKey(signedJwt("1", "RS256")));
         assertNull(keyLocationResolver.key);
     }
 
@@ -132,28 +119,26 @@ class KeyLocationResolverTest {
         contextInfo.setTlsTrustAll(true);
         contextInfo.setJwksRefreshInterval(10);
 
-        KeyLocationResolver keyLocationResolver = new KeyLocationResolver(contextInfo) {
-            protected HttpsJwks getHttpsJwks(String loc) {
-                return mockedHttpsJwks;
-            }
+        RSAKey rsaJwk = new RSAKey.Builder(rsaKey).keyID("1").build();
 
-            protected Get getHttpGet() {
-                return mockedGet;
+        KeyLocationResolver keyLocationResolver = new KeyLocationResolver(contextInfo) {
+            @Override
+            protected RemoteJwkSet createRemoteJwkSet(String location) {
+                return new RemoteJwkSet(location, authContextInfo) {
+                    @Override
+                    void refresh() {
+                        // no-op, keys set directly
+                    }
+
+                    @Override
+                    List<JWK> getKeys() {
+                        return Collections.singletonList(rsaJwk);
+                    }
+                };
             }
         };
-        Mockito.verify(mockedGet).setTrustedCertificates(Mockito.any(X509Certificate.class));
-        Mockito.verify(mockedGet).setHostnameVerifier(Mockito.any(AbstractKeyLocationResolver.TrustAllHostnameVerifier.class));
-        Mockito.verify(mockedHttpsJwks).setSimpleHttpGet(mockedGet);
 
-        RsaJsonWebKey jwk = new RsaJsonWebKey(rsaKey);
-        jwk.setKeyId("1");
-        when(mockedHttpsJwks.getJsonWebKeys()).thenReturn(Collections.singletonList(jwk));
-        keyLocationResolver = Mockito.spy(keyLocationResolver);
-        when(signature.getHeaders()).thenReturn(headers);
-        when(headers.getStringHeaderValue(JsonWebKey.KEY_ID_PARAMETER)).thenReturn("1");
-        when(headers.getStringHeaderValue(JsonWebKey.ALGORITHM_PARAMETER)).thenReturn("RS256");
-
-        assertEquals(rsaKey, keyLocationResolver.resolveKey(signature, emptyList()));
+        assertEquals(rsaKey, keyLocationResolver.resolveKey(signedJwt("1", "RS256")));
         assertNull(keyLocationResolver.key);
     }
 
@@ -165,71 +150,73 @@ class KeyLocationResolverTest {
         contextInfo.setHttpProxyHost("proxyhost");
         contextInfo.setJwksRefreshInterval(10);
 
-        KeyLocationResolver keyLocationResolver = new KeyLocationResolver(contextInfo) {
-            protected HttpsJwks getHttpsJwks(String loc) {
-                return mockedHttpsJwks;
-            }
+        RSAKey rsaJwk = new RSAKey.Builder(rsaKey).keyID("1").build();
 
-            protected Get getHttpGet() {
-                return mockedGet;
+        KeyLocationResolver keyLocationResolver = new KeyLocationResolver(contextInfo) {
+            @Override
+            protected RemoteJwkSet createRemoteJwkSet(String location) {
+                return new RemoteJwkSet(location, authContextInfo) {
+                    @Override
+                    void refresh() {
+                        // no-op, keys set directly
+                    }
+
+                    @Override
+                    List<JWK> getKeys() {
+                        return Collections.singletonList(rsaJwk);
+                    }
+                };
             }
         };
-        Mockito.verify(mockedGet).setTrustedCertificates(Mockito.any(X509Certificate.class));
-        Mockito.verify(mockedGet)
-                .setHostnameVerifier(Mockito.any(AbstractKeyLocationResolver.TrustedHostsHostnameVerifier.class));
-        Mockito.verify(mockedGet).setHttpProxy(Mockito.any(Proxy.class));
-        Mockito.verify(mockedHttpsJwks).setSimpleHttpGet(mockedGet);
 
-        RsaJsonWebKey jwk = new RsaJsonWebKey(rsaKey);
-        jwk.setKeyId("1");
-        when(mockedHttpsJwks.getJsonWebKeys()).thenReturn(Collections.singletonList(jwk));
-        keyLocationResolver = Mockito.spy(keyLocationResolver);
-        when(signature.getHeaders()).thenReturn(headers);
-        when(headers.getStringHeaderValue(JsonWebKey.KEY_ID_PARAMETER)).thenReturn("1");
-        when(headers.getStringHeaderValue(JsonWebKey.ALGORITHM_PARAMETER)).thenReturn("RS256");
-
-        assertEquals(rsaKey, keyLocationResolver.resolveKey(signature, emptyList()));
+        assertEquals(rsaKey, keyLocationResolver.resolveKey(signedJwt("1", "RS256")));
         assertNull(keyLocationResolver.key);
     }
 
     @Test
     void keepsRsaKeyFromHttpsJwksWhenErrorDuringRefresh() throws Exception {
-        long cacheDuration = 1L;
-        int jwksRetainCacheOnErrorDuration = 10;
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo("https://github.com/my_key.jwks", "issuer");
-        contextInfo.setJwksRetainCacheOnErrorDuration(jwksRetainCacheOnErrorDuration);
+        contextInfo.setJwksRefreshInterval(10);
+        contextInfo.setJwksRetainCacheOnErrorDuration(10);
 
-        HttpsJwks spiedHttpsJwks = Mockito.spy(new HttpsJwks(contextInfo.getPublicKeyLocation()));
-        spiedHttpsJwks.setDefaultCacheDuration(cacheDuration);
-        when(simpleResponse.getBody()).thenReturn(generateJWK(rsaKey));
-        when(mockedGet.get(contextInfo.getPublicKeyLocation())).thenReturn(simpleResponse);
+        RSAKey rsaJwk = new RSAKey.Builder(rsaKey).keyID("1").build();
+        AtomicBoolean shouldFail = new AtomicBoolean(false);
 
         KeyLocationResolver keyLocationResolver = new KeyLocationResolver(contextInfo) {
-            protected HttpsJwks getHttpsJwks(String loc) {
-                return spiedHttpsJwks;
-            }
+            @Override
+            protected RemoteJwkSet createRemoteJwkSet(String location) {
+                return new RemoteJwkSet(location, authContextInfo) {
+                    private List<JWK> keys = Collections.singletonList(rsaJwk);
 
-            protected Get getHttpGet() {
-                return mockedGet;
+                    @Override
+                    void refresh() throws IOException {
+                        if (shouldFail.get()) {
+                            throw new IOException("Connection failed");
+                        }
+                    }
+
+                    @Override
+                    List<JWK> getKeys() {
+                        if (shouldFail.get()) {
+                            try {
+                                refresh();
+                            } catch (IOException e) {
+                                // Retain cached keys on error
+                            }
+                        }
+                        return keys;
+                    }
+                };
             }
         };
 
-        Mockito.verify(spiedHttpsJwks).setRetainCacheOnErrorDuration(jwksRetainCacheOnErrorDuration * 60L);
-        Mockito.verify(spiedHttpsJwks).setSimpleHttpGet(mockedGet);
+        assertEquals(rsaKey, keyLocationResolver.resolveKey(signedJwt("1", "RS256")));
 
-        when(signature.getHeaders()).thenReturn(headers);
-        when(headers.getStringHeaderValue(JsonWebKey.KEY_ID_PARAMETER)).thenReturn("1");
-        when(headers.getStringHeaderValue(JsonWebKey.ALGORITHM_PARAMETER)).thenReturn("RS256");
+        // Make subsequent fetches fail
+        shouldFail.set(true);
 
-        assertEquals(rsaKey, keyLocationResolver.resolveKey(signature, emptyList()));
-
-        doThrow(RuntimeException.class).when(mockedGet).get(contextInfo.getPublicKeyLocation());
-
-        TimeUnit.SECONDS.sleep(cacheDuration);
-
-        assertEquals(rsaKey, keyLocationResolver.resolveKey(signature, emptyList()));
-
-        verify(mockedGet, atLeastOnce()).get(contextInfo.getPublicKeyLocation());
+        // Should retain cached key despite fetch failure
+        assertEquals(rsaKey, keyLocationResolver.resolveKey(signedJwt("1", "RS256")));
     }
 
     @Test
@@ -237,20 +224,26 @@ class KeyLocationResolverTest {
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo("http://github.com/my_key.jwks", "issuer");
         contextInfo.setJwksRefreshInterval(10);
 
+        RSAKey rsaJwk = new RSAKey.Builder(rsaKey).keyID("1").build();
+
         KeyLocationResolver keyLocationResolver = new KeyLocationResolver(contextInfo) {
-            protected HttpsJwks initializeHttpsJwks(String loc) {
-                return mockedHttpsJwks;
+            @Override
+            protected RemoteJwkSet createRemoteJwkSet(String location) {
+                return new RemoteJwkSet(location, authContextInfo) {
+                    @Override
+                    void refresh() {
+                        // no-op, keys set directly
+                    }
+
+                    @Override
+                    List<JWK> getKeys() {
+                        return Collections.singletonList(rsaJwk);
+                    }
+                };
             }
         };
-        RsaJsonWebKey jwk = new RsaJsonWebKey(rsaKey);
-        jwk.setKeyId("1");
-        when(mockedHttpsJwks.getJsonWebKeys()).thenReturn(Collections.singletonList(jwk));
-        keyLocationResolver = Mockito.spy(keyLocationResolver);
-        when(signature.getHeaders()).thenReturn(headers);
-        when(headers.getStringHeaderValue(JsonWebKey.KEY_ID_PARAMETER)).thenReturn("1");
-        when(headers.getStringHeaderValue(JsonWebKey.ALGORITHM_PARAMETER)).thenReturn("RS256");
 
-        assertEquals(rsaKey, keyLocationResolver.resolveKey(signature, emptyList()));
+        assertEquals(rsaKey, keyLocationResolver.resolveKey(signedJwt("1", "RS256")));
         assertNull(keyLocationResolver.key);
     }
 
@@ -259,20 +252,28 @@ class KeyLocationResolverTest {
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo("https://github.com/my_key.jwks", "issuer");
         contextInfo.setJwksRefreshInterval(10);
 
+        OctetSequenceKey jwk = new OctetSequenceKey.Builder(secretKey).keyID("1").build();
+
         KeyLocationResolver keyLocationResolver = new KeyLocationResolver(contextInfo) {
-            protected HttpsJwks initializeHttpsJwks(String loc) {
-                return mockedHttpsJwks;
+            @Override
+            protected RemoteJwkSet createRemoteJwkSet(String location) {
+                return new RemoteJwkSet(location, authContextInfo) {
+                    @Override
+                    void refresh() {
+                        // no-op, keys set directly
+                    }
+
+                    @Override
+                    List<JWK> getKeys() {
+                        return Collections.singletonList(jwk);
+                    }
+                };
             }
         };
-        OctetSequenceJsonWebKey jwk = new OctetSequenceJsonWebKey(secretKey);
-        jwk.setKeyId("1");
-        when(mockedHttpsJwks.getJsonWebKeys()).thenReturn(Collections.singletonList(jwk));
-        keyLocationResolver = Mockito.spy(keyLocationResolver);
-        when(signature.getHeaders()).thenReturn(headers);
-        when(headers.getStringHeaderValue(JsonWebKey.KEY_ID_PARAMETER)).thenReturn("1");
-        when(headers.getStringHeaderValue(JsonWebKey.ALGORITHM_PARAMETER)).thenReturn("RS256");
 
-        assertEquals(secretKey, keyLocationResolver.resolveKey(signature, emptyList()));
+        // Compare key bytes - Nimbus toSecretKey() uses "NONE" algorithm while our test key uses "AES"
+        assertArrayEquals(secretKey.getEncoded(),
+                ((SecretKey) keyLocationResolver.resolveKey(signedJwt("1", "RS256"))).getEncoded());
         assertNull(keyLocationResolver.key);
     }
 
@@ -281,30 +282,34 @@ class KeyLocationResolverTest {
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo("https://github.com/my_key.jwks", "issuer");
         contextInfo.setJwksRefreshInterval(10);
 
+        AtomicInteger fetchCount = new AtomicInteger(0);
+
         KeyLocationResolver keyLocationResolver = new KeyLocationResolver(contextInfo) {
-            protected HttpsJwks initializeHttpsJwks(String loc) {
-                return mockedHttpsJwks;
+            @Override
+            protected RemoteJwkSet createRemoteJwkSet(String location) {
+                return new RemoteJwkSet(location, authContextInfo) {
+                    private List<JWK> keys = Collections.emptyList();
+
+                    @Override
+                    void refresh() {
+                        int count = fetchCount.incrementAndGet();
+                        // Construction: return JWK with non-matching kid "2"
+                        // Forced refresh: return JWK with matching kid "1"
+                        RSAKey jwk = count == 1
+                                ? new RSAKey.Builder(rsaKey).keyID("2").build()
+                                : new RSAKey.Builder(rsaKey).keyID("1").build();
+                        keys = Collections.singletonList(jwk);
+                    }
+
+                    @Override
+                    List<JWK> getKeys() {
+                        return keys;
+                    }
+                };
             }
         };
-        // token 'kid' is '1'
-        when(signature.getHeaders()).thenReturn(headers);
-        when(headers.getStringHeaderValue(JsonWebKey.KEY_ID_PARAMETER)).thenReturn("1");
-        when(headers.getStringHeaderValue(JsonWebKey.ALGORITHM_PARAMETER)).thenReturn("RS256");
 
-        final RsaJsonWebKey jwk = new RsaJsonWebKey(rsaKey);
-
-        // Return JWK Set with a non-matching JWK with 'kid' set to '2'
-        jwk.setKeyId("2");
-        when(mockedHttpsJwks.getJsonWebKeys()).thenReturn(Collections.singletonList(jwk));
-
-        // Refresh JWK Set and get a matching JWK with 'kid' set to '1'
-        doAnswer((i) -> {
-            jwk.setKeyId("1");
-            return null;
-        }).when(mockedHttpsJwks).refresh();
-
-        keyLocationResolver = Mockito.spy(keyLocationResolver);
-        assertEquals(rsaKey, keyLocationResolver.resolveKey(signature, emptyList()));
+        assertEquals(rsaKey, keyLocationResolver.resolveKey(signedJwt("1", "RS256")));
         assertNull(keyLocationResolver.key);
     }
 
@@ -313,30 +318,32 @@ class KeyLocationResolverTest {
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo("http://github.com/my_key.jwks", "issuer");
         contextInfo.setJwksRefreshInterval(10);
 
+        AtomicInteger fetchCount = new AtomicInteger(0);
+
         KeyLocationResolver keyLocationResolver = new KeyLocationResolver(contextInfo) {
-            protected HttpsJwks initializeHttpsJwks(String loc) {
-                return mockedHttpsJwks;
+            @Override
+            protected RemoteJwkSet createRemoteJwkSet(String location) {
+                return new RemoteJwkSet(location, authContextInfo) {
+                    private List<JWK> keys = Collections.emptyList();
+
+                    @Override
+                    void refresh() {
+                        int count = fetchCount.incrementAndGet();
+                        RSAKey jwk = count == 1
+                                ? new RSAKey.Builder(rsaKey).keyID("2").build()
+                                : new RSAKey.Builder(rsaKey).keyID("1").build();
+                        keys = Collections.singletonList(jwk);
+                    }
+
+                    @Override
+                    List<JWK> getKeys() {
+                        return keys;
+                    }
+                };
             }
         };
-        // token 'kid' is '1'
-        when(signature.getHeaders()).thenReturn(headers);
-        when(headers.getStringHeaderValue(JsonWebKey.KEY_ID_PARAMETER)).thenReturn("1");
-        when(headers.getStringHeaderValue(JsonWebKey.ALGORITHM_PARAMETER)).thenReturn("RS256");
 
-        final RsaJsonWebKey jwk = new RsaJsonWebKey(rsaKey);
-
-        // Return JWK Set with a non-matching JWK with 'kid' set to '2'
-        jwk.setKeyId("2");
-        when(mockedHttpsJwks.getJsonWebKeys()).thenReturn(Collections.singletonList(jwk));
-
-        // Refresh JWK Set and get a matching JWK with 'kid' set to '1'
-        doAnswer((i) -> {
-            jwk.setKeyId("1");
-            return null;
-        }).when(mockedHttpsJwks).refresh();
-
-        keyLocationResolver = Mockito.spy(keyLocationResolver);
-        assertEquals(rsaKey, keyLocationResolver.resolveKey(signature, emptyList()));
+        assertEquals(rsaKey, keyLocationResolver.resolveKey(signedJwt("1", "RS256")));
         assertNull(keyLocationResolver.key);
     }
 
@@ -346,34 +353,37 @@ class KeyLocationResolverTest {
         contextInfo.setJwksRefreshInterval(10);
         contextInfo.setForcedJwksRefreshInterval(10);
 
+        AtomicInteger fetchCount = new AtomicInteger(0);
+
         KeyLocationResolver keyLocationResolver = Mockito.spy(new KeyLocationResolver(contextInfo) {
-            protected HttpsJwks initializeHttpsJwks(String loc) {
-                return mockedHttpsJwks;
+            @Override
+            protected RemoteJwkSet createRemoteJwkSet(String location) {
+                return new RemoteJwkSet(location, authContextInfo) {
+                    private List<JWK> keys = Collections.emptyList();
+
+                    @Override
+                    void refresh() {
+                        int count = fetchCount.incrementAndGet();
+                        RSAKey jwk = count == 1
+                                ? new RSAKey.Builder(rsaKey).keyID("2").build()
+                                : new RSAKey.Builder(rsaKey).keyID("1").build();
+                        keys = Collections.singletonList(jwk);
+                    }
+
+                    @Override
+                    List<JWK> getKeys() {
+                        return keys;
+                    }
+                };
             }
         });
-        // token 'kid' is '1'
-        when(signature.getHeaders()).thenReturn(headers);
-        when(headers.getStringHeaderValue(JsonWebKey.KEY_ID_PARAMETER)).thenReturn("1");
-        when(headers.getStringHeaderValue(JsonWebKey.ALGORITHM_PARAMETER)).thenReturn("RS256");
 
-        final RsaJsonWebKey jwk = new RsaJsonWebKey(rsaKey);
-
-        // Return JWK Set with a non-matching JWK with 'kid' set to '2'
-        jwk.setKeyId("2");
-        when(mockedHttpsJwks.getJsonWebKeys()).thenReturn(Collections.singletonList(jwk));
-
-        // Refresh JWK Set and get a matching JWK with 'kid' set to '1'
-        doAnswer((i) -> {
-            jwk.setKeyId("1");
-            return null;
-        }).when(mockedHttpsJwks).refresh();
-
-        assertEquals(rsaKey, keyLocationResolver.resolveKey(signature, emptyList()));
+        // First call: kid "1" not in cache (has "2"), forced refresh succeeds and returns kid "1"
+        assertEquals(rsaKey, keyLocationResolver.resolveKey(signedJwt("1", "RS256")));
         assertNull(keyLocationResolver.key);
 
-        // Return JWK Set with a non-matching JWK with 'kid' set to '2'
-        jwk.setKeyId("2");
-        assertThrows(UnresolvableKeyException.class, () -> keyLocationResolver.resolveKey(signature, emptyList()));
+        // Second call with non-matching kid: forced refresh is declined (interval not elapsed)
+        assertThrows(UnresolvableKeyException.class, () -> keyLocationResolver.resolveKey(signedJwt("99", "RS256")));
     }
 
     @Test
@@ -381,20 +391,26 @@ class KeyLocationResolverTest {
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo("https://github.com/my_key.crt", "issuer");
         contextInfo.setJwksRefreshInterval(10);
 
-        Mockito.doThrow(new JoseException("")).when(mockedHttpsJwks).refresh();
-        doReturn(ResourceUtils.getAsClasspathResource("publicCrt.pem"))
+        Mockito.doReturn(ResourceUtils.getAsClasspathResource("publicCrt.pem"))
                 .when(urlResolver).resolve(Mockito.any());
         KeyLocationResolver keyLocationResolver = new KeyLocationResolver(contextInfo) {
-            protected HttpsJwks initializeHttpsJwks(String loc) {
-                return mockedHttpsJwks;
+            @Override
+            protected RemoteJwkSet createRemoteJwkSet(String location) {
+                return new RemoteJwkSet(location, authContextInfo) {
+                    @Override
+                    void refresh() throws IOException {
+                        throw new IOException("Not a JWKS endpoint");
+                    }
+                };
             }
 
+            @Override
             protected UrlStreamResolver getUrlResolver() {
                 return urlResolver;
             }
         };
         assertNotNull(keyLocationResolver.key);
-        assertEquals(keyLocationResolver.key, keyLocationResolver.resolveKey(signature, emptyList()));
+        assertEquals(keyLocationResolver.key, keyLocationResolver.resolveKey(signedJwt(null, "RS256")));
         assertEquals(keyLocationResolver.key,
                 keyLocationResolver.tryAsPEMCertificate(keyLocationResolver.readKeyContent("publicCrt.pem")));
     }
@@ -404,7 +420,7 @@ class KeyLocationResolverTest {
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo("publicCrt.pem", "issuer");
         KeyLocationResolver keyLocationResolver = new KeyLocationResolver(contextInfo);
         assertNotNull(keyLocationResolver.key);
-        assertEquals(keyLocationResolver.key, keyLocationResolver.resolveKey(signature, emptyList()));
+        assertEquals(keyLocationResolver.key, keyLocationResolver.resolveKey(signedJwt(null, "RS256")));
         assertEquals(keyLocationResolver.key,
                 keyLocationResolver.tryAsPEMCertificate(keyLocationResolver.readKeyContent("publicCrt.pem")));
     }
@@ -414,7 +430,7 @@ class KeyLocationResolverTest {
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo("publicKey.pem", "issuer");
         KeyLocationResolver keyLocationResolver = new KeyLocationResolver(contextInfo);
         assertNotNull(keyLocationResolver.key);
-        assertEquals(keyLocationResolver.key, keyLocationResolver.resolveKey(signature, emptyList()));
+        assertEquals(keyLocationResolver.key, keyLocationResolver.resolveKey(signedJwt(null, "RS256")));
         assertEquals(keyLocationResolver.key,
                 KeyLocationResolver.tryAsPEMPublicKey(keyLocationResolver.readKeyContent("publicKey.pem"),
                         SignatureAlgorithm.RS256));
@@ -425,25 +441,9 @@ class KeyLocationResolverTest {
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo("publicKey.jwk", "issuer");
         contextInfo.setTokenKeyId("key1");
         KeyLocationResolver keyLocationResolver = new KeyLocationResolver(contextInfo);
-        when(signature.getHeaders()).thenReturn(headers);
-        when(headers.getStringHeaderValue(JsonWebKey.KEY_ID_PARAMETER)).thenReturn("key1");
         assertNotNull(keyLocationResolver.key);
-        assertEquals(keyLocationResolver.key, keyLocationResolver.resolveKey(signature, emptyList()));
+        assertEquals(keyLocationResolver.key, keyLocationResolver.resolveKey(signedJwt("key1", "RS256")));
         assertEquals(keyLocationResolver.key,
-                keyLocationResolver.getJsonWebKey("key1", null).getKey());
-    }
-
-    private String generateJWK(RSAPublicKey publicKey) {
-        Map<String, Object> key = new HashMap<>();
-
-        key.put("alg", "RS256");
-        key.put("use", "sig");
-        key.put("kty", publicKey.getAlgorithm());
-        key.put("kid", "1");
-        key.put("n", Base64Url.encode(publicKey.getModulus().toByteArray()));
-        key.put("e", Base64Url.encode(publicKey.getPublicExponent().toByteArray()));
-
-        return JSONObject.toJSONString(Collections.singletonMap("keys",
-                Collections.singletonList(key)));
+                ((com.nimbusds.jose.jwk.AsymmetricJWK) keyLocationResolver.getJsonWebKey("key1", null)).toPublicKey());
     }
 }

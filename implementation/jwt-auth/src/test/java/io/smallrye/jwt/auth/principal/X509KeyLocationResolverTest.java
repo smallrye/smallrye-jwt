@@ -16,27 +16,35 @@
  */
 package io.smallrye.jwt.auth.principal;
 
-import static java.util.Collections.emptyList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.when;
 
+import java.io.IOException;
+import java.security.MessageDigest;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAPublicKey;
+import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collections;
+import java.util.List;
 
-import org.jose4j.jwk.HttpsJwks;
-import org.jose4j.jwk.RsaJsonWebKey;
-import org.jose4j.jws.JsonWebSignature;
-import org.jose4j.keys.X509Util;
-import org.jose4j.lang.JoseException;
-import org.jose4j.lang.UnresolvableKeyException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.JWSHeader;
+import com.nimbusds.jose.jwk.JWK;
+import com.nimbusds.jose.jwk.JWKSet;
+import com.nimbusds.jose.jwk.RSAKey;
+import com.nimbusds.jose.util.Base64URL;
+import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
+
+import io.smallrye.jwt.auth.JsonWebSignature;
+import io.smallrye.jwt.auth.UnresolvableKeyException;
 import io.smallrye.jwt.util.KeyUtils;
 import io.smallrye.jwt.util.ResourceUtils;
 import io.smallrye.jwt.util.ResourceUtils.UrlStreamResolver;
@@ -45,22 +53,25 @@ import io.smallrye.jwt.util.ResourceUtils.UrlStreamResolver;
 class X509KeyLocationResolverTest {
 
     @Mock
-    JsonWebSignature signature;
-    @Mock
-    HttpsJwks mockedHttpsJwks;
-    @Mock
     UrlStreamResolver urlResolver;
+
+    private static JsonWebSignature signedJwt(JWSHeader header) {
+        return new JsonWebSignatureImpl(new SignedJWT(header, new JWTClaimsSet.Builder().build()), null);
+    }
 
     RSAPublicKey key;
     String x5t;
     String x5tS256;
-    String x5c;
+    com.nimbusds.jose.util.Base64 certBase64;
+    X509Certificate certificate;
 
     X509KeyLocationResolverTest() throws Exception {
-        X509Certificate certificate = KeyUtils.getCertificate(ResourceUtils.readResource("publicCrt.pem"));
-        x5t = X509Util.x5t(certificate);
-        x5tS256 = X509Util.x5tS256(certificate);
-        x5c = new X509Util().toBase64(certificate);
+        certificate = KeyUtils.getCertificate(ResourceUtils.readResource("publicCrt.pem"));
+        x5t = Base64.getUrlEncoder().withoutPadding()
+                .encodeToString(MessageDigest.getInstance("SHA-1").digest(certificate.getEncoded()));
+        x5tS256 = Base64.getUrlEncoder().withoutPadding()
+                .encodeToString(MessageDigest.getInstance("SHA-256").digest(certificate.getEncoded()));
+        certBase64 = com.nimbusds.jose.util.Base64.encode(certificate.getEncoded());
         key = (RSAPublicKey) certificate.getPublicKey();
     }
 
@@ -69,77 +80,110 @@ class X509KeyLocationResolverTest {
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo("https://github.com/my_key.jwks", "issuer");
         contextInfo.setJwksRefreshInterval(10);
 
-        RsaJsonWebKey jwk = new RsaJsonWebKey(key);
-        jwk.setOtherParameter("x5c", Collections.singletonList(x5c));
-        when(mockedHttpsJwks.getJsonWebKeys()).thenReturn(Collections.singletonList(jwk));
+        RSAKey rsaJwk = new RSAKey.Builder(key)
+                .x509CertChain(Collections.singletonList(certBase64))
+                .build();
+
         X509KeyLocationResolver keyLocationResolver = new X509KeyLocationResolver(contextInfo) {
-            protected HttpsJwks initializeHttpsJwks(String loc) {
-                return mockedHttpsJwks;
+            @Override
+            protected RemoteJwkSet createRemoteJwkSet(String location) {
+                return new RemoteJwkSet(location, authContextInfo) {
+                    @Override
+                    void refresh() {
+                        // no-op, keys set directly
+                    }
+
+                    @Override
+                    List<JWK> getKeys() {
+                        return Collections.singletonList(rsaJwk);
+                    }
+                };
             }
         };
-        keyLocationResolver = Mockito.spy(keyLocationResolver);
-        when(signature.getX509CertSha1ThumbprintHeaderValue()).thenReturn(x5t);
-        assertEquals(key, keyLocationResolver.resolveKey(signature, emptyList()));
+
+        assertEquals(key, keyLocationResolver
+                .resolveKey(
+                        signedJwt(new JWSHeader.Builder(JWSAlgorithm.RS256).x509CertThumbprint(new Base64URL(x5t)).build())));
     }
 
     @Test
     void loadHttpsPemCert() throws Exception {
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo("https://github.com/my_key.crt", "issuer");
         contextInfo.setJwksRefreshInterval(10);
-        Mockito.doThrow(new JoseException("")).when(mockedHttpsJwks).refresh();
         Mockito.doReturn(ResourceUtils.getAsClasspathResource("publicCrt.pem"))
                 .when(urlResolver).resolve(Mockito.any());
         X509KeyLocationResolver keyLocationResolver = new X509KeyLocationResolver(contextInfo) {
-            protected HttpsJwks initializeHttpsJwks(String loc) {
-                return mockedHttpsJwks;
+            @Override
+            protected RemoteJwkSet createRemoteJwkSet(String location) {
+                return new RemoteJwkSet(location, authContextInfo) {
+                    @Override
+                    void refresh() throws IOException {
+                        throw new IOException("Not a JWKS endpoint");
+                    }
+                };
             }
 
+            @Override
             protected UrlStreamResolver getUrlResolver() {
                 return urlResolver;
             }
         };
-        when(signature.getX509CertSha1ThumbprintHeaderValue()).thenReturn(x5t);
-        assertEquals(key, keyLocationResolver.resolveKey(signature, emptyList()));
+        assertEquals(key, keyLocationResolver
+                .resolveKey(
+                        signedJwt(new JWSHeader.Builder(JWSAlgorithm.RS256).x509CertThumbprint(new Base64URL(x5t)).build())));
     }
 
     @Test
     void loadPemCertOnClassPath() throws Exception {
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo("publicCrt.pem", "issuer");
         X509KeyLocationResolver keyLocationResolver = new X509KeyLocationResolver(contextInfo);
-        when(signature.getX509CertSha1ThumbprintHeaderValue()).thenReturn(x5t);
-        assertEquals(key, keyLocationResolver.resolveKey(signature, emptyList()));
+        assertEquals(key, keyLocationResolver
+                .resolveKey(
+                        signedJwt(new JWSHeader.Builder(JWSAlgorithm.RS256).x509CertThumbprint(new Base64URL(x5t)).build())));
     }
 
     @Test
     void loadJWKWithCertOnClassPathWithX5t() throws Exception {
-        RsaJsonWebKey jwk = new RsaJsonWebKey(key);
-        jwk.setOtherParameter("x5c", Collections.singletonList(x5c));
+        RSAKey rsaJwk = new RSAKey.Builder(key)
+                .x509CertChain(Collections.singletonList(certBase64))
+                .build();
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo();
-        contextInfo.setPublicKeyContent(jwk.toJson());
+        contextInfo.setPublicKeyContent(rsaJwk.toJSONString());
         X509KeyLocationResolver keyLocationResolver = new X509KeyLocationResolver(contextInfo);
-        when(signature.getX509CertSha1ThumbprintHeaderValue()).thenReturn(x5t);
-        assertEquals(key, keyLocationResolver.resolveKey(signature, emptyList()));
+        assertEquals(key, keyLocationResolver
+                .resolveKey(
+                        signedJwt(new JWSHeader.Builder(JWSAlgorithm.RS256).x509CertThumbprint(new Base64URL(x5t)).build())));
     }
 
     @Test
     void loadJWKWithCertOnClassPathWithX5tS256() throws Exception {
-        RsaJsonWebKey jwk = new RsaJsonWebKey(key);
-        jwk.setOtherParameter("x5c", Collections.singletonList(x5c));
+        RSAKey rsaJwk = new RSAKey.Builder(key)
+                .x509CertChain(Collections.singletonList(certBase64))
+                .build();
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo();
-        contextInfo.setPublicKeyContent(jwk.toJson());
+        contextInfo.setPublicKeyContent(rsaJwk.toJSONString());
         X509KeyLocationResolver keyLocationResolver = new X509KeyLocationResolver(contextInfo);
-        when(signature.getX509CertSha256ThumbprintHeaderValue()).thenReturn(x5tS256);
-        assertEquals(key, keyLocationResolver.resolveKey(signature, emptyList()));
+        assertEquals(key, keyLocationResolver.resolveKey(signedJwt(
+                new JWSHeader.Builder(JWSAlgorithm.RS256).x509CertSHA256Thumbprint(new Base64URL(x5tS256)).build())));
     }
 
     @Test
     void loadJWKWithCertOnClassPathWithWrongX5tS256() throws Exception {
-        RsaJsonWebKey jwk = new RsaJsonWebKey(key);
-        jwk.setOtherParameter("x5c", Collections.singletonList(x5c));
+        // Use a JWK Set with two entries so the single-certificate fallback does not apply
+        RSAKey rsaJwk1 = new RSAKey.Builder(key)
+                .x509CertChain(Collections.singletonList(certBase64))
+                .keyID("cert1")
+                .build();
+        RSAKey rsaJwk2 = new RSAKey.Builder(key)
+                .x509CertChain(Collections.singletonList(certBase64))
+                .keyID("cert2")
+                .build();
+        JWKSet jwkSet = new JWKSet(Arrays.asList(rsaJwk1, rsaJwk2));
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo();
-        contextInfo.setPublicKeyContent(jwk.toJson());
+        contextInfo.setPublicKeyContent(jwkSet.toString());
         X509KeyLocationResolver keyLocationResolver = new X509KeyLocationResolver(contextInfo);
-        when(signature.getX509CertSha256ThumbprintHeaderValue()).thenReturn(x5tS256 + "1");
-        assertThrows(UnresolvableKeyException.class, () -> keyLocationResolver.resolveKey(signature, emptyList()));
+        assertThrows(UnresolvableKeyException.class,
+                () -> keyLocationResolver.resolveKey(signedJwt(new JWSHeader.Builder(JWSAlgorithm.RS256)
+                        .x509CertSHA256Thumbprint(new Base64URL(x5tS256 + "1")).build())));
     }
 }

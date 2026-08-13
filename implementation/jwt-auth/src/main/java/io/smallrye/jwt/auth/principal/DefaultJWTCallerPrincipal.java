@@ -16,34 +16,25 @@
 package io.smallrye.jwt.auth.principal;
 
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
 import org.eclipse.microprofile.jwt.Claims;
-import org.jose4j.jwt.JwtClaims;
-import org.jose4j.jwt.MalformedClaimException;
+
+import com.nimbusds.jwt.JWTClaimsSet;
 
 import io.smallrye.jwt.JsonUtils;
+import io.smallrye.jwt.common.JwtClaims;
 
 /**
- * A default implementation of JWTCallerPrincipal that wraps the jose4j
- * JwtClaims.
- *
- * @see JwtClaims
+ * A default implementation of JWTCallerPrincipal that wraps a claims map.
  */
 public class DefaultJWTCallerPrincipal extends JWTCallerPrincipal {
     private final JwtClaims claimsSet;
 
-    /**
-     * Create the DefaultJWTCallerPrincipal from the parsed JWT token and the
-     * extracted principal name
-     *
-     * @param rawToken - raw token value
-     * @param tokenType - token type
-     * @param claimsSet - Jose4J claims set
-     */
     public DefaultJWTCallerPrincipal(String rawToken, String tokenType, JwtClaims claimsSet) {
         super(rawToken, tokenType);
         this.claimsSet = claimsSet;
@@ -58,37 +49,25 @@ public class DefaultJWTCallerPrincipal extends JWTCallerPrincipal {
         this("JWT", claimsSet);
     }
 
+    public DefaultJWTCallerPrincipal(JWTClaimsSet nimbusClaimsSet) {
+        this(new JwtClaims(nimbusClaimsSet.getClaims()));
+    }
+
     protected static String getRawToken(JwtClaims claimsSet) {
-        Object rawToken = claimsSet.getClaimValue(Claims.raw_token.name());
+        Object rawToken = claimsSet.getClaim(Claims.raw_token.name());
         return rawToken != null ? rawToken.toString() : null;
     }
 
     @Override
     public Set<String> getAudience() {
-        Set<String> audSet = null;
-        if (claimsSet.hasAudience()) {
-            try {
-                // Use LinkedHashSet to preserve iteration order
-                audSet = new LinkedHashSet<>(claimsSet.getAudience());
-            } catch (MalformedClaimException e) {
-                PrincipalLogging.log.getAudienceFailure(e);
-            }
-        }
-        return audSet;
+        List<String> audList = claimsSet.getAudience();
+        return audList != null ? new LinkedHashSet<>(audList) : null;
     }
 
     @Override
     public Set<String> getGroups() {
-        HashSet<String> groups = new HashSet<>();
-        try {
-            List<String> globalGroups = claimsSet.getStringListClaimValue(Claims.groups.name());
-            if (globalGroups != null) {
-                groups.addAll(globalGroups);
-            }
-        } catch (MalformedClaimException e) {
-            PrincipalLogging.log.getGroupsFailure(e);
-        }
-        return groups;
+        List<String> groupsList = claimsSet.getGroups();
+        return groupsList != null ? new HashSet<>(groupsList) : new HashSet<>();
     }
 
     @Override
@@ -101,25 +80,23 @@ public class DefaultJWTCallerPrincipal extends JWTCallerPrincipal {
         Claims claimType = getClaimType(claimName);
         Object claim = null;
 
-        // Handle the jose4j NumericDate types and
         switch (claimType) {
             case exp:
             case iat:
             case auth_time:
             case nbf:
             case updated_at:
-                try {
-                    Number numberClaim = claimsSet.getClaimValue(claimType.name(), Number.class);
-                    if (numberClaim != null) {
-                        claim = numberClaim.longValue();
-                    }
-                    if (claim == null) {
-                        claim = 0L;
-                    }
-                } catch (MalformedClaimException e) {
-                    Object value = claimsSet.getClaimValue(claimType.name());
+                Object value = claimsSet.getClaim(claimType.name());
+                if (value instanceof Number) {
+                    claim = ((Number) value).longValue();
+                } else if (value instanceof Date) {
+                    claim = ((Date) value).getTime() / 1000;
+                } else if (value != null) {
                     PrincipalLogging.log.claimTypeMismatch(claimName, claimType.getType().getSimpleName(),
                             value.getClass().getSimpleName());
+                }
+                if (claim == null) {
+                    claim = 0L;
                 }
                 break;
             case groups:
@@ -129,17 +106,14 @@ public class DefaultJWTCallerPrincipal extends JWTCallerPrincipal {
                 claim = getAudience();
                 break;
             case UNKNOWN:
-                claim = claimsSet.getClaimValue(claimName);
+                claim = claimsSet.getClaim(claimName);
                 break;
             default:
-                claim = claimsSet.getClaimValue(claimType.name());
+                claim = claimsSet.getClaim(claimType.name());
         }
         return claim;
     }
 
-    /**
-     * Convert the types jose4j uses for address, sub_jwk, and jwk
-     */
     private void fixJoseTypes() {
         if (claimsSet.hasClaim(Claims.address.name())) {
             replaceClaimValueWithJsonValue(Claims.address.name());
@@ -150,19 +124,13 @@ public class DefaultJWTCallerPrincipal extends JWTCallerPrincipal {
         if (claimsSet.hasClaim(Claims.sub_jwk.name())) {
             replaceClaimValueWithJsonValue(Claims.sub_jwk.name());
         }
-        // Handle custom claims
-        Set<String> customClaimNames = filterCustomClaimNames(claimsSet.getClaimNames());
+        // Handle custom claimsSet
+        Set<String> customClaimNames = filterCustomClaimNames(claimsSet.keySet());
         for (String name : customClaimNames) {
             replaceClaimValueWithJsonValue(name);
         }
     }
 
-    /**
-     * Determine the custom claims in the set
-     *
-     * @param claimNames - the current set of claim names in this token
-     * @return the possibly empty set of names for non-Claims claims
-     */
     protected Set<String> filterCustomClaimNames(Collection<String> claimNames) {
         HashSet<String> customNames = new HashSet<>(claimNames);
         for (Claims claim : Claims.values()) {
@@ -172,13 +140,9 @@ public class DefaultJWTCallerPrincipal extends JWTCallerPrincipal {
     }
 
     protected void replaceClaimValueWithJsonValue(String name) {
-        try {
-            final Object object = claimsSet.getClaimValue(name, Object.class);
-            if (!(object instanceof String)) {
-                claimsSet.setClaim(name, JsonUtils.wrapValue(object));
-            }
-        } catch (MalformedClaimException e) {
-            PrincipalLogging.log.replaceClaimValueWithJsonFailure(name, e);
+        final Object object = claimsSet.getClaim(name);
+        if (object != null && !(object instanceof String)) {
+            claimsSet.setClaim(name, JsonUtils.wrapValue(object));
         }
     }
 }

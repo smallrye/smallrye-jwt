@@ -3,23 +3,41 @@ package io.smallrye.jwt.build.impl;
 import java.io.InputStream;
 import java.security.Key;
 import java.security.PrivateKey;
+import java.security.Signature;
 import java.security.interfaces.ECPrivateKey;
+import java.security.interfaces.EdECPrivateKey;
 import java.security.interfaces.RSAPrivateKey;
+import java.text.ParseException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import javax.crypto.SecretKey;
 
 import org.eclipse.microprofile.jwt.Claims;
-import org.jose4j.jwk.JsonWebKey;
-import org.jose4j.jws.JsonWebSignature;
-import org.jose4j.jwt.JwtClaims;
-import org.jose4j.jwx.HeaderParameterNames;
 
+import com.nimbusds.jose.HeaderParameterNames;
+import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.JOSEObjectType;
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.JWSHeader;
+import com.nimbusds.jose.JWSObject;
+import com.nimbusds.jose.JWSSigner;
+import com.nimbusds.jose.Payload;
+import com.nimbusds.jose.crypto.ECDSASigner;
+import com.nimbusds.jose.crypto.MACSigner;
+import com.nimbusds.jose.crypto.RSASSASigner;
+import com.nimbusds.jose.jwk.JWK;
+import com.nimbusds.jose.util.Base64;
+import com.nimbusds.jose.util.Base64URL;
+
+import io.smallrye.jwt.algorithm.EdDSASigner;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 import io.smallrye.jwt.build.JwtEncryptionBuilder;
 import io.smallrye.jwt.build.JwtSignature;
 import io.smallrye.jwt.build.JwtSignatureException;
+import io.smallrye.jwt.common.JwtClaims;
 import io.smallrye.jwt.util.KeyUtils;
 import io.smallrye.jwt.util.ResourceUtils;
 
@@ -27,7 +45,6 @@ import io.smallrye.jwt.util.ResourceUtils;
  * Default JWT Signature implementation
  */
 class JwtSignatureImpl implements JwtSignature {
-    private static final String ED_EC_PRIVATE_KEY_INTERFACE = "java.security.interfaces.EdECPrivateKey";
 
     JwtClaims claims = new JwtClaims();
     Map<String, Object> headers = new HashMap<>();
@@ -166,32 +183,85 @@ class JwtSignatureImpl implements JwtSignature {
             throw ImplMessages.msg.signingKeyIsNull();
         }
         JwtBuildUtils.setDefaultJwtClaims(claims, tokenLifespan);
-        JsonWebSignature jws = new JsonWebSignature();
-        for (Map.Entry<String, Object> entry : headers.entrySet()) {
-            jws.setHeader(entry.getKey(), entry.getValue());
-        }
-        if (!headers.containsKey(HeaderParameterNames.TYPE)) {
-            jws.setHeader(HeaderParameterNames.TYPE, "JWT");
-        }
 
         String algorithm = getSignatureAlgorithm(signingKey);
 
-        jws.setAlgorithmHeaderValue(algorithm);
+        JWSHeader.Builder headerBuilder = new JWSHeader.Builder(JWSAlgorithm.parse(algorithm));
 
-        jws.setPayload(claims.toJson());
-        jws.setKey(signingKey);
-        if (isRelaxKeyValidation()) {
-            jws.setDoKeyValidation(false);
+        if (!headers.containsKey(HeaderParameterNames.TYPE)) {
+            headerBuilder.type(new JOSEObjectType("JWT"));
         }
+
+        for (Map.Entry<String, Object> entry : headers.entrySet()) {
+            String name = entry.getKey();
+            Object value = entry.getValue();
+            switch (name) {
+                case HeaderParameterNames.ALGORITHM:
+                    // already set
+                    break;
+                case HeaderParameterNames.KEY_ID:
+                    headerBuilder.keyID((String) value);
+                    break;
+                case HeaderParameterNames.TYPE:
+                    headerBuilder.type(new JOSEObjectType((String) value));
+                    break;
+                case HeaderParameterNames.X_509_CERT_SHA_1_THUMBPRINT:
+                    headerBuilder.x509CertThumbprint(new Base64URL((String) value));
+                    break;
+                case HeaderParameterNames.X_509_CERT_SHA_256_THUMBPRINT:
+                    headerBuilder.x509CertSHA256Thumbprint(new Base64URL((String) value));
+                    break;
+                case HeaderParameterNames.X_509_CERT_CHAIN:
+                    @SuppressWarnings("unchecked")
+                    List<String> chain = (List<String>) value;
+                    headerBuilder.x509CertChain(
+                            chain.stream().map(Base64::new)
+                                    .collect(Collectors.toList()));
+                    break;
+                case HeaderParameterNames.JWK:
+                    if (value instanceof Map) {
+                        try {
+                            @SuppressWarnings("unchecked")
+                            Map<String, Object> jwkMap = (Map<String, Object>) value;
+                            headerBuilder.jwk(JWK.parse(jwkMap));
+                        } catch (ParseException e) {
+                            throw ImplMessages.msg.signatureException(e);
+                        }
+                    }
+                    break;
+                default:
+                    headerBuilder.customParam(name, value);
+            }
+        }
+
+        JWSHeader header = headerBuilder.build();
+        String payload = claims.toJsonString();
+        JWSObject jws = new JWSObject(header, new Payload(payload));
+
         try {
-            return jws.getCompactSerialization();
-        } catch (Exception ex) {
+            JWSSigner signer = createSigner(signingKey, isRelaxKeyValidation());
+            jws.sign(signer);
+            return jws.serialize();
+        } catch (JOSEException | IllegalArgumentException ex) {
             throw ImplMessages.msg.signJwtTokenFailed(ex.getMessage(), ex);
         }
     }
 
     private boolean isRelaxKeyValidation() {
         return JwtBuildUtils.getConfigProperty(JwtBuildUtils.SIGN_KEY_RELAX_VALIDATION_PROPERTY, Boolean.class, Boolean.FALSE);
+    }
+
+    private JWSSigner createSigner(Key signingKey, boolean relaxValidation) throws JOSEException {
+        if (signingKey instanceof RSAPrivateKey) {
+            return new RSASSASigner((RSAPrivateKey) signingKey, relaxValidation);
+        } else if (signingKey instanceof ECPrivateKey) {
+            return new ECDSASigner((ECPrivateKey) signingKey);
+        } else if (signingKey instanceof SecretKey) {
+            return new MACSigner((SecretKey) signingKey);
+        } else if (signingKey instanceof EdECPrivateKey) {
+            return new EdDSASigner((PrivateKey) signingKey);
+        }
+        throw new JOSEException("Unsupported key type for signing: " + signingKey.getClass().getName());
     }
 
     private String getConfiguredSignatureAlgorithm() {
@@ -234,8 +304,7 @@ class JwtSignatureImpl implements JwtSignature {
                 return alg;
             }
         } else if (signingKey instanceof PrivateKey) {
-            // for example, sun.security.pkcs11.P11Key$P11PrivateKey
-            if (isEdECPrivateKey(signingKey)) {
+            if (signingKey instanceof EdECPrivateKey) {
                 if (alg == null || alg.equals(SignatureAlgorithm.EDDSA.getAlgorithm())) {
                     return SignatureAlgorithm.EDDSA.getAlgorithm();
                 }
@@ -247,10 +316,6 @@ class JwtSignatureImpl implements JwtSignature {
             }
         }
         throw ImplMessages.msg.unsupportedSignatureAlgorithm(signingKey.getAlgorithm());
-    }
-
-    private static boolean isEdECPrivateKey(Key signingKey) {
-        return KeyUtils.isSupportedKey(signingKey, ED_EC_PRIVATE_KEY_INTERFACE);
     }
 
     static String getKeyContentFromLocation(String keyLocation) {
@@ -283,17 +348,17 @@ class JwtSignatureImpl implements JwtSignature {
             }
 
             // Try to load JWK from a single JWK resource or JWK set resource
-            JsonWebKey jwk = KeyUtils.getJwkKeyFromJwkSet(kid, keyContent);
+            JWK jwk = KeyUtils.getJwkKeyFromJwkSet(kid, keyContent);
             if (jwk != null) {
                 key = KeyUtils.getPrivateOrSecretSigningKey(jwk, algorithm);
                 if (key != null) {
                     // if the algorithm header is not set then use JWK `alg`
                     if (algorithm == null && jwk.getAlgorithm() != null) {
-                        headers.put(HeaderParameterNames.ALGORITHM, jwk.getAlgorithm());
+                        headers.put(HeaderParameterNames.ALGORITHM, jwk.getAlgorithm().getName());
                     }
                     // if 'kid' header is not set then use JWK `kid`
-                    if (kid == null && jwk.getKeyId() != null) {
-                        headers.put(HeaderParameterNames.KEY_ID, jwk.getKeyId());
+                    if (kid == null && jwk.getKeyID() != null) {
+                        headers.put(HeaderParameterNames.KEY_ID, jwk.getKeyID());
                     }
                 }
             }
@@ -304,6 +369,6 @@ class JwtSignatureImpl implements JwtSignature {
     }
 
     void removeJti() {
-        claims.unsetClaim(Claims.jti.name());
+        claims.remove(Claims.jti.name());
     }
 }

@@ -24,7 +24,8 @@ import java.util.Map;
 import java.util.regex.Pattern;
 
 import org.eclipse.microprofile.jwt.Claims;
-import org.jose4j.jwt.JwtClaims;
+
+import io.smallrye.jwt.common.JwtClaims;
 
 /**
  * Default JWT token validator
@@ -38,44 +39,45 @@ public class PrincipalUtils {
      */
     private static final Pattern CLAIM_PATH_PATTERN = Pattern.compile("\\/(?=(?:(?:[^\"]*\"){2})*[^\"]*$)");
 
-    public static void setClaims(JwtClaims claimsSet, String token, JWTAuthContextInfo authContextInfo) {
+    @SuppressWarnings("unchecked")
+    public static void setClaims(JwtClaims claimsMap, String token, JWTAuthContextInfo authContextInfo) {
 
-        claimsSet.setClaim(Claims.raw_token.name(), token);
+        claimsMap.setClaim(Claims.raw_token.name(), token);
 
-        if (!claimsSet.hasClaim(Claims.sub.name())) {
-            String sub = findSubject(authContextInfo, claimsSet);
-            claimsSet.setClaim(Claims.sub.name(), sub);
+        if (claimsMap.getSubject() == null) {
+            String sub = findSubject(authContextInfo, claimsMap);
+            claimsMap.setSubject(sub);
         }
 
         List<String> roles;
         if (authContextInfo.getGroupsPath() == null) {
-            Object groupsClaim = claimsSet.getClaimValue(Claims.groups.name());
+            Object groupsClaim = claimsMap.get(Claims.groups.name());
             if (groupsClaim instanceof String) {
                 roles = splitStringClaimValue(groupsClaim.toString(), authContextInfo);
             } else {
-                roles = List.class.cast(groupsClaim);
+                roles = (List<String>) groupsClaim;
             }
         } else {
-            roles = findGroups(authContextInfo, claimsSet);
+            roles = findGroups(authContextInfo, claimsMap);
         }
 
         if (roles == null && authContextInfo.getDefaultGroupsClaim() != null) {
             roles = Collections.singletonList(authContextInfo.getDefaultGroupsClaim());
         }
         if (roles != null) {
-            claimsSet.setClaim(Claims.groups.name(), roles);
+            claimsMap.setGroups(roles);
         }
 
         // Process the rolesMapping claim
-        if (claimsSet.hasClaim(ROLE_MAPPINGS)) {
-            mapRoles(claimsSet);
+        if (claimsMap.containsKey(ROLE_MAPPINGS)) {
+            mapRoles(claimsMap);
         }
     }
 
-    private static String findSubject(JWTAuthContextInfo authContextInfo, JwtClaims claimsSet) {
+    private static String findSubject(JWTAuthContextInfo authContextInfo, JwtClaims claimsMap) {
         if (authContextInfo.getSubjectPath() != null) {
             final String[] pathSegments = splitClaimPath(authContextInfo.getSubjectPath());
-            Object claimValue = findClaimValue(authContextInfo.getSubjectPath(), claimsSet.getClaimsMap(), pathSegments, 0);
+            Object claimValue = findClaimValue(authContextInfo.getSubjectPath(), claimsMap.asMap(), pathSegments, 0);
             if (claimValue instanceof String) {
                 return (String) claimValue;
             } else {
@@ -88,13 +90,13 @@ public class PrincipalUtils {
         return null;
     }
 
-    private static List<String> findGroups(JWTAuthContextInfo authContextInfo, JwtClaims claimsSet) {
+    private static List<String> findGroups(JWTAuthContextInfo authContextInfo, JwtClaims claimsMap) {
         final String[] pathSegments = splitClaimPath(authContextInfo.getGroupsPath());
-        Object claimValue = findClaimValue(authContextInfo.getGroupsPath(), claimsSet.getClaimsMap(), pathSegments, 0);
+        Object claimValue = findClaimValue(authContextInfo.getGroupsPath(), claimsMap.asMap(), pathSegments, 0);
 
         if (claimValue instanceof List) {
             @SuppressWarnings("unchecked")
-            List<String> groups = List.class.cast(claimValue);
+            List<String> groups = (List<String>) claimValue;
             // Force a check that a list contains the string values only
             try {
                 return Arrays.asList(groups.toArray(new String[] {}));
@@ -118,11 +120,11 @@ public class PrincipalUtils {
         return claimPath.indexOf('/') > 0 ? CLAIM_PATH_PATTERN.split(claimPath) : new String[] { claimPath };
     }
 
-    private static void mapRoles(JwtClaims claimsSet) {
+    @SuppressWarnings("unchecked")
+    private static void mapRoles(JwtClaims claimsMap) {
         try {
-            @SuppressWarnings("unchecked")
-            Map<String, String> rolesMapping = claimsSet.getClaimValue(ROLE_MAPPINGS, Map.class);
-            List<String> groups = claimsSet.getStringListClaimValue(Claims.groups.name());
+            Map<String, String> rolesMapping = (Map<String, String>) claimsMap.get(ROLE_MAPPINGS);
+            List<String> groups = (List<String>) claimsMap.get(Claims.groups.name());
             List<String> allGroups = new ArrayList<>(groups);
             for (Map.Entry<String, String> mapping : rolesMapping.entrySet()) {
                 // If the key group is in groups list, add the mapped role
@@ -131,7 +133,7 @@ public class PrincipalUtils {
                 }
             }
             // Replace the groups with the original groups + mapped roles
-            claimsSet.setStringListClaim(Claims.groups.name(), allGroups);
+            claimsMap.setGroups(allGroups);
             PrincipalLogging.log.updatedGroups(allGroups);
         } catch (Exception e) {
             PrincipalLogging.log.failedToAccessRolesMappingClaim(e);

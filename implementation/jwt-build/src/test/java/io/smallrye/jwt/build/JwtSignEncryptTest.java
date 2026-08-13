@@ -26,6 +26,8 @@ import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.security.interfaces.ECPublicKey;
+import java.security.interfaces.RSAPublicKey;
 import java.util.Collections;
 import java.util.Map;
 
@@ -37,12 +39,20 @@ import jakarta.json.JsonObject;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.spi.ConfigSource;
-import org.jose4j.base64url.Base64Url;
-import org.jose4j.json.JsonUtil;
-import org.jose4j.jwe.JsonWebEncryption;
-import org.jose4j.jws.JsonWebSignature;
-import org.jose4j.jwt.JwtClaims;
 import org.junit.jupiter.api.Test;
+
+import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.JWEObject;
+import com.nimbusds.jose.JWSVerifier;
+import com.nimbusds.jose.crypto.AESDecrypter;
+import com.nimbusds.jose.crypto.ECDSAVerifier;
+import com.nimbusds.jose.crypto.MACVerifier;
+import com.nimbusds.jose.crypto.RSADecrypter;
+import com.nimbusds.jose.crypto.RSASSAVerifier;
+import com.nimbusds.jose.util.Base64URL;
+import com.nimbusds.jose.util.JSONObjectUtils;
+import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
 
 import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
 import io.smallrye.jwt.util.KeyUtils;
@@ -72,18 +82,18 @@ class JwtSignEncryptTest {
     private String checkRsaInnerSignedEncryptedClaims(String jweCompact, String keyEncAlgo) throws Exception {
         checkJweHeaders(jweCompact, keyEncAlgo, null);
 
-        JsonWebEncryption jwe = getJsonWebEncryption(jweCompact);
+        JWEObject jwe = getDecryptedJwe(jweCompact);
 
-        String jwtCompact = jwe.getPlaintextString();
+        String jwtCompact = jwe.getPayload().toString();
 
-        JsonWebSignature jws = getVerifiedJws(jwtCompact);
-        JwtClaims claims = JwtClaims.parse(jws.getPayload());
+        SignedJWT signedJWT = getVerifiedJws(jwtCompact);
+        JWTClaimsSet claims = signedJWT.getJWTClaimsSet();
 
-        assertEquals(4, claims.getClaimsMap().size());
+        assertEquals(4, claims.getClaims().size());
         checkClaimsAndJwsHeaders(jwtCompact, claims, "RS256", null);
 
-        assertEquals("custom-value", claims.getClaimValue("customClaim"));
-        return claims.getJwtId();
+        assertEquals("custom-value", claims.getClaim("customClaim"));
+        return claims.getJWTID();
     }
 
     @Test
@@ -154,17 +164,17 @@ class JwtSignEncryptTest {
 
         checkJweHeaders(jweCompact, "RSA-OAEP", "key-enc-key-id");
 
-        JsonWebEncryption jwe = getJsonWebEncryption(jweCompact);
+        JWEObject jwe = getDecryptedJwe(jweCompact);
 
-        String jwtCompact = jwe.getPlaintextString();
+        String jwtCompact = jwe.getPayload().toString();
 
-        JsonWebSignature jws = getVerifiedJws(jwtCompact);
-        JwtClaims claims = JwtClaims.parse(jws.getPayload());
+        SignedJWT signedJWT = getVerifiedJws(jwtCompact);
+        JWTClaimsSet claims = signedJWT.getJWTClaimsSet();
 
-        assertEquals(4, claims.getClaimsMap().size());
+        assertEquals(4, claims.getClaims().size());
         checkClaimsAndJwsHeaders(jwtCompact, claims, "RS256", "sign-key-id");
 
-        assertEquals("custom-value", claims.getClaimValue("customClaim"));
+        assertEquals("custom-value", claims.getClaim("customClaim"));
     }
 
     @Test
@@ -186,17 +196,17 @@ class JwtSignEncryptTest {
 
         checkJweHeaders(jweCompact, "RSA-OAEP", "key1");
 
-        JsonWebEncryption jwe = getJsonWebEncryption(jweCompact);
+        JWEObject jwe = getDecryptedJwe(jweCompact);
 
-        String jwtCompact = jwe.getPlaintextString();
+        String jwtCompact = jwe.getPayload().toString();
 
-        JsonWebSignature jws = getVerifiedJws(jwtCompact);
-        JwtClaims claims = JwtClaims.parse(jws.getPayload());
+        SignedJWT signedJWT = getVerifiedJws(jwtCompact);
+        JWTClaimsSet claims = signedJWT.getJWTClaimsSet();
 
-        assertEquals(4, claims.getClaimsMap().size());
+        assertEquals(4, claims.getClaims().size());
         checkClaimsAndJwsHeaders(jwtCompact, claims, "RS256", "sign-key-id");
 
-        assertEquals("custom-value", claims.getClaimValue("customClaim"));
+        assertEquals("custom-value", claims.getClaim("customClaim"));
     }
 
     @Test
@@ -211,17 +221,17 @@ class JwtSignEncryptTest {
         checkJweHeaders(jweCompact, "A256KW", null);
 
         SecretKey secretKey = new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "AES");
-        JsonWebEncryption jwe = getJsonWebEncryption(jweCompact, secretKey);
+        JWEObject jwe = getDecryptedJwe(jweCompact, secretKey);
 
-        String jwtCompact = jwe.getPlaintextString();
+        String jwtCompact = jwe.getPayload().toString();
 
-        JsonWebSignature jws = getVerifiedJws(jwtCompact, secretKey);
-        JwtClaims claims = JwtClaims.parse(jws.getPayload());
+        SignedJWT signedJWT = getVerifiedJws(jwtCompact, secretKey);
+        JWTClaimsSet claims = signedJWT.getJWTClaimsSet();
 
-        assertEquals(4, claims.getClaimsMap().size());
+        assertEquals(4, claims.getClaims().size());
         checkClaimsAndJwsHeaders(jwtCompact, claims, "HS256", null);
 
-        assertEquals("custom-value", claims.getClaimValue("customClaim"));
+        assertEquals("custom-value", claims.getClaim("customClaim"));
     }
 
     private static JwtBuildConfigSource getConfigSource() {
@@ -241,23 +251,33 @@ class JwtSignEncryptTest {
         return KeyUtils.readPublicKey("/publicKey.pem");
     }
 
-    private static JsonWebSignature getVerifiedJws(String jwt) throws Exception {
+    private static SignedJWT getVerifiedJws(String jwt) throws Exception {
         return getVerifiedJws(jwt, getPublicKey());
     }
 
-    private static JsonWebSignature getVerifiedJws(String jwt, Key key) throws Exception {
-        JsonWebSignature jws = new JsonWebSignature();
-        jws.setCompactSerialization(jwt);
-        jws.setKey(key);
-        assertTrue(jws.verifySignature());
-        return jws;
+    private static SignedJWT getVerifiedJws(String jwt, Key key) throws Exception {
+        SignedJWT signedJWT = SignedJWT.parse(jwt);
+        JWSVerifier verifier = createVerifier(key);
+        assertTrue(signedJWT.verify(verifier));
+        return signedJWT;
     }
 
-    private static void checkClaimsAndJwsHeaders(String jwsCompact, JwtClaims claims, String algo, String keyId)
+    private static JWSVerifier createVerifier(Key key) throws JOSEException {
+        if (key instanceof RSAPublicKey) {
+            return new RSASSAVerifier((RSAPublicKey) key);
+        } else if (key instanceof ECPublicKey) {
+            return new ECDSAVerifier((ECPublicKey) key);
+        } else if (key instanceof SecretKey) {
+            return new MACVerifier((SecretKey) key);
+        }
+        throw new JOSEException("Unsupported key type for verification: " + key.getClass().getName());
+    }
+
+    private static void checkClaimsAndJwsHeaders(String jwsCompact, JWTClaimsSet claims, String algo, String keyId)
             throws Exception {
-        assertNotNull(claims.getIssuedAt());
+        assertNotNull(claims.getIssueTime());
         assertNotNull(claims.getExpirationTime());
-        assertNotNull(claims.getJwtId());
+        assertNotNull(claims.getJWTID());
 
         Map<String, Object> headers = getJwsHeaders(jwsCompact);
         assertEquals(keyId != null ? 3 : 2, headers.size());
@@ -281,26 +301,29 @@ class JwtSignEncryptTest {
         assertEquals("JWT", jweHeaders.get("cty"));
     }
 
-    private static JsonWebEncryption getJsonWebEncryption(String compactJwe) throws Exception {
-        return getJsonWebEncryption(compactJwe, getPrivateKey());
+    private static JWEObject getDecryptedJwe(String compactJwe) throws Exception {
+        return getDecryptedJwe(compactJwe, getPrivateKey());
     }
 
-    private static JsonWebEncryption getJsonWebEncryption(String compactJwe, Key key) throws Exception {
-        JsonWebEncryption jwe = new JsonWebEncryption();
-        jwe.setCompactSerialization(compactJwe);
-        jwe.setKey(key);
+    private static JWEObject getDecryptedJwe(String compactJwe, Key key) throws Exception {
+        JWEObject jwe = JWEObject.parse(compactJwe);
+        if (key instanceof PrivateKey) {
+            jwe.decrypt(new RSADecrypter((PrivateKey) key));
+        } else if (key instanceof SecretKey) {
+            jwe.decrypt(new AESDecrypter((SecretKey) key));
+        }
         return jwe;
     }
 
     private static Map<String, Object> getJweHeaders(String compactJwe) throws Exception {
         int firstDot = compactJwe.indexOf(".");
-        String headersJson = new Base64Url().base64UrlDecodeToUtf8String(compactJwe.substring(0, firstDot));
-        return JsonUtil.parseJson(headersJson);
+        String headersJson = new Base64URL(compactJwe.substring(0, firstDot)).decodeToString();
+        return JSONObjectUtils.parse(headersJson);
     }
 
     private static Map<String, Object> getJwsHeaders(String compactJws) throws Exception {
         int firstDot = compactJws.indexOf(".");
-        String headersJson = new Base64Url().base64UrlDecodeToUtf8String(compactJws.substring(0, firstDot));
-        return JsonUtil.parseJson(headersJson);
+        String headersJson = new Base64URL(compactJws.substring(0, firstDot)).decodeToString();
+        return JSONObjectUtils.parse(headersJson);
     }
 }

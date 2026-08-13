@@ -2,9 +2,8 @@ package io.smallrye.jwt.auth.principal;
 
 import java.net.URI;
 
-import org.jose4j.lang.UnresolvableKeyException;
-
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
+import io.smallrye.jwt.auth.UnresolvableKeyException;
 
 interface AwsAlbKeyConfigurationValidator {
 
