@@ -3,10 +3,10 @@ package io.smallrye.jwt.auth.principal;
 import java.io.IOException;
 import java.security.Key;
 import java.time.Duration;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jose4j.http.Get;
@@ -26,7 +26,7 @@ import io.smallrye.jwt.util.ResourceUtils;
 public class AwsAlbKeyResolver implements VerificationKeyResolver {
     private JWTAuthContextInfo authContextInfo;
     private long cacheTimeToLive;
-    private Map<String, CacheEntry> keys = new HashMap<>();
+    private final Map<String, CacheEntry> keys = new ConcurrentHashMap<>();
     private AtomicInteger size = new AtomicInteger();
 
     public AwsAlbKeyResolver(JWTAuthContextInfo authContextInfo) throws UnresolvableKeyException {
@@ -46,8 +46,18 @@ public class AwsAlbKeyResolver implements VerificationKeyResolver {
         if (entry != null) {
             return entry.key;
         } else if (prepareSpaceForNewCacheEntry()) {
-            entry = new CacheEntry(retrieveKey(kid));
-            keys.put(kid, entry);
+            try {
+                entry = new CacheEntry(retrieveKey(kid));
+            } catch (Throwable t) {
+                size.decrementAndGet();
+                throw t;
+            }
+            CacheEntry existing = keys.putIfAbsent(kid, entry);
+            if (existing != null) {
+                // Another thread cached the key for this kid concurrently, reuse it
+                size.decrementAndGet();
+                return existing.key;
+            }
             return entry.key;
         } else {
             return retrieveKey(kid);
@@ -119,8 +129,10 @@ public class AwsAlbKeyResolver implements VerificationKeyResolver {
         for (Iterator<Map.Entry<String, CacheEntry>> it = keys.entrySet().iterator(); it.hasNext();) {
             Map.Entry<String, CacheEntry> next = it.next();
             if (isEntryExpired(next.getValue(), now)) {
-                it.remove();
-                size.decrementAndGet();
+                // Do not decrement the size if another thread already removed the entry
+                if (keys.remove(next.getKey(), next.getValue())) {
+                    size.decrementAndGet();
+                }
             }
         }
     }
@@ -131,6 +143,7 @@ public class AwsAlbKeyResolver implements VerificationKeyResolver {
             currentSize = size.get();
             if (currentSize == authContextInfo.getKeyCacheSize()) {
                 removeInvalidEntries();
+                currentSize = size.get();
                 if (currentSize == authContextInfo.getKeyCacheSize()) {
                     return false;
                 }
@@ -145,9 +158,11 @@ public class AwsAlbKeyResolver implements VerificationKeyResolver {
             long now = now();
             if (isEntryExpired(entry, now)) {
                 // Entry has expired, remote introspection will be required
+                // Do not decrement the size if another thread already removed the entry
+                if (keys.remove(kid, entry)) {
+                    size.decrementAndGet();
+                }
                 entry = null;
-                keys.remove(kid);
-                size.decrementAndGet();
             }
         }
         return entry;
