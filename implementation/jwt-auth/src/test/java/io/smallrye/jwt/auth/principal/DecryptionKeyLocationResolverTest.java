@@ -16,48 +16,45 @@
  */
 package io.smallrye.jwt.auth.principal;
 
-import static java.util.Collections.emptyList;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.when;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
-import org.jose4j.jwe.JsonWebEncryption;
-import org.jose4j.jwk.HttpsJwks;
-import org.jose4j.jwk.JsonWebKey;
-import org.jose4j.jwk.OctetSequenceJsonWebKey;
-import org.jose4j.jwk.PublicJsonWebKey;
-import org.jose4j.jwk.RsaJsonWebKey;
-import org.jose4j.jwk.RsaJwkGenerator;
-import org.jose4j.jwx.Headers;
-import org.jose4j.lang.JoseException;
-import org.jose4j.lang.UnresolvableKeyException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.nimbusds.jose.EncryptionMethod;
+import com.nimbusds.jose.JWEAlgorithm;
+import com.nimbusds.jose.JWEHeader;
+import com.nimbusds.jose.JWEObject;
+import com.nimbusds.jose.Payload;
+import com.nimbusds.jose.jwk.JWK;
+import com.nimbusds.jose.jwk.OctetSequenceKey;
+import com.nimbusds.jose.jwk.RSAKey;
+import com.nimbusds.jose.jwk.gen.RSAKeyGenerator;
+
+import io.smallrye.jwt.auth.JsonWebEncryption;
+import io.smallrye.jwt.auth.UnresolvableKeyException;
 import io.smallrye.jwt.util.ResourceUtils;
 import io.smallrye.jwt.util.ResourceUtils.UrlStreamResolver;
 
 @ExtendWith(MockitoExtension.class)
 class DecryptionKeyLocationResolverTest {
 
-    @Mock
-    JsonWebEncryption encryption;
-    @Mock
-    Headers headers;
-    @Mock
-    HttpsJwks mockedHttpsJwks;
     @Mock
     UrlStreamResolver urlResolver;
 
@@ -66,7 +63,7 @@ class DecryptionKeyLocationResolverTest {
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo();
         contextInfo.setDecryptionKeyLocation("wrong_location.pem");
         assertThrows(UnresolvableKeyException.class,
-                () -> new DecryptionKeyLocationResolver(contextInfo).resolveKey(encryption, emptyList()));
+                () -> new DecryptionKeyLocationResolver(contextInfo).resolveKey(jweObject(null)));
     }
 
     @Test
@@ -75,19 +72,26 @@ class DecryptionKeyLocationResolverTest {
         contextInfo.setDecryptionKeyLocation("https://github.com/my_key.jwks");
         contextInfo.setJwksRefreshInterval(10);
 
+        RSAKey rsaJwk = new RSAKeyGenerator(2048).keyID("1").generate();
+
         DecryptionKeyLocationResolver keyLocationResolver = new DecryptionKeyLocationResolver(contextInfo) {
-            protected HttpsJwks initializeHttpsJwks(String loc) {
-                return mockedHttpsJwks;
+            @Override
+            protected RemoteJwkSet createRemoteJwkSet(String location) {
+                return new RemoteJwkSet(location, authContextInfo) {
+                    @Override
+                    void refresh() {
+                        // no-op, keys set directly
+                    }
+
+                    @Override
+                    List<JWK> getKeys() {
+                        return Collections.singletonList(rsaJwk);
+                    }
+                };
             }
         };
-        RsaJsonWebKey jwk = RsaJwkGenerator.generateJwk(2048);
-        jwk.setKeyId("1");
-        when(mockedHttpsJwks.getJsonWebKeys()).thenReturn(Collections.singletonList(jwk));
-        keyLocationResolver = Mockito.spy(keyLocationResolver);
-        when(encryption.getHeaders()).thenReturn(headers);
-        when(headers.getStringHeaderValue(JsonWebKey.KEY_ID_PARAMETER)).thenReturn("1");
 
-        assertEquals(jwk.getPrivateKey(), keyLocationResolver.resolveKey(encryption, emptyList()));
+        assertEquals(rsaJwk.toPrivateKey(), keyLocationResolver.resolveKey(jweObject("1")));
         assertNull(keyLocationResolver.key);
     }
 
@@ -97,20 +101,28 @@ class DecryptionKeyLocationResolverTest {
         contextInfo.setDecryptionKeyLocation("https://github.com/my_key.jwks");
         contextInfo.setJwksRefreshInterval(10);
 
+        SecretKey secretKey = new SecretKeySpec("123456789ABCDEF".getBytes(StandardCharsets.UTF_8), "AES");
+        OctetSequenceKey jwk = new OctetSequenceKey.Builder(secretKey).keyID("1").build();
+
         DecryptionKeyLocationResolver keyLocationResolver = new DecryptionKeyLocationResolver(contextInfo) {
-            protected HttpsJwks initializeHttpsJwks(String loc) {
-                return mockedHttpsJwks;
+            @Override
+            protected RemoteJwkSet createRemoteJwkSet(String location) {
+                return new RemoteJwkSet(location, authContextInfo) {
+                    @Override
+                    void refresh() {
+                        // no-op, keys set directly
+                    }
+
+                    @Override
+                    List<JWK> getKeys() {
+                        return Collections.singletonList(jwk);
+                    }
+                };
             }
         };
-        SecretKey secretKey = new SecretKeySpec("123456789ABCDEF".getBytes(StandardCharsets.UTF_8), "AES");
-        OctetSequenceJsonWebKey jwk = new OctetSequenceJsonWebKey(secretKey);
-        jwk.setKeyId("1");
-        when(mockedHttpsJwks.getJsonWebKeys()).thenReturn(Collections.singletonList(jwk));
-        keyLocationResolver = Mockito.spy(keyLocationResolver);
-        when(encryption.getHeaders()).thenReturn(headers);
-        when(headers.getStringHeaderValue(JsonWebKey.KEY_ID_PARAMETER)).thenReturn("1");
 
-        assertEquals(secretKey, keyLocationResolver.resolveKey(encryption, emptyList()));
+        // Compare key bytes - Nimbus toSecretKey() uses "NONE" algorithm while our test key uses "AES"
+        assertArrayEquals(secretKey.getEncoded(), ((SecretKey) keyLocationResolver.resolveKey(jweObject("1"))).getEncoded());
         assertNull(keyLocationResolver.key);
     }
 
@@ -120,29 +132,35 @@ class DecryptionKeyLocationResolverTest {
         contextInfo.setDecryptionKeyLocation("https://github.com/my_key.jwks");
         contextInfo.setJwksRefreshInterval(10);
 
+        RSAKey originalJwk = new RSAKeyGenerator(2048).generate();
+        AtomicInteger fetchCount = new AtomicInteger(0);
+
         DecryptionKeyLocationResolver keyLocationResolver = new DecryptionKeyLocationResolver(contextInfo) {
-            protected HttpsJwks initializeHttpsJwks(String loc) {
-                return mockedHttpsJwks;
+            @Override
+            protected RemoteJwkSet createRemoteJwkSet(String location) {
+                return new RemoteJwkSet(location, authContextInfo) {
+                    private List<JWK> keys = Collections.emptyList();
+
+                    @Override
+                    void refresh() {
+                        int count = fetchCount.incrementAndGet();
+                        // Construction call: return JWK with non-matching kid "2"
+                        // Forced refresh call: return JWK with matching kid "1"
+                        RSAKey jwk = count == 1
+                                ? new RSAKey.Builder(originalJwk).keyID("2").build()
+                                : new RSAKey.Builder(originalJwk).keyID("1").build();
+                        keys = Collections.singletonList(jwk);
+                    }
+
+                    @Override
+                    List<JWK> getKeys() {
+                        return keys;
+                    }
+                };
             }
         };
-        // token 'kid' is '1'
-        when(encryption.getHeaders()).thenReturn(headers);
-        when(headers.getStringHeaderValue(JsonWebKey.KEY_ID_PARAMETER)).thenReturn("1");
 
-        RsaJsonWebKey jwk = RsaJwkGenerator.generateJwk(2048);
-
-        // Return JWK Set with a non-matching JWK with 'kid' set to '2'
-        jwk.setKeyId("2");
-        when(mockedHttpsJwks.getJsonWebKeys()).thenReturn(Collections.singletonList(jwk));
-
-        // Refresh JWK Set and get a matching JWK with 'kid' set to '1'
-        doAnswer((i) -> {
-            jwk.setKeyId("1");
-            return null;
-        }).when(mockedHttpsJwks).refresh();
-
-        keyLocationResolver = Mockito.spy(keyLocationResolver);
-        assertEquals(jwk.getPrivateKey(), keyLocationResolver.resolveKey(encryption, emptyList()));
+        assertEquals(originalJwk.toPrivateKey(), keyLocationResolver.resolveKey(jweObject("1")));
         assertNull(keyLocationResolver.key);
     }
 
@@ -153,33 +171,40 @@ class DecryptionKeyLocationResolverTest {
         contextInfo.setJwksRefreshInterval(10);
         contextInfo.setForcedJwksRefreshInterval(10);
 
+        RSAKey originalJwk = new RSAKeyGenerator(2048).generate();
+        AtomicInteger fetchCount = new AtomicInteger(0);
+
         DecryptionKeyLocationResolver keyLocationResolver = Mockito.spy(new DecryptionKeyLocationResolver(contextInfo) {
-            protected HttpsJwks initializeHttpsJwks(String loc) {
-                return mockedHttpsJwks;
+            @Override
+            protected RemoteJwkSet createRemoteJwkSet(String location) {
+                return new RemoteJwkSet(location, authContextInfo) {
+                    private List<JWK> keys = Collections.emptyList();
+
+                    @Override
+                    void refresh() {
+                        int count = fetchCount.incrementAndGet();
+                        // Construction call: return JWK with non-matching kid "2"
+                        // Forced refresh call: return JWK with matching kid "1"
+                        RSAKey jwk = count == 1
+                                ? new RSAKey.Builder(originalJwk).keyID("2").build()
+                                : new RSAKey.Builder(originalJwk).keyID("1").build();
+                        keys = Collections.singletonList(jwk);
+                    }
+
+                    @Override
+                    List<JWK> getKeys() {
+                        return keys;
+                    }
+                };
             }
         });
-        // token 'kid' is '1'
-        when(encryption.getHeaders()).thenReturn(headers);
-        when(headers.getStringHeaderValue(JsonWebKey.KEY_ID_PARAMETER)).thenReturn("1");
 
-        RsaJsonWebKey jwk = RsaJwkGenerator.generateJwk(2048);
-
-        // Return JWK Set with a non-matching JWK with 'kid' set to '2'
-        jwk.setKeyId("2");
-        when(mockedHttpsJwks.getJsonWebKeys()).thenReturn(Collections.singletonList(jwk));
-
-        // Refresh JWK Set and get a matching JWK with 'kid' set to '1'
-        doAnswer((i) -> {
-            jwk.setKeyId("1");
-            return null;
-        }).when(mockedHttpsJwks).refresh();
-
-        assertEquals(jwk.getPrivateKey(), keyLocationResolver.resolveKey(encryption, emptyList()));
+        // First call: kid "1" not found in cache (has "2"), forced refresh succeeds and returns kid "1"
+        assertEquals(originalJwk.toPrivateKey(), keyLocationResolver.resolveKey(jweObject("1")));
         assertNull(keyLocationResolver.key);
 
-        // Return JWK Set with a non-matching JWK with 'kid' set to '2'
-        jwk.setKeyId("2");
-        assertThrows(UnresolvableKeyException.class, () -> keyLocationResolver.resolveKey(encryption, emptyList()));
+        // Second call with non-matching kid: forced refresh is declined (interval not elapsed)
+        assertThrows(UnresolvableKeyException.class, () -> keyLocationResolver.resolveKey(jweObject("99")));
     }
 
     @Test
@@ -188,20 +213,26 @@ class DecryptionKeyLocationResolverTest {
         contextInfo.setDecryptionKeyLocation("https://github.com/my_key.pem");
         contextInfo.setJwksRefreshInterval(10);
 
-        Mockito.doThrow(new JoseException("")).when(mockedHttpsJwks).refresh();
         Mockito.doReturn(ResourceUtils.getAsClasspathResource("privateKey.pem"))
                 .when(urlResolver).resolve(Mockito.any());
         DecryptionKeyLocationResolver keyLocationResolver = new DecryptionKeyLocationResolver(contextInfo) {
-            protected HttpsJwks initializeHttpsJwks(String loc) {
-                return mockedHttpsJwks;
+            @Override
+            protected RemoteJwkSet createRemoteJwkSet(String location) {
+                return new RemoteJwkSet(location, authContextInfo) {
+                    @Override
+                    void refresh() throws IOException {
+                        throw new IOException("Not a JWKS endpoint");
+                    }
+                };
             }
 
+            @Override
             protected UrlStreamResolver getUrlResolver() {
                 return urlResolver;
             }
         };
         assertNotNull(keyLocationResolver.key);
-        assertEquals(keyLocationResolver.key, keyLocationResolver.resolveKey(encryption, emptyList()));
+        assertEquals(keyLocationResolver.key, keyLocationResolver.resolveKey(jweObject(null)));
         assertEquals(keyLocationResolver.key,
                 DecryptionKeyLocationResolver.tryAsPEMPrivateKey(keyLocationResolver.readKeyContent("privateKey.pem")));
     }
@@ -212,7 +243,7 @@ class DecryptionKeyLocationResolverTest {
         contextInfo.setDecryptionKeyLocation("privateKey.pem");
         DecryptionKeyLocationResolver keyLocationResolver = new DecryptionKeyLocationResolver(contextInfo);
         assertNotNull(keyLocationResolver.key);
-        assertEquals(keyLocationResolver.key, keyLocationResolver.resolveKey(encryption, emptyList()));
+        assertEquals(keyLocationResolver.key, keyLocationResolver.resolveKey(jweObject(null)));
         assertEquals(keyLocationResolver.key,
                 DecryptionKeyLocationResolver.tryAsPEMPrivateKey(keyLocationResolver.readKeyContent("privateKey.pem")));
     }
@@ -222,12 +253,18 @@ class DecryptionKeyLocationResolverTest {
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo();
         contextInfo.setDecryptionKeyLocation("decryptPrivateKey.jwk");
         contextInfo.setTokenDecryptionKeyId("key1");
-        when(encryption.getHeaders()).thenReturn(headers);
-        when(headers.getStringHeaderValue(JsonWebKey.KEY_ID_PARAMETER)).thenReturn("key1");
         DecryptionKeyLocationResolver keyLocationResolver = new DecryptionKeyLocationResolver(contextInfo);
         assertNotNull(keyLocationResolver.key);
-        assertEquals(keyLocationResolver.key, keyLocationResolver.resolveKey(encryption, emptyList()));
+        assertEquals(keyLocationResolver.key, keyLocationResolver.resolveKey(jweObject("key1")));
         assertEquals(keyLocationResolver.key,
-                ((PublicJsonWebKey) keyLocationResolver.getJsonWebKey("key1", null)).getPrivateKey());
+                ((com.nimbusds.jose.jwk.AsymmetricJWK) keyLocationResolver.getJsonWebKey("key1", null)).toPrivateKey());
+    }
+
+    private static JsonWebEncryption jweObject(String kid) {
+        JWEHeader.Builder builder = new JWEHeader.Builder(JWEAlgorithm.RSA_OAEP_256, EncryptionMethod.A256GCM);
+        if (kid != null) {
+            builder.keyID(kid);
+        }
+        return new JsonWebEncryptionImpl(new JWEObject(builder.build(), new Payload("{}")), null);
     }
 }

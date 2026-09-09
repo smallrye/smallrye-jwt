@@ -25,9 +25,9 @@ import java.security.PublicKey;
 import java.util.Optional;
 
 import org.eclipse.microprofile.jwt.tck.util.TokenUtils;
-import org.jose4j.jwt.JwtClaims;
 import org.junit.jupiter.api.Test;
 
+import io.smallrye.jwt.common.JwtClaims;
 import io.smallrye.jwt.config.JWTAuthContextInfoProvider;
 import io.smallrye.jwt.util.KeyUtils;
 
@@ -41,9 +41,9 @@ class KeyStoreLocationTest {
         JWTAuthContextInfoProvider provider = JWTAuthContextInfoProvider.createWithKeyStoreLocation("server-keystore.jks",
                 Optional.of("password"), Optional.of("server"), Optional.empty(),
                 "https://server.example.com");
-        JwtClaims claims = new DefaultJWTTokenParser().parse(jwt, provider.getContextInfo()).getJwtClaims();
+        JwtClaims claims = new DefaultJWTTokenParser().parse(jwt, provider.getContextInfo()).claims();
         assertNotNull(claims);
-        assertEquals("https://server.example.com", claims.getIssuer());
+        assertEquals("https://server.example.com", claims.get("iss"));
     }
 
     @Test
@@ -55,8 +55,8 @@ class KeyStoreLocationTest {
         JWTAuthContextInfoProvider provider = JWTAuthContextInfoProvider.createWithKeyStoreLocation("server-keystore.jks",
                 Optional.of("password"), Optional.empty(), Optional.of("server"),
                 "https://server.example.com");
-        JwtClaims claims = new DefaultJWTTokenParser().parse(jwt, provider.getContextInfo()).getJwtClaims();
+        JwtClaims claims = new DefaultJWTTokenParser().parse(jwt, provider.getContextInfo()).claims();
         assertNotNull(claims);
-        assertEquals("https://server.example.com", claims.getIssuer());
+        assertEquals("https://server.example.com", claims.get("iss"));
     }
 }

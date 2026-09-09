@@ -17,35 +17,36 @@
 package io.smallrye.jwt.auth.principal;
 
 import java.security.Key;
+import java.security.MessageDigest;
 import java.security.cert.X509Certificate;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
-import org.jose4j.jwk.JsonWebKey;
-import org.jose4j.jwk.RsaJsonWebKey;
-import org.jose4j.jws.JsonWebSignature;
-import org.jose4j.jwx.JsonWebStructure;
-import org.jose4j.keys.resolvers.VerificationKeyResolver;
-import org.jose4j.keys.resolvers.X509VerificationKeyResolver;
-import org.jose4j.lang.UnresolvableKeyException;
+import com.nimbusds.jose.jwk.JWK;
+import com.nimbusds.jose.jwk.RSAKey;
+import com.nimbusds.jose.util.X509CertUtils;
 
 import io.smallrye.jwt.KeyFormat;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
-import io.smallrye.jwt.util.KeyUtils;
+import io.smallrye.jwt.auth.JsonWebSignature;
+import io.smallrye.jwt.auth.JwsHeaders;
+import io.smallrye.jwt.auth.UnresolvableKeyException;
+import io.smallrye.jwt.auth.VerificationKeyResolver;
 
 public class X509KeyLocationResolver extends AbstractKeyLocationResolver implements VerificationKeyResolver {
 
-    private X509VerificationKeyResolver resolver;
+    private List<X509Certificate> certificates;
 
     public X509KeyLocationResolver(JWTAuthContextInfo authContextInfo) throws UnresolvableKeyException {
         super(authContextInfo);
 
         try {
             initializeInternalResolver();
-            if (resolver == null) {
+            if (certificates == null || certificates.isEmpty()) {
                 throw PrincipalMessages.msg.failedToLoadCertificates();
             }
         } catch (Exception e) {
@@ -54,14 +55,47 @@ public class X509KeyLocationResolver extends AbstractKeyLocationResolver impleme
     }
 
     @Override
-    public Key resolveKey(JsonWebSignature jws, List<JsonWebStructure> nestingContext) throws UnresolvableKeyException {
-        return resolver.resolveKey(jws, nestingContext);
+    public Key resolveKey(JsonWebSignature jws)
+            throws UnresolvableKeyException {
+        JwsHeaders headers = jws.headers();
+        String x5t = headers.x509CertificateThumbprint();
+        String x5tS256 = headers.x509CertificateSha256Thumbprint();
+        if (certificates == null || certificates.isEmpty()) {
+            throw PrincipalMessages.msg.failedToLoadCertificates();
+        }
+
+        if (x5t == null && x5tS256 == null) {
+            throw PrincipalMessages.msg.failedToLoadKeyWhileResolving();
+        }
+
+        for (X509Certificate cert : certificates) {
+            try {
+                if (x5tS256 != null) {
+                    byte[] thumbprint = MessageDigest.getInstance("SHA-256").digest(cert.getEncoded());
+                    String computed = Base64.getUrlEncoder().withoutPadding().encodeToString(thumbprint);
+                    if (x5tS256.equals(computed)) {
+                        return cert.getPublicKey();
+                    }
+                }
+                if (x5t != null) {
+                    byte[] thumbprint = MessageDigest.getInstance("SHA-1").digest(cert.getEncoded());
+                    String computed = Base64.getUrlEncoder().withoutPadding().encodeToString(thumbprint);
+                    if (x5t.equals(computed)) {
+                        return cert.getPublicKey();
+                    }
+                }
+            } catch (Exception e) {
+                // try next
+            }
+        }
+
+        throw PrincipalMessages.msg.failedToLoadKeyWhileResolving();
     }
 
     protected void initializeInternalResolver() throws Exception {
 
-        if (isHttpsJwksInitialized(authContextInfo.getPublicKeyLocation())) {
-            initializeInternalResolverFromJwks(httpsJwks.getJsonWebKeys());
+        if (initializeHttpsJwks(authContextInfo.getPublicKeyLocation())) {
+            initializeCertificatesFromJwks(remoteJwkSet.getKeys());
             return;
         }
 
@@ -72,43 +106,39 @@ public class X509KeyLocationResolver extends AbstractKeyLocationResolver impleme
         if (mayBeFormat(KeyFormat.JWK) || mayBeFormat(KeyFormat.JWK_BASE64URL)) {
             loadFromJwk(content, null, null);
             if (jsonWebKeys != null) {
-                initializeInternalResolverFromJwks(jsonWebKeys);
+                initializeCertificatesFromJwks(jsonWebKeys);
                 return;
             }
         }
 
-        initializeInternalResolverFromPEMCertificate(content);
+        initializeCertificatesFromPEM(content);
     }
 
-    private void initializeInternalResolverFromJwks(List<JsonWebKey> jsonWebKeys) throws Exception {
+    private void initializeCertificatesFromJwks(List<JWK> jwks) throws Exception {
         List<X509Certificate> certs = new LinkedList<>();
         Set<String> signatureAlgorithms = signatureAlgorithms(authContextInfo);
-        for (JsonWebKey jwk : jsonWebKeys) {
-            if (jwk.getAlgorithm() == null || signatureAlgorithms.contains(jwk.getAlgorithm())
-                    && jwk instanceof RsaJsonWebKey) {
-                // Get the certificate chain
-                List<X509Certificate> x5c = ((RsaJsonWebKey) jwk).getCertificateChain();
-                if (x5c == null) {
-                    // required in the HTTPS JWKS case
-                    @SuppressWarnings("unchecked")
-                    List<String> encodedChain = jwk.getOtherParameterValue("x5c", List.class);
-                    if (encodedChain != null && !encodedChain.isEmpty()) {
-                        x5c = Collections.singletonList(KeyUtils.getCertificate(encodedChain.get(0)));
+        for (JWK jwk : jwks) {
+            String jwkAlg = jwk.getAlgorithm() != null ? jwk.getAlgorithm().getName() : null;
+            if (jwkAlg == null || signatureAlgorithms.contains(jwkAlg)) {
+                if (jwk instanceof RSAKey) {
+                    RSAKey rsaKey = (RSAKey) jwk;
+                    List<com.nimbusds.jose.util.Base64> x5c = rsaKey.getX509CertChain();
+                    if (x5c != null && !x5c.isEmpty()) {
+                        X509Certificate cert = X509CertUtils.parse(x5c.get(0).decode());
+                        if (cert != null) {
+                            certs.add(cert);
+                        }
                     }
-                }
-                if (x5c != null && x5c.size() > 0) {
-                    // The 1st certificate must contain the key
-                    certs.add(x5c.get(0));
                 }
             }
         }
-        resolver = new X509VerificationKeyResolver(certs);
+        this.certificates = certs;
     }
 
-    void initializeInternalResolverFromPEMCertificate(String content) {
+    void initializeCertificatesFromPEM(String content) {
         X509Certificate cert = super.loadPEMCertificate(content);
         if (cert != null) {
-            resolver = new X509VerificationKeyResolver(cert);
+            this.certificates = Collections.singletonList(cert);
         }
     }
 

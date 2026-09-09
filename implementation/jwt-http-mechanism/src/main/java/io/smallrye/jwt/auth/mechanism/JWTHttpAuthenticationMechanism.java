@@ -34,14 +34,14 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import org.eclipse.microprofile.jwt.JsonWebToken;
-import org.jose4j.lang.UnresolvableKeyException;
 
 import io.smallrye.jwt.auth.AbstractBearerTokenExtractor;
+import io.smallrye.jwt.auth.UnmatchedTokenKidException;
+import io.smallrye.jwt.auth.UnresolvableKeyException;
 import io.smallrye.jwt.auth.cdi.PrincipalProducer;
 import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
 import io.smallrye.jwt.auth.principal.JWTParser;
 import io.smallrye.jwt.auth.principal.ParseException;
-import io.smallrye.jwt.auth.principal.UnmatchedTokenKidException;
 
 /**
  * A JAX-RS HttpAuthenticationMechanism prototype

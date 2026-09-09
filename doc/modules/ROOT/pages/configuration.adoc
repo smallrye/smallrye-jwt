@@ -162,8 +162,7 @@ import java.util.Base64;
 import javax.annotation.Priority;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Alternative;
-import org.jose4j.jwt.JwtClaims;
-import org.jose4j.jwt.consumer.InvalidJwtException;
+import com.nimbusds.jwt.JWTClaimsSet;
 import io.smallrye.jwt.auth.principal.DefaultJWTCallerPrincipal;
 import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
 import io.smallrye.jwt.auth.principal.JWTCallerPrincipal;
@@ -180,8 +179,8 @@ public class TestJWTCallerPrincipalFactory extends JWTCallerPrincipalFactory {
         try {
             // Token has already been verified, parse the token claims only
             String json = new String(Base64.getUrlDecoder().decode(token.split("\\.")[1]), StandardCharsets.UTF_8);
-            return new DefaultJWTCallerPrincipal(JwtClaims.parse(json));
-        } catch (InvalidJwtException ex) {
+            return new DefaultJWTCallerPrincipal(JWTClaimsSet.parse(json));
+        } catch (java.text.ParseException ex) {
             throw new ParseException(ex.getMessage());
         }
     }

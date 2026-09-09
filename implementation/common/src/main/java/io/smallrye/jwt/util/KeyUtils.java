@@ -19,7 +19,6 @@ package io.smallrye.jwt.util;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.InvalidAlgorithmParameterException;
@@ -44,23 +43,23 @@ import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
-import jakarta.json.JsonArray;
-import jakarta.json.JsonObject;
-import jakarta.json.JsonReader;
+import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.jwk.AsymmetricJWK;
+import com.nimbusds.jose.jwk.JWK;
+import com.nimbusds.jose.jwk.JWKSet;
+import com.nimbusds.jose.jwk.KeyOperation;
+import com.nimbusds.jose.jwk.OctetKeyPair;
+import com.nimbusds.jose.jwk.OctetSequenceKey;
 
-import org.jose4j.json.JsonUtil;
-import org.jose4j.jwk.JsonWebKey;
-import org.jose4j.jwk.JsonWebKeySet;
-import org.jose4j.jwk.OctetSequenceJsonWebKey;
-import org.jose4j.jwk.PublicJsonWebKey;
-
+import io.smallrye.jwt.algorithm.EdDSASigner;
 import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
-import io.smallrye.jwt.common.JsonProviderHolder;
 
 /**
  * Utility methods for dealing with decoding public and private keys resources
@@ -447,40 +446,22 @@ public final class KeyUtils {
         return null;
     }
 
-    public static List<JsonWebKey> loadJsonWebKeys(String content) {
+    public static List<JWK> loadJsonWebKeys(String content) {
         JWTUtilLogging.log.loadingJwks();
 
-        JsonObject jwks = null;
-        try (JsonReader reader = JsonProviderHolder.jsonProvider().createReader(new StringReader(content))) {
-            jwks = reader.readObject();
-        } catch (Exception ex) {
-            JWTUtilLogging.log.loadingJwksFailed(ex);
-            return null;
-        }
-
-        List<JsonWebKey> localKeys = null;
-        JsonArray keys = jwks.getJsonArray(JsonWebKeySet.JWK_SET_MEMBER_NAME);
-
         try {
-            if (keys != null) {
-                // JWK set
-                localKeys = new ArrayList<>(keys.size());
-                for (int i = 0; i < keys.size(); i++) {
-                    localKeys.add(createJsonWebKey(keys.getJsonObject(i)));
-                }
-            } else {
-                // single JWK
-                localKeys = Collections.singletonList(createJsonWebKey(jwks));
-            }
+            JWKSet jwkSet = JWKSet.parse(content);
+            return new ArrayList<>(jwkSet.getKeys());
         } catch (Exception ex) {
-            JWTUtilLogging.log.parsingJwksFailed();
-            return null;
+            // Not a JWK set, try as a single JWK
+            try {
+                JWK jwk = JWK.parse(content);
+                return Collections.singletonList(jwk);
+            } catch (Exception ex2) {
+                JWTUtilLogging.log.loadingJwksFailed(ex2);
+                return null;
+            }
         }
-        return localKeys;
-    }
-
-    static JsonWebKey createJsonWebKey(JsonObject jsonObject) throws Exception {
-        return JsonWebKey.Factory.newJwk(JsonUtil.parseJson(jsonObject.toString()));
     }
 
     public static Key readEncryptionKey(String location, String kid) throws IOException {
@@ -495,7 +476,7 @@ public final class KeyUtils {
             key = tryAsPEMCertificate(content);
         }
         if (key == null) {
-            JsonWebKey jwk = getJwkKeyFromJwkSet(kid, content);
+            JWK jwk = getJwkKeyFromJwkSet(kid, content);
             if (jwk != null) {
                 key = getPublicOrSecretEncryptingKey(jwk, alg);
             }
@@ -503,16 +484,22 @@ public final class KeyUtils {
         return key;
     }
 
-    public static Key getPublicOrSecretEncryptingKey(JsonWebKey currentJwk, KeyEncryptionAlgorithm alg) {
-        if (alg != null && currentJwk.getAlgorithm() != null && !currentJwk.getAlgorithm().equals(alg.getAlgorithm())) {
+    public static Key getPublicOrSecretEncryptingKey(JWK currentJwk, KeyEncryptionAlgorithm alg) {
+        String jwkAlg = currentJwk.getAlgorithm() != null ? currentJwk.getAlgorithm().getName() : null;
+        if (alg != null && jwkAlg != null && !jwkAlg.equals(alg.getAlgorithm())) {
             return null;
         }
-        List<String> keyOps = currentJwk.getKeyOps();
-        if (keyOps == null || keyOps.contains("encryption")) {
-            if ("oct".equals(currentJwk.getKeyType())) {
-                return OctetSequenceJsonWebKey.class.cast(currentJwk).getKey();
+        Set<KeyOperation> keyOps = currentJwk.getKeyOperations();
+        if (keyOps == null || keyOps.stream().anyMatch(op -> "encrypt".equals(op.identifier()))) {
+            if ("oct".equals(currentJwk.getKeyType().getValue())) {
+                return currentJwk.toOctetSequenceKey().toSecretKey("AES");
             } else {
-                return PublicJsonWebKey.class.cast(currentJwk).getPublicKey();
+                try {
+                    return ((AsymmetricJWK) currentJwk).toPublicKey();
+                } catch (JOSEException e) {
+                    JWTUtilLogging.log.loadingJwksFailed(e);
+                    return null;
+                }
             }
         }
         return null;
@@ -525,9 +512,9 @@ public final class KeyUtils {
     public static Key readSigningKey(String location, String kid, SignatureAlgorithm alg) throws IOException {
         String content = readKeyContent(location);
 
-        Key key = tryAsPemSigningPrivateKey(content, alg);
+        Key key = alg != null ? tryAsPemSigningPrivateKey(content, alg) : null;
         if (key == null) {
-            JsonWebKey jwk = getJwkKeyFromJwkSet(kid, content);
+            JWK jwk = getJwkKeyFromJwkSet(kid, content);
             if (jwk != null) {
                 key = getPrivateOrSecretSigningKey(jwk, alg);
             }
@@ -535,46 +522,53 @@ public final class KeyUtils {
         return key;
     }
 
-    public static JsonWebKey getJwkKeyFromJwkSet(String kid, String keyContent) {
-        List<JsonWebKey> jwks = loadJsonWebKeys(keyContent);
+    public static JWK getJwkKeyFromJwkSet(String kid, String keyContent) {
+        List<JWK> jwks = loadJsonWebKeys(keyContent);
         if (jwks != null) {
             if (kid != null) {
-                for (JsonWebKey currentJwk : jwks) {
-                    if (kid.equals(currentJwk.getKeyId())) {
+                for (JWK currentJwk : jwks) {
+                    if (kid.equals(currentJwk.getKeyID())) {
                         return currentJwk;
                     }
                 }
             }
             // if JWK set contains a single JWK only then try to use it
             // but only if 'kid' is not set in both the token and this JWK
-            if (jwks.size() == 1 && (kid == null || jwks.get(0).getKeyId() == null)) {
+            if (jwks.size() == 1 && (kid == null || jwks.get(0).getKeyID() == null)) {
                 return jwks.get(0);
             }
         }
         return null;
     }
 
-    public static Key getPrivateOrSecretSigningKey(JsonWebKey currentJwk, SignatureAlgorithm alg) {
-        if (alg != null && currentJwk.getAlgorithm() != null && !currentJwk.getAlgorithm().equals(alg.getAlgorithm())) {
+    public static Key getPrivateOrSecretSigningKey(JWK currentJwk, SignatureAlgorithm alg) {
+        String jwkAlg = currentJwk.getAlgorithm() != null ? currentJwk.getAlgorithm().getName() : null;
+        if (alg != null && jwkAlg != null && !jwkAlg.equals(alg.getAlgorithm())) {
             return null;
         }
-        List<String> keyOps = currentJwk.getKeyOps();
-        if (keyOps == null || keyOps.contains("sign")) {
-            if ("oct".equals(currentJwk.getKeyType())) {
-                return OctetSequenceJsonWebKey.class.cast(currentJwk).getKey();
+        Set<KeyOperation> keyOps = currentJwk.getKeyOperations();
+        List<String> keyOpsStrings = keyOps != null
+                ? keyOps.stream().map(KeyOperation::identifier).collect(Collectors.toList())
+                : null;
+        if (keyOpsStrings == null || keyOpsStrings.contains("sign")) {
+            if ("oct".equals(currentJwk.getKeyType().getValue())) {
+                return ((OctetSequenceKey) currentJwk).toSecretKey("AES");
+            } else if (currentJwk instanceof OctetKeyPair) {
+                try {
+                    return EdDSASigner.toPrivateKey((OctetKeyPair) currentJwk);
+                } catch (JOSEException e) {
+                    JWTUtilLogging.log.loadingJwksFailed(e);
+                    return null;
+                }
             } else {
-                return PublicJsonWebKey.class.cast(currentJwk).getPrivateKey();
+                try {
+                    return ((AsymmetricJWK) currentJwk).toPrivateKey();
+                } catch (JOSEException e) {
+                    JWTUtilLogging.log.loadingJwksFailed(e);
+                    return null;
+                }
             }
         }
         return null;
-    }
-
-    public static boolean isSupportedKey(Key key, String keyInterfaceName) {
-        for (Class<?> intf : key.getClass().getInterfaces()) {
-            if (keyInterfaceName.equals(intf.getName())) {
-                return true;
-            }
-        }
-        return false;
     }
 }

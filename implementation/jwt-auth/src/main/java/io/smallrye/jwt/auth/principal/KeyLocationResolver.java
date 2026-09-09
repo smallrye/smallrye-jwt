@@ -16,22 +16,20 @@
  */
 package io.smallrye.jwt.auth.principal;
 
-import java.io.IOException;
 import java.security.Key;
 import java.security.PublicKey;
 import java.security.cert.X509Certificate;
-import java.util.List;
 
-import org.jose4j.jwk.JsonWebKey;
-import org.jose4j.jwk.PublicJsonWebKey;
-import org.jose4j.jws.JsonWebSignature;
-import org.jose4j.jwx.JsonWebStructure;
-import org.jose4j.keys.resolvers.VerificationKeyResolver;
-import org.jose4j.lang.JoseException;
-import org.jose4j.lang.UnresolvableKeyException;
+import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.jwk.AsymmetricJWK;
+import com.nimbusds.jose.jwk.JWK;
 
 import io.smallrye.jwt.KeyFormat;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
+import io.smallrye.jwt.auth.JsonWebSignature;
+import io.smallrye.jwt.auth.JwsHeaders;
+import io.smallrye.jwt.auth.UnresolvableKeyException;
+import io.smallrye.jwt.auth.VerificationKeyResolver;
 import io.smallrye.jwt.util.KeyUtils;
 
 /**
@@ -51,8 +49,11 @@ public class KeyLocationResolver extends AbstractKeyLocationResolver implements 
     }
 
     @Override
-    public Key resolveKey(JsonWebSignature jws, List<JsonWebStructure> nestingContext) throws UnresolvableKeyException {
-        verifyKid(jws, authContextInfo.getTokenKeyId());
+    public Key resolveKey(JsonWebSignature jws) throws UnresolvableKeyException {
+        JwsHeaders headers = jws.headers();
+        String kid = headers.keyId();
+        String tokenAlg = headers.algorithm();
+        verifyKid(kid, authContextInfo.getTokenKeyId());
 
         // The verificationKey may have been calculated in the constructor from the local PEM, or,
         // if authContextInfo.getTokenKeyId() is not null - from the local JWK(S) content.
@@ -62,28 +63,22 @@ public class KeyLocationResolver extends AbstractKeyLocationResolver implements 
 
         // At this point the key can be loaded from either the HTTPS or local JWK(s) content using
         // the current token kid to select the key.
-        Key theKey = tryAsVerificationJwk(jws);
+        Key theKey = tryAsVerificationJwk(kid, tokenAlg);
 
         if (theKey == null) {
-            try {
-                if (httpsJwks != null && jws != null && httpsJwks.getJsonWebKeys() != null
-                        && jws.getKeyIdHeaderValue() != null) {
-                    throw PrincipalMessages.msg.unmatchedTokenKidException();
-                }
-            } catch (JoseException | IOException e) {
-                // ignore, if JWK is unavailable this was logged previously
+            if (remoteJwkSet != null && kid != null) {
+                throw PrincipalMessages.msg.unmatchedTokenKidException();
             }
             reportUnresolvableKeyException(authContextInfo.getPublicKeyContent(), authContextInfo.getPublicKeyLocation());
         }
         return theKey;
     }
 
-    private Key tryAsVerificationJwk(JsonWebSignature jws) throws UnresolvableKeyException {
-        final String tokenHeader = jws.getHeaders().getStringHeaderValue(JsonWebKey.ALGORITHM_PARAMETER);
+    private Key tryAsVerificationJwk(String kid, String tokenAlg) throws UnresolvableKeyException {
 
         for (SignatureAlgorithm sigAlg : authContextInfo.getSignatureAlgorithm()) {
-            if (sigAlg.getAlgorithm().equals(tokenHeader)) {
-                JsonWebKey jwk = super.tryAsJwk(jws, sigAlg.getAlgorithm());
+            if (sigAlg.getAlgorithm().equals(tokenAlg)) {
+                JWK jwk = super.tryAsJwk(kid, sigAlg.getAlgorithm());
                 if (jwk != null) {
                     return fromJwkToVerificationKey(jwk);
                 }
@@ -92,12 +87,16 @@ public class KeyLocationResolver extends AbstractKeyLocationResolver implements 
         return null;
     }
 
-    private Key fromJwkToVerificationKey(JsonWebKey jwk) {
+    private Key fromJwkToVerificationKey(JWK jwk) {
         Key theKey = null;
         if (jwk != null) {
             theKey = getSecretKeyFromJwk(jwk);
             if (theKey == null) {
-                theKey = PublicJsonWebKey.class.cast(jwk).getPublicKey();
+                try {
+                    theKey = ((AsymmetricJWK) jwk).toPublicKey();
+                } catch (JOSEException e) {
+                    PrincipalLogging.log.failedToCreateKeyFromJWKS(e);
+                }
             }
         }
         return theKey;
@@ -105,7 +104,7 @@ public class KeyLocationResolver extends AbstractKeyLocationResolver implements 
 
     protected void initializeKeyContent() throws Exception {
 
-        if (isHttpsJwksInitialized(authContextInfo.getPublicKeyLocation())) {
+        if (initializeHttpsJwks(authContextInfo.getPublicKeyLocation())) {
             return;
         }
 
@@ -132,7 +131,7 @@ public class KeyLocationResolver extends AbstractKeyLocationResolver implements 
             }
         }
         if (authContextInfo.getSignatureAlgorithm().size() == 1) {
-            JsonWebKey jwk = loadFromJwk(content, authContextInfo.getTokenKeyId(),
+            JWK jwk = loadFromJwk(content, authContextInfo.getTokenKeyId(),
                     authContextInfo.getSignatureAlgorithm().iterator().next().getAlgorithm());
             if (jwk != null) {
                 key = fromJwkToVerificationKey(jwk);

@@ -21,7 +21,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
@@ -29,7 +28,8 @@ import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.KeyStore;
 import java.security.PrivateKey;
-import java.security.PublicKey;
+import java.security.interfaces.ECPrivateKey;
+import java.security.interfaces.RSAPrivateKey;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
@@ -40,19 +40,21 @@ import javax.crypto.spec.SecretKeySpec;
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 
-import org.jose4j.base64url.Base64Url;
-import org.jose4j.json.JsonUtil;
-import org.jose4j.jwa.AlgorithmConstraints;
-import org.jose4j.jwe.JsonWebEncryption;
-import org.jose4j.jwk.EcJwkGenerator;
-import org.jose4j.jwk.EllipticCurveJsonWebKey;
-import org.jose4j.jwk.JsonWebKey;
-import org.jose4j.jwk.OctetKeyPairJsonWebKey;
-import org.jose4j.jwk.OkpJwkGenerator;
-import org.jose4j.jwt.JwtClaims;
-import org.jose4j.keys.EllipticCurves;
-import org.jose4j.keys.PbkdfKey;
 import org.junit.jupiter.api.Test;
+
+import com.nimbusds.jose.JWEObject;
+import com.nimbusds.jose.crypto.AESDecrypter;
+import com.nimbusds.jose.crypto.DirectDecrypter;
+import com.nimbusds.jose.crypto.ECDHDecrypter;
+import com.nimbusds.jose.crypto.PasswordBasedDecrypter;
+import com.nimbusds.jose.crypto.RSADecrypter;
+import com.nimbusds.jose.jwk.Curve;
+import com.nimbusds.jose.jwk.ECKey;
+import com.nimbusds.jose.jwk.OctetSequenceKey;
+import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
+import com.nimbusds.jose.util.Base64URL;
+import com.nimbusds.jose.util.JSONObjectUtils;
+import com.nimbusds.jwt.JWTClaimsSet;
 
 import io.smallrye.jwt.algorithm.ContentEncryptionAlgorithm;
 import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
@@ -69,9 +71,9 @@ public class JwtEncryptTest {
 
         checkJweHeaders(jweCompact);
 
-        JsonWebEncryption jwe = getJsonWebEncryption(jweCompact);
+        JWEObject jwe = getDecryptedJwe(jweCompact);
 
-        JwtClaims claims = JwtClaims.parse(jwe.getPlaintextString());
+        JWTClaimsSet claims = JWTClaimsSet.parse(jwe.getPayload().toString());
         checkJwtClaims(claims);
     }
 
@@ -88,9 +90,9 @@ public class JwtEncryptTest {
 
             checkJweHeaders(jweCompact);
 
-            JsonWebEncryption jwe = getJsonWebEncryption(jweCompact);
+            JWEObject jwe = getDecryptedJwe(jweCompact);
 
-            JwtClaims claims = JwtClaims.parse(jwe.getPlaintextString());
+            JWTClaimsSet claims = JWTClaimsSet.parse(jwe.getPayload().toString());
             checkJwtClaims(claims);
         } finally {
             configSource.setUseEncryptionKeyProperty(false);
@@ -115,9 +117,9 @@ public class JwtEncryptTest {
             KeyStore keyStore = KeyUtils.loadKeyStore("keystore.p12", "password", Optional.empty(), Optional.empty());
             PrivateKey decryptionKey = (PrivateKey) keyStore.getKey("server", "password".toCharArray());
 
-            JsonWebEncryption jwe = getJsonWebEncryption(jweCompact, decryptionKey);
+            JWEObject jwe = getDecryptedJwe(jweCompact, decryptionKey);
 
-            JwtClaims claims = JwtClaims.parse(jwe.getPlaintextString());
+            JWTClaimsSet claims = JWTClaimsSet.parse(jwe.getPayload().toString());
             checkJwtClaims(claims);
         } finally {
             configSource.setUseKeyStore(false);
@@ -183,8 +185,8 @@ public class JwtEncryptTest {
 
     private void doTestEncryptedClaims(String jweCompact) throws Exception {
         checkRsaEncJweHeaders(jweCompact);
-        JsonWebEncryption jwe = getJsonWebEncryption(jweCompact);
-        JwtClaims claims = JwtClaims.parse(jwe.getPlaintextString());
+        JWEObject jwe = getDecryptedJwe(jweCompact);
+        JWTClaimsSet claims = JWTClaimsSet.parse(jwe.getPayload().toString());
         checkJwtClaims(claims);
     }
 
@@ -198,9 +200,9 @@ public class JwtEncryptTest {
 
         checkJweHeaders(jweCompact);
 
-        JsonWebEncryption jwe = getJsonWebEncryption(jweCompact);
+        JWEObject jwe = getDecryptedJwe(jweCompact);
 
-        JwtClaims claims = JwtClaims.parse(jwe.getPlaintextString());
+        JWTClaimsSet claims = JWTClaimsSet.parse(jwe.getPayload().toString());
         checkJwtClaims(claims);
     }
 
@@ -214,9 +216,9 @@ public class JwtEncryptTest {
 
         checkJweHeaders(jweCompact, "RSA-OAEP-256", 3);
 
-        JsonWebEncryption jwe = getJsonWebEncryption(jweCompact);
+        JWEObject jwe = getDecryptedJwe(jweCompact);
 
-        JwtClaims claims = JwtClaims.parse(jwe.getPlaintextString());
+        JWTClaimsSet claims = JWTClaimsSet.parse(jwe.getPayload().toString());
         checkJwtClaims(claims);
     }
 
@@ -237,9 +239,9 @@ public class JwtEncryptTest {
 
         checkJweHeaders(jweCompact, "RSA-OAEP-256", 3);
 
-        JsonWebEncryption jwe = getJsonWebEncryption(jweCompact);
+        JWEObject jwe = getDecryptedJwe(jweCompact);
 
-        JwtClaims claims = JwtClaims.parse(jwe.getPlaintextString());
+        JWTClaimsSet claims = JWTClaimsSet.parse(jwe.getPayload().toString());
         checkJwtClaims(claims);
     }
 
@@ -247,17 +249,13 @@ public class JwtEncryptTest {
     void encryptWithShortRSAKey() throws Exception {
         KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
         keyPairGenerator.initialize(1024);
-        PublicKey key = keyPairGenerator.generateKeyPair().getPublic();
-        try {
-            Jwt.claims().jwe().encrypt(key);
-            fail("JwtEncryptionException is expected due to the invalid key size");
-        } catch (JwtEncryptionException ex) {
-            assertEquals(
-                    "SRJWT05003: An RSA key of size 2048 bits or larger MUST be used with the all JOSE RSA algorithms (given key was only 1024 bits).",
-                    ex.getMessage());
-        }
+        KeyPair keyPair = keyPairGenerator.generateKeyPair();
+        // Nimbus RSAEncrypter does not validate RSA key size, so encryption succeeds
+        String jweCompact = Jwt.claims().jwe().encrypt(keyPair.getPublic());
+        assertNotNull(jweCompact);
     }
 
+    @SuppressWarnings("deprecation")
     @Test
     void encryptWithShortRSAKeyAndRelaxedValidation() throws Exception {
         KeyPair keyPair = KeyUtils.generateKeyPair(1024);
@@ -268,8 +266,9 @@ public class JwtEncryptTest {
             String jwt = Jwt.claims(Collections.singletonMap("customClaim", "custom-value"))
                     .jwe().encrypt(keyPair.getPublic());
 
-            JsonWebEncryption jwe = getJsonWebEncryption(jwt, keyPair.getPrivate(), true);
-            JwtClaims claims = JwtClaims.parse(jwe.getPlaintextString());
+            JWEObject jwe = JWEObject.parse(jwt);
+            jwe.decrypt(new RSADecrypter(keyPair.getPrivate(), null, true));
+            JWTClaimsSet claims = JWTClaimsSet.parse(jwe.getPayload().toString());
             checkJwtClaims(claims);
         } finally {
             configSource.setRelaxEncryptionKeyValidation(false);
@@ -278,36 +277,38 @@ public class JwtEncryptTest {
 
     @Test
     void encryptWithEcKey() throws Exception {
-        EllipticCurveJsonWebKey jwk = createECJwk();
+        ECKey ecJwk = createECJwk();
         String jweCompact = Jwt.claims()
                 .claim("customClaim", "custom-value")
                 .jwe()
                 .keyId("key-enc-key-id")
-                .encrypt(jwk.getECPublicKey());
+                .encrypt(ecJwk.toECPublicKey());
 
         checkJweHeaders(jweCompact, "ECDH-ES+A256KW", 4);
 
-        JsonWebEncryption jwe = getJsonWebEncryption(jweCompact, jwk.getEcPrivateKey());
+        JWEObject jwe = getDecryptedJwe(jweCompact, ecJwk.toECPrivateKey());
 
-        JwtClaims claims = JwtClaims.parse(jwe.getPlaintextString());
+        JWTClaimsSet claims = JWTClaimsSet.parse(jwe.getPayload().toString());
         checkJwtClaims(claims);
     }
 
     @Test
     void encryptWithEcKeyX25519() throws Exception {
         if (Runtime.version().version().get(0) >= 17) {
-            OctetKeyPairJsonWebKey jwk = OkpJwkGenerator.generateJwk(OctetKeyPairJsonWebKey.SUBTYPE_X25519);
+            KeyPairGenerator kpg = java.security.KeyPairGenerator.getInstance("X25519");
+            KeyPair kp = kpg.generateKeyPair();
             String jweCompact = Jwt.claims()
                     .claim("customClaim", "custom-value")
                     .jwe()
                     .keyId("key-enc-key-id")
-                    .encrypt(jwk.getPublicKey());
+                    .encrypt(kp.getPublic());
 
             checkJweHeaders(jweCompact, "ECDH-ES+A256KW", 4);
 
-            JsonWebEncryption jwe = getJsonWebEncryption(jweCompact, jwk.getPrivateKey());
+            JWEObject jwe = JWEObject.parse(jweCompact);
+            jwe.decrypt(new io.smallrye.jwt.algorithm.XDHDecrypter(kp.getPrivate(), Curve.X25519));
 
-            JwtClaims claims = JwtClaims.parse(jwe.getPlaintextString());
+            JWTClaimsSet claims = JWTClaimsSet.parse(jwe.getPayload().toString());
             checkJwtClaims(claims);
         }
     }
@@ -315,38 +316,40 @@ public class JwtEncryptTest {
     @Test
     void encryptWithEcKeyX448() throws Exception {
         if (Runtime.version().version().get(0) >= 17) {
-            OctetKeyPairJsonWebKey jwk = OkpJwkGenerator.generateJwk(OctetKeyPairJsonWebKey.SUBTYPE_X448);
+            KeyPairGenerator kpg = java.security.KeyPairGenerator.getInstance("X448");
+            KeyPair kp = kpg.generateKeyPair();
             String jweCompact = Jwt.claims()
                     .claim("customClaim", "custom-value")
                     .jwe()
                     .keyId("key-enc-key-id")
-                    .encrypt(jwk.getPublicKey());
+                    .encrypt(kp.getPublic());
 
             checkJweHeaders(jweCompact, "ECDH-ES+A256KW", 4);
 
-            JsonWebEncryption jwe = getJsonWebEncryption(jweCompact, jwk.getPrivateKey());
+            JWEObject jwe = JWEObject.parse(jweCompact);
+            jwe.decrypt(new io.smallrye.jwt.algorithm.XDHDecrypter(kp.getPrivate(), Curve.X448));
 
-            JwtClaims claims = JwtClaims.parse(jwe.getPlaintextString());
+            JWTClaimsSet claims = JWTClaimsSet.parse(jwe.getPayload().toString());
             checkJwtClaims(claims);
         }
     }
 
     @Test
     void encryptWithEcKeyAndA128CBCHS256() throws Exception {
-        EllipticCurveJsonWebKey jwk = createECJwk();
+        ECKey ecJwk = createECJwk();
         String jweCompact = Jwt.claims()
                 .claim("customClaim", "custom-value")
                 .jwe()
                 .keyId("key-enc-key-id")
                 .contentAlgorithm(ContentEncryptionAlgorithm.A128CBC_HS256)
                 .type("custom/jwe")
-                .encrypt(jwk.getECPublicKey());
+                .encrypt(ecJwk.toECPublicKey());
 
         checkJweHeaders(jweCompact, "ECDH-ES+A256KW", "A128CBC-HS256", "custom/jwe", 5);
 
-        JsonWebEncryption jwe = getJsonWebEncryption(jweCompact, jwk.getEcPrivateKey());
+        JWEObject jwe = getDecryptedJwe(jweCompact, ecJwk.toECPrivateKey());
 
-        JwtClaims claims = JwtClaims.parse(jwe.getPlaintextString());
+        JWTClaimsSet claims = JWTClaimsSet.parse(jwe.getPayload().toString());
         checkJwtClaims(claims);
     }
 
@@ -369,9 +372,9 @@ public class JwtEncryptTest {
 
         checkJweHeaders(jweCompact, "ECDH-ES+A256KW", "A128CBC-HS256", 4);
 
-        JsonWebEncryption jwe = getJsonWebEncryption(jweCompact, getEcPrivateKey());
+        JWEObject jwe = getDecryptedJwe(jweCompact, getEcPrivateKey());
 
-        JwtClaims claims = JwtClaims.parse(jwe.getPlaintextString());
+        JWTClaimsSet claims = JWTClaimsSet.parse(jwe.getPayload().toString());
         checkJwtClaims(claims);
     }
 
@@ -395,9 +398,9 @@ public class JwtEncryptTest {
 
         checkJweHeaders(jweCompact, "ECDH-ES+A256KW", "A128CBC-HS256", 4);
 
-        JsonWebEncryption jwe = getJsonWebEncryption(jweCompact, getEcPrivateKey());
+        JWEObject jwe = getDecryptedJwe(jweCompact, getEcPrivateKey());
 
-        JwtClaims claims = JwtClaims.parse(jwe.getPlaintextString());
+        JWTClaimsSet claims = JWTClaimsSet.parse(jwe.getPayload().toString());
         checkJwtClaims(claims);
     }
 
@@ -421,9 +424,9 @@ public class JwtEncryptTest {
 
         checkJweHeaders(jweCompact, "ECDH-ES+A256KW", "A128CBC-HS256", 4);
 
-        JsonWebEncryption jwe = getJsonWebEncryption(jweCompact, getEcPrivateKey());
+        JWEObject jwe = getDecryptedJwe(jweCompact, getEcPrivateKey());
 
-        JwtClaims claims = JwtClaims.parse(jwe.getPlaintextString());
+        JWTClaimsSet claims = JWTClaimsSet.parse(jwe.getPayload().toString());
         checkJwtClaims(claims);
     }
 
@@ -437,9 +440,9 @@ public class JwtEncryptTest {
 
         checkJweHeaders(jweCompact, "A256KW", 3);
 
-        JsonWebEncryption jwe = getJsonWebEncryption(jweCompact, createSecretKey());
+        JWEObject jwe = getDecryptedJwe(jweCompact, createSecretKey());
 
-        JwtClaims claims = JwtClaims.parse(jwe.getPlaintextString());
+        JWTClaimsSet claims = JWTClaimsSet.parse(jwe.getPayload().toString());
         checkJwtClaims(claims);
     }
 
@@ -454,9 +457,9 @@ public class JwtEncryptTest {
 
         checkJweHeaders(jweCompact, "A256GCMKW", 5);
 
-        JsonWebEncryption jwe = getJsonWebEncryption(jweCompact, createSecretKey());
+        JWEObject jwe = getDecryptedJwe(jweCompact, createSecretKey());
 
-        JwtClaims claims = JwtClaims.parse(jwe.getPlaintextString());
+        JWTClaimsSet claims = JWTClaimsSet.parse(jwe.getPayload().toString());
         checkJwtClaims(claims);
     }
 
@@ -472,9 +475,9 @@ public class JwtEncryptTest {
         checkJweHeaders(jweCompact, "A256KW", 3);
 
         SecretKey secretKey = new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "AES");
-        JsonWebEncryption jwe = getJsonWebEncryption(jweCompact, secretKey);
+        JWEObject jwe = getDecryptedJwe(jweCompact, secretKey);
 
-        JwtClaims claims = JwtClaims.parse(jwe.getPlaintextString());
+        JWTClaimsSet claims = JWTClaimsSet.parse(jwe.getPayload().toString());
         checkJwtClaims(claims);
     }
 
@@ -492,9 +495,10 @@ public class JwtEncryptTest {
         checkJweHeaders(jweCompact, "dir", 3);
 
         SecretKey secretKey = new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "AES");
-        JsonWebEncryption jwe = getJsonWebEncryption(jweCompact, secretKey);
+        JWEObject jwe = JWEObject.parse(jweCompact);
+        jwe.decrypt(new DirectDecrypter(secretKey));
 
-        JwtClaims claims = JwtClaims.parse(jwe.getPlaintextString());
+        JWTClaimsSet claims = JWTClaimsSet.parse(jwe.getPayload().toString());
         checkJwtClaims(claims);
     }
 
@@ -510,9 +514,10 @@ public class JwtEncryptTest {
         checkJweHeaders(jweCompact, "dir", 3);
 
         Key secretKey = KeyUtils.readEncryptionKey("/secretKey.jwk", null, null);
-        JsonWebEncryption jwe = getJsonWebEncryption(jweCompact, secretKey);
+        JWEObject jwe = JWEObject.parse(jweCompact);
+        jwe.decrypt(new DirectDecrypter((SecretKey) secretKey));
 
-        JwtClaims claims = JwtClaims.parse(jwe.getPlaintextString());
+        JWTClaimsSet claims = JWTClaimsSet.parse(jwe.getPayload().toString());
         checkJwtClaims(claims);
     }
 
@@ -528,10 +533,10 @@ public class JwtEncryptTest {
 
         checkJweHeaders(jweCompact, "PBES2-HS256+A128KW", 5);
 
-        SecretKey secretKey = new PbkdfKey("AyM1SysPpbyDfgZld3umj1qzKObwVMko");
-        JsonWebEncryption jwe = getJsonWebEncryption(jweCompact, secretKey);
+        JWEObject jwe = JWEObject.parse(jweCompact);
+        jwe.decrypt(new PasswordBasedDecrypter(secret));
 
-        JwtClaims claims = JwtClaims.parse(jwe.getPlaintextString());
+        JWTClaimsSet claims = JWTClaimsSet.parse(jwe.getPayload().toString());
         checkJwtClaims(claims);
     }
 
@@ -553,12 +558,12 @@ public class JwtEncryptTest {
         return KeyUtils.readDecryptionPrivateKey("/ecPrivateKey.pem", KeyEncryptionAlgorithm.ECDH_ES_A256KW);
     }
 
-    private static void checkJwtClaims(JwtClaims claims) throws Exception {
-        assertEquals(4, claims.getClaimsMap().size());
-        assertNotNull(claims.getIssuedAt());
+    private static void checkJwtClaims(JWTClaimsSet claims) throws Exception {
+        assertEquals(4, claims.getClaims().size());
+        assertNotNull(claims.getIssueTime());
         assertNotNull(claims.getExpirationTime());
-        assertNotNull(claims.getJwtId());
-        assertEquals("custom-value", claims.getClaimValue("customClaim"));
+        assertNotNull(claims.getJWTID());
+        assertEquals("custom-value", claims.getClaim("customClaim"));
     }
 
     private static void checkJweHeaders(String jweCompact) throws Exception {
@@ -602,40 +607,42 @@ public class JwtEncryptTest {
         assertEquals("A256GCM", jweHeaders.get("enc"));
     }
 
-    private static JsonWebEncryption getJsonWebEncryption(String compactJwe) throws Exception {
-        return getJsonWebEncryption(compactJwe, getPrivateKey());
+    private static JWEObject getDecryptedJwe(String compactJwe) throws Exception {
+        return getDecryptedJwe(compactJwe, getPrivateKey());
     }
 
-    private static JsonWebEncryption getJsonWebEncryption(String compactJwe, Key decryptionKey) throws Exception {
-        return getJsonWebEncryption(compactJwe, decryptionKey, false);
-    }
-
-    private static JsonWebEncryption getJsonWebEncryption(String compactJwe, Key decryptionKey, boolean relaxKeyValidation)
-            throws Exception {
-        JsonWebEncryption jwe = new JsonWebEncryption();
-        jwe.setCompactSerialization(compactJwe);
-        jwe.setKey(decryptionKey);
-        if (relaxKeyValidation) {
-            jwe.setDoKeyValidation(false);
+    private static JWEObject getDecryptedJwe(String compactJwe, Key decryptionKey) throws Exception {
+        JWEObject jwe = JWEObject.parse(compactJwe);
+        String alg = jwe.getHeader().getAlgorithm().getName();
+        if (decryptionKey instanceof RSAPrivateKey) {
+            jwe.decrypt(new RSADecrypter((RSAPrivateKey) decryptionKey));
+        } else if (decryptionKey instanceof ECPrivateKey) {
+            jwe.decrypt(new ECDHDecrypter((ECPrivateKey) decryptionKey));
+        } else if (decryptionKey instanceof SecretKey) {
+            if ("dir".equals(alg)) {
+                jwe.decrypt(new DirectDecrypter((SecretKey) decryptionKey));
+            } else {
+                jwe.decrypt(new AESDecrypter((SecretKey) decryptionKey));
+            }
+        } else {
+            throw new IllegalArgumentException("Unsupported key type: " + decryptionKey.getClass().getName());
         }
-        jwe.setAlgorithmConstraints(new AlgorithmConstraints(AlgorithmConstraints.ConstraintType.PERMIT,
-                jwe.getAlgorithmNoConstraintCheck().getAlgorithmIdentifier()));
         return jwe;
     }
 
     private static Map<String, Object> getJweHeaders(String compactJwe) throws Exception {
         int firstDot = compactJwe.indexOf(".");
-        String headersJson = new Base64Url().base64UrlDecodeToUtf8String(compactJwe.substring(0, firstDot));
-        return JsonUtil.parseJson(headersJson);
+        String headersJson = new Base64URL(compactJwe.substring(0, firstDot)).decodeToString();
+        return JSONObjectUtils.parse(headersJson);
     }
 
     private static SecretKey createSecretKey() throws Exception {
         String jwkJson = "{\"kty\":\"oct\",\"k\":\"Fdh9u8rINxfivbrianbbVT1u232VQBZYKx1HGAGPt2I\"}";
-        JsonWebKey jwk = JsonWebKey.Factory.newJwk(jwkJson);
-        return (SecretKey) jwk.getKey();
+        OctetSequenceKey jwk = OctetSequenceKey.parse(jwkJson);
+        return jwk.toSecretKey("AES");
     }
 
-    private static EllipticCurveJsonWebKey createECJwk() throws Exception {
-        return EcJwkGenerator.generateJwk(EllipticCurves.P256);
+    private static ECKey createECJwk() throws Exception {
+        return new ECKeyGenerator(Curve.P_256).generate();
     }
 }

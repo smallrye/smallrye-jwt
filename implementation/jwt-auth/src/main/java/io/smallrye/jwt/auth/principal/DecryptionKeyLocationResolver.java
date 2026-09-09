@@ -18,17 +18,17 @@ package io.smallrye.jwt.auth.principal;
 
 import java.security.Key;
 import java.security.PrivateKey;
-import java.util.List;
 
-import org.jose4j.jwe.JsonWebEncryption;
-import org.jose4j.jwk.JsonWebKey;
-import org.jose4j.jwk.PublicJsonWebKey;
-import org.jose4j.jwx.JsonWebStructure;
-import org.jose4j.keys.resolvers.DecryptionKeyResolver;
-import org.jose4j.lang.UnresolvableKeyException;
+import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.jwk.AsymmetricJWK;
+import com.nimbusds.jose.jwk.JWK;
 
 import io.smallrye.jwt.KeyFormat;
 import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
+import io.smallrye.jwt.auth.DecryptionKeyResolver;
+import io.smallrye.jwt.auth.JsonWebEncryption;
+import io.smallrye.jwt.auth.JweHeaders;
+import io.smallrye.jwt.auth.UnresolvableKeyException;
 import io.smallrye.jwt.util.KeyUtils;
 
 /**
@@ -47,9 +47,11 @@ public class DecryptionKeyLocationResolver extends AbstractKeyLocationResolver i
     }
 
     @Override
-    public Key resolveKey(JsonWebEncryption jwe, List<JsonWebStructure> nestingContext)
-            throws UnresolvableKeyException {
-        verifyKid(jwe, authContextInfo.getTokenDecryptionKeyId());
+    public Key resolveKey(JsonWebEncryption jwe) throws UnresolvableKeyException {
+        JweHeaders headers = jwe.headers();
+        String kid = headers.keyId();
+        String tokenAlg = headers.algorithm();
+        verifyKid(kid, authContextInfo.getTokenDecryptionKeyId());
 
         // The key may have been calculated in the constructor from the local PEM, or,
         // if authContextInfo.getTokenKeyId() is not null - from the local JWK(S) content.
@@ -59,7 +61,7 @@ public class DecryptionKeyLocationResolver extends AbstractKeyLocationResolver i
 
         // At this point the key can be loaded from either the HTTPS or local JWK(s) content using
         // the current token kid to select the key.
-        Key theKey = tryAsDecryptionJwk(jwe);
+        Key theKey = tryAsDecryptionJwk(kid, tokenAlg);
 
         if (theKey == null) {
             reportUnresolvableKeyException(authContextInfo.getDecryptionKeyContent(),
@@ -68,9 +70,9 @@ public class DecryptionKeyLocationResolver extends AbstractKeyLocationResolver i
         return theKey;
     }
 
-    private Key tryAsDecryptionJwk(JsonWebEncryption jwe) throws UnresolvableKeyException {
+    private Key tryAsDecryptionJwk(String kid, String tokenAlg) throws UnresolvableKeyException {
         for (KeyEncryptionAlgorithm algo : authContextInfo.getKeyEncryptionAlgorithm()) {
-            JsonWebKey jwk = super.tryAsJwk(jwe, algo.getAlgorithm());
+            JWK jwk = super.tryAsJwk(kid, algo.getAlgorithm());
             if (jwk != null) {
                 return fromJwkToDecryptionKey(jwk);
             }
@@ -78,12 +80,16 @@ public class DecryptionKeyLocationResolver extends AbstractKeyLocationResolver i
         return null;
     }
 
-    private Key fromJwkToDecryptionKey(JsonWebKey jwk) {
+    private Key fromJwkToDecryptionKey(JWK jwk) {
         Key theKey = null;
         if (jwk != null) {
             theKey = getSecretKeyFromJwk(jwk);
             if (theKey == null) {
-                theKey = PublicJsonWebKey.class.cast(jwk).getPrivateKey();
+                try {
+                    theKey = ((AsymmetricJWK) jwk).toPrivateKey();
+                } catch (JOSEException e) {
+                    PrincipalLogging.log.failedToCreateKeyFromJWKS(e);
+                }
             }
         }
         return theKey;
@@ -91,7 +97,7 @@ public class DecryptionKeyLocationResolver extends AbstractKeyLocationResolver i
 
     protected void initializeKeyContent() throws Exception {
 
-        if (isHttpsJwksInitialized(authContextInfo.getDecryptionKeyLocation())) {
+        if (initializeHttpsJwks(authContextInfo.getDecryptionKeyLocation())) {
             return;
         }
 
@@ -107,7 +113,7 @@ public class DecryptionKeyLocationResolver extends AbstractKeyLocationResolver i
             }
         }
         for (KeyEncryptionAlgorithm keyAlgo : authContextInfo.getKeyEncryptionAlgorithm()) {
-            JsonWebKey jwk = loadFromJwk(content, authContextInfo.getTokenDecryptionKeyId(),
+            JWK jwk = loadFromJwk(content, authContextInfo.getTokenDecryptionKeyId(),
                     keyAlgo.getAlgorithm());
             if (jwk != null) {
                 key = fromJwkToDecryptionKey(jwk);
