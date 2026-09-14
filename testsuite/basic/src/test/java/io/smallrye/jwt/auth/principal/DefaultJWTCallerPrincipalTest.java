@@ -9,10 +9,11 @@ import java.util.Set;
 
 import org.eclipse.microprofile.jwt.Claims;
 import org.eclipse.microprofile.jwt.tck.util.TokenUtils;
-import org.jose4j.jwt.JwtClaims;
-import org.jose4j.jwt.consumer.JwtContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import io.smallrye.jwt.auth.JwtContext;
+import io.smallrye.jwt.common.JwtClaims;
 
 class DefaultJWTCallerPrincipalTest {
 
@@ -33,7 +34,7 @@ class DefaultJWTCallerPrincipalTest {
 
     @Test
     void getAudience() {
-        DefaultJWTCallerPrincipal principal = new DefaultJWTCallerPrincipal(context.getJwtClaims());
+        DefaultJWTCallerPrincipal principal = new DefaultJWTCallerPrincipal(context.claims());
         Set<String> audience = principal.getAudience();
         assertNotNull(audience);
         assertEquals(1, audience.size());
@@ -42,7 +43,7 @@ class DefaultJWTCallerPrincipalTest {
 
     @Test
     void getAudienceClaimValue() {
-        DefaultJWTCallerPrincipal principal = new DefaultJWTCallerPrincipal(context.getJwtClaims());
+        DefaultJWTCallerPrincipal principal = new DefaultJWTCallerPrincipal(context.claims());
         @SuppressWarnings("unchecked")
         Set<String> audience = (Set<String>) principal.getClaimValue(Claims.aud.name());
         assertNotNull(audience);
@@ -52,7 +53,7 @@ class DefaultJWTCallerPrincipalTest {
 
     @Test
     void getAudienceClaim() {
-        DefaultJWTCallerPrincipal principal = new DefaultJWTCallerPrincipal(context.getJwtClaims());
+        DefaultJWTCallerPrincipal principal = new DefaultJWTCallerPrincipal(context.claims());
         Set<String> audience = principal.getClaim(Claims.aud.name());
         assertNotNull(audience);
         assertEquals(1, audience.size());
@@ -64,9 +65,9 @@ class DefaultJWTCallerPrincipalTest {
         Double exp = 1311281970.5;
         Double iat = 1311280970.5;
 
-        final JwtClaims claims = context.getJwtClaims();
-        claims.setClaim(Claims.exp.name(), exp);
-        claims.setClaim(Claims.iat.name(), iat);
+        final JwtClaims claims = context.claims();
+        claims.put(Claims.exp.name(), exp);
+        claims.put(Claims.iat.name(), iat);
         DefaultJWTCallerPrincipal principal = new DefaultJWTCallerPrincipal(claims);
 
         Long expClaim = principal.getExpirationTime();
