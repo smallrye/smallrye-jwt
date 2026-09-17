@@ -29,4 +29,7 @@ interface AwsAlbKeyResolverLogging extends BasicLogger {
     @Message(id = 14003, value = "mp.jwt.token.header is not set to X-Amzn-Oidc-Data")
     void invalidAWSTokenHeader();
 
+    @LogMessage(level = Logger.Level.WARN)
+    @Message(id = 14004, value = "Rejected token with unsafe 'kid' header value")
+    void unsafeKidRejected();
 }

@@ -12,4 +12,7 @@ interface AwsAlbKeyResolverMessages {
     @Message(id = 15000, value = "Key is resolved from kid. Key location is not allowed. Provide only the path like: https://public-keys.auth.elb.[REGION].amazonaws.com")
     UnresolvableKeyException subPathNotAllowed();
 
+    @Message(id = 15001, value = "Token 'kid' header contains unexpected characters")
+    UnresolvableKeyException invalidKid();
+
 }

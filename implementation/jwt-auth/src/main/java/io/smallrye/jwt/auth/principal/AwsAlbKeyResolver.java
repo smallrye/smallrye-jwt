@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Pattern;
 
 import org.jose4j.http.Get;
 import org.jose4j.http.SimpleGet;
@@ -24,6 +25,13 @@ import io.smallrye.jwt.util.KeyUtils;
 import io.smallrye.jwt.util.ResourceUtils;
 
 public class AwsAlbKeyResolver implements VerificationKeyResolver {
+
+    // Restrict the 'kid' to sequences that may contain letters, digits and `-` characters only, such as:
+    // "12345678-1234-1234-1234-123456789012".
+    // See https://docs.aws.amazon.com/elasticloadbalancing/latest/application/listener-authenticate-users.html#user-claims-encoding.
+    // This regex expression will be tuned if needed to support other characters such as a single `.` character.
+    private static final Pattern SAFE_KID = Pattern.compile("[a-zA-Z0-9-]+");
+
     private JWTAuthContextInfo authContextInfo;
     private long cacheTimeToLive;
     private final Map<String, CacheEntry> keys = new ConcurrentHashMap<>();
@@ -116,6 +124,10 @@ public class AwsAlbKeyResolver implements VerificationKeyResolver {
     private void verifyKid(String kid) throws UnresolvableKeyException {
         if (kid == null) {
             throw PrincipalMessages.msg.nullKeyIdentifier();
+        }
+        if (!SAFE_KID.matcher(kid).matches()) {
+            AwsAlbKeyResolverLogging.log.unsafeKidRejected();
+            throw AwsAlbKeyResolverMessages.msg.invalidKid();
         }
         String expectedKid = authContextInfo.getTokenKeyId();
         if (expectedKid != null && !kid.equals(expectedKid)) {
