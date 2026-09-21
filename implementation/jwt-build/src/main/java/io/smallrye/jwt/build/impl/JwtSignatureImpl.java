@@ -4,6 +4,7 @@ import java.io.InputStream;
 import java.security.Key;
 import java.security.PrivateKey;
 import java.security.interfaces.ECPrivateKey;
+import java.security.interfaces.EdECPrivateKey;
 import java.security.interfaces.RSAPrivateKey;
 import java.util.HashMap;
 import java.util.Map;
@@ -11,15 +12,17 @@ import java.util.Map;
 import javax.crypto.SecretKey;
 
 import org.eclipse.microprofile.jwt.Claims;
-import org.jose4j.jwk.JsonWebKey;
-import org.jose4j.jws.JsonWebSignature;
-import org.jose4j.jwt.JwtClaims;
-import org.jose4j.jwx.HeaderParameterNames;
 
+import com.nimbusds.jose.HeaderParameterNames;
+
+import io.smallrye.jwk.JsonWebKey;
+import io.smallrye.jws.JwsException;
+import io.smallrye.jws.JwsSigner;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 import io.smallrye.jwt.build.JwtEncryptionBuilder;
 import io.smallrye.jwt.build.JwtSignature;
 import io.smallrye.jwt.build.JwtSignatureException;
+import io.smallrye.jwt.common.JwtClaims;
 import io.smallrye.jwt.util.KeyUtils;
 import io.smallrye.jwt.util.ResourceUtils;
 
@@ -27,7 +30,6 @@ import io.smallrye.jwt.util.ResourceUtils;
  * Default JWT Signature implementation
  */
 class JwtSignatureImpl implements JwtSignature {
-    private static final String ED_EC_PRIVATE_KEY_INTERFACE = "java.security.interfaces.EdECPrivateKey";
 
     JwtClaims claims = new JwtClaims();
     Map<String, Object> headers = new HashMap<>();
@@ -166,26 +168,21 @@ class JwtSignatureImpl implements JwtSignature {
             throw ImplMessages.msg.signingKeyIsNull();
         }
         JwtBuildUtils.setDefaultJwtClaims(claims, tokenLifespan);
-        JsonWebSignature jws = new JsonWebSignature();
-        for (Map.Entry<String, Object> entry : headers.entrySet()) {
-            jws.setHeader(entry.getKey(), entry.getValue());
-        }
-        if (!headers.containsKey(HeaderParameterNames.TYPE)) {
-            jws.setHeader(HeaderParameterNames.TYPE, "JWT");
-        }
 
         String algorithm = getSignatureAlgorithm(signingKey);
 
-        jws.setAlgorithmHeaderValue(algorithm);
+        JwsSigner.Builder signerBuilder = JwsSigner.builder(signingKey)
+                .algorithm(algorithm)
+                .relaxKeyValidation(isRelaxKeyValidation())
+                .headers(headers);
 
-        jws.setPayload(claims.toJson());
-        jws.setKey(signingKey);
-        if (isRelaxKeyValidation()) {
-            jws.setDoKeyValidation(false);
+        if (!headers.containsKey(HeaderParameterNames.TYPE)) {
+            signerBuilder.type("JWT");
         }
+
         try {
-            return jws.getCompactSerialization();
-        } catch (Exception ex) {
+            return signerBuilder.build().sign(claims.toJsonString());
+        } catch (JwsException ex) {
             throw ImplMessages.msg.signJwtTokenFailed(ex.getMessage(), ex);
         }
     }
@@ -234,8 +231,7 @@ class JwtSignatureImpl implements JwtSignature {
                 return alg;
             }
         } else if (signingKey instanceof PrivateKey) {
-            // for example, sun.security.pkcs11.P11Key$P11PrivateKey
-            if (isEdECPrivateKey(signingKey)) {
+            if (signingKey instanceof EdECPrivateKey) {
                 if (alg == null || alg.equals(SignatureAlgorithm.EDDSA.getAlgorithm())) {
                     return SignatureAlgorithm.EDDSA.getAlgorithm();
                 }
@@ -247,10 +243,6 @@ class JwtSignatureImpl implements JwtSignature {
             }
         }
         throw ImplMessages.msg.unsupportedSignatureAlgorithm(signingKey.getAlgorithm());
-    }
-
-    private static boolean isEdECPrivateKey(Key signingKey) {
-        return KeyUtils.isSupportedKey(signingKey, ED_EC_PRIVATE_KEY_INTERFACE);
     }
 
     static String getKeyContentFromLocation(String keyLocation) {
@@ -288,12 +280,12 @@ class JwtSignatureImpl implements JwtSignature {
                 key = KeyUtils.getPrivateOrSecretSigningKey(jwk, algorithm);
                 if (key != null) {
                     // if the algorithm header is not set then use JWK `alg`
-                    if (algorithm == null && jwk.getAlgorithm() != null) {
-                        headers.put(HeaderParameterNames.ALGORITHM, jwk.getAlgorithm());
+                    if (algorithm == null && jwk.algorithm() != null) {
+                        headers.put(HeaderParameterNames.ALGORITHM, jwk.algorithm());
                     }
                     // if 'kid' header is not set then use JWK `kid`
-                    if (kid == null && jwk.getKeyId() != null) {
-                        headers.put(HeaderParameterNames.KEY_ID, jwk.getKeyId());
+                    if (kid == null && jwk.keyId() != null) {
+                        headers.put(HeaderParameterNames.KEY_ID, jwk.keyId());
                     }
                 }
             }
@@ -304,6 +296,6 @@ class JwtSignatureImpl implements JwtSignature {
     }
 
     void removeJti() {
-        claims.unsetClaim(Claims.jti.name());
+        claims.remove(Claims.jti.name());
     }
 }

@@ -29,14 +29,14 @@ import java.util.Optional;
 import java.util.Set;
 
 import org.eclipse.microprofile.jwt.tck.util.TokenUtils;
-import org.jose4j.jwt.JwtClaims;
-import org.jose4j.lang.InvalidAlgorithmException;
-import org.jose4j.lang.UnresolvableKeyException;
 import org.junit.jupiter.api.Test;
 
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
+import io.smallrye.jwt.auth.InvalidJWTException;
+import io.smallrye.jwt.auth.UnresolvableKeyException;
 import io.smallrye.jwt.build.Jwt;
 import io.smallrye.jwt.build.JwtClaimsBuilder;
+import io.smallrye.jwt.common.JwtClaims;
 import io.smallrye.jwt.config.JWTAuthContextInfoProvider;
 import io.smallrye.jwt.util.KeyUtils;
 
@@ -179,7 +179,7 @@ class KeyLocationResolverTest {
             new DefaultJWTTokenParser().parse(jwt, provider.getContextInfo());
             fail("ParseException is expected due to the wrong expected algorithm");
         } catch (ParseException ex) {
-            assertTrue(ex.getCause().getCause() instanceof InvalidAlgorithmException);
+            assertTrue(ex.getCause() instanceof InvalidJWTException);
         }
     }
 
@@ -190,8 +190,8 @@ class KeyLocationResolverTest {
                 "https://server.example.com");
         JWTAuthContextInfo contextInfo = provider.getContextInfo();
         contextInfo.setSignatureAlgorithm(Set.of(SignatureAlgorithm.HS256));
-        JwtClaims jwt = new DefaultJWTTokenParser().parse(jwtString, contextInfo).getJwtClaims();
-        assertEquals("Alice", jwt.getClaimValueAsString("upn"));
+        JwtClaims claims = new DefaultJWTTokenParser().parse(jwtString, contextInfo).claims();
+        assertEquals("Alice", claims.get("upn"));
     }
 
     @Test
@@ -209,8 +209,8 @@ class KeyLocationResolverTest {
                         Optional.empty());
         JWTAuthContextInfo contextInfo = provider.getContextInfo();
         contextInfo.setSignatureAlgorithm(Set.of(SignatureAlgorithm.HS256));
-        JwtClaims jwt = new DefaultJWTTokenParser().parse(jwtString, contextInfo).getJwtClaims();
-        assertEquals("Alice", jwt.getClaimValueAsString("upn"));
+        JwtClaims claims = new DefaultJWTTokenParser().parse(jwtString, contextInfo).claims();
+        assertEquals("Alice", claims.get("upn"));
     }
 
     @Test
@@ -229,8 +229,8 @@ class KeyLocationResolverTest {
                         Optional.empty());
         JWTAuthContextInfo contextInfo = provider.getContextInfo();
         contextInfo.setSignatureAlgorithm(Set.of(SignatureAlgorithm.HS256));
-        JwtClaims jwt = new DefaultJWTTokenParser().parse(jwtString, contextInfo).getJwtClaims();
-        assertEquals("Alice", jwt.getClaimValueAsString("upn"));
+        JwtClaims claims = new DefaultJWTTokenParser().parse(jwtString, contextInfo).claims();
+        assertEquals("Alice", claims.get("upn"));
     }
 
     @Test
@@ -240,7 +240,7 @@ class KeyLocationResolverTest {
         JWTAuthContextInfoProvider provider = JWTAuthContextInfoProvider.createWithDecryptionKey(decryptionKey,
                 "https://server.example.com");
         JWTAuthContextInfo contextInfo = provider.getContextInfo();
-        JwtClaims jwt = new DefaultJWTTokenParser().parse(jwtString, contextInfo).getJwtClaims();
-        assertEquals("Alice", jwt.getClaimValueAsString("upn"));
+        JwtClaims claims = new DefaultJWTTokenParser().parse(jwtString, contextInfo).claims();
+        assertEquals("Alice", claims.get("upn"));
     }
 }

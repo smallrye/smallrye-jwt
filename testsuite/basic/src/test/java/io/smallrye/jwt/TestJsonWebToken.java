@@ -19,6 +19,7 @@ package io.smallrye.jwt;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.security.interfaces.RSAPublicKey;
 import java.time.Instant;
@@ -33,6 +34,7 @@ import org.eclipse.microprofile.jwt.tck.util.SignatureAlgorithm;
 import org.eclipse.microprofile.jwt.tck.util.TokenUtils;
 import org.junit.jupiter.api.Test;
 
+import io.smallrye.jwt.auth.InvalidJWTException;
 import io.smallrye.jwt.auth.principal.DefaultJWTParser;
 import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
 import io.smallrye.jwt.auth.principal.JWTCallerPrincipalFactory;
@@ -72,7 +74,8 @@ class TestJsonWebToken {
         RSAPublicKey publicKey = TokenUtils.readPublicKey("/publicKey.pem");
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo(publicKey, "https://server.example.com");
         contextInfo.setExpGracePeriodSecs(60);
-        assertThrows(ParseException.class, () -> validateToken(token, contextInfo));
+        ParseException thrown = assertThrows(ParseException.class, () -> validateToken(token, contextInfo));
+        assertTrue(thrown.getCause() instanceof InvalidJWTException);
     }
 
     @Test

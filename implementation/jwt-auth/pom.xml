@@ -65,8 +65,8 @@
       <artifactId>microprofile-jwt-auth-api</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.bitbucket.b_c</groupId>
-      <artifactId>jose4j</artifactId>
+      <groupId>com.nimbusds</groupId>
+      <artifactId>nimbus-jose-jwt</artifactId>
     </dependency>
     <dependency>
       <groupId>io.smallrye</groupId>

@@ -9,9 +9,10 @@ import org.jboss.logging.annotations.Message;
 import org.jboss.logging.annotations.MessageBundle;
 import org.jboss.logging.annotations.Pos;
 import org.jboss.logging.annotations.Producer;
-import org.jose4j.jwt.NumericDate;
-import org.jose4j.jwt.consumer.InvalidJwtException;
-import org.jose4j.lang.UnresolvableKeyException;
+
+import io.smallrye.jwt.auth.InvalidJWTException;
+import io.smallrye.jwt.auth.UnmatchedTokenKidException;
+import io.smallrye.jwt.auth.UnresolvableKeyException;
 
 @MessageBundle(projectCode = "SRJWT", length = 5)
 interface PrincipalMessages {
@@ -21,7 +22,7 @@ interface PrincipalMessages {
     ParseException failedToVerifyToken(@Cause Throwable throwable);
 
     @Message(id = 7001, value = "No claim exists in sub, upn or preferred_username")
-    InvalidJwtException claimNotFound(@Producer Function<String, InvalidJwtException> fn);
+    InvalidJWTException claimNotFound(@Producer Function<String, InvalidJWTException> fn);
 
     @Message(id = 7002, value = "Failed to load a key from the key content")
     UnresolvableKeyException failedToLoadKey(@Cause Throwable throwable);
@@ -44,12 +45,9 @@ interface PrincipalMessages {
     @Message(id = 7008, value = "Invalid 'iat' or 'exp' claim value")
     ParseException invalidIatExp();
 
-    @Message(id = 7009, value = "The Expiration Time (exp=%s) claim value cannot be more than %d"
-            + " seconds in the future relative to Issued At (iat=%s) claim value")
-    ParseException expExceeded(NumericDate exp, long maxTimeToLiveSecs, NumericDate iat);
-
-    @Message(id = 7010, value = "Required claims are not present in the JWT")
-    InvalidJwtException missingClaims(@Producer Function<String, InvalidJwtException> fn);
+    @Message(id = 7009, value = "The Expiration Time (exp=%d) claim value cannot be more than %d"
+            + " seconds in the future relative to Issued At (iat=%d) claim value")
+    ParseException expExceeded(long exp, long maxTimeToLiveSecs, long iat);
 
     @Message(id = 7011, value = "Verification key is unresolvable")
     ParseException verificationKeyUnresolvable();
@@ -61,10 +59,10 @@ interface PrincipalMessages {
     ParseException encryptedTokenSequenceInvalid(@Cause Throwable throwable);
 
     @Message(id = 7014, value = "Failed to load X509 certificates")
-    ParseException failedToLoadCertificates();
+    UnresolvableKeyException failedToLoadCertificates();
 
-    @Message(id = 7015, value = "The Expiration Time (exp=%s) claim value cannot be less than Issued At (iat=%s) claim value")
-    ParseException failedToVerifyIatExp(NumericDate exp, NumericDate iat);
+    @Message(id = 7015, value = "The Expiration Time (exp=%d) claim value cannot be less than Issued At (iat=%d) claim value")
+    ParseException failedToVerifyIatExp(long exp, long iat);
 
     @Message(id = 7016, value = "Encrypted token headers must contain a content type header")
     ParseException encryptedTokenMissingContentType();
@@ -73,7 +71,7 @@ interface PrincipalMessages {
     ParseException newJWTCallerPrincipalFactoryFailure(@Cause Throwable throwable);
 
     @Message(id = 7018, value = "The token age has exceeded %d seconds")
-    ParseException tokenAgeExceeded(long tokenAge);
+    ParseException tokenAgeExceeded(long tokenAge, @Cause Throwable cause);
 
     @Message(id = 7019, value = "Required key location is null")
     UnresolvableKeyException nullKeyLocation();
