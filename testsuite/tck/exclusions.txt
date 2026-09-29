@@ -1,0 +1,10 @@
+# Requires EJB, not supported by MP only runtimes
+org.eclipse.microprofile.jwt.tck.container.ejb.EjbTest
+# Requires Servlets, not supported by MP only runtimes
+org.eclipse.microprofile.jwt.tck.container.servlet.ServletTest
+# Requires EE Security, not supported by MP only runtimes
+org.eclipse.microprofile.jwt.tck.container.jaxrs.RolesAllowedTest#testNeedsGroup1Mapping
+org.eclipse.microprofile.jwt.tck.container.jaxrs.jwe.RolesAllowedSignEncryptTest#testNeedsGroup1Mapping
+# Optional
+org.eclipse.microprofile.jwt.tck.container.jacc.SubjectTest
+
