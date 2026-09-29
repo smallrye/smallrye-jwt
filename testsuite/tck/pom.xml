@@ -56,6 +56,11 @@
 
     <!-- Runtime -->
     <dependency>
+      <groupId>org.testng</groupId>
+      <artifactId>testng</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.jboss.arquillian.testng</groupId>
       <artifactId>arquillian-testng-container</artifactId>
     </dependency>
@@ -75,9 +80,7 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
-          <suiteXmlFiles>
-            <suiteXmlFile>${project.build.directory}/tck-suite/suites/tck-base-suite.xml</suiteXmlFile>
-          </suiteXmlFiles>
+          <excludesFile>exclusions.txt</excludesFile>
           <dependenciesToScan>
             <dependency>org.eclipse.microprofile.jwt:microprofile-jwt-auth-tck</dependency>
           </dependenciesToScan>
@@ -88,41 +91,6 @@
             <mp.jwt.tck.jwks.baseURL>http://localhost:9090</mp.jwt.tck.jwks.baseURL>
           </systemPropertyVariables>
         </configuration>
-        <dependencies>
-          <dependency>
-            <groupId>org.apache.maven.surefire</groupId>
-            <artifactId>surefire-testng</artifactId>
-            <version>${version.surefire.plugin}</version>
-          </dependency>
-        </dependencies>
-      </plugin>
-
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-dependency-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>unpack-suite-files</id>
-            <phase>process-test-classes</phase>
-            <goals>
-              <goal>unpack</goal>
-            </goals>
-            <configuration>
-              <artifactItems>
-                <artifactItem>
-                  <groupId>org.eclipse.microprofile.jwt</groupId>
-                  <artifactId>microprofile-jwt-auth-tck</artifactId>
-                  <version>${version.eclipse.microprofile.jwt}</version>
-                  <type>test-jar</type>
-                  <classifier>tests</classifier>
-                  <overWrite>false</overWrite>
-                  <includes>**/*.xml</includes>
-                  <outputDirectory>${project.build.directory}/tck-suite</outputDirectory>
-                </artifactItem>
-              </artifactItems>
-            </configuration>
-          </execution>
-        </executions>
       </plugin>
     </plugins>
   </build>
