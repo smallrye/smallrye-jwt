@@ -56,6 +56,11 @@
 
     <!-- Runtime -->
     <dependency>
+      <groupId>org.testng</groupId>
+      <artifactId>testng</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.jboss.arquillian.testng</groupId>
       <artifactId>arquillian-testng-container</artifactId>
     </dependency>
@@ -88,13 +93,6 @@
             <mp.jwt.tck.jwks.baseURL>http://localhost:9090</mp.jwt.tck.jwks.baseURL>
           </systemPropertyVariables>
         </configuration>
-        <dependencies>
-          <dependency>
-            <groupId>org.apache.maven.surefire</groupId>
-            <artifactId>surefire-testng</artifactId>
-            <version>${version.surefire.plugin}</version>
-          </dependency>
-        </dependencies>
       </plugin>
 
       <plugin>
