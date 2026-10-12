@@ -16,6 +16,7 @@
  */
 package io.smallrye.jwt.auth.principal;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
@@ -29,8 +30,11 @@ import org.jose4j.http.SimpleResponse;
 import org.jose4j.jwk.JsonWebKey;
 import org.jose4j.jws.JsonWebSignature;
 import org.jose4j.jwx.Headers;
+import org.jose4j.lang.UnresolvableKeyException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -58,8 +62,13 @@ class AwsAlbKeyResolverTest {
 
     }
 
-    @Test
-    void loadAwsAlbVerificationKey() throws Exception {
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "c2f80c8b-c05c-4068-af14-17299f7896b1",
+            "simple-alpha",
+            "12345",
+            "a-b-c-d" })
+    void loadAwsAlbVerificationKey(String kid) throws Exception {
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo(
                 "https://localhost:8080",
                 "https://cognito-idp.eu-central-1.amazonaws.com");
@@ -70,19 +79,65 @@ class AwsAlbKeyResolverTest {
 
         when(keyLocationResolver.getHttpGet()).thenReturn(simpleGet);
 
-        when(simpleGet.get("https://localhost:8080/c2f80c8b-c05c-4068-af14-17299f7896b1"))
+        when(simpleGet.get("https://localhost:8080/" + kid))
                 .thenReturn(simpleResponse);
 
         when(simpleResponse.getBody()).thenReturn(AWS_ALB_KEY);
 
         when(signature.getHeaders()).thenReturn(headers);
-        when(headers.getStringHeaderValue(JsonWebKey.KEY_ID_PARAMETER)).thenReturn("c2f80c8b-c05c-4068-af14-17299f7896b1");
+        when(headers.getStringHeaderValue(JsonWebKey.KEY_ID_PARAMETER)).thenReturn(kid);
 
         Key key = keyLocationResolver.resolveKey(signature, List.of());
         assertTrue(key instanceof ECPublicKey);
         // Confirm the cached key is returned
         Key key2 = keyLocationResolver.resolveKey(signature, List.of());
         assertTrue(key2 == key);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "../../../etc/passwd",
+            "..",
+            "sub/path",
+            "key%2fpath",
+            "..%2f..%2fevil",
+            "..%252f..%252fevil",
+            "https://evil.com/key",
+            "key@evil.com",
+            "key?a=b",
+            "key#frag",
+            "key with space",
+            "key\nInjected",
+            "key:1234",
+            "with_underscore",
+            "" })
+    void rejectUnsafeKid(String kid) throws Exception {
+        JWTAuthContextInfo contextInfo = new JWTAuthContextInfo(
+                "https://localhost:8080",
+                "https://cognito-idp.eu-central-1.amazonaws.com");
+        contextInfo.setSignatureAlgorithm(Set.of(SignatureAlgorithm.ES256));
+
+        AwsAlbKeyResolver keyLocationResolver = new AwsAlbKeyResolver(contextInfo);
+
+        when(signature.getHeaders()).thenReturn(headers);
+        when(headers.getStringHeaderValue(JsonWebKey.KEY_ID_PARAMETER)).thenReturn(kid);
+
+        assertThrows(UnresolvableKeyException.class, () -> keyLocationResolver.resolveKey(signature, List.of()));
+    }
+
+    @Test
+    void rejectNullKid() throws Exception {
+        JWTAuthContextInfo contextInfo = new JWTAuthContextInfo(
+                "https://localhost:8080",
+                "https://cognito-idp.eu-central-1.amazonaws.com");
+        contextInfo.setSignatureAlgorithm(Set.of(SignatureAlgorithm.ES256));
+
+        AwsAlbKeyResolver keyLocationResolver = new AwsAlbKeyResolver(contextInfo);
+
+        when(signature.getHeaders()).thenReturn(headers);
+        when(headers.getStringHeaderValue(JsonWebKey.KEY_ID_PARAMETER)).thenReturn(null);
+
+        assertThrows(UnresolvableKeyException.class, () -> keyLocationResolver.resolveKey(signature, List.of()));
     }
 
 }

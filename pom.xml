@@ -22,7 +22,7 @@
   <parent>
     <groupId>io.smallrye</groupId>
     <artifactId>smallrye-parent</artifactId>
-    <version>50</version>
+    <version>52</version>
   </parent>
 
   <artifactId>smallrye-jwt-parent</artifactId>
@@ -37,14 +37,14 @@
     <version.jakarta.security.enterprise.api>2.0.0</version.jakarta.security.enterprise.api>
     <version.eclipse.microprofile.jwt>2.2</version.eclipse.microprofile.jwt>
     <version.microprofile.config>3.0</version.microprofile.config>
-    <version.jose4j>0.9.6</version.jose4j>
+    <version.jose4j>0.9.7</version.jose4j>
 
     <!-- Testing -->
     <version.junit4>4.13.2</version.junit4>
-    <version.mokito>5.23.0</version.mokito>
+    <version.mokito>5.24.0</version.mokito>
     <version.bouncycastle>1.70</version.bouncycastle>
-    <version.smallrye.testing>2.5.0</version.smallrye.testing>
-    <version.smallrye.config>3.15.1</version.smallrye.config>
+    <version.smallrye.testing>2.5.1</version.smallrye.testing>
+    <version.smallrye.config>4.0.0</version.smallrye.config>
     <version.parsson>1.1.9</version.parsson>
   </properties>
 
