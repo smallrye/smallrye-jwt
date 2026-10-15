@@ -6,3 +6,4 @@ ifndef::version-root[:version-root:]
 :sectanchors:
 :partialsdir: {version-root}_partials
 :examples-dir: {version-root}_examples
+:project-version: 999-SNAPSHOT

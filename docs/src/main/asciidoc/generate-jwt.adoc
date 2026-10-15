@@ -13,12 +13,12 @@ SmallRye JWT project provides a JWT Build API for securing the JWT claims using 
 
 == Maven dependency
 
-[source,xml]
+[source,xml,subs="attributes+"]
 ----
 <dependency>
   <groupId>io.smallrye</groupId>
   <artifactId>smallrye-jwt-build</artifactId>
-  <version>${smallrye.jwt.version}</version>
+  <version>{project-version}</version>
 </dependency>
 ----
 
