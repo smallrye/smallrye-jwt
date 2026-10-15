@@ -1,5 +1,5 @@
-[[index]]
 = SmallRye JWT Documentation
+include::_attributes.adoc[]
 
 SmallRye JWT is an implementation of https://github.com/eclipse/microprofile-jwt-auth/[Eclipse MicroProfile JWT RBAC].
 Currently it is focused on supporting the MP-JWT 1.1 spec, and primarily deals with the parsing of the JWT string into
