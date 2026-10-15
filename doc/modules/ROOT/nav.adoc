@@ -1,3 +1,0 @@
-* xref:index.adoc[Index]
-* xref:configuration.adoc[Configuration]
-* xref:generate-jwt.adoc[Generate JWT Tokens]

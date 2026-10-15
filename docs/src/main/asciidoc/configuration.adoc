@@ -1,9 +1,5 @@
-:doctype: book
-include::attributes.adoc[]
-
-[[configuration]]
-
 = Configuration
+include::_attributes.adoc[]
 
 == MicroProfile JWT properties
 
@@ -85,7 +81,7 @@ SmallRye JWT supports many properties which can be used to customize the token p
 |smallrye.jwt.resolve-remote-keys-at-startup|false|Set this property to `true` to resolve the remote keys at the application startup.
 |===
 
-= Create JsonWebToken with JWTParser
+== Create JsonWebToken with JWTParser
 
 If the JWT token can not be injected, for example, if it is embedded in the service request payload or the service endpoint acquires it out of band, then one can use `JWTParser`:
 ```
@@ -137,7 +133,7 @@ Note that if you need to use `JWTParser` to verify the tokens with different ver
 
 If the same provider uses different keys to secure the token then using a `JsonWebKey Set` containing several keys may also work with the injected `JWTParser`.
 
-= Token Decryption
+== Token Decryption
 
 If your application needs to accept the tokens with the encrypted claims or with the encrypted inner signed claims then all you have to do is to set
 `smallrye.jwt.decrypt.key-location` pointing to the decryption key.
@@ -146,9 +142,9 @@ If this is the only key property which is set then the incoming token is expecte
 If either `mp.jwt.verify.publickey` or `mp.jwt.verify.publickey.location` verification properties are also set then the incoming token is expected to contain
 the encrypted inner-signed token.
 
-See <<generate-jwt-tokens, Generate JWT tokens>> and learn how to generate the encrypted or inner-signed and then encrypted tokens fast.
+See xref:generate-jwt.adoc[Generate JWT tokens] and learn how to generate the encrypted or inner-signed and then encrypted tokens fast.
 
-= Custom Factories
+== Custom Factories
 
 `io.smallrye.jwt.auth.principal.DefaultJWTCallerPrincipalFactory` is used by default to parse and verify JWT tokens and convert them to `JsonWebToken` principals.
 It uses `MP JWT` and `smallrye-jwt` properties listed in the `Configuration` section to verify and customize JWT tokens.

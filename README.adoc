@@ -33,7 +33,7 @@ mvn clean install
 * link:testsuite[] - Test suites
 ** link:testsuite/basic[] Test suite with basic test cases.
 ** link:testsuite/tck[] Test suite to run the implementation against the {mp-jwt-name} TCK.
-* link:doc[] - Project documentation.
+* link:docs[] - Project documentation, published at https://smallrye.io/docs/smallrye-jwt/latest/.
 
 === Contributing
 
@@ -43,4 +43,4 @@ Please refer to our Wiki for the https://github.com/smallrye/smallrye-parent/wik
 
 * http://github.com/smallrye/smallrye-jwt/[Project Homepage]
 * {microprofile-jwt}[{mp-jwt-name}]
-* https://smallrye.io/docs/smallrye-jwt/index.html[Documentation]
+* https://smallrye.io/docs/smallrye-jwt/latest/[Documentation]
