@@ -37,13 +37,16 @@ Pull requests that change the documentation are rendered with the smallrye.io si
 `Documentation` workflow, which fails on a broken include or a page that does not render. The
 rendered site is attached to the workflow run as the `docs-smallrye-jwt` artifact.
 
-To preview locally, check out https://github.com/smallrye/smallrye.github.io[smallrye.github.io]
-next to this repository and run, from there:
+To see the documentation the way smallrye.io shows it while you write it, run from this repository:
 
 [source,bash]
 ----
-python3 tools/docs/sync.py --project smallrye-jwt --version main --source ../smallrye-jwt
-./mvnw quarkus:dev
+./mvnw -Pdocs-preview
 ----
 
-Then open http://localhost:8080/docs/smallrye-jwt/main/.
+and open http://localhost:8080/docs/smallrye-jwt/main/. Pages and included examples are published again
+when you save them; refresh the page. Only Java is needed: the profile runs the
+https://github.com/smallrye/smallrye.github.io/tree/develop/tools/docs[smallrye.io docs tools]
+with https://www.jbang.dev[JBang]. Where JBang is installed, `jbang docs-preview@smallrye/smallrye.github.io`
+does the same, and takes options such as `--port` or `--site <a smallrye.github.io checkout>`
+(see `--help`).
