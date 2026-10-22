@@ -5,16 +5,17 @@ import java.security.Key;
 import java.security.PublicKey;
 import java.security.interfaces.ECPublicKey;
 import java.security.interfaces.RSAPublicKey;
+import java.security.interfaces.XECPublicKey;
 import java.util.HashMap;
 import java.util.Map;
 
 import javax.crypto.SecretKey;
 
-import org.jose4j.jwa.AlgorithmConstraints;
-import org.jose4j.jwe.JsonWebEncryption;
-import org.jose4j.jwk.JsonWebKey;
-import org.jose4j.jwx.HeaderParameterNames;
+import com.nimbusds.jose.HeaderParameterNames;
 
+import io.smallrye.jwe.JweEncrypter;
+import io.smallrye.jwe.JweException;
+import io.smallrye.jwk.JsonWebKey;
 import io.smallrye.jwt.algorithm.ContentEncryptionAlgorithm;
 import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
 import io.smallrye.jwt.build.JwtEncryptionBuilder;
@@ -26,7 +27,6 @@ import io.smallrye.jwt.util.ResourceUtils;
  * Default JWT Encryption implementation
  */
 class JwtEncryptionImpl implements JwtEncryptionBuilder {
-    private static final String XEC_PUBLIC_KEY_INTERFACE = "java.security.interfaces.XECPublicKey";
 
     boolean innerSigned;
     String claims;
@@ -127,7 +127,7 @@ class JwtEncryptionImpl implements JwtEncryptionBuilder {
     public JwtEncryptionBuilder header(String name, Object value) {
         if (HeaderParameterNames.ALGORITHM.equals(name)) {
             return keyAlgorithm(toKeyEncryptionAlgorithm((String) value));
-        } else if (HeaderParameterNames.ENCRYPTION_METHOD.equals(name)) {
+        } else if (HeaderParameterNames.ENCRYPTION_ALGORITHM.equals(name)) {
             return contentAlgorithm(toContentEncryptionAlgorithm((String) value));
         } else {
             headers.put(name, value);
@@ -149,7 +149,7 @@ class JwtEncryptionImpl implements JwtEncryptionBuilder {
      */
     @Override
     public JwtEncryptionBuilder contentAlgorithm(ContentEncryptionAlgorithm algorithm) {
-        headers.put(HeaderParameterNames.ENCRYPTION_METHOD, algorithm.getAlgorithm());
+        headers.put(HeaderParameterNames.ENCRYPTION_ALGORITHM, algorithm.getAlgorithm());
         return this;
     }
 
@@ -176,31 +176,26 @@ class JwtEncryptionImpl implements JwtEncryptionBuilder {
             throw ImplMessages.msg.encryptionKeyIsNull();
         }
 
-        JsonWebEncryption jwe = new JsonWebEncryption();
-        jwe.setPlaintext(claims);
-        for (Map.Entry<String, Object> entry : headers.entrySet()) {
-            jwe.getHeaders().setObjectHeaderValue(entry.getKey(), entry.getValue());
-        }
+        JweEncrypter.Builder encrypterBuilder = JweEncrypter.builder(key)
+                .keyAlgorithm(KeyEncryptionAlgorithm.fromAlgorithm(getKeyEncryptionAlgorithm(key)))
+                .contentAlgorithm(ContentEncryptionAlgorithm.fromAlgorithm(getContentEncryptionAlgorithm()))
+                .relaxKeyValidation(isRelaxKeyValidation())
+                .headers(headers);
+
         if (innerSigned && !headers.containsKey(HeaderParameterNames.CONTENT_TYPE)) {
-            jwe.getHeaders().setObjectHeaderValue(HeaderParameterNames.CONTENT_TYPE, "JWT");
+            encrypterBuilder.contentType("JWT");
         }
-        String keyAlgorithm = getKeyEncryptionAlgorithm(key);
-        jwe.setAlgorithmConstraints(new AlgorithmConstraints(AlgorithmConstraints.ConstraintType.PERMIT, keyAlgorithm));
-        jwe.setAlgorithmHeaderValue(keyAlgorithm);
-        jwe.setEncryptionMethodHeaderParameter(getContentEncryptionAlgorithm());
-        jwe.setKey(key);
-        if (isRelaxKeyValidation()) {
-            jwe.setDoKeyValidation(false);
-        }
+
         try {
-            return jwe.getCompactSerialization();
-        } catch (org.jose4j.lang.JoseException ex) {
+            return encrypterBuilder.build().encrypt(claims);
+        } catch (JweException ex) {
             throw ImplMessages.msg.joseSerializationError(ex.getMessage(), ex);
         }
     }
 
     private boolean isRelaxKeyValidation() {
-        return JwtBuildUtils.getConfigProperty(JwtBuildUtils.ENC_KEY_RELAX_VALIDATION_PROPERTY, Boolean.class, Boolean.FALSE);
+        return JwtBuildUtils.getConfigProperty(JwtBuildUtils.ENC_KEY_RELAX_VALIDATION_PROPERTY, Boolean.class,
+                Boolean.FALSE);
     }
 
     private String getConfiguredKeyEncryptionAlgorithm() {
@@ -228,7 +223,7 @@ class JwtEncryptionImpl implements JwtEncryptionBuilder {
             } else if (alg.startsWith("RS")) {
                 return alg;
             }
-        } else if (keyEncryptionKey instanceof ECPublicKey || isXecPublicKey(keyEncryptionKey)) {
+        } else if (keyEncryptionKey instanceof ECPublicKey || keyEncryptionKey instanceof XECPublicKey) {
             if (alg == null) {
                 return KeyEncryptionAlgorithm.ECDH_ES_A256KW.getAlgorithm();
             } else if (alg.startsWith("EC")) {
@@ -244,12 +239,8 @@ class JwtEncryptionImpl implements JwtEncryptionBuilder {
         throw ImplMessages.msg.unsupportedKeyEncryptionAlgorithm(keyEncryptionKey.getAlgorithm());
     }
 
-    private static boolean isXecPublicKey(Key encKey) {
-        return KeyUtils.isSupportedKey(encKey, XEC_PUBLIC_KEY_INTERFACE);
-    }
-
     private String getContentEncryptionAlgorithm() {
-        String alg = (String) headers.get(HeaderParameterNames.ENCRYPTION_METHOD);
+        String alg = (String) headers.get(HeaderParameterNames.ENCRYPTION_ALGORITHM);
         if (alg == null) {
             try {
                 alg = JwtBuildUtils.getConfigProperty(JwtBuildUtils.NEW_TOKEN_CONTENT_ENCRYPTION_ALG_PROPERTY, String.class);
@@ -293,12 +284,12 @@ class JwtEncryptionImpl implements JwtEncryptionBuilder {
                         (alg == null ? null : KeyEncryptionAlgorithm.fromAlgorithm(alg)));
                 if (key != null) {
                     // if the algorithm header is not set then use JWK `alg`
-                    if (alg == null && jwk.getAlgorithm() != null) {
-                        headers.put(HeaderParameterNames.ALGORITHM, jwk.getAlgorithm());
+                    if (alg == null && jwk.algorithm() != null) {
+                        headers.put(HeaderParameterNames.ALGORITHM, jwk.algorithm());
                     }
                     // if 'kid' header is not set then use JWK `kid`
-                    if (kid == null && jwk.getKeyId() != null) {
-                        headers.put(HeaderParameterNames.KEY_ID, jwk.getKeyId());
+                    if (kid == null && jwk.keyId() != null) {
+                        headers.put(HeaderParameterNames.KEY_ID, jwk.keyId());
                     }
                 }
             }

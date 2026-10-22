@@ -16,51 +16,35 @@
  */
 package io.smallrye.jwt.auth.principal;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.when;
 
 import java.security.Key;
 import java.security.interfaces.ECPublicKey;
-import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 
-import org.jose4j.http.SimpleGet;
-import org.jose4j.http.SimpleResponse;
-import org.jose4j.jwk.JsonWebKey;
-import org.jose4j.jws.JsonWebSignature;
-import org.jose4j.jwx.Headers;
-import org.jose4j.lang.UnresolvableKeyException;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.mockito.Mock;
-import org.mockito.Mockito;
-import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.JWSHeader;
+import com.nimbusds.jose.util.Base64URL;
+
+import io.smallrye.jws.JsonWebSignature;
+import io.smallrye.jws.JwsException;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
+import io.smallrye.jwt.auth.UnresolvableKeyException;
+import io.smallrye.jwt.util.KeyUtils;
 
-@ExtendWith(MockitoExtension.class)
 class AwsAlbKeyResolverTest {
 
     private static final String AWS_ALB_KEY = "-----BEGIN PUBLIC KEY-----"
             + "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEjPHY1j9umvc8nZEswOzs+lPpLKLn"
             + "qCBqvyZGJfBlXapmtGiqYEwpIqh/lZdkr4wDii7CP1DzIUSHONbc+jufiQ=="
             + "-----END PUBLIC KEY-----";
-
-    @Mock
-    JsonWebSignature signature;
-    @Mock
-    Headers headers;
-    @Mock
-    SimpleGet simpleGet;
-    @Mock
-    SimpleResponse simpleResponse;
-
-    AwsAlbKeyResolverTest() throws Exception {
-
-    }
 
     @ParameterizedTest
     @ValueSource(strings = {
@@ -69,28 +53,26 @@ class AwsAlbKeyResolverTest {
             "12345",
             "a-b-c-d" })
     void loadAwsAlbVerificationKey(String kid) throws Exception {
-        JWTAuthContextInfo contextInfo = new JWTAuthContextInfo(
-                "https://localhost:8080",
-                "https://cognito-idp.eu-central-1.amazonaws.com");
-        contextInfo.setSignatureAlgorithm(Set.of(SignatureAlgorithm.ES256));
+        JWTAuthContextInfo contextInfo = createContextInfo();
 
-        AwsAlbKeyResolver keyLocationResolver = new AwsAlbKeyResolver(contextInfo);
-        keyLocationResolver = Mockito.spy(keyLocationResolver);
+        AtomicReference<String> requestedKid = new AtomicReference<>();
+        AwsAlbKeyResolver keyLocationResolver = new AwsAlbKeyResolver(contextInfo) {
+            @Override
+            protected Key retrieveKey(String keyId) throws UnresolvableKeyException {
+                requestedKid.set(keyId);
+                try {
+                    return KeyUtils.decodePublicKey(AWS_ALB_KEY, SignatureAlgorithm.ES256);
+                } catch (Exception e) {
+                    throw new UnresolvableKeyException("Failed to decode key", e);
+                }
+            }
+        };
 
-        when(keyLocationResolver.getHttpGet()).thenReturn(simpleGet);
-
-        when(simpleGet.get("https://localhost:8080/" + kid))
-                .thenReturn(simpleResponse);
-
-        when(simpleResponse.getBody()).thenReturn(AWS_ALB_KEY);
-
-        when(signature.getHeaders()).thenReturn(headers);
-        when(headers.getStringHeaderValue(JsonWebKey.KEY_ID_PARAMETER)).thenReturn(kid);
-
-        Key key = keyLocationResolver.resolveKey(signature, List.of());
+        Key key = keyLocationResolver.resolveKey(signedJwt(kid));
         assertTrue(key instanceof ECPublicKey);
+        assertEquals(kid, requestedKid.get());
         // Confirm the cached key is returned
-        Key key2 = keyLocationResolver.resolveKey(signature, List.of());
+        Key key2 = keyLocationResolver.resolveKey(signedJwt(kid));
         assertTrue(key2 == key);
     }
 
@@ -112,32 +94,30 @@ class AwsAlbKeyResolverTest {
             "with_underscore",
             "" })
     void rejectUnsafeKid(String kid) throws Exception {
-        JWTAuthContextInfo contextInfo = new JWTAuthContextInfo(
-                "https://localhost:8080",
-                "https://cognito-idp.eu-central-1.amazonaws.com");
-        contextInfo.setSignatureAlgorithm(Set.of(SignatureAlgorithm.ES256));
+        AwsAlbKeyResolver keyLocationResolver = new AwsAlbKeyResolver(createContextInfo());
 
-        AwsAlbKeyResolver keyLocationResolver = new AwsAlbKeyResolver(contextInfo);
-
-        when(signature.getHeaders()).thenReturn(headers);
-        when(headers.getStringHeaderValue(JsonWebKey.KEY_ID_PARAMETER)).thenReturn(kid);
-
-        assertThrows(UnresolvableKeyException.class, () -> keyLocationResolver.resolveKey(signature, List.of()));
+        assertThrows(UnresolvableKeyException.class, () -> keyLocationResolver.resolveKey(signedJwt(kid)));
     }
 
     @Test
     void rejectNullKid() throws Exception {
+        AwsAlbKeyResolver keyLocationResolver = new AwsAlbKeyResolver(createContextInfo());
+
+        assertThrows(UnresolvableKeyException.class, () -> keyLocationResolver.resolveKey(signedJwt(null)));
+    }
+
+    private static JWTAuthContextInfo createContextInfo() {
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo(
                 "https://localhost:8080",
                 "https://cognito-idp.eu-central-1.amazonaws.com");
         contextInfo.setSignatureAlgorithm(Set.of(SignatureAlgorithm.ES256));
-
-        AwsAlbKeyResolver keyLocationResolver = new AwsAlbKeyResolver(contextInfo);
-
-        when(signature.getHeaders()).thenReturn(headers);
-        when(headers.getStringHeaderValue(JsonWebKey.KEY_ID_PARAMETER)).thenReturn(null);
-
-        assertThrows(UnresolvableKeyException.class, () -> keyLocationResolver.resolveKey(signature, List.of()));
+        return contextInfo;
     }
 
+    private static JsonWebSignature signedJwt(String kid) throws JwsException {
+        JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.ES256).keyID(kid).build();
+        // the resolver only selects a key from the headers and never verifies the token,
+        // so the claims and signature segments are placeholders
+        return JsonWebSignature.parse(header.toBase64URL() + "." + Base64URL.encode("{}") + ".signature");
+    }
 }

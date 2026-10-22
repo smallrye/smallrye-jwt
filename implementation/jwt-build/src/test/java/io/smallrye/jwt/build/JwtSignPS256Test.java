@@ -21,12 +21,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.io.File;
 import java.security.Security;
 
-import org.jose4j.jws.JsonWebSignature;
-import org.jose4j.jwt.JwtClaims;
-import org.jose4j.lang.BouncyCastleProviderHelp;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+
+import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
 
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 import io.smallrye.jwt.util.KeyUtils;
@@ -35,14 +35,14 @@ class JwtSignPS256Test {
     @BeforeAll
     public static void installBouncyCastleProviderIfNeeded() {
         if (!isPS256Supported()) {
-            BouncyCastleProviderHelp.enableBouncyCastleProvider();
+            Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
         }
     }
 
     @AfterAll
     public static void uninstallBouncyCastleProviderIfNeeded() {
         if (!isPS256Supported()) {
-            Security.removeProvider("org.bouncycastle.jce.provider.BouncyCastleProvider");
+            Security.removeProvider("BC");
         }
     }
 
@@ -64,13 +64,13 @@ class JwtSignPS256Test {
                 .jws().algorithm(SignatureAlgorithm.PS256)
                 .sign("file:" + file.getAbsolutePath());
 
-        JsonWebSignature jws = JwtSignTest.getVerifiedJws(jwt, KeyUtils.readPublicKey("/publicKey.pem"));
-        JwtClaims claims = JwtClaims.parse(jws.getPayload());
+        SignedJWT signedJWT = JwtSignTest.getVerifiedJws(jwt, KeyUtils.readPublicKey("/publicKey.pem"));
+        JWTClaimsSet claims = signedJWT.getJWTClaimsSet();
 
-        assertEquals(4, claims.getClaimsMap().size());
+        assertEquals(4, claims.getClaims().size());
         JwtSignTest.checkDefaultClaimsAndHeaders(JwtSignTest.getJwsHeaders(jwt, 2), claims, "PS256", 300);
 
-        assertEquals("custom-value", claims.getClaimValue("customClaim"));
+        assertEquals("custom-value", claims.getClaim("customClaim"));
     }
 
     @Test
@@ -86,12 +86,12 @@ class JwtSignPS256Test {
             configSource.setSignatureAlgorithm(null);
         }
 
-        JsonWebSignature jws = JwtSignTest.getVerifiedJws(jwt, KeyUtils.readPublicKey("/publicKey.pem"));
-        JwtClaims claims = JwtClaims.parse(jws.getPayload());
+        SignedJWT signedJWT = JwtSignTest.getVerifiedJws(jwt, KeyUtils.readPublicKey("/publicKey.pem"));
+        JWTClaimsSet claims = signedJWT.getJWTClaimsSet();
 
-        assertEquals(4, claims.getClaimsMap().size());
+        assertEquals(4, claims.getClaims().size());
         JwtSignTest.checkDefaultClaimsAndHeaders(JwtSignTest.getJwsHeaders(jwt, 2), claims, "PS256", 300);
 
-        assertEquals("custom-value", claims.getClaimValue("customClaim"));
+        assertEquals("custom-value", claims.getClaim("customClaim"));
     }
 }
