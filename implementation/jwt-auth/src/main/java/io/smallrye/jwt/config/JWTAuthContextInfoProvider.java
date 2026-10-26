@@ -630,6 +630,7 @@ public class JWTAuthContextInfoProvider {
      * Key store type. If not given, the type is automatically detected
      * based on the file name.
      */
+    @Inject
     @ConfigProperty(name = "smallrye.jwt.keystore.type")
     private Optional<String> keyStoreType = Optional.empty();
 
@@ -637,36 +638,42 @@ public class JWTAuthContextInfoProvider {
      * Key store provider. If not given, the provider is automatically detected
      * based on the key store file type.
      */
+    @Inject
     @ConfigProperty(name = "smallrye.jwt.keystore.provider")
     private Optional<String> keyStoreProvider = Optional.empty();
 
     /**
      * Key store password.
      */
+    @Inject
     @ConfigProperty(name = "smallrye.jwt.keystore.password")
     private Optional<String> keyStorePassword = Optional.empty();
 
     /**
      * Key store verification key alias. Public verification key will be extracted from a matching certificate.
      */
+    @Inject
     @ConfigProperty(name = "smallrye.jwt.keystore.verify.key.alias")
     private Optional<String> keyStoreVerifyKeyAlias = Optional.empty();
 
     /**
      * Key store decryption key alias.
      */
+    @Inject
     @ConfigProperty(name = "smallrye.jwt.keystore.decrypt.key.alias")
     private Optional<String> keyStoreDecryptKeyAlias = Optional.empty();
 
     /**
      * Key store decryption key password, in case it's different from {@link #keyStorePassword}.
      */
+    @Inject
     @ConfigProperty(name = "smallrye.jwt.keystore.decrypt.key.password")
     private Optional<String> keyStoreDecryptKeyPassword = Optional.empty();
 
     /**
      * Obtain remote keys on startup.
      */
+    @Inject
     @ConfigProperty(name = "smallrye.jwt.resolve-remote-keys-at-startup", defaultValue = "false")
     private boolean fetchRemoteKeysOnStartup = false;
 
