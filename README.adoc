@@ -26,7 +26,7 @@ mvn clean install
 * link:implementation[] - Implementation of the {mp-jwt-name} library
 ** link:implementation/common[] - Common utility classes.
 ** link:implementation/jwt-auth[] - Core library implementation.
-** link:implementation/jwt-cdi[] - Support for registering the implementation as CDI extension.
+** link:implementation/jwt-cdi-extension[] - Support for registering the implementation as CDI extension.
 ** link:implementation/jwt-http-mechanism[] - Support for registering the implementation as HTTP Authentication Mechanism.
 ** link:implementation/jwt-jaxrs[] - Support for registering the implementation as JAX-RS feature and filters.
 ** link:implementation/jwt-build[] - Support for generating JWT tokens - this module is not related to MP JWT 1.2.
