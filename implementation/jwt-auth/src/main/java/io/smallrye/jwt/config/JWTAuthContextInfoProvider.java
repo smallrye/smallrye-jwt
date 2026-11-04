@@ -552,8 +552,11 @@ public class JWTAuthContextInfoProvider {
     private int keyCacheTimeToLive;
 
     /**
-     * Relax the validation of the verification keys.
+     * Relax the validation of the RSA verification keys.
      * Public RSA keys with the 1024 bit length will be allowed if this property is set to 'true'.
+     * <p>
+     * This property has no effect on the HMAC secret keys: a secret key must be at least as long as the HMAC
+     * output, for example, 256 bits for HS256, whether this property is set or not.
      */
     @Inject
     @ConfigProperty(name = "smallrye.jwt.verify.relax-key-validation", defaultValue = "true")

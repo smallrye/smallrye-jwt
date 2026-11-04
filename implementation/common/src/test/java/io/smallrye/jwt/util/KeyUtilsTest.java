@@ -8,6 +8,8 @@ import java.security.GeneralSecurityException;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.ECPublicKey;
+import java.security.interfaces.EdECPrivateKey;
+import java.security.interfaces.EdECPublicKey;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 
@@ -43,11 +45,11 @@ public class KeyUtilsTest {
 
         if (Runtime.version().feature() >= 15) {
             keyPair = KeyUtils.generateKeyPair(255, SignatureAlgorithm.EDDSA); // ed25519
-            assertTrue(KeyUtils.isSupportedKey(keyPair.getPrivate(), "java.security.interfaces.EdECPrivateKey"));
-            assertTrue(KeyUtils.isSupportedKey(keyPair.getPublic(), "java.security.interfaces.EdECPublicKey"));
+            assertTrue(keyPair.getPrivate() instanceof EdECPrivateKey);
+            assertTrue(keyPair.getPublic() instanceof EdECPublicKey);
             keyPair = KeyUtils.generateKeyPair(448, SignatureAlgorithm.EDDSA); // ed448
-            assertTrue(KeyUtils.isSupportedKey(keyPair.getPrivate(), "java.security.interfaces.EdECPrivateKey"));
-            assertTrue(KeyUtils.isSupportedKey(keyPair.getPublic(), "java.security.interfaces.EdECPublicKey"));
+            assertTrue(keyPair.getPrivate() instanceof EdECPrivateKey);
+            assertTrue(keyPair.getPublic() instanceof EdECPublicKey);
         }
     }
 
@@ -69,13 +71,13 @@ public class KeyUtilsTest {
                     ResourceUtils.getAsClasspathResource("EDDSA-ED25519-private-key.pem").readAllBytes(),
                     StandardCharsets.UTF_8);
             privateKey = KeyUtils.decodePrivateKey(ed25519PrivateKeyPem, SignatureAlgorithm.EDDSA);
-            assertTrue(KeyUtils.isSupportedKey(privateKey, "java.security.interfaces.EdECPrivateKey"));
+            assertTrue(privateKey instanceof EdECPrivateKey);
 
             String ed448PrivateKeyPem = new String(
                     ResourceUtils.getAsClasspathResource("EDDSA-ED448-private-key.pem").readAllBytes(),
                     StandardCharsets.UTF_8);
             privateKey = KeyUtils.decodePrivateKey(ed448PrivateKeyPem, SignatureAlgorithm.EDDSA);
-            assertTrue(KeyUtils.isSupportedKey(privateKey, "java.security.interfaces.EdECPrivateKey"));
+            assertTrue(privateKey instanceof EdECPrivateKey);
         }
     }
 
@@ -96,13 +98,13 @@ public class KeyUtilsTest {
                     ResourceUtils.getAsClasspathResource("EDDSA-ED25519-public-key.pem").readAllBytes(),
                     StandardCharsets.UTF_8);
             publicKey = KeyUtils.decodePublicKey(ed25519PublicKeyPem, SignatureAlgorithm.EDDSA);
-            assertTrue(KeyUtils.isSupportedKey(publicKey, "java.security.interfaces.EdECPublicKey"));
+            assertTrue(publicKey instanceof EdECPublicKey);
 
             String ed448PublicKeyPem = new String(
                     ResourceUtils.getAsClasspathResource("EDDSA-ED448-public-key.pem").readAllBytes(),
                     StandardCharsets.UTF_8);
             publicKey = KeyUtils.decodePublicKey(ed448PublicKeyPem, SignatureAlgorithm.EDDSA);
-            assertTrue(KeyUtils.isSupportedKey(publicKey, "java.security.interfaces.EdECPublicKey"));
+            assertTrue(publicKey instanceof EdECPublicKey);
         }
     }
 }

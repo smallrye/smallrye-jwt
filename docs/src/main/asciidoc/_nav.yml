@@ -6,3 +6,5 @@ nav:
   page: configuration
 - title: Generate JWT Tokens
   page: generate-jwt
+- title: Migrating to 6.0
+  page: migration
