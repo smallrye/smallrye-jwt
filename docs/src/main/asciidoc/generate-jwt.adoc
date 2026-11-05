@@ -1,9 +1,5 @@
-:doctype: book
-include::attributes.adoc[]
-
-[[generate-jwt-tokens]]
-
 = Generate JWT Tokens
+include::_attributes.adoc[]
 
 JWT claims can be signed or encrypted or signed first and the nested JWT token encrypted. Signing the claims is used
 most often to secure the claims. What is known today as a JWT token is typically produced by signing the claims in a
@@ -17,12 +13,12 @@ SmallRye JWT project provides a JWT Build API for securing the JWT claims using 
 
 == Maven dependency
 
-[source,xml]
+[source,xml,subs="attributes+"]
 ----
 <dependency>
   <groupId>io.smallrye</groupId>
   <artifactId>smallrye-jwt-build</artifactId>
-  <version>${smallrye.jwt.version}</version>
+  <version>{project-version}</version>
 </dependency>
 ----
 

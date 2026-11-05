@@ -26,14 +26,14 @@ mvn clean install
 * link:implementation[] - Implementation of the {mp-jwt-name} library
 ** link:implementation/common[] - Common utility classes.
 ** link:implementation/jwt-auth[] - Core library implementation.
-** link:implementation/jwt-cdi[] - Support for registering the implementation as CDI extension.
+** link:implementation/jwt-cdi-extension[] - Support for registering the implementation as CDI extension.
 ** link:implementation/jwt-http-mechanism[] - Support for registering the implementation as HTTP Authentication Mechanism.
 ** link:implementation/jwt-jaxrs[] - Support for registering the implementation as JAX-RS feature and filters.
 ** link:implementation/jwt-build[] - Support for generating JWT tokens - this module is not related to MP JWT 1.2.
 * link:testsuite[] - Test suites
 ** link:testsuite/basic[] Test suite with basic test cases.
 ** link:testsuite/tck[] Test suite to run the implementation against the {mp-jwt-name} TCK.
-* link:doc[] - Project documentation.
+* link:docs[] - Project documentation, published at https://smallrye.io/docs/smallrye-jwt/latest/.
 
 === Contributing
 
@@ -43,4 +43,4 @@ Please refer to our Wiki for the https://github.com/smallrye/smallrye-parent/wik
 
 * http://github.com/smallrye/smallrye-jwt/[Project Homepage]
 * {microprofile-jwt}[{mp-jwt-name}]
-* https://smallrye.io/docs/smallrye-jwt/index.html[Documentation]
+* https://smallrye.io/docs/smallrye-jwt/latest/[Documentation]

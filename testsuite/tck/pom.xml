@@ -81,6 +81,10 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <excludesFile>exclusions.txt</excludesFile>
+          <!-- Method level exclusions cannot be expressed in exclusions.txt: with
+               Arquillian TestNG the method Surefire sees is Arquillian.run, so the
+               optional EE Security tests have to be excluded by TestNG group. -->
+          <excludedGroups>ee-security-optional</excludedGroups>
           <dependenciesToScan>
             <dependency>org.eclipse.microprofile.jwt:microprofile-jwt-auth-tck</dependency>
           </dependenciesToScan>
@@ -91,6 +95,17 @@
             <mp.jwt.tck.jwks.baseURL>http://localhost:9090</mp.jwt.tck.jwks.baseURL>
           </systemPropertyVariables>
         </configuration>
+        <dependencies>
+          <!-- Force the TestNG provider. junit-platform-commons arrives on the test
+               classpath via arquillian-jetty-embedded-12-ee9, and Surefire's auto
+               detection prefers the JUnit Platform provider over TestNG, which makes
+               it run zero TCK tests. -->
+          <dependency>
+            <groupId>org.apache.maven.surefire</groupId>
+            <artifactId>surefire-testng</artifactId>
+            <version>${version.surefire.plugin}</version>
+          </dependency>
+        </dependencies>
       </plugin>
     </plugins>
   </build>

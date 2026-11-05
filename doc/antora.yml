@@ -1,5 +1,0 @@
-name: smallrye-jwt
-title: SmallRye JWT
-version: master
-nav:
-  - modules/ROOT/nav.adoc
