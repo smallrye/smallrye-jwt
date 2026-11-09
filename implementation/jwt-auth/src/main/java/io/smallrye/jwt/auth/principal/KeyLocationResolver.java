@@ -120,8 +120,13 @@ public class KeyLocationResolver extends AbstractKeyLocationResolver implements 
 
         // Try to init the verification key from the local PEM or JWK(S) content
         if (mayBeFormat(KeyFormat.PEM_KEY)) {
-            key = tryAsPEMPublicKey(content, authContextInfo.getSignatureAlgorithm().iterator().next());
-            if (key != null || isFormat(KeyFormat.PEM_KEY)) {
+            for (SignatureAlgorithm sigAlg : authContextInfo.getSignatureAlgorithm()) {
+                key = tryAsPEMPublicKey(content, sigAlg);
+                if (key != null) {
+                    return;
+                }
+            }
+            if (isFormat(KeyFormat.PEM_KEY)) {
                 return;
             }
         }

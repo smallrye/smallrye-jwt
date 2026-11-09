@@ -287,7 +287,20 @@ public class AbstractKeyLocationResolver {
     }
 
     protected void loadJWKContent(final String content) {
-        jsonWebKeys = KeyUtils.loadJsonWebKeys(content);
+        if (mayBeFormat(KeyFormat.JWK)) {
+            jsonWebKeys = KeyUtils.loadJsonWebKeys(content);
+        }
+        if (jsonWebKeys == null && mayBeFormat(KeyFormat.JWK_BASE64URL)) {
+            // Try Base64 Decoding
+            try {
+                PrincipalLogging.log.checkKeyContentIsBase64EncodedJWKKeyOrJWKKeySet();
+                String decodedContent = new String(Base64.getUrlDecoder().decode(content.getBytes(StandardCharsets.UTF_8)),
+                        StandardCharsets.UTF_8);
+                jsonWebKeys = KeyUtils.loadJsonWebKeys(decodedContent);
+            } catch (IllegalArgumentException e) {
+                PrincipalLogging.log.unableToDecodeContentUsingBase64(e);
+            }
+        }
     }
 
     protected JsonWebKey loadFromJwk(String content, String keyId, String algo) {
