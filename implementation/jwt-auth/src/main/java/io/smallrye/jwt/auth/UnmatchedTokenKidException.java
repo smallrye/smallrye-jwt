@@ -13,9 +13,7 @@
  *   See the License for the specific language governing permissions and
  *   limitations under the License.
  */
-package io.smallrye.jwt.auth.principal;
-
-import org.jose4j.lang.UnresolvableKeyException;
+package io.smallrye.jwt.auth;
 
 public class UnmatchedTokenKidException extends UnresolvableKeyException {
 

@@ -10,9 +10,9 @@ import java.util.Collections;
 import java.util.stream.Stream;
 
 import org.eclipse.microprofile.jwt.tck.util.TokenUtils;
-import org.jose4j.jwt.consumer.InvalidJwtException;
 import org.junit.jupiter.api.Test;
 
+import io.smallrye.jwt.auth.InvalidJWTException;
 import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
 import io.smallrye.jwt.auth.principal.JWTCallerPrincipalFactory;
 import io.smallrye.jwt.auth.principal.ParseException;
@@ -36,7 +36,7 @@ class TestTokenRequiredClaims {
         JWTCallerPrincipalFactory factory = JWTCallerPrincipalFactory.instance();
 
         final ParseException exception = assertThrows(ParseException.class, () -> factory.parse(token, contextInfo));
-        assertTrue(exception.getCause() instanceof InvalidJwtException);
+        assertTrue(exception.getCause() instanceof InvalidJWTException);
     }
 
     @Test
@@ -48,7 +48,7 @@ class TestTokenRequiredClaims {
         JWTCallerPrincipalFactory factory = JWTCallerPrincipalFactory.instance();
 
         final ParseException exception = assertThrows(ParseException.class, () -> factory.parse(token, contextInfo));
-        assertTrue(exception.getCause() instanceof InvalidJwtException);
+        assertTrue(exception.getCause() instanceof InvalidJWTException);
     }
 
     @Test
@@ -71,6 +71,6 @@ class TestTokenRequiredClaims {
         JWTCallerPrincipalFactory factory = JWTCallerPrincipalFactory.instance();
 
         final ParseException exception = assertThrows(ParseException.class, () -> factory.parse(token, contextInfo));
-        assertTrue(exception.getCause() instanceof InvalidJwtException);
+        assertTrue(exception.getCause() instanceof InvalidJWTException);
     }
 }

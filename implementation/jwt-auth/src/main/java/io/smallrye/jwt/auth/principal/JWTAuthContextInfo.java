@@ -476,6 +476,10 @@ public class JWTAuthContextInfo {
                 '}';
     }
 
+    /**
+     * Check if the RSA verification keys shorter than 2048 bits are accepted, 'true' by default.
+     * The HMAC secret keys are never relaxed: a secret key must be at least as long as the HMAC output.
+     */
     public boolean isRelaxVerificationKeyValidation() {
         return relaxVerificationKeyValidation;
     }

@@ -20,11 +20,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.security.interfaces.RSAPublicKey;
 import java.util.List;
 
-import org.jose4j.jws.JsonWebSignature;
-import org.jose4j.jwt.JwtClaims;
 import org.junit.jupiter.api.Test;
+
+import com.nimbusds.jose.crypto.RSASSAVerifier;
+import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
 
 import io.smallrye.jwt.util.KeyUtils;
 
@@ -57,7 +60,10 @@ class JwtClaimShortcutsTest {
 
     @Test
     void audience() throws Exception {
-        verifyJwt(Jwt.audience("aud").sign(), "aud", "aud");
+        String jwt = Jwt.audience("aud").sign();
+        verifyJwt(jwt, "aud", List.of("aud"));
+        // JWTClaimsSet converts a single audience to a list, check the raw payload
+        assertEquals("aud", SignedJWT.parse(jwt).getPayload().toJSONObject().get("aud"));
     }
 
     @Test
@@ -65,45 +71,39 @@ class JwtClaimShortcutsTest {
         verifyJwtWithIssuer(Jwt.issuer("iss").sign());
     }
 
-    private static void verifyJwt(String jwt, String customClaim, String customValue) throws Exception {
-        JsonWebSignature jws = new JsonWebSignature();
-        jws.setKey(KeyUtils.readPublicKey("/publicKey.pem"));
-        jws.setCompactSerialization(jwt);
-        assertTrue(jws.verifySignature());
-        JwtClaims claims = JwtClaims.parse(jws.getPayload());
-        assertEquals(4, claims.getClaimsMap().size());
-        assertEquals(customValue, claims.getClaimValue(customClaim));
-        assertNotNull(claims.getIssuedAt());
+    private static void verifyJwt(String jwt, String customClaim, Object customValue) throws Exception {
+        SignedJWT signedJWT = SignedJWT.parse(jwt);
+        assertTrue(signedJWT.verify(new RSASSAVerifier((RSAPublicKey) KeyUtils.readPublicKey("/publicKey.pem"))));
+        JWTClaimsSet claims = signedJWT.getJWTClaimsSet();
+        assertEquals(4, claims.getClaims().size());
+        assertEquals(customValue, claims.getClaim(customClaim));
+        assertNotNull(claims.getIssueTime());
         assertNotNull(claims.getExpirationTime());
-        assertNotNull(claims.getJwtId());
+        assertNotNull(claims.getJWTID());
     }
 
     private static void verifyJwtWithIssuer(String jwt) throws Exception {
-        JsonWebSignature jws = new JsonWebSignature();
-        jws.setKey(KeyUtils.readPublicKey("/publicKey.pem"));
-        jws.setCompactSerialization(jwt);
-        assertTrue(jws.verifySignature());
-        JwtClaims claims = JwtClaims.parse(jws.getPayload());
-        assertEquals(4, claims.getClaimsMap().size());
+        SignedJWT signedJWT = SignedJWT.parse(jwt);
+        assertTrue(signedJWT.verify(new RSASSAVerifier((RSAPublicKey) KeyUtils.readPublicKey("/publicKey.pem"))));
+        JWTClaimsSet claims = signedJWT.getJWTClaimsSet();
+        assertEquals(4, claims.getClaims().size());
         assertEquals("iss", claims.getIssuer());
-        assertNotNull(claims.getIssuedAt());
+        assertNotNull(claims.getIssueTime());
         assertNotNull(claims.getExpirationTime());
-        assertNotNull(claims.getJwtId());
+        assertNotNull(claims.getJWTID());
     }
 
     private static void verifyJwtWithArray(String jwt, String customClaim, String customValue) throws Exception {
-        JsonWebSignature jws = new JsonWebSignature();
-        jws.setKey(KeyUtils.readPublicKey("/publicKey.pem"));
-        jws.setCompactSerialization(jwt);
-        assertTrue(jws.verifySignature());
-        JwtClaims claims = JwtClaims.parse(jws.getPayload());
-        assertEquals(4, claims.getClaimsMap().size());
+        SignedJWT signedJWT = SignedJWT.parse(jwt);
+        assertTrue(signedJWT.verify(new RSASSAVerifier((RSAPublicKey) KeyUtils.readPublicKey("/publicKey.pem"))));
+        JWTClaimsSet claims = signedJWT.getJWTClaimsSet();
+        assertEquals(4, claims.getClaims().size());
         @SuppressWarnings("unchecked")
-        List<String> list = (List<String>) claims.getClaimValue(customClaim);
+        List<String> list = (List<String>) claims.getClaim(customClaim);
         assertEquals(1, list.size());
         assertEquals(customValue, list.get(0));
-        assertNotNull(claims.getIssuedAt());
+        assertNotNull(claims.getIssueTime());
         assertNotNull(claims.getExpirationTime());
-        assertNotNull(claims.getJwtId());
+        assertNotNull(claims.getJWTID());
     }
 }
