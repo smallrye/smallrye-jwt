@@ -27,10 +27,13 @@ import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.security.PrivateKey;
 import java.util.Base64;
+import java.util.Set;
 
 import org.eclipse.microprofile.jwt.tck.util.TokenUtils;
 import org.junit.jupiter.api.Test;
 
+import io.smallrye.jwt.KeyFormat;
+import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 import io.smallrye.jwt.auth.UnresolvableKeyException;
 import io.smallrye.jwt.config.JWTAuthContextInfoProvider;
 import io.smallrye.jwt.util.KeyUtils;
@@ -70,12 +73,33 @@ class KeyLocationResolverKeyContentTest {
                 Base64.getUrlEncoder().encodeToString(readKeyContent("/publicKeySet.jwk").getBytes(StandardCharsets.UTF_8)));
     }
 
+    @Test
+    void verifyWithJwkKeySetAndKeyFormat() throws Exception {
+        verifyToken("key1", readKeyContent("/publicKeySet.jwk"), KeyFormat.JWK);
+    }
+
+    @Test
+    void verifyWithBase64UrlEncodedJwkKeySetAndKeyFormat() throws Exception {
+        verifyToken("key1",
+                Base64.getUrlEncoder().encodeToString(readKeyContent("/publicKeySet.jwk").getBytes(StandardCharsets.UTF_8)),
+                KeyFormat.JWK_BASE64URL);
+    }
+
     private void verifyToken(String kid, String publicKey) throws Exception {
+        verifyToken(kid, publicKey, null);
+    }
+
+    private void verifyToken(String kid, String publicKey, KeyFormat keyFormat) throws Exception {
         PrivateKey privateKey = TokenUtils.readPrivateKey("/privateKey.pem");
         String token = TokenUtils.signClaims(privateKey, kid, "/Token1.json", null, null);
         JWTAuthContextInfoProvider provider = JWTAuthContextInfoProvider.createWithKey(publicKey,
                 "https://server.example.com");
         JWTAuthContextInfo contextInfo = provider.getContextInfo();
+        if (keyFormat != null) {
+            contextInfo.setKeyFormat(keyFormat);
+            // a single algorithm selects the key format specific resolution path
+            contextInfo.setSignatureAlgorithm(Set.of(SignatureAlgorithm.RS256));
+        }
         assertNotNull(new DefaultJWTTokenParser().parse(token, contextInfo));
     }
 

@@ -206,7 +206,8 @@ public class AbstractKeyLocationResolver {
     }
 
     protected JsonWebKey tryJWKContent(final String content, String keyId, String algo, boolean encoded) {
-        loadJWKContent(content);
+        // the content has already been decoded if it was Base64URL-encoded
+        jsonWebKeys = loadJsonWebKeys(content);
         JsonWebKey jwk = null;
         if (jsonWebKeys != null && keyId != null) {
             jwk = getJsonWebKey(keyId, jsonWebKeys, algo);
