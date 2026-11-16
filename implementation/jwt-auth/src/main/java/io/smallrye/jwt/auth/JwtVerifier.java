@@ -1,6 +1,5 @@
 package io.smallrye.jwt.auth;
 
-import java.security.InvalidKeyException;
 import java.security.Key;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -18,7 +17,6 @@ import io.smallrye.jws.JwsVerifier;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 import io.smallrye.jwt.auth.principal.StandardClaimsVerifier;
 import io.smallrye.jwt.common.JwtClaims;
-import io.smallrye.jwt.util.KeyUtils;
 
 /**
  * A builder-style JWT verifier that encapsulates parsing, key resolution,
@@ -76,15 +74,11 @@ public class JwtVerifier {
 
             Key verificationKey = keyResolver.resolveKey(jws);
 
-            if (!relaxKeyValidation) {
-                try {
-                    KeyUtils.verifyRsaKeySize(verificationKey);
-                } catch (InvalidKeyException e) {
-                    throw new InvalidJWTException(e.getMessage());
-                }
-            }
-
-            String payload = JwsVerifier.builder(verificationKey).algorithms(allowedAlgorithms).build().verify(jws);
+            String payload = JwsVerifier.builder(verificationKey)
+                    .algorithms(allowedAlgorithms)
+                    .relaxKeyValidation(relaxKeyValidation)
+                    .build()
+                    .verify(jws);
 
             JWTClaimsSet claimsSet = StandardClaimsVerifier.parseClaimsSet(payload);
 
@@ -195,14 +189,15 @@ public class JwtVerifier {
         }
 
         /**
-         * Accept an RSA public key which is shorter than 2048 bits.
+         * Accept an RSA public key which is shorter than 2048 bits, `false` by default.
          * <p>
          * Note that relaxing the key size validation is not possible for the HMAC algorithms.
          *
+         * @param relaxKeyValidation true if a weak RSA public key is accepted
          * @return this builder
          */
-        public Builder relaxKeyValidation() {
-            this.relaxKeyValidation = true;
+        public Builder relaxKeyValidation(boolean relaxKeyValidation) {
+            this.relaxKeyValidation = relaxKeyValidation;
             return this;
         }
 

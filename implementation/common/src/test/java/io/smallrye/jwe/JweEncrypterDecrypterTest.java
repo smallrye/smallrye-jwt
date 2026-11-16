@@ -251,17 +251,24 @@ public class JweEncrypterDecrypterTest {
         keyPairGenerator.initialize(1024);
         KeyPair keyPair = keyPairGenerator.generateKeyPair();
 
-        // the encryption key validation can be relaxed, the decryption key validation can not
         String jwe = JweEncrypter.builder(keyPair.getPublic())
                 .keyAlgorithm(KeyEncryptionAlgorithm.RSA_OAEP_256)
                 .relaxKeyValidation(true)
                 .build()
                 .encrypt(CONTENT);
 
+        // the decryption key validation is strict by default
         JweDecrypter decrypter = JweDecrypter.builder(keyPair.getPrivate())
                 .keyAlgorithm(KeyEncryptionAlgorithm.RSA_OAEP_256)
                 .build();
         JweException ex = assertThrows(JweException.class, () -> decrypter.decrypt(jwe));
         assertTrue(ex.getMessage(), ex.getMessage().contains("Failed to decrypt"));
+
+        String content = JweDecrypter.builder(keyPair.getPrivate())
+                .keyAlgorithm(KeyEncryptionAlgorithm.RSA_OAEP_256)
+                .relaxKeyValidation(true)
+                .build()
+                .decrypt(jwe);
+        assertEquals(CONTENT, content);
     }
 }

@@ -1,5 +1,6 @@
 package io.smallrye.jws;
 
+import java.security.InvalidKeyException;
 import java.security.Key;
 import java.security.PublicKey;
 import java.security.interfaces.ECPublicKey;
@@ -21,6 +22,7 @@ import com.nimbusds.jwt.SignedJWT;
 
 import io.smallrye.jwt.algorithm.EdDSAVerifier;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
+import io.smallrye.jwt.util.KeyUtils;
 
 /**
  * Verifies the signature of a JSON Web Signature compact sequence with a given key.
@@ -114,9 +116,23 @@ public class JwsVerifier {
 
         private final Key key;
         private Set<SignatureAlgorithm> algorithms;
+        private boolean relaxKeyValidation;
 
         private Builder(Key key) {
             this.key = key;
+        }
+
+        /**
+         * Accept an RSA public key which is shorter than 2048 bits, `false` by default.
+         * <p>
+         * Note that relaxing the key size validation is not possible for the HMAC algorithms.
+         *
+         * @param relaxKeyValidation true if a weak RSA public key is accepted
+         * @return this builder
+         */
+        public Builder relaxKeyValidation(boolean relaxKeyValidation) {
+            this.relaxKeyValidation = relaxKeyValidation;
+            return this;
         }
 
         /**
@@ -144,7 +160,7 @@ public class JwsVerifier {
          * Build the verifier.
          *
          * @return the verifier
-         * @throws JwsException if the key or the accepted algorithms are not set
+         * @throws JwsException if the key or the accepted algorithms are not set, or the RSA key is too short
          */
         public JwsVerifier build() throws JwsException {
             if (key == null) {
@@ -152,6 +168,13 @@ public class JwsVerifier {
             }
             if (algorithms == null || algorithms.isEmpty()) {
                 throw new JwsException("At least one accepted signature algorithm is required");
+            }
+            if (!relaxKeyValidation) {
+                try {
+                    KeyUtils.verifyRsaKeySize(key);
+                } catch (InvalidKeyException ex) {
+                    throw new JwsException(ex.getMessage(), ex);
+                }
             }
             return new JwsVerifier(key, algorithms);
         }
