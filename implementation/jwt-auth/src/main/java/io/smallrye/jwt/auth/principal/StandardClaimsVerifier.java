@@ -58,6 +58,7 @@ public class StandardClaimsVerifier {
     }
 
     public void verify(JWTClaimsSet claimsSet) throws InvalidJWTException {
+        verifyRequiredClaims(claimsSet);
         JWTClaimsSet exactMatchClaims = issuer != null ? new JWTClaimsSet.Builder().issuer(issuer).build() : null;
         DefaultJWTClaimsVerifier<?> verifier = new DefaultJWTClaimsVerifier<>(
                 acceptedAudience, exactMatchClaims, requiredClaims, null);
@@ -68,10 +69,25 @@ public class StandardClaimsVerifier {
             // Nimbus signals expiry with ExpiredJWTException.
             throw new TokenExpiredException(ex.getMessage());
         } catch (BadJOSEException ex) {
-            logMissingClaims(claimsSet);
             throw new InvalidJWTException(ex.getMessage());
         }
         verifyExpirationTimeConsistency(claimsSet);
+    }
+
+    // Nimbus only checks that a required claim is present and accepts a null value, for example, "exp": null,
+    // which jose4j rejected as a missing claim
+    private void verifyRequiredClaims(JWTClaimsSet claimsSet) throws InvalidJWTException {
+        if (requiredClaims == null) {
+            return;
+        }
+        String missing = requiredClaims.stream()
+                .filter(claim -> claimsSet.getClaim(claim) == null)
+                .sorted()
+                .collect(Collectors.joining(","));
+        if (!missing.isEmpty()) {
+            PrincipalLogging.log.missingClaims(missing);
+            throw new InvalidJWTException("JWT missing required claims: [" + missing + "]");
+        }
     }
 
     // As in jose4j NumericDateValidator, 'exp' can not be before 'iat' or 'nbf'; Nimbus does not check it
@@ -92,18 +108,6 @@ public class StandardClaimsVerifier {
 
     private static long toSeconds(Date date) {
         return date.getTime() / 1000;
-    }
-
-    private void logMissingClaims(JWTClaimsSet claimsSet) {
-        if (requiredClaims != null && PrincipalLogging.log.isDebugEnabled()) {
-            String missing = requiredClaims.stream()
-                    .filter(claim -> !claimsSet.getClaims().containsKey(claim))
-                    .sorted()
-                    .collect(Collectors.joining(","));
-            if (!missing.isEmpty()) {
-                PrincipalLogging.log.missingClaims(missing);
-            }
-        }
     }
 
     public static Builder builder() {

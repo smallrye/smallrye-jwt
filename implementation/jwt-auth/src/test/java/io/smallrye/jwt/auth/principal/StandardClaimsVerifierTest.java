@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Date;
+import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
@@ -47,6 +48,20 @@ class StandardClaimsVerifierTest {
                 .build();
         InvalidJWTException thrown = assertThrows(InvalidJWTException.class, () -> skewVerifier.verify(skewClaims));
         assertTrue(thrown.getMessage().contains("SRJWT07024"), thrown.getMessage());
+    }
+
+    @Test
+    void requiredClaimWithNullValueIsRejected() throws Exception {
+        StandardClaimsVerifier verifier = StandardClaimsVerifier.builder().requiredClaims(Set.of("exp")).build();
+
+        // "exp": null must be treated as a missing claim, as jose4j did, otherwise the token never expires
+        JWTClaimsSet claims = StandardClaimsVerifier.parseClaimsSet("{\"sub\":\"alice\",\"exp\":null}");
+        InvalidJWTException thrown = assertThrows(InvalidJWTException.class, () -> verifier.verify(claims));
+        assertTrue(thrown.getMessage().contains("missing required claims: [exp]"), thrown.getMessage());
+
+        JWTClaimsSet noExp = StandardClaimsVerifier.parseClaimsSet("{\"sub\":\"alice\"}");
+        thrown = assertThrows(InvalidJWTException.class, () -> verifier.verify(noExp));
+        assertTrue(thrown.getMessage().contains("missing required claims: [exp]"), thrown.getMessage());
     }
 
     @Test

@@ -199,6 +199,26 @@ class DefaultJWTTokenParserTest {
     }
 
     @Test
+    void tokenWithNullExpirationFailed() throws Throwable {
+        JWTAuthContextInfo context = new JWTAuthContextInfo();
+        context.setIssuedBy("joe");
+        context.setSignatureAlgorithm(Set.of(SignatureAlgorithm.HS256));
+        context.setSecretVerificationKey(KeyUtils.createSecretKeyFromEncodedSecret(ENCODED_SECRET_KEY));
+
+        // "exp": null must be rejected as a missing claim, otherwise the token would never expire
+        long now = System.currentTimeMillis() / 1000;
+        JWSObject jws = new JWSObject(new JWSHeader(JWSAlgorithm.HS256),
+                new Payload("{\"iss\":\"joe\",\"sub\":\"joe\",\"iat\":" + now + ",\"exp\":null}"));
+        jws.sign(new MACSigner(KeyUtils.createSecretKeyFromEncodedSecret(ENCODED_SECRET_KEY)));
+        String token = jws.serialize();
+
+        ParseException thrown = assertThrows(ParseException.class, () -> parser.parse(token, context),
+                "ParseException is expected");
+        assertTrue(thrown.getCause().getMessage().contains("missing required claims: [exp]"),
+                thrown.getCause().getMessage());
+    }
+
+    @Test
     void tokenIssuedAtAfterExpirationFailed() throws Throwable {
         JWTAuthContextInfo context = new JWTAuthContextInfo();
         context.setIssuedBy("joe");
