@@ -14,6 +14,12 @@ import javax.crypto.spec.SecretKeySpec;
 
 import org.junit.Test;
 
+import com.nimbusds.jose.EncryptionMethod;
+import com.nimbusds.jose.JWEAlgorithm;
+import com.nimbusds.jose.JWEHeader;
+import com.nimbusds.jose.JWEObject;
+import com.nimbusds.jose.util.Base64URL;
+
 import io.smallrye.jwt.algorithm.ContentEncryptionAlgorithm;
 import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
 import io.smallrye.jwt.util.KeyUtils;
@@ -226,6 +232,22 @@ public class JweEncrypterDecrypterTest {
         assertEquals("JWT", headers.contentType());
         assertEquals("custom-value", headers.header("custom-header"));
         assertEquals("key-1", headers.header("kid"));
+    }
+
+    @Test
+    public void decryptWithUnsupportedContentEncryptionAlgorithm() throws Exception {
+        KeyPair keyPair = KeyUtils.generateKeyPair(2048);
+
+        // XC20P needs the optional Tink dependency, Nimbus would fail with NoClassDefFoundError without it
+        JWEHeader header = new JWEHeader(JWEAlgorithm.RSA_OAEP_256, EncryptionMethod.XC20P);
+        String jwe = new JWEObject(header.toBase64URL(), Base64URL.encode(new byte[256]), Base64URL.encode(new byte[24]),
+                Base64URL.encode(new byte[16]), Base64URL.encode(new byte[16])).serialize();
+
+        JweDecrypter decrypter = JweDecrypter.builder(keyPair.getPrivate())
+                .keyAlgorithm(KeyEncryptionAlgorithm.RSA_OAEP_256)
+                .build();
+        JweException ex = assertThrows(JweException.class, () -> decrypter.decrypt(jwe));
+        assertTrue(ex.getMessage(), ex.getMessage().contains("Content encryption algorithm XC20P is not supported"));
     }
 
     @Test

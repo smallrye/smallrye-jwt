@@ -5,6 +5,7 @@ import java.security.PrivateKey;
 import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.XECPrivateKey;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -23,6 +24,7 @@ import com.nimbusds.jose.crypto.RSADecrypter;
 import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jose.jwk.JWK;
 
+import io.smallrye.jwt.algorithm.ContentEncryptionAlgorithm;
 import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
 import io.smallrye.jwt.algorithm.XDHDecrypter;
 
@@ -32,6 +34,10 @@ import io.smallrye.jwt.algorithm.XDHDecrypter;
  * The decrypted content is an arbitrary string such as a signed JWT token or any other text.
  */
 public class JweDecrypter {
+
+    private static final Set<String> SUPPORTED_CONTENT_ALGORITHMS = Arrays.stream(ContentEncryptionAlgorithm.values())
+            .map(ContentEncryptionAlgorithm::getAlgorithm)
+            .collect(Collectors.toSet());
 
     private final Key key;
     private final Set<String> keyAlgorithms;
@@ -75,6 +81,12 @@ public class JweDecrypter {
         String algorithm = jwe.headers().algorithm();
         if (!keyAlgorithms.contains(algorithm)) {
             throw new JweException("Key encryption algorithm " + algorithm + " is not allowed");
+        }
+        String encryptionAlgorithm = jwe.headers().encryptionAlgorithm();
+        if (!SUPPORTED_CONTENT_ALGORITHMS.contains(encryptionAlgorithm)) {
+            // for example, XC20P, which Nimbus only supports with the optional Tink dependency and otherwise
+            // reports with NoClassDefFoundError during the decryption
+            throw new JweException("Content encryption algorithm " + encryptionAlgorithm + " is not supported");
         }
 
         JWEObject jweObject = jwe.jweObject();
