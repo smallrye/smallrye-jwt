@@ -98,14 +98,14 @@ public class DefaultJWTCallerPrincipal extends JWTCallerPrincipal {
             case nbf:
             case updated_at:
                 Object value = claimsSet.getClaim(claimType.name());
-                if (value instanceof Number) {
+                if (value == null) {
+                    claim = 0L;
+                } else if (value instanceof Number) {
                     claim = ((Number) value).longValue();
-                } else if (value != null) {
+                } else {
+                    // null rather than 0, a non-numeric value such as an ISO date string must not look like a date
                     PrincipalLogging.log.claimTypeMismatch(claimName, claimType.getType().getSimpleName(),
                             value.getClass().getSimpleName());
-                }
-                if (claim == null) {
-                    claim = 0L;
                 }
                 break;
             case groups:
