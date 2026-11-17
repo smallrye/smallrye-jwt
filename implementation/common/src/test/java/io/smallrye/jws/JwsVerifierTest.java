@@ -5,7 +5,9 @@ import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import java.security.KeyPair;
+import java.security.KeyPairGenerator;
 import java.security.PrivateKey;
+import java.util.Set;
 
 import javax.crypto.SecretKey;
 
@@ -16,6 +18,7 @@ import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.JWSSigner;
 import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jose.crypto.RSASSASigner;
+import com.nimbusds.jose.crypto.opts.AllowWeakRSAKey;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 
@@ -43,6 +46,34 @@ public class JwsVerifierTest {
         String jws = sign(JWSAlgorithm.HS256, null, new MACSigner(secretKey));
 
         String payload = JwsVerifier.builder(secretKey).algorithm(SignatureAlgorithm.HS256).build().verify(jws);
+        assertTrue(payload.contains("\"sub\":\"alice\""));
+    }
+
+    @Test
+    public void verifyWithShortRsaKey() throws Exception {
+        KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
+        keyPairGenerator.initialize(1024);
+        KeyPair keyPair = keyPairGenerator.generateKeyPair();
+
+        JwsException ex = assertThrows(JwsException.class,
+                () -> JwsVerifier.builder(keyPair.getPublic()).algorithm(SignatureAlgorithm.RS256).build());
+        assertTrue(ex.getMessage(), ex.getMessage().contains("An RSA key of size 2048 bits or larger MUST be used"));
+    }
+
+    @Test
+    public void verifyWithShortRsaKeyAndRelaxedValidation() throws Exception {
+        KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
+        keyPairGenerator.initialize(1024);
+        KeyPair keyPair = keyPairGenerator.generateKeyPair();
+
+        String jws = sign(JWSAlgorithm.RS256, "key-1",
+                new RSASSASigner(keyPair.getPrivate(), Set.of(AllowWeakRSAKey.getInstance())));
+
+        String payload = JwsVerifier.builder(keyPair.getPublic())
+                .algorithm(SignatureAlgorithm.RS256)
+                .relaxKeyValidation(true)
+                .build()
+                .verify(jws);
         assertTrue(payload.contains("\"sub\":\"alice\""));
     }
 

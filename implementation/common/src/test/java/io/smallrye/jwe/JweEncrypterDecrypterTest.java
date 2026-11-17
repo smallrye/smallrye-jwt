@@ -14,6 +14,12 @@ import javax.crypto.spec.SecretKeySpec;
 
 import org.junit.Test;
 
+import com.nimbusds.jose.EncryptionMethod;
+import com.nimbusds.jose.JWEAlgorithm;
+import com.nimbusds.jose.JWEHeader;
+import com.nimbusds.jose.JWEObject;
+import com.nimbusds.jose.util.Base64URL;
+
 import io.smallrye.jwt.algorithm.ContentEncryptionAlgorithm;
 import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
 import io.smallrye.jwt.util.KeyUtils;
@@ -229,6 +235,22 @@ public class JweEncrypterDecrypterTest {
     }
 
     @Test
+    public void decryptWithUnsupportedContentEncryptionAlgorithm() throws Exception {
+        KeyPair keyPair = KeyUtils.generateKeyPair(2048);
+
+        // XC20P needs the optional Tink dependency, Nimbus would fail with NoClassDefFoundError without it
+        JWEHeader header = new JWEHeader(JWEAlgorithm.RSA_OAEP_256, EncryptionMethod.XC20P);
+        String jwe = new JWEObject(header.toBase64URL(), Base64URL.encode(new byte[256]), Base64URL.encode(new byte[24]),
+                Base64URL.encode(new byte[16]), Base64URL.encode(new byte[16])).serialize();
+
+        JweDecrypter decrypter = JweDecrypter.builder(keyPair.getPrivate())
+                .keyAlgorithm(KeyEncryptionAlgorithm.RSA_OAEP_256)
+                .build();
+        JweException ex = assertThrows(JweException.class, () -> decrypter.decrypt(jwe));
+        assertTrue(ex.getMessage(), ex.getMessage().contains("Content encryption algorithm XC20P is not supported"));
+    }
+
+    @Test
     public void decryptWithWrongKey() throws Exception {
         KeyPair keyPair = KeyUtils.generateKeyPair(2048);
         KeyPair anotherKeyPair = KeyUtils.generateKeyPair(2048);
@@ -251,17 +273,24 @@ public class JweEncrypterDecrypterTest {
         keyPairGenerator.initialize(1024);
         KeyPair keyPair = keyPairGenerator.generateKeyPair();
 
-        // the encryption key validation can be relaxed, the decryption key validation can not
         String jwe = JweEncrypter.builder(keyPair.getPublic())
                 .keyAlgorithm(KeyEncryptionAlgorithm.RSA_OAEP_256)
                 .relaxKeyValidation(true)
                 .build()
                 .encrypt(CONTENT);
 
+        // the decryption key validation is strict by default
         JweDecrypter decrypter = JweDecrypter.builder(keyPair.getPrivate())
                 .keyAlgorithm(KeyEncryptionAlgorithm.RSA_OAEP_256)
                 .build();
         JweException ex = assertThrows(JweException.class, () -> decrypter.decrypt(jwe));
         assertTrue(ex.getMessage(), ex.getMessage().contains("Failed to decrypt"));
+
+        String content = JweDecrypter.builder(keyPair.getPrivate())
+                .keyAlgorithm(KeyEncryptionAlgorithm.RSA_OAEP_256)
+                .relaxKeyValidation(true)
+                .build()
+                .decrypt(jwe);
+        assertEquals(CONTENT, content);
     }
 }

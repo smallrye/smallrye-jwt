@@ -114,7 +114,11 @@ public class JwsSignerTest {
                 .build()
                 .sign(CONTENT);
 
-        assertEquals(CONTENT, JwsVerifier.builder(keyPair.getPublic()).algorithm(SignatureAlgorithm.RS256).build().verify(jws));
+        assertEquals(CONTENT, JwsVerifier.builder(keyPair.getPublic())
+                .algorithm(SignatureAlgorithm.RS256)
+                .relaxKeyValidation(true)
+                .build()
+                .verify(jws));
     }
 
     @Test

@@ -191,11 +191,9 @@ public class DefaultJWTTokenParser {
                 .clockSkewSeconds(clockSkew)
                 .requiredClaims(authContextInfo.getRequiredClaims())
                 .requireExpirationTime(true)
-                .requireIssuedAt(issuedAtRequired);
+                .requireIssuedAt(issuedAtRequired)
+                .relaxKeyValidation(authContextInfo.isRelaxVerificationKeyValidation());
 
-        if (authContextInfo.isRelaxVerificationKeyValidation()) {
-            builder.relaxKeyValidation();
-        }
         if (authContextInfo.getIssuedBy() != null) {
             builder.expectedIssuer(authContextInfo.getIssuedBy());
         }

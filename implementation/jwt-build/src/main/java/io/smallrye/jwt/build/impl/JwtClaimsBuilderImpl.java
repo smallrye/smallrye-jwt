@@ -1,5 +1,6 @@
 package io.smallrye.jwt.build.impl;
 
+import java.math.BigInteger;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.cert.CertificateEncodingException;
@@ -365,7 +366,9 @@ class JwtClaimsBuilderImpl extends JwtSignatureImpl implements JwtClaimsBuilder,
         } else if (jsonValue instanceof JsonNumber) {
             JsonNumber jsonNumber = (JsonNumber) jsonValue;
             if (jsonNumber.isIntegral()) {
-                return jsonNumber.longValue();
+                // integers which do not fit into a long are kept as BigInteger instead of being truncated
+                BigInteger integer = jsonNumber.bigIntegerValueExact();
+                return integer.bitLength() < 64 ? integer.longValue() : integer;
             } else {
                 return jsonNumber.doubleValue();
             }

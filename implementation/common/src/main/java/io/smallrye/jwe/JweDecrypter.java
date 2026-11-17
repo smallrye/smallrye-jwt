@@ -5,6 +5,7 @@ import java.security.PrivateKey;
 import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.XECPrivateKey;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -23,6 +24,7 @@ import com.nimbusds.jose.crypto.RSADecrypter;
 import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jose.jwk.JWK;
 
+import io.smallrye.jwt.algorithm.ContentEncryptionAlgorithm;
 import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
 import io.smallrye.jwt.algorithm.XDHDecrypter;
 
@@ -33,12 +35,18 @@ import io.smallrye.jwt.algorithm.XDHDecrypter;
  */
 public class JweDecrypter {
 
+    private static final Set<String> SUPPORTED_CONTENT_ALGORITHMS = Arrays.stream(ContentEncryptionAlgorithm.values())
+            .map(ContentEncryptionAlgorithm::getAlgorithm)
+            .collect(Collectors.toSet());
+
     private final Key key;
     private final Set<String> keyAlgorithms;
+    private final boolean relaxKeyValidation;
 
-    private JweDecrypter(Key key, Set<KeyEncryptionAlgorithm> keyAlgorithms) {
+    private JweDecrypter(Key key, Set<KeyEncryptionAlgorithm> keyAlgorithms, boolean relaxKeyValidation) {
         this.key = key;
         this.keyAlgorithms = keyAlgorithms.stream().map(KeyEncryptionAlgorithm::getAlgorithm).collect(Collectors.toSet());
+        this.relaxKeyValidation = relaxKeyValidation;
     }
 
     /**
@@ -74,6 +82,12 @@ public class JweDecrypter {
         if (!keyAlgorithms.contains(algorithm)) {
             throw new JweException("Key encryption algorithm " + algorithm + " is not allowed");
         }
+        String encryptionAlgorithm = jwe.headers().encryptionAlgorithm();
+        if (!SUPPORTED_CONTENT_ALGORITHMS.contains(encryptionAlgorithm)) {
+            // for example, XC20P, which Nimbus only supports with the optional Tink dependency and otherwise
+            // reports with NoClassDefFoundError during the decryption
+            throw new JweException("Content encryption algorithm " + encryptionAlgorithm + " is not supported");
+        }
 
         JWEObject jweObject = jwe.jweObject();
         if (jweObject.getState() != JWEObject.State.ENCRYPTED) {
@@ -81,7 +95,7 @@ public class JweDecrypter {
         }
 
         try {
-            jweObject.decrypt(createDecrypter(key, algorithm, jweObject.getHeader()));
+            jweObject.decrypt(createDecrypter(key, algorithm, jweObject.getHeader(), relaxKeyValidation));
         } catch (JOSEException | IllegalArgumentException ex) {
             // Nimbus throws IllegalArgumentException for the invalid keys, for example, RSA keys shorter than 2048 bits
             throw new JweException("Failed to decrypt the JSON Web Encryption sequence: " + ex.getMessage(), ex);
@@ -89,10 +103,12 @@ public class JweDecrypter {
         return jweObject.getPayload().toString();
     }
 
-    private static JWEDecrypter createDecrypter(Key key, String algorithm, JWEHeader header) throws JOSEException {
+    private static JWEDecrypter createDecrypter(Key key, String algorithm, JWEHeader header, boolean relaxKeyValidation)
+            throws JOSEException {
         // Opaque RSA and EC private keys, for example, PKCS#11 keys, do not implement RSAPrivateKey or ECPrivateKey
         if (key instanceof RSAPrivateKey || (key instanceof PrivateKey && "RSA".equalsIgnoreCase(key.getAlgorithm()))) {
-            return new RSADecrypter((PrivateKey) key);
+            // Nimbus RSADecrypter rejects the keys shorter than 2048 bits unless the weak keys are allowed
+            return new RSADecrypter((PrivateKey) key, null, relaxKeyValidation);
         } else if (key instanceof ECPrivateKey) {
             return new ECDHDecrypter((ECPrivateKey) key);
         } else if (key instanceof PrivateKey && "EC".equalsIgnoreCase(key.getAlgorithm())) {
@@ -125,9 +141,21 @@ public class JweDecrypter {
 
         private final Key key;
         private Set<KeyEncryptionAlgorithm> keyAlgorithms;
+        private boolean relaxKeyValidation;
 
         private Builder(Key key) {
             this.key = key;
+        }
+
+        /**
+         * Accept an RSA private key which is shorter than 2048 bits, `false` by default.
+         *
+         * @param relaxKeyValidation true if a weak RSA private key is accepted
+         * @return this builder
+         */
+        public Builder relaxKeyValidation(boolean relaxKeyValidation) {
+            this.relaxKeyValidation = relaxKeyValidation;
+            return this;
         }
 
         /**
@@ -164,7 +192,7 @@ public class JweDecrypter {
             if (keyAlgorithms == null || keyAlgorithms.isEmpty()) {
                 throw new JweException("At least one accepted key encryption algorithm is required");
             }
-            return new JweDecrypter(key, keyAlgorithms);
+            return new JweDecrypter(key, keyAlgorithms, relaxKeyValidation);
         }
     }
 }

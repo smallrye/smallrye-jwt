@@ -1,6 +1,7 @@
 package io.smallrye.jwt.auth.principal;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -55,6 +56,21 @@ class DefaultJWTParserTest {
         JWTParser parser = new DefaultJWTParser(config);
         JsonWebToken jwt = parser.parse(jwtString);
         assertEquals("jdoe@example.com", jwt.getName());
+    }
+
+    @Test
+    void parseWithNonNumericDateClaims() throws Exception {
+        // Auth0 sends 'updated_at' as an ISO date string, the claim must be null, not 0, as before 6.0
+        String jwtString = Jwt.upn("jdoe@example.com").issuer("https://server.example.com")
+                .claim("updated_at", "2024-10-16T08:30:00.000Z")
+                .claim("auth_time", 1729067400L)
+                .sign(KeyUtils.readPrivateKey("/privateKey.pem"));
+        JWTAuthContextInfo config = new JWTAuthContextInfo("/publicKey.pem", "https://server.example.com");
+        JsonWebToken jwt = new DefaultJWTParser(config).parse(jwtString);
+        assertNull(jwt.getClaim("updated_at"));
+        assertEquals(1729067400L, (Long) jwt.getClaim("auth_time"));
+        // an absent numeric date claim is 0
+        assertEquals(0L, (Long) jwt.getClaim("nbf"));
     }
 
     @Test

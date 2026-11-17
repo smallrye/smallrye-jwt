@@ -47,8 +47,10 @@ JwtClaims claims = JwtClaims.parse(payload);
 ----
 
 `JwsVerifier.verify` throws `JwsException` if the signature is invalid, the `alg` header is not one of the accepted
-algorithms or the key can not be used with it. `jws.headers()` also gives access to `x5t`, `x5t#S256`, the parsed
-`x5c` chain and the custom headers, and `jws.unverifiedPayload()` to the payload before the verification.
+algorithms or the key can not be used with it. As with jose4j, an RSA public key shorter than 2048 bits is rejected,
+use `JwsVerifier.builder(publicKey).relaxKeyValidation(true)` to accept it. `jws.headers()` also gives access to
+`x5t`, `x5t#S256`, the parsed `x5c` chain and the custom headers, and `jws.unverifiedPayload()` to the payload before
+the verification.
 
 === Sign a payload
 
@@ -104,7 +106,8 @@ String content = JweDecrypter.builder(privateKey)
 ----
 
 `JsonWebEncryption.parse(token).headers()` gives access to the `kid`, `alg`, `enc` and the other headers before the
-decryption, and `JweDecrypter.decrypt` accepts the parsed `JsonWebEncryption` as well.
+decryption, and `JweDecrypter.decrypt` accepts the parsed `JsonWebEncryption` as well. As with jose4j, RSA keys
+shorter than 2048 bits are rejected, both builders have a `relaxKeyValidation(true)` option to accept them.
 
 === JSON Web Keys
 
