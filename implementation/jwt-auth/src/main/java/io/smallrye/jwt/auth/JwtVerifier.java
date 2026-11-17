@@ -108,7 +108,14 @@ public class JwtVerifier {
             // Run custom validators
             ClaimsValidator.VerificationContext context = new ClaimsValidator.VerificationContext(claims);
             for (ClaimsValidator validator : claimsValidators) {
-                String error = validator.validate(context);
+                final String error;
+                try {
+                    error = validator.validate(context);
+                } catch (RuntimeException e) {
+                    // as jose4j did, a validator failure rejects the token instead of escaping the verification
+                    throw new InvalidJWTException(
+                            "Unexpected exception thrown from validator " + validator.getClass().getName() + ": " + e, e);
+                }
                 if (error != null) {
                     throw new InvalidJWTException(error);
                 }
