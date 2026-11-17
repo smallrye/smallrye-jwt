@@ -181,8 +181,15 @@ public class JwtClaims {
         return builder.build().toString();
     }
 
+    /**
+     * Parse the JSON claims.
+     *
+     * @param json the JSON claims
+     * @return the claims
+     * @throws jakarta.json.JsonException if the JSON is invalid or has duplicate names
+     */
     public static JwtClaims parse(String json) {
-        try (JsonReader reader = JsonProviderHolder.jsonProvider().createReader(new StringReader(json))) {
+        try (JsonReader reader = JsonProviderHolder.jsonReaderFactory().createReader(new StringReader(json))) {
             JsonObject jsonObject = reader.readObject();
             Map<String, Object> map = new LinkedHashMap<>();
             for (Map.Entry<String, JsonValue> entry : jsonObject.entrySet()) {

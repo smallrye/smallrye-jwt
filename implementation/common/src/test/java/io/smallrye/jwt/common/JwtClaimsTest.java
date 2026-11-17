@@ -1,10 +1,13 @@
 package io.smallrye.jwt.common;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import java.math.BigInteger;
 import java.util.Date;
+
+import jakarta.json.JsonException;
 
 import org.junit.Test;
 
@@ -19,6 +22,17 @@ public class JwtClaimsTest {
         assertEquals(new BigInteger("123456789012345678901234567890"), claims.getClaim("big"));
         assertEquals(1.5d, claims.getClaim("dec"));
         assertTrue(claims.toJsonString().contains("\"big\":123456789012345678901234567890"));
+    }
+
+    @Test
+    public void duplicateClaimNamesAreRejected() {
+        // RFC 7519, section 4: the claim names must be unique, as jose4j required
+        assertThrows(JsonException.class, () -> JwtClaims.parse("{\"exp\":1,\"exp\":2}"));
+        assertThrows(JsonException.class, () -> JwtClaims.parse("{\"address\":{\"country\":\"CZ\",\"country\":\"SK\"}}"));
+        assertThrows(JsonException.class, () -> JwtClaims.parse("{\"roles\":[{\"name\":\"a\",\"name\":\"b\"}]}"));
+
+        assertEquals("CZ", ((java.util.Map<?, ?>) JwtClaims.parse("{\"address\":{\"country\":\"CZ\"}}")
+                .getClaim("address")).get("country"));
     }
 
     @Test

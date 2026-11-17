@@ -1,5 +1,6 @@
 package io.smallrye.jwt.auth.principal;
 
+import java.math.BigDecimal;
 import java.text.ParseException;
 import java.util.Date;
 import java.util.List;
@@ -7,8 +8,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import jakarta.json.JsonException;
+
 import com.nimbusds.jose.proc.BadJOSEException;
-import com.nimbusds.jose.util.JSONObjectUtils;
 import com.nimbusds.jwt.JWTClaimNames;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.proc.DefaultJWTClaimsVerifier;
@@ -16,6 +18,7 @@ import com.nimbusds.jwt.proc.ExpiredJWTException;
 
 import io.smallrye.jwt.auth.InvalidJWTException;
 import io.smallrye.jwt.auth.TokenExpiredException;
+import io.smallrye.jwt.common.JwtClaims;
 
 /**
  * Verifies standard JWT claims (issuer, audience, exp, iat, required claims) using Nimbus.
@@ -34,27 +37,40 @@ public class StandardClaimsVerifier {
     }
 
     // Nimbus converts the numeric date claims to java.util.Date with 'seconds * 1000', so larger values overflow
-    private static final long MAX_NUMERIC_DATE_SECONDS = Long.MAX_VALUE / 1000;
+    private static final BigDecimal MAX_NUMERIC_DATE_SECONDS = BigDecimal.valueOf(Long.MAX_VALUE / 1000);
 
     /**
-     * Parse the JWT claims JSON. Unlike {@link JWTClaimsSet#parse(String)}, a numeric 'sub' claim is rejected,
-     * as RFC 7519 requires it to be a string and jose4j rejected it before the migration to Nimbus JOSE+JWT.
-     * The 'exp', 'nbf' and 'iat' claims are also rejected if their values can not be converted to milliseconds
-     * without overflow, which would otherwise turn a long expired token into a valid one.
+     * Parse the JWT claims JSON. Unlike {@link JWTClaimsSet#parse(String)}, duplicate claim names are rejected
+     * at any nesting level, integers which do not fit into a long are kept exact and a numeric 'sub' claim is
+     * rejected as RFC 7519 requires it to be a string, as jose4j did in all three cases. The 'exp', 'nbf' and
+     * 'iat' claims are also rejected if their values can not be converted to milliseconds without overflow,
+     * which would otherwise turn a long expired token into a valid one.
      */
     public static JWTClaimsSet parseClaimsSet(String json) throws ParseException {
-        Map<String, Object> claims = JSONObjectUtils.parse(json);
+        final Map<String, Object> claims;
+        try {
+            claims = JwtClaims.parse(json).asMap();
+        } catch (JsonException ex) {
+            throw new ParseException("Invalid JWT claims: " + ex.getMessage(), 0);
+        }
         Object sub = claims.get(JWTClaimNames.SUBJECT);
         if (sub != null && !(sub instanceof String)) {
             throw new ParseException("The \"sub\" claim must be a string", 0);
         }
         for (String name : List.of(JWTClaimNames.EXPIRATION_TIME, JWTClaimNames.NOT_BEFORE, JWTClaimNames.ISSUED_AT)) {
-            if (claims.get(name) instanceof Number number
-                    && Math.abs(number.longValue()) > MAX_NUMERIC_DATE_SECONDS) {
+            if (claims.get(name) instanceof Number number && !isValidNumericDate(number)) {
                 throw new ParseException("The \"" + name + "\" claim value is out of range", 0);
             }
         }
         return JWTClaimsSet.parse(claims);
+    }
+
+    private static boolean isValidNumericDate(Number number) {
+        if (number instanceof Double d && !Double.isFinite(d)) {
+            return false;
+        }
+        // Long, BigInteger and Double values are compared without a lossy conversion
+        return new BigDecimal(number.toString()).abs().compareTo(MAX_NUMERIC_DATE_SECONDS) <= 0;
     }
 
     public void verify(JWTClaimsSet claimsSet) throws InvalidJWTException {

@@ -1,5 +1,7 @@
 package io.smallrye.jwt;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -75,6 +77,9 @@ public class JsonUtils {
             jsonValue = JsonProviderHolder.jsonProvider().createValue(value.toString());
         } else if ((value instanceof Long) || (value instanceof Integer)) {
             jsonValue = JsonProviderHolder.jsonProvider().createValue(((Number) value).longValue());
+        } else if (value instanceof BigInteger || value instanceof BigDecimal) {
+            // exact, integers outside of the long range would lose precision as a double
+            jsonValue = JsonProviderHolder.jsonProvider().createValue(new BigDecimal(value.toString()));
         } else if (value instanceof Number) {
             jsonValue = JsonProviderHolder.jsonProvider().createValue(((Number) value).doubleValue());
         } else if (value instanceof Boolean) {
