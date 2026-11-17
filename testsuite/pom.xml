@@ -30,7 +30,7 @@
 
   <properties>
     <version.resteasy>7.0.6.Final</version.resteasy>
-    <version.resteasy.client>3.0.1.Final</version.resteasy.client>
+    <version.resteasy.client>3.0.2.Final</version.resteasy.client>
 
     <version.galleon>7.0.12.Final</version.galleon>
     <version.wildfly>25.0.1.Final</version.wildfly>
