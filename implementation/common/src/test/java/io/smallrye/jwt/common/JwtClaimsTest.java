@@ -3,6 +3,7 @@ package io.smallrye.jwt.common;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import java.math.BigInteger;
 import java.util.Date;
 
 import org.junit.Test;
@@ -10,6 +11,15 @@ import org.junit.Test;
 import com.nimbusds.jwt.JWTClaimsSet;
 
 public class JwtClaimsTest {
+
+    @Test
+    public void integerClaimsOutsideLongRangeAreNotTruncated() {
+        JwtClaims claims = JwtClaims.parse("{\"small\":42,\"big\":123456789012345678901234567890,\"dec\":1.5}");
+        assertEquals(42L, claims.getClaim("small"));
+        assertEquals(new BigInteger("123456789012345678901234567890"), claims.getClaim("big"));
+        assertEquals(1.5d, claims.getClaim("dec"));
+        assertTrue(claims.toJsonString().contains("\"big\":123456789012345678901234567890"));
+    }
 
     @Test
     public void dateClaimsAreNormalizedToEpochSeconds() {

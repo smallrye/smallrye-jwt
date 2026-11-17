@@ -2,6 +2,7 @@ package io.smallrye.jwt.common;
 
 import java.io.StringReader;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.Collections;
 import java.util.Date;
 import java.util.LinkedHashMap;
@@ -233,7 +234,10 @@ public class JwtClaims {
             case NUMBER:
                 JsonNumber num = (JsonNumber) jsonValue;
                 if (num.isIntegral()) {
-                    return num.longValue();
+                    // as jose4j did, integers which do not fit into a long are kept as BigInteger,
+                    // JsonNumber.longValue() would silently keep their lowest 64 bits only
+                    BigInteger integer = num.bigIntegerValueExact();
+                    return integer.bitLength() < 64 ? integer.longValue() : integer;
                 }
                 return num.doubleValue();
             case TRUE:
