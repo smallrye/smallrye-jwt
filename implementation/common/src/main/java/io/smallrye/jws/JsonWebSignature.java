@@ -40,6 +40,10 @@ public class JsonWebSignature {
             return new JsonWebSignature(SignedJWT.parse(token), token);
         } catch (ParseException ex) {
             throw new JwsException("Invalid JSON Web Signature sequence: " + ex.getMessage(), ex);
+        } catch (RuntimeException ex) {
+            // Nimbus fails with NullPointerException, instead of ParseException, on some malformed tokens,
+            // for example, when the header decodes to the JSON literal 'null'
+            throw new JwsException("Invalid JSON Web Signature sequence", ex);
         }
     }
 

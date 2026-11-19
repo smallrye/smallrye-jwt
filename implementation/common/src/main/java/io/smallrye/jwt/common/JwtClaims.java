@@ -79,10 +79,11 @@ public class JwtClaims {
                     "The value of the '" + name + "' claim is not a list but " + value.getClass().getName());
         }
         List<String> values = new ArrayList<>(list.size());
-        for (Object element : list) {
+        for (int i = 0; i < list.size(); i++) {
+            Object element = list.get(i);
             if (!(element instanceof String string)) {
-                throw new MalformedClaimException("The list value of the '" + name + "' claim contains a value which is not a"
-                        + " string but " + (element == null ? "null" : element.getClass().getName()));
+                throw new MalformedClaimException("The list value of the '" + name + "' claim contains a value at index " + i
+                        + " which is not a string but " + (element == null ? "null" : element.getClass().getName()));
             }
             values.add(string);
         }

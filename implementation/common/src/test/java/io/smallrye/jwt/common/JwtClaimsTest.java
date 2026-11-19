@@ -71,7 +71,7 @@ public class JwtClaimsTest {
         ex = assertThrows(MalformedClaimException.class, () -> claims.getStringListClaim("nonce"));
         assertEquals("The value of the 'nonce' claim is not a list but java.lang.String", ex.getMessage());
         ex = assertThrows(MalformedClaimException.class, () -> claims.getStringListClaim("mixed"));
-        assertEquals("The list value of the 'mixed' claim contains a value which is not a string but java.lang.Long",
+        assertEquals("The list value of the 'mixed' claim contains a value at index 1 which is not a string but java.lang.Long",
                 ex.getMessage());
     }
 }

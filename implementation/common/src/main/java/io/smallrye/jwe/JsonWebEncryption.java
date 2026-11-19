@@ -36,6 +36,10 @@ public class JsonWebEncryption {
             return new JsonWebEncryption(JWEObject.parse(token), token);
         } catch (ParseException ex) {
             throw new JweException("Invalid JSON Web Encryption sequence: " + ex.getMessage(), ex);
+        } catch (RuntimeException ex) {
+            // Nimbus fails with NullPointerException, instead of ParseException, on some malformed tokens,
+            // for example, when the header has no 'alg'
+            throw new JweException("Invalid JSON Web Encryption sequence", ex);
         }
     }
 

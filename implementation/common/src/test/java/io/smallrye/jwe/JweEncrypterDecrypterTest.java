@@ -174,7 +174,12 @@ public class JweEncrypterDecrypterTest {
         JweDecrypter decrypter = JweDecrypter.builder(secretKey)
                 .keyAlgorithm(KeyEncryptionAlgorithm.A256KW)
                 .build();
-        assertThrows(JweException.class, () -> decrypter.decrypt("not-a-jwe-sequence"));
+        // Nimbus reports a ParseException
+        JweException ex = assertThrows(JweException.class, () -> decrypter.decrypt("not-a-jwe-sequence"));
+        assertTrue(ex.getMessage().startsWith("Invalid JSON Web Encryption sequence"));
+        // Nimbus fails with NullPointerException, the header has no 'alg'
+        ex = assertThrows(JweException.class, () -> decrypter.decrypt("e30.YQ.Yg.Yw.ZA"));
+        assertTrue(ex.getMessage().startsWith("Invalid JSON Web Encryption sequence"));
     }
 
     @Test
