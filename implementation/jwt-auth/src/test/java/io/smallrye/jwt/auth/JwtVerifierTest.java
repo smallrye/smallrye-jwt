@@ -18,6 +18,7 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
+import io.smallrye.jwt.common.MalformedClaimException;
 import io.smallrye.jwt.util.KeyUtils;
 
 class JwtVerifierTest {
@@ -49,6 +50,21 @@ class JwtVerifierTest {
         assertTrue(thrown.getMessage().startsWith("Unexpected exception thrown from validator "), thrown.getMessage());
         assertTrue(thrown.getMessage().endsWith("java.lang.IllegalStateException: boom"), thrown.getMessage());
         assertSame(failure, thrown.getCause());
+    }
+
+    @Test
+    void claimsValidatorMalformedClaim() throws Exception {
+        KeyPair keyPair = KeyUtils.generateKeyPair(2048);
+        String token = sign(keyPair);
+
+        // the 'sub' claim is a string, requesting it as a list fails with the claim error itself, as with jose4j
+        JwtVerifier verifier = verifier(keyPair).claimsValidator(context -> {
+            context.claims().getStringListClaim("sub");
+            return null;
+        }).build();
+        InvalidJWTException thrown = assertThrows(InvalidJWTException.class, () -> verifier.verify(token));
+        assertEquals("The value of the 'sub' claim is not a list but java.lang.String", thrown.getMessage());
+        assertTrue(thrown.getCause() instanceof MalformedClaimException);
     }
 
     private static JwtVerifier.Builder verifier(KeyPair keyPair) {
