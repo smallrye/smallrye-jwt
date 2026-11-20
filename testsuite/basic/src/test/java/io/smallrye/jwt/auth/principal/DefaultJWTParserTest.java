@@ -49,6 +49,16 @@ class DefaultJWTParserTest {
     }
 
     @Test
+    void parseOnlyMalformedToken() {
+        DefaultJWTParser parser = new DefaultJWTParser();
+        // Nimbus reports a ParseException
+        assertThrows(ParseException.class, () -> parser.parseOnly("not-a-jws-sequence"));
+        // Nimbus fails with NullPointerException, the header is the JSON literal 'null'
+        ParseException thrown = assertThrows(ParseException.class, () -> parser.parseOnly("bnVsbA.e30.AAAA"));
+        assertTrue(thrown.getCause() instanceof InvalidJWTException);
+    }
+
+    @Test
     void parseWithConfiguredPublicKey() throws Exception {
         String jwtString = Jwt.upn("jdoe@example.com").issuer("https://server.example.com")
                 .sign(KeyUtils.readPrivateKey("/privateKey.pem"));

@@ -92,6 +92,19 @@ public class JwsVerifierTest {
     }
 
     @Test
+    public void malformedSequence() throws Exception {
+        KeyPair keyPair = KeyUtils.generateKeyPair(2048);
+        JwsVerifier verifier = JwsVerifier.builder(keyPair.getPublic()).algorithm(SignatureAlgorithm.RS256).build();
+
+        // Nimbus reports a ParseException
+        JwsException ex = assertThrows(JwsException.class, () -> verifier.verify("not-a-jws-sequence"));
+        assertTrue(ex.getMessage().startsWith("Invalid JSON Web Signature sequence"));
+        // Nimbus fails with NullPointerException, the header is the JSON literal 'null'
+        ex = assertThrows(JwsException.class, () -> verifier.verify("bnVsbA.e30.AAAA"));
+        assertTrue(ex.getMessage().startsWith("Invalid JSON Web Signature sequence"));
+    }
+
+    @Test
     public void unexpectedSignatureAlgorithm() throws Exception {
         KeyPair keyPair = KeyUtils.generateKeyPair(2048);
 

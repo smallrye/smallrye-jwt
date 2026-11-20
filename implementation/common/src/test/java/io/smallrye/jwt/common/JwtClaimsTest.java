@@ -1,11 +1,13 @@
 package io.smallrye.jwt.common;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import java.math.BigInteger;
 import java.util.Date;
+import java.util.List;
 
 import jakarta.json.JsonException;
 
@@ -53,5 +55,23 @@ public class JwtClaimsTest {
         assertEquals(Long.valueOf(1_000_000L), claims.getIssuedAt());
         assertEquals(Long.valueOf(1_000_100L), claims.getNotBefore());
         assertEquals(Long.valueOf(1_000_300L), claims.getExpirationTime());
+    }
+
+    @Test
+    public void stringClaims() {
+        JwtClaims claims = JwtClaims.parse("{\"nonce\":\"abc\",\"count\":1,\"roles\":[\"user\",\"admin\"],"
+                + "\"mixed\":[\"user\",1]}");
+        assertEquals("abc", claims.getStringClaim("nonce"));
+        assertNull(claims.getStringClaim("missing"));
+        assertEquals(List.of("user", "admin"), claims.getStringListClaim("roles"));
+        assertEquals(List.of(), claims.getStringListClaim("missing"));
+
+        MalformedClaimException ex = assertThrows(MalformedClaimException.class, () -> claims.getStringClaim("count"));
+        assertEquals("The value of the 'count' claim is not a string but java.lang.Long", ex.getMessage());
+        ex = assertThrows(MalformedClaimException.class, () -> claims.getStringListClaim("nonce"));
+        assertEquals("The value of the 'nonce' claim is not a list but java.lang.String", ex.getMessage());
+        ex = assertThrows(MalformedClaimException.class, () -> claims.getStringListClaim("mixed"));
+        assertEquals("The list value of the 'mixed' claim contains a value at index 1 which is not a string but java.lang.Long",
+                ex.getMessage());
     }
 }

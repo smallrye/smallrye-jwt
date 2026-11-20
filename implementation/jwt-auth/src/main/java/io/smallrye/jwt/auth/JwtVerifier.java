@@ -17,6 +17,7 @@ import io.smallrye.jws.JwsVerifier;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 import io.smallrye.jwt.auth.principal.StandardClaimsVerifier;
 import io.smallrye.jwt.common.JwtClaims;
+import io.smallrye.jwt.common.MalformedClaimException;
 
 /**
  * A builder-style JWT verifier that encapsulates parsing, key resolution,
@@ -111,6 +112,9 @@ public class JwtVerifier {
                 final String error;
                 try {
                     error = validator.validate(context);
+                } catch (MalformedClaimException e) {
+                    // as jose4j did, a claim of an unexpected type is reported as a token error
+                    throw new InvalidJWTException(e.getMessage(), e);
                 } catch (RuntimeException e) {
                     // as jose4j did, a validator failure rejects the token instead of escaping the verification
                     throw new InvalidJWTException(

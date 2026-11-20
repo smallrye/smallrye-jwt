@@ -169,7 +169,7 @@ public class NonceValidator implements Validator {
 public class NonceValidator implements ClaimsValidator {
     @Override
     public String validate(VerificationContext context) {
-        Object nonce = context.claims().getClaim("nonce");
+        String nonce = context.claims().getStringClaim("nonce");
         return expectedNonce.equals(nonce) ? null : "Invalid nonce";
     }
 }

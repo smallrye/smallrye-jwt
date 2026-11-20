@@ -202,6 +202,10 @@ public class DefaultJWTParser implements JWTParser {
         } catch (java.text.ParseException e) {
             // Nimbus reports a malformed token via java.text.ParseException.
             throw PrincipalMessages.msg.failedToVerifyToken(new InvalidJWTException(e.getMessage()));
+        } catch (RuntimeException e) {
+            // but fails with NullPointerException on some malformed tokens, for example, when the header
+            // decodes to the JSON literal 'null'
+            throw PrincipalMessages.msg.failedToVerifyToken(new InvalidJWTException("Invalid JSON Web Signature sequence", e));
         }
     }
 }

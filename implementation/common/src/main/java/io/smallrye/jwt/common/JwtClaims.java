@@ -3,6 +3,7 @@ package io.smallrye.jwt.common;
 import java.io.StringReader;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.LinkedHashMap;
@@ -43,6 +44,50 @@ public class JwtClaims {
 
     public Object getClaim(String name) {
         return claims.get(name);
+    }
+
+    /**
+     * Get a string claim.
+     *
+     * @param name the claim name
+     * @return the claim value, null if the claim is not set
+     * @throws MalformedClaimException if the claim value is not a string
+     */
+    public String getStringClaim(String name) {
+        Object value = claims.get(name);
+        if (value == null || value instanceof String) {
+            return (String) value;
+        }
+        throw new MalformedClaimException(
+                "The value of the '" + name + "' claim is not a string but " + value.getClass().getName());
+    }
+
+    /**
+     * Get a string list claim.
+     *
+     * @param name the claim name
+     * @return the claim values, an empty list if the claim is not set
+     * @throws MalformedClaimException if the claim value is not a list or contains values which are not strings
+     */
+    public List<String> getStringListClaim(String name) {
+        Object value = claims.get(name);
+        if (value == null) {
+            return Collections.emptyList();
+        }
+        if (!(value instanceof List<?> list)) {
+            throw new MalformedClaimException(
+                    "The value of the '" + name + "' claim is not a list but " + value.getClass().getName());
+        }
+        List<String> values = new ArrayList<>(list.size());
+        for (int i = 0; i < list.size(); i++) {
+            Object element = list.get(i);
+            if (!(element instanceof String string)) {
+                throw new MalformedClaimException("The list value of the '" + name + "' claim contains a value at index " + i
+                        + " which is not a string but " + (element == null ? "null" : element.getClass().getName()));
+            }
+            values.add(string);
+        }
+        return values;
     }
 
     public void setClaim(String name, Object value) {
